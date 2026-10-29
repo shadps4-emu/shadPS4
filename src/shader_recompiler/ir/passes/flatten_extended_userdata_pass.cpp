@@ -180,16 +180,18 @@ struct PassInfo {
     // pick a single inst for a given value number
     std::unordered_map<u32, IR::Inst*> vn_to_inst;
 
+    using Inputs = boost::container::small_vector<IR::Inst*, 2>;
+
     struct ReadConstGuard {
         boost::container::small_vector<std::pair<IR::Block*, const IR::Block*>, 4> demand;
+        Inputs inputs;
         bool always{};
         bool conditional{};
-        bool all_conditional{};
-        bool any_conditional{};
     };
 
     std::unordered_set<const IR::Inst*> walker_reads;
     std::unordered_map<const IR::Inst*, ReadConstGuard> guards;
+    std::unordered_map<const IR::Inst*, IR::Inst*> parents;
     Optimization::Srt::Program srt;
 
     // Bumped during codegen to assign offsets to readconsts
@@ -211,17 +213,16 @@ struct PassInfo {
         return it.first->second;
     }
 
-    bool IsConditional(const IR::Inst* inst) const {
-        const auto it = guards.find(inst);
-        return it != guards.end() && it->second.conditional;
+    IR::Inst* ParentOf(const IR::Inst* inst) const {
+        const auto it = parents.find(inst);
+        return it != parents.end() ? it->second : nullptr;
     }
 
-    bool HasReads(const IR::Inst* ptr, bool conditional) const {
-        const auto it = guards.find(ptr);
-        if (it == guards.end()) {
-            return !conditional;
+    IR::Inst* ChildOnPath(const IR::Inst* parent, IR::Inst* inst) const {
+        for (IR::Inst* up = ParentOf(inst); up && up != parent; up = ParentOf(inst)) {
+            inst = up;
         }
-        return conditional ? it->second.any_conditional : !it->second.all_conditional;
+        return inst;
     }
 
     Optimization::Srt::Ref GuardOf(const IR::Inst* inst);
@@ -458,8 +459,8 @@ bool IsNormalOrZero(u32 bits) {
 
 class SrtBuilder {
 public:
-    SrtBuilder(PassInfo& pass_info_, Srt::Program& srt_, bool optimistic_ = false)
-        : pass_info{pass_info_}, srt{srt_}, optimistic{optimistic_} {}
+    SrtBuilder(PassInfo& pass_info_, Srt::Program& srt_, PassInfo::Inputs* inputs_ = nullptr)
+        : pass_info{pass_info_}, srt{srt_}, inputs{inputs_} {}
 
     std::optional<Srt::Ref> Offset(const IR::Value& value) {
         return Value(value, false, 0);
@@ -504,7 +505,11 @@ private:
                 offset != 0) {
                 return srt.Load(offset);
             }
-            if (optimistic && pass_info.walker_reads.contains(inst)) {
+            if (inputs && pass_info.walker_reads.contains(inst)) {
+                IR::Inst* const input = pass_info.DeduplicateInstruction(inst);
+                if (std::ranges::find(*inputs, input) == inputs->end()) {
+                    inputs->push_back(input);
+                }
                 return srt.Load(0);
             }
             return std::nullopt;
@@ -615,12 +620,14 @@ private:
     }
 
     Srt::Ref Compare(const IR::Inst& inst, Srt::Opcode opcode) {
+        const size_t num_inputs = inputs ? inputs->size() : 0;
         const std::optional<Srt::Ref> lhs = Value(inst.Arg(0), true, 0);
         const std::optional<Srt::Ref> rhs = Value(inst.Arg(1), true, 0);
-        if (!lhs || !rhs || (IsImm(*lhs) && IsImm(*rhs))) {
-            return Srt::TrueRef;
-        }
-        if (Srt::IsFloatCompare(opcode) && (!IsFloatDecidable(*lhs) || !IsFloatDecidable(*rhs))) {
+        if (!lhs || !rhs || (IsImm(*lhs) && IsImm(*rhs)) ||
+            (Srt::IsFloatCompare(opcode) && (!IsFloatDecidable(*lhs) || !IsFloatDecidable(*rhs)))) {
+            if (inputs) {
+                inputs->resize(num_inputs);
+            }
             return Srt::TrueRef;
         }
         return srt.Op(opcode, *lhs, *rhs);
@@ -643,7 +650,7 @@ private:
 
     PassInfo& pass_info;
     Srt::Program& srt;
-    bool optimistic;
+    PassInfo::Inputs* inputs;
 };
 
 void EmitValue(Xbyak::CodeGenerator& c, const Srt::Program& srt, Srt::Ref ref,
@@ -890,14 +897,15 @@ Srt::Ref PassInfo::GuardOf(const IR::Inst* inst) {
     return SrtBuilder{*this, srt}.Guard(it->second);
 }
 
-static void VisitPointer(const IR::Value& off_dw, IR::Inst* subtree, PassInfo& pass_info,
-                         Xbyak::CodeGenerator& c, bool conditional) {
+static void EmitReads(std::span<IR::Inst* const> reads, IR::Inst* parent, PassInfo& pass_info,
+                      Xbyak::CodeGenerator& c);
+
+static void VisitPointer(const IR::Value& off_dw, IR::Inst* subtree,
+                         std::span<IR::Inst* const> reads, PassInfo& pass_info,
+                         Xbyak::CodeGenerator& c) {
     if (subtree->GetOpcode() == IR::Opcode::ReadConst && subtree->Flags<u16>() == 0 ||
         subtree->GetOpcode() == IR::Opcode::ReadConstBuffer &&
             subtree->Flags<IR::BufferInstInfo>().flatbuf_off_dw == 0) {
-        return;
-    }
-    if (!pass_info.HasReads(subtree, conditional)) {
         return;
     }
 
@@ -905,62 +913,53 @@ static void VisitPointer(const IR::Value& off_dw, IR::Inst* subtree, PassInfo& p
         LOG_ERROR(Render_Recompiler, "Failed to compute offset for SRT walker");
         return;
     }
-    PassInfo::PtrUserList* use_list = pass_info.GetUsesAsPointer(subtree);
-    ASSERT(use_list);
-
-    // First copy all the src data from this tree level
-    // That way, all data that was contiguous in the guest SRT is also contiguous in the
-    // flattened buffer.
-    // TODO src and dst are contiguous. Optimize with wider loads/stores
-    // TODO if this subtree is dynamically indexed, don't compact it (keep it sparse)
-    for (auto it = use_list->begin(); it != use_list->end();) {
-        if (pass_info.IsConditional(it->second) != conditional) {
-            ++it;
-            continue;
-        }
-        const Srt::Ref guard = pass_info.GuardOf(it->second);
-        Xbyak::Label skip;
-        EmitCondition(c, pass_info.srt, guard, skip);
-        do {
-            if (!EmitReadConst(c, pass_info, it->first, it->second)) {
-                LOG_ERROR(Render_Recompiler, "Failed to compute offset for SRT walker");
-            }
-            ++it;
-        } while (it != use_list->end() && pass_info.IsConditional(it->second) == conditional &&
-                 pass_info.GuardOf(it->second) == guard);
-        c.L(skip);
-    }
-
-    // Then visit any children used as pointers
-    for (const auto [src_off_dw, use] : *use_list) {
-        if (!pass_info.GetUsesAsPointer(use) || !pass_info.HasReads(use, conditional)) {
-            continue;
-        }
-        Xbyak::Label skip;
-        EmitCondition(c, pass_info.srt, pass_info.GuardOf(use), skip);
-        VisitPointer(src_off_dw, use, pass_info, c, conditional);
-        c.L(skip);
-    }
-
+    EmitReads(reads, subtree, pass_info, c);
     PopPtr(c);
 }
 
-static void ClassifyReads(PassInfo& pass_info, SrtBuilder& builder, IR::Inst* ptr,
-                          bool conditional) {
-    PassInfo::ReadConstGuard& node = pass_info.guards[ptr];
-    node.all_conditional = true;
+static void EmitReads(std::span<IR::Inst* const> reads, IR::Inst* parent, PassInfo& pass_info,
+                      Xbyak::CodeGenerator& c) {
+    for (auto it = reads.begin(); it != reads.end();) {
+        IR::Inst* const child = pass_info.ChildOnPath(parent, *it);
+        if (child == *it) {
+            const Srt::Ref guard = pass_info.GuardOf(child);
+            Xbyak::Label skip;
+            EmitCondition(c, pass_info.srt, guard, skip);
+            do {
+                if (!EmitReadConst(c, pass_info, (*it)->Arg(1), *it)) {
+                    LOG_ERROR(Render_Recompiler, "Failed to compute offset for SRT walker");
+                }
+                ++it;
+            } while (it != reads.end() && pass_info.ChildOnPath(parent, *it) == *it &&
+                     pass_info.GuardOf(*it) == guard);
+            c.L(skip);
+            continue;
+        }
+        const auto end = std::find_if(it, reads.end(), [&](IR::Inst* read) {
+            return pass_info.ChildOnPath(parent, read) != child;
+        });
+        const IR::Value off_dw =
+            parent ? child->Arg(1) : IR::Value(static_cast<u32>(child->Arg(0).ScalarReg()));
+        Xbyak::Label skip;
+        EmitCondition(c, pass_info.srt, pass_info.GuardOf(child), skip);
+        VisitPointer(off_dw, child, {it, end}, pass_info, c);
+        c.L(skip);
+        it = end;
+    }
+}
+
+static void ClassifyReads(PassInfo& pass_info, Srt::Program& scratch, IR::Inst* ptr) {
     for (const auto [src_off_dw, use] : *pass_info.GetUsesAsPointer(ptr)) {
         PassInfo::ReadConstGuard& read = pass_info.guards[use];
-        read.conditional = conditional || builder.Guard(read) != Srt::TrueRef;
-        bool all_conditional = read.conditional;
-        bool any_conditional = read.conditional;
-        if (pass_info.GetUsesAsPointer(use)) {
-            ClassifyReads(pass_info, builder, use, read.conditional);
-            all_conditional &= read.all_conditional;
-            any_conditional |= read.any_conditional;
+        read.conditional = SrtBuilder{pass_info, scratch, &read.inputs}.Guard(read) != Srt::TrueRef;
+        if (!read.conditional) {
+            read.inputs.clear();
         }
-        node.all_conditional &= all_conditional;
-        node.any_conditional |= any_conditional;
+        read.inputs.erase(std::remove(read.inputs.begin(), read.inputs.end(), use),
+                          read.inputs.end());
+        if (pass_info.GetUsesAsPointer(use)) {
+            ClassifyReads(pass_info, scratch, use);
+        }
     }
 }
 
@@ -995,11 +994,87 @@ static void CollectReadConstGuards(PassInfo& pass_info, std::span<IR::Inst* cons
         guard.always |= guard.demand.size() > MaxDemandBlocks;
     }
     Srt::Program scratch;
-    SrtBuilder builder{pass_info, scratch, true};
     for (const auto& [sgpr_base, root] : pass_info.srt_roots) {
-        ClassifyReads(pass_info, builder, root, false);
+        ClassifyReads(pass_info, scratch, root);
     }
 }
+
+class ReadOrder {
+public:
+    explicit ReadOrder(PassInfo& pass_info_) : pass_info{pass_info_} {}
+
+    std::span<IR::Inst* const> Reads() {
+        for (const auto& [sgpr_base, root] : pass_info.srt_roots) {
+            PlaceSubtree(root);
+        }
+        return {order.data(), order.size()};
+    }
+
+private:
+    void PlaceRead(IR::Inst* read) {
+        if (!placed_reads.insert(read).second) {
+            return;
+        }
+        PlaceInputs(read, pass_info.ParentOf(read), read);
+        order.push_back(read);
+    }
+
+    void PlaceSubtree(IR::Inst* ptr) {
+        if (!placed_subtrees.insert(ptr).second) {
+            return;
+        }
+        IR::Inst* const parent = pass_info.ParentOf(ptr);
+        if (parent) {
+            PlaceRead(ptr);
+        }
+        PlaceSubtreeInputs(ptr, parent, ptr);
+        const PassInfo::PtrUserList& use_list = *pass_info.GetUsesAsPointer(ptr);
+
+        // First copy all the src data from this tree level
+        // That way, all data that was contiguous in the guest SRT is also contiguous in the
+        // flattened buffer.
+        // TODO src and dst are contiguous. Optimize with wider loads/stores
+        // TODO if this subtree is dynamically indexed, don't compact it (keep it sparse)
+        for (const auto& [src_off_dw, use] : use_list) {
+            PlaceRead(use);
+        }
+
+        // Then visit any children used as pointers
+        for (const auto& [src_off_dw, use] : use_list) {
+            if (pass_info.GetUsesAsPointer(use)) {
+                PlaceSubtree(use);
+            }
+        }
+    }
+
+    void PlaceSubtreeInputs(IR::Inst* ptr, const IR::Inst* parent, const IR::Inst* item) {
+        for (const auto& [src_off_dw, use] : *pass_info.GetUsesAsPointer(ptr)) {
+            PlaceInputs(use, parent, item);
+            if (pass_info.GetUsesAsPointer(use)) {
+                PlaceSubtreeInputs(use, parent, item);
+            }
+        }
+    }
+
+    void PlaceInputs(IR::Inst* read, const IR::Inst* parent, const IR::Inst* item) {
+        for (IR::Inst* const input : pass_info.guards[read].inputs) {
+            IR::Inst* const sibling = pass_info.ChildOnPath(parent, input);
+            if (sibling == item || pass_info.ParentOf(sibling) != parent) {
+                continue;
+            }
+            if (sibling == input) {
+                PlaceRead(sibling);
+            } else {
+                PlaceSubtree(sibling);
+            }
+        }
+    }
+
+    PassInfo& pass_info;
+    std::unordered_set<const IR::Inst*> placed_reads;
+    std::unordered_set<const IR::Inst*> placed_subtrees;
+    boost::container::small_vector<IR::Inst*, 32> order;
+};
 
 static void GenerateSrtProgram(Info& info, PassInfo& pass_info) {
     Xbyak::CodeGenerator& c = g_srt_codegen;
@@ -1021,11 +1096,8 @@ static void GenerateSrtProgram(Info& info, PassInfo& pass_info) {
     pass_info.dst_off_dw = NUM_USER_DATA_REGS;
     ASSERT(pass_info.dst_off_dw == info.srt_info.flattened_bufsize_dw);
 
-    for (const bool conditional : {false, true}) {
-        for (const auto& [sgpr_base, root] : pass_info.srt_roots) {
-            VisitPointer(IR::Value(static_cast<u32>(sgpr_base)), root, pass_info, c, conditional);
-        }
-    }
+    ReadOrder order{pass_info};
+    EmitReads(order.Reads(), nullptr, pass_info, c);
 
     c.ret();
     c.ready();
@@ -1209,6 +1281,7 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
         PassInfo::PtrUserList& user_list = ptr_uses_kv.first->second;
 
         user_list[inst->Arg(1)] = inst;
+        pass_info.parents[inst] = ptr_lo;
 
         if (ptr_lo->GetOpcode() == IR::Opcode::GetUserData) {
             IR::ScalarReg ud_reg = ptr_lo->Arg(0).ScalarReg();
