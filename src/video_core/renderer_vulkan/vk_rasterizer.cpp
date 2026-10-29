@@ -41,7 +41,8 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_, Runtime
       liverpool{liverpool_}, memory{Core::Memory::Instance()},
       pipeline_cache{instance, scheduler, liverpool, buffer_cache.GetSparsePageShift()},
       host_markers_enabled{EmulatorSettings.IsVkHostMarkersEnabled()},
-      guest_markers_enabled{EmulatorSettings.IsVkGuestMarkersEnabled()} {
+      guest_markers_enabled{EmulatorSettings.IsVkGuestMarkersEnabled()},
+      submit_draw_interval{EmulatorSettings.GetSubmitDrawInterval()} {
     if (!EmulatorSettings.IsNullGPU()) {
         liverpool->BindRasterizer(this);
     }
@@ -390,12 +391,14 @@ void Rasterizer::DispatchIndirect(VAddr address, u32 offset, u32 size) {
 }
 
 void Rasterizer::FlushPeriodically() {
-    constexpr u32 FlushInterval = 50;
+    if (submit_draw_interval == 0) {
+        return;
+    }
     if (const u64 tick = scheduler.CurrentTick(); tick != last_submit_tick) {
         last_submit_tick = tick;
         draws_since_submit = 0;
     }
-    if (++draws_since_submit >= FlushInterval) {
+    if (++draws_since_submit >= submit_draw_interval) {
         scheduler.Flush();
     }
 }

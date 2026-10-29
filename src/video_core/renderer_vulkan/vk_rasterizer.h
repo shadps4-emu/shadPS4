@@ -150,6 +150,7 @@ private:
     PipelineCache pipeline_cache;
     const bool host_markers_enabled;
     const bool guest_markers_enabled;
+    const u32 submit_draw_interval;
     u64 last_submit_tick{};
     u32 draws_since_submit{};
 
