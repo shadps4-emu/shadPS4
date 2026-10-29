@@ -159,6 +159,7 @@ set(GCN_TEST_SOURCES
     stubs/core_stub.cpp
     stubs/signals_stub.cpp
     stubs/file_sys_stub.cpp
+    stubs/kernel_stub.cpp
 
     gcn/gcn_test_runner.hpp
     gcn/gcn_test_runner.cpp

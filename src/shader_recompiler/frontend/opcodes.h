@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -1094,6 +1094,7 @@ enum class OpcodeDS : u32 {
     DS_MIN_F32 = 18,
     DS_MAX_F32 = 19,
     DS_NOP = 20,
+    DS_ADD_F32 = 21,
     DS_GWS_SEMA_RELEASE_ALL = 24,
     DS_GWS_INIT = 25,
     DS_GWS_SEMA_V = 26,
@@ -1191,8 +1192,14 @@ enum class OpcodeDS : u32 {
     DS_OR_SRC2_B32 = 138,
     DS_XOR_SRC2_B32 = 139,
     DS_WRITE_SRC2_B32 = 141,
+    DS_WRITE_ADDTID_B32 = 142,
+    DS_ADD_RTN_F32 = 143,
+    DS_PERMUTE_B32 = 144,
+    DS_BPERMUTE_B32 = 145,
     DS_MIN_SRC2_F32 = 146,
     DS_MAX_SRC2_F32 = 147,
+    DS_ADD_SRC2_F32 = 149,
+    DS_READ_ADDTID_B32 = 182,
     DS_ADD_SRC2_U64 = 192,
     DS_SUB_SRC2_U64 = 193,
     DS_RSUB_SRC2_U64 = 194,
@@ -2066,6 +2073,7 @@ enum class Opcode : u32 {
     DS_MIN_F32 = 18 + (u32)OpcodeMap::OP_MAP_DS,
     DS_MAX_F32 = 19 + (u32)OpcodeMap::OP_MAP_DS,
     DS_NOP = 20 + (u32)OpcodeMap::OP_MAP_DS,
+    DS_ADD_F32 = 21 + (u32)OpcodeMap::OP_MAP_DS,
     DS_GWS_SEMA_RELEASE_ALL = 24 + (u32)OpcodeMap::OP_MAP_DS,
     DS_GWS_INIT = 25 + (u32)OpcodeMap::OP_MAP_DS,
     DS_GWS_SEMA_V = 26 + (u32)OpcodeMap::OP_MAP_DS,
@@ -2163,8 +2171,14 @@ enum class Opcode : u32 {
     DS_OR_SRC2_B32 = 138 + (u32)OpcodeMap::OP_MAP_DS,
     DS_XOR_SRC2_B32 = 139 + (u32)OpcodeMap::OP_MAP_DS,
     DS_WRITE_SRC2_B32 = 141 + (u32)OpcodeMap::OP_MAP_DS,
+    DS_WRITE_ADDTID_B32 = 142 + (u32)OpcodeMap::OP_MAP_DS,
+    DS_ADD_RTN_F32 = 143 + (u32)OpcodeMap::OP_MAP_DS,
+    DS_PERMUTE_B32 = 144 + (u32)OpcodeMap::OP_MAP_DS,
+    DS_BPERMUTE_B32 = 145 + (u32)OpcodeMap::OP_MAP_DS,
     DS_MIN_SRC2_F32 = 146 + (u32)OpcodeMap::OP_MAP_DS,
     DS_MAX_SRC2_F32 = 147 + (u32)OpcodeMap::OP_MAP_DS,
+    DS_ADD_SRC2_F32 = 149 + (u32)OpcodeMap::OP_MAP_DS,
+    DS_READ_ADDTID_B32 = 182 + (u32)OpcodeMap::OP_MAP_DS,
     DS_ADD_SRC2_U64 = 192 + (u32)OpcodeMap::OP_MAP_DS,
     DS_SUB_SRC2_U64 = 193 + (u32)OpcodeMap::OP_MAP_DS,
     DS_RSUB_SRC2_U64 = 194 + (u32)OpcodeMap::OP_MAP_DS,
