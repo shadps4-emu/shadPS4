@@ -516,10 +516,7 @@ private:
                 return srt.Load(offset);
             }
             if (inputs && pass_info.walker_reads.contains(inst)) {
-                IR::Inst* const input = pass_info.DeduplicateInstruction(inst);
-                if (std::ranges::find(*inputs, input) == inputs->end()) {
-                    inputs->push_back(input);
-                }
+                inputs->push_back(pass_info.DeduplicateInstruction(inst));
                 return srt.Load(0);
             }
             return std::nullopt;
@@ -958,23 +955,8 @@ static void EmitReads(std::span<IR::Inst* const> reads, IR::Inst* parent, PassIn
     }
 }
 
-static void ClassifyReads(PassInfo& pass_info, Srt::Program& scratch, IR::Inst* ptr) {
-    for (const auto [src_off_dw, use] : *pass_info.GetUsesAsPointer(ptr)) {
-        PassInfo::ReadConstGuard& read = pass_info.guards[use];
-        read.conditional = SrtBuilder{pass_info, scratch, &read.inputs}.Guard(read) != Srt::TrueRef;
-        if (!read.conditional) {
-            read.inputs.clear();
-        }
-        SrtBuilder{pass_info, scratch, &read.inputs}.Offset(src_off_dw);
-        read.inputs.erase(std::remove(read.inputs.begin(), read.inputs.end(), use),
-                          read.inputs.end());
-        if (pass_info.GetUsesAsPointer(use)) {
-            ClassifyReads(pass_info, scratch, use);
-        }
-    }
-}
-
-static void CollectReadConstGuards(PassInfo& pass_info, std::span<IR::Inst* const> all_readconsts) {
+static void CollectReadConstGuards(PassInfo& pass_info, std::span<IR::Inst* const> all_readconsts,
+                                   std::span<IR::Inst* const> reads) {
     std::unordered_set<const IR::Inst*> walked;
     for (const auto& [ptr, use_list] : pass_info.pointer_uses) {
         for (const auto& [src_off_dw, use] : use_list) {
@@ -1005,8 +987,15 @@ static void CollectReadConstGuards(PassInfo& pass_info, std::span<IR::Inst* cons
         guard.always |= guard.demand.size() > MaxDemandBlocks;
     }
     Srt::Program scratch;
-    for (const auto& [sgpr_base, root] : pass_info.srt_roots) {
-        ClassifyReads(pass_info, scratch, root);
+    for (IR::Inst* const use : reads) {
+        PassInfo::ReadConstGuard& read = pass_info.guards[use];
+        read.conditional = SrtBuilder{pass_info, scratch, &read.inputs}.Guard(read) != Srt::TrueRef;
+        if (!read.conditional) {
+            read.inputs.clear();
+        }
+        SrtBuilder{pass_info, scratch, &read.inputs}.Offset(use->Arg(1));
+        read.inputs.erase(std::remove(read.inputs.begin(), read.inputs.end(), use),
+                          read.inputs.end());
     }
 }
 
@@ -1030,11 +1019,7 @@ static void AddReads(PassInfo& pass_info, IR::Inst* ptr, std::vector<IR::Inst*>&
     }
 }
 
-static std::vector<IR::Inst*> SortReads(PassInfo& pass_info) {
-    std::vector<IR::Inst*> reads;
-    for (const auto& [sgpr_base, root] : pass_info.srt_roots) {
-        AddReads(pass_info, root, reads);
-    }
+static std::vector<IR::Inst*> SortReads(PassInfo& pass_info, std::span<IR::Inst* const> reads) {
     std::unordered_map<const IR::Inst*, size_t> index;
     for (size_t i = 0; i < reads.size(); ++i) {
         index.emplace(reads[i], i);
@@ -1060,7 +1045,7 @@ static std::vector<IR::Inst*> SortReads(PassInfo& pass_info) {
     return order;
 }
 
-static void GenerateSrtProgram(Info& info, PassInfo& pass_info) {
+static void GenerateSrtProgram(Info& info, PassInfo& pass_info, std::span<IR::Inst* const> reads) {
     Xbyak::CodeGenerator& c = g_srt_codegen;
 
     if (pass_info.srt_roots.empty()) {
@@ -1080,7 +1065,7 @@ static void GenerateSrtProgram(Info& info, PassInfo& pass_info) {
     pass_info.dst_off_dw = NUM_USER_DATA_REGS;
     ASSERT(pass_info.dst_off_dw == info.srt_info.flattened_bufsize_dw);
 
-    const std::vector<IR::Inst*> order = SortReads(pass_info);
+    const std::vector<IR::Inst*> order = SortReads(pass_info, reads);
     EmitReads(order, nullptr, pass_info, c);
 
     c.ret();
@@ -1273,12 +1258,17 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
         }
     }
 
-    if (!program.info.skip_resource_guards) {
-        IR::ComputeDominators(program.post_order_blocks);
-        CollectReadConstGuards(pass_info, all_readconsts);
+    std::vector<IR::Inst*> reads;
+    for (const auto& [sgpr_base, root] : pass_info.srt_roots) {
+        AddReads(pass_info, root, reads);
     }
 
-    GenerateSrtProgram(program.info, pass_info);
+    if (!program.info.skip_resource_guards) {
+        IR::ComputeDominators(program.post_order_blocks);
+        CollectReadConstGuards(pass_info, all_readconsts, reads);
+    }
+
+    GenerateSrtProgram(program.info, pass_info, reads);
 
     for (IR::Block* const block : program.blocks) {
         block->immediate_dominator = nullptr;
