@@ -76,9 +76,6 @@ struct RedZonePatchResult {
 void RegisterPatchModule(void* module_ptr, u64 module_size, void* trampoline_area_ptr,
                          u64 trampoline_area_size);
 
-/// Applies CPU patches that need to be done before beginning executions.
-void PrePatchInstructions(u64 segment_addr, u64 segment_size);
-
 // Windows static guest red-zone protection
 /// Keeps Windows exception dispatch outside live guest red zones at faultable memory accesses.
 RedZonePatchResult PatchRedZoneMemoryInstructions(u64 segment_addr, u64 segment_size,
@@ -86,7 +83,7 @@ RedZonePatchResult PatchRedZoneMemoryInstructions(u64 segment_addr, u64 segment_
 
 /// Applies CPU patches ahead of time to the functions listed in the EH frame search table. A patch
 /// site too short for a jump is relocated together with its neighboring instructions. Between
-/// those functions, only the SSE4a instructions long enough for a jump are patched.
+/// those functions, the CPU patches are applied without relocation.
 RedZonePatchResult PatchCpuInstructionsStatically(u64 segment_addr, u64 segment_size,
                                                   std::span<const uintptr_t> function_starts);
 
