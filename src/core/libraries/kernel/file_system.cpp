@@ -1515,6 +1515,15 @@ s32 PS4_SYSV_ABI posix_rename(const char* from, const char* to) {
     const bool src_is_dir = fs::is_directory(src_path, ec);
     const bool dst_is_dir = fs::is_directory(dst_path, ec);
 
+    if (src_is_dir) {
+        // A directory can't be moved into itself.
+        const auto rel = dst_path.lexically_relative(src_path);
+        if (!rel.empty() && *rel.begin() != "..") {
+            *__Error() = POSIX_EINVAL;
+            return -1;
+        }
+    }
+
     if (fs::exists(dst_path, ec)) {
         if (src_is_dir && !dst_is_dir) {
             *__Error() = POSIX_ENOTDIR;
