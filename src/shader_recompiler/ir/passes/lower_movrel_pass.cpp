@@ -3,8 +3,10 @@
 
 #include <algorithm>
 #include <optional>
+#include <span>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/dominance.h"
@@ -148,70 +150,6 @@ std::optional<u32> AnalyzeLoopInduction(const IR::Inst* phi) {
     return std::nullopt;
 }
 
-std::vector<const IR::Inst*> FindReachingVectorDefs(const IR::Block* start_block,
-                                                    const IR::Inst* before_inst, IR::VectorReg reg,
-                                                    bool& all_paths_defined) {
-    std::vector<const IR::Inst*> defs;
-    all_paths_defined = true;
-
-    if (before_inst) {
-        const IR::Inst* last_def = nullptr;
-        for (const IR::Inst& cur : start_block->Instructions()) {
-            if (&cur == before_inst) {
-                break;
-            }
-            if (cur.GetOpcode() == IR::Opcode::SetVectorRegister && cur.Arg(0).VectorReg() == reg) {
-                last_def = &cur;
-            }
-        }
-        if (last_def) {
-            defs.push_back(last_def);
-            return defs;
-        }
-    }
-
-    std::unordered_set<const IR::Block*> visited;
-    visited.insert(start_block);
-    std::vector<const IR::Block*> worklist(start_block->imm_predecessors.begin(),
-                                           start_block->imm_predecessors.end());
-
-    if (worklist.empty()) {
-        all_paths_defined = false;
-        return defs;
-    }
-
-    while (!worklist.empty()) {
-        const IR::Block* b = worklist.back();
-        worklist.pop_back();
-
-        if (!visited.insert(b).second) {
-            continue;
-        }
-
-        const IR::Inst* def = nullptr;
-        for (const IR::Inst& cur : b->Instructions()) {
-            if (cur.GetOpcode() == IR::Opcode::SetVectorRegister && cur.Arg(0).VectorReg() == reg) {
-                def = &cur;
-            }
-        }
-
-        if (def) {
-            defs.push_back(def);
-        } else {
-            if (b->imm_predecessors.empty()) {
-                all_paths_defined = false;
-                break;
-            }
-            for (const IR::Block* pred : b->imm_predecessors) {
-                if (!visited.contains(pred)) {
-                    worklist.push_back(pred);
-                }
-            }
-        }
-    }
-    return defs;
-}
-
 u32 FindUpperBound(const IR::Value& val, u32 unbounded,
                    std::unordered_set<const IR::Inst*>& active_stack,
                    std::unordered_map<const IR::Inst*, u32>& memo, u32 depth = 0) {
@@ -239,27 +177,6 @@ u32 FindUpperBound(const IR::Value& val, u32 unbounded,
         case IR::Opcode::BitCastU32F32:
         case IR::Opcode::ReadFirstLane:
             return FindUpperBound(inst->Arg(0), unbounded, active_stack, memo, depth + 1);
-        case IR::Opcode::GetVectorRegister: {
-            const auto reg = inst->Arg(0).VectorReg();
-            const IR::Block* block = inst->GetParent();
-            if (!block) {
-                return unbounded;
-            }
-            bool all_paths_defined = true;
-            const auto defs = FindReachingVectorDefs(block, inst, reg, all_paths_defined);
-            if (!all_paths_defined || defs.empty()) {
-                return unbounded;
-            }
-            u32 max_val = 0;
-            for (const IR::Inst* def : defs) {
-                const u32 b = FindUpperBound(def->Arg(1), unbounded, active_stack, memo, depth + 1);
-                if (b >= unbounded) {
-                    return unbounded;
-                }
-                max_val = std::max(max_val, b);
-            }
-            return max_val;
-        }
         case IR::Opcode::BitwiseAnd32: {
             const u32 b0 = FindUpperBound(inst->Arg(0), unbounded, active_stack, memo, depth + 1);
             const u32 b1 = FindUpperBound(inst->Arg(1), unbounded, active_stack, memo, depth + 1);
@@ -327,20 +244,22 @@ u32 FindUpperBound(const IR::Value& val, u32 unbounded,
             }
 
             u32 max_arg = 0;
+            bool has_valid_arg = false;
             for (size_t i = 0; i < inst->NumArgs(); ++i) {
                 const auto& arg = inst->Arg(i);
                 if (const auto* arg_inst = arg.TryInst()) {
                     if (active_stack.contains(arg_inst)) {
-                        return unbounded;
+                        continue;
                     }
                 }
                 const u32 arg_b = FindUpperBound(arg, unbounded, active_stack, memo, depth + 1);
                 if (arg_b >= unbounded) {
                     return unbounded;
                 }
+                has_valid_arg = true;
                 max_arg = std::max(max_arg, arg_b);
             }
-            return max_arg;
+            return has_valid_arg ? max_arg : unbounded;
         }
         default:
             return unbounded;
@@ -353,17 +272,45 @@ u32 FindUpperBound(const IR::Value& val, u32 unbounded,
     return result;
 }
 
-u32 FindUpperBound(const IR::Value& val, u32 unbounded) {
-    std::unordered_set<const IR::Inst*> active_stack;
-    std::unordered_map<const IR::Inst*, u32> memo;
-    return FindUpperBound(val, unbounded, active_stack, memo, 0);
-}
-
 } // Anonymous namespace
 
-void LowerMovRelPass(IR::Program& program, const RuntimeInfo& runtime_info) {
+std::vector<u32> AnalyzeMovRelBounds(const IR::Program& program, const RuntimeInfo& runtime_info) {
     IR::ComputeDominators(program.post_order_blocks);
     const u32 num_allocated_vgprs = runtime_info.props.num_allocated_vgprs;
+
+    std::vector<u32> bounds;
+    std::unordered_set<const IR::Inst*> active_stack;
+    std::unordered_map<const IR::Inst*, u32> memo;
+
+    for (const auto* block : program.blocks) {
+        for (const IR::Inst& inst : block->Instructions()) {
+            const auto opcode = inst.GetOpcode();
+            if (opcode == IR::Opcode::VMovRelS) {
+                const auto src_reg = inst.Arg(0).VectorReg();
+                const IR::U32 m0{inst.Arg(1)};
+                const u32 src_vgprno = static_cast<u32>(src_reg);
+                const u32 unbounded =
+                    num_allocated_vgprs > src_vgprno ? (num_allocated_vgprs - src_vgprno - 1) : 0;
+                const u32 max_m0 = FindUpperBound(m0, unbounded, active_stack, memo, 0);
+                bounds.push_back(max_m0);
+            } else if (opcode == IR::Opcode::VMovRelD) {
+                const auto dst_reg = inst.Arg(0).VectorReg();
+                const IR::U32 m0{inst.Arg(2)};
+                const u32 dst_vgprno = static_cast<u32>(dst_reg);
+                const u32 unbounded =
+                    num_allocated_vgprs > dst_vgprno ? (num_allocated_vgprs - dst_vgprno - 1) : 0;
+                const u32 max_m0 = FindUpperBound(m0, unbounded, active_stack, memo, 0);
+                bounds.push_back(max_m0);
+            }
+        }
+    }
+    return bounds;
+}
+
+void LowerMovRelPass(IR::Program& program, const RuntimeInfo& runtime_info,
+                     std::span<const u32> bounds) {
+    const u32 num_allocated_vgprs = runtime_info.props.num_allocated_vgprs;
+    size_t bound_idx = 0;
 
     for (auto* block : program.blocks) {
         for (auto it = block->begin(); it != block->end();) {
@@ -378,9 +325,10 @@ void LowerMovRelPass(IR::Program& program, const RuntimeInfo& runtime_info) {
                 const auto src_reg = inst.Arg(0).VectorReg();
                 const IR::U32 m0{inst.Arg(1)};
                 const u32 src_vgprno = static_cast<u32>(src_reg);
-                const u32 unbounded = num_allocated_vgprs - src_vgprno - 1;
+                const u32 unbounded =
+                    num_allocated_vgprs > src_vgprno ? (num_allocated_vgprs - src_vgprno - 1) : 0;
 
-                const u32 max_m0 = FindUpperBound(m0, unbounded);
+                const u32 max_m0 = (bound_idx < bounds.size()) ? bounds[bound_idx++] : unbounded;
                 const u32 max_vgprno = std::min(src_vgprno + max_m0 + 1, num_allocated_vgprs);
 
                 IR::IREmitter ir{*block, it};
@@ -399,9 +347,10 @@ void LowerMovRelPass(IR::Program& program, const RuntimeInfo& runtime_info) {
                 const IR::U32 src_val{inst.Arg(1)};
                 const IR::U32 m0{inst.Arg(2)};
                 const u32 dst_vgprno = static_cast<u32>(dst_reg);
-                const u32 unbounded = num_allocated_vgprs - dst_vgprno - 1;
+                const u32 unbounded =
+                    num_allocated_vgprs > dst_vgprno ? (num_allocated_vgprs - dst_vgprno - 1) : 0;
 
-                const u32 max_m0 = FindUpperBound(m0, unbounded);
+                const u32 max_m0 = (bound_idx < bounds.size()) ? bounds[bound_idx++] : unbounded;
                 const u32 max_vgprno = std::min(dst_vgprno + max_m0 + 1, num_allocated_vgprs);
 
                 IR::IREmitter ir{*block, it};
