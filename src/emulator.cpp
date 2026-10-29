@@ -88,6 +88,11 @@ Emulator::~Emulator() {}
 
 void Emulator::Shutdown() {
     static bool exit_done = false;
+    static thread_local bool in_shutdown = false;
+    if (in_shutdown) {
+        return;
+    }
+    in_shutdown = true;
     std::scoped_lock l{exit_mutex};
     if (exit_done) {
         return;
