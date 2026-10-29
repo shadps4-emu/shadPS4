@@ -184,6 +184,7 @@ void Rasterizer::EliminateFastClear() {
 void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
     RENDERER_TRACE;
 
+    FlushPeriodically();
     scheduler.PopPendingOperations();
 
     if (!FilterDraw()) {
@@ -239,6 +240,7 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
                               u16 instance_sgpr_offset) {
     RENDERER_TRACE;
 
+    FlushPeriodically();
     scheduler.PopPendingOperations();
 
     if (!FilterDraw()) {
@@ -319,6 +321,7 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
 void Rasterizer::DispatchDirect() {
     RENDERER_TRACE;
 
+    FlushPeriodically();
     scheduler.PopPendingOperations();
 
     const auto& cs_program = liverpool->GetCsRegs();
@@ -354,6 +357,7 @@ void Rasterizer::DispatchDirect() {
 void Rasterizer::DispatchIndirect(VAddr address, u32 offset, u32 size) {
     RENDERER_TRACE;
 
+    FlushPeriodically();
     scheduler.PopPendingOperations();
 
     const auto& cs_program = liverpool->GetCsRegs();
@@ -383,6 +387,17 @@ void Rasterizer::DispatchIndirect(VAddr address, u32 offset, u32 size) {
     DebugState.IncDispatch();
 
     ResetBindings(true);
+}
+
+void Rasterizer::FlushPeriodically() {
+    constexpr auto FlushInterval = std::chrono::milliseconds(2);
+    const auto now = std::chrono::steady_clock::now();
+    if (const u64 tick = scheduler.CurrentTick(); tick != last_submit_tick) {
+        last_submit_tick = tick;
+        last_submit_time = now;
+    } else if (now - last_submit_time >= FlushInterval) {
+        scheduler.Flush();
+    }
 }
 
 u64 Rasterizer::Flush() {

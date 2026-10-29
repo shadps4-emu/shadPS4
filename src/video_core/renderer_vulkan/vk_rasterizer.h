@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <chrono>
+
 #include "common/recursive_lock.h"
 #include "common/shared_first_mutex.h"
 #include "video_core/buffer_cache/buffer_cache.h"
@@ -128,6 +130,8 @@ private:
 
     void ResetBindings(bool is_compute);
 
+    void FlushPeriodically();
+
     bool IsComputeMetaClear(const Pipeline* pipeline);
     bool IsComputeImageCopy(const Pipeline* pipeline);
     bool IsComputeImageClear(const Pipeline* pipeline);
@@ -148,6 +152,8 @@ private:
     PipelineCache pipeline_cache;
     const bool host_markers_enabled;
     const bool guest_markers_enabled;
+    u64 last_submit_tick{};
+    std::chrono::steady_clock::time_point last_submit_time{};
 
     struct ImageBinding {
         VideoCore::ImageId image_id;
