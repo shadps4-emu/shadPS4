@@ -1142,6 +1142,7 @@ set(SHADER_RECOMPILER src/shader_recompiler/profile.h
                       src/shader_recompiler/ir/srt_gvn_table.h
                       src/shader_recompiler/ir/ssa.h
                       src/shader_recompiler/ir/reg.h
+                      src/shader_recompiler/ir/topological_sort.h
                       src/shader_recompiler/ir/type.cpp
                       src/shader_recompiler/ir/type.h
                       src/shader_recompiler/ir/value.cpp

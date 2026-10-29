@@ -30,6 +30,7 @@
 #include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/ir/reg.h"
 #include "shader_recompiler/ir/srt_gvn_table.h"
+#include "shader_recompiler/ir/topological_sort.h"
 #include "shader_recompiler/ir/value.h"
 
 #ifdef ARCH_X86_64
@@ -223,6 +224,15 @@ struct PassInfo {
             inst = up;
         }
         return inst;
+    }
+
+    bool IsAncestor(const IR::Inst* ancestor, const IR::Inst* inst) const {
+        for (const IR::Inst* up = ParentOf(inst); up; up = ParentOf(up)) {
+            if (up == ancestor) {
+                return true;
+            }
+        }
+        return false;
     }
 
     Optimization::Srt::Ref GuardOf(const IR::Inst* inst);
@@ -999,82 +1009,55 @@ static void CollectReadConstGuards(PassInfo& pass_info, std::span<IR::Inst* cons
     }
 }
 
-class ReadOrder {
-public:
-    explicit ReadOrder(PassInfo& pass_info_) : pass_info{pass_info_} {}
+static void AddReads(PassInfo& pass_info, IR::Inst* ptr, std::vector<IR::Inst*>& reads) {
+    const PassInfo::PtrUserList& use_list = *pass_info.GetUsesAsPointer(ptr);
 
-    std::span<IR::Inst* const> Reads() {
-        for (const auto& [sgpr_base, root] : pass_info.srt_roots) {
-            PlaceSubtree(root);
-        }
-        return {order.data(), order.size()};
+    // First copy all the src data from this tree level
+    // That way, all data that was contiguous in the guest SRT is also contiguous in the
+    // flattened buffer.
+    // TODO src and dst are contiguous. Optimize with wider loads/stores
+    // TODO if this subtree is dynamically indexed, don't compact it (keep it sparse)
+    for (const auto& [src_off_dw, use] : use_list) {
+        reads.push_back(use);
     }
 
-private:
-    void PlaceRead(IR::Inst* read) {
-        if (!placed_reads.insert(read).second) {
-            return;
+    // Then visit any children used as pointers
+    for (const auto& [src_off_dw, use] : use_list) {
+        if (pass_info.GetUsesAsPointer(use)) {
+            AddReads(pass_info, use, reads);
         }
-        PlaceInputs(read, pass_info.ParentOf(read), read);
-        order.push_back(read);
     }
+}
 
-    void PlaceSubtree(IR::Inst* ptr) {
-        if (!placed_subtrees.insert(ptr).second) {
-            return;
+static std::vector<IR::Inst*> SortReads(PassInfo& pass_info) {
+    std::vector<IR::Inst*> reads;
+    for (const auto& [sgpr_base, root] : pass_info.srt_roots) {
+        AddReads(pass_info, root, reads);
+    }
+    std::unordered_map<const IR::Inst*, size_t> index;
+    for (size_t i = 0; i < reads.size(); ++i) {
+        index.emplace(reads[i], i);
+    }
+    std::vector<boost::container::small_vector<size_t, 4>> successors(reads.size());
+    for (size_t i = 0; i < reads.size(); ++i) {
+        if (const auto it = index.find(pass_info.ParentOf(reads[i])); it != index.end()) {
+            successors[it->second].push_back(i);
         }
-        IR::Inst* const parent = pass_info.ParentOf(ptr);
-        if (parent) {
-            PlaceRead(ptr);
-        }
-        PlaceSubtreeInputs(ptr, parent, ptr);
-        const PassInfo::PtrUserList& use_list = *pass_info.GetUsesAsPointer(ptr);
-
-        // First copy all the src data from this tree level
-        // That way, all data that was contiguous in the guest SRT is also contiguous in the
-        // flattened buffer.
-        // TODO src and dst are contiguous. Optimize with wider loads/stores
-        // TODO if this subtree is dynamically indexed, don't compact it (keep it sparse)
-        for (const auto& [src_off_dw, use] : use_list) {
-            PlaceRead(use);
-        }
-
-        // Then visit any children used as pointers
-        for (const auto& [src_off_dw, use] : use_list) {
-            if (pass_info.GetUsesAsPointer(use)) {
-                PlaceSubtree(use);
+        for (IR::Inst* const input : pass_info.guards[reads[i]].inputs) {
+            const auto it = index.find(input);
+            if (it != index.end() && !pass_info.IsAncestor(reads[i], input)) {
+                successors[it->second].push_back(i);
             }
         }
     }
-
-    void PlaceSubtreeInputs(IR::Inst* ptr, const IR::Inst* parent, const IR::Inst* item) {
-        for (const auto& [src_off_dw, use] : *pass_info.GetUsesAsPointer(ptr)) {
-            PlaceInputs(use, parent, item);
-            if (pass_info.GetUsesAsPointer(use)) {
-                PlaceSubtreeInputs(use, parent, item);
-            }
-        }
+    const auto successors_of = [&](size_t read) -> const auto& { return successors[read]; };
+    std::vector<IR::Inst*> order;
+    order.reserve(reads.size());
+    for (const size_t i : IR::TopologicalSort(reads.size(), successors_of)) {
+        order.push_back(reads[i]);
     }
-
-    void PlaceInputs(IR::Inst* read, const IR::Inst* parent, const IR::Inst* item) {
-        for (IR::Inst* const input : pass_info.guards[read].inputs) {
-            IR::Inst* const sibling = pass_info.ChildOnPath(parent, input);
-            if (sibling == item || pass_info.ParentOf(sibling) != parent) {
-                continue;
-            }
-            if (sibling == input) {
-                PlaceRead(sibling);
-            } else {
-                PlaceSubtree(sibling);
-            }
-        }
-    }
-
-    PassInfo& pass_info;
-    std::unordered_set<const IR::Inst*> placed_reads;
-    std::unordered_set<const IR::Inst*> placed_subtrees;
-    boost::container::small_vector<IR::Inst*, 32> order;
-};
+    return order;
+}
 
 static void GenerateSrtProgram(Info& info, PassInfo& pass_info) {
     Xbyak::CodeGenerator& c = g_srt_codegen;
@@ -1096,8 +1079,8 @@ static void GenerateSrtProgram(Info& info, PassInfo& pass_info) {
     pass_info.dst_off_dw = NUM_USER_DATA_REGS;
     ASSERT(pass_info.dst_off_dw == info.srt_info.flattened_bufsize_dw);
 
-    ReadOrder order{pass_info};
-    EmitReads(order.Reads(), nullptr, pass_info, c);
+    const std::vector<IR::Inst*> order = SortReads(pass_info);
+    EmitReads(order, nullptr, pass_info, c);
 
     c.ret();
     c.ready();
