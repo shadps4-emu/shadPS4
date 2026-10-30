@@ -136,6 +136,7 @@ public:
     SsaState ssa_state;
     const Shader::Gcn::Block* cfg_block{};
     U1 branch_cond{};
+    std::vector<U1> jump_table_conds; ///< One ConditionRef per Gcn::JumpTable target.
 
     Common::ObjectPool<Inst>* inst_pool;
     InstructionList instructions;

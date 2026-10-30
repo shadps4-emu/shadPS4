@@ -56,6 +56,12 @@ void EmitControlFlowGraph(IR::Program& program, Pools& pools, Gcn::CFG& cfg,
             auto* false_block = block.branch_false->ir_block;
             ir_block->AddBranch(false_block);
         }
+        for (const auto& [_, target] : block.jump_table.targets) {
+            if (std::ranges::find(ir_block->imm_successors, target->ir_block) ==
+                ir_block->imm_successors.end()) {
+                ir_block->AddBranch(target->ir_block);
+            }
+        }
     }
     program.post_order_blocks = Shader::IR::PostOrder(program.blocks.front());
 }
@@ -83,7 +89,7 @@ IR::Program TranslateProgram(const std::span<const u32>& code, Pools& pools, Inf
 
     // Create control flow graph
     Common::ObjectPool<Gcn::Block> gcn_block_pool{64};
-    Gcn::CFG cfg{gcn_block_pool, program.ins_list};
+    Gcn::CFG cfg{gcn_block_pool, program.ins_list, code.data()};
     EmitControlFlowGraph(program, pools, cfg, runtime_info, profile);
 
     // On NVIDIA GPUs HW interpolation of clip distance values seems broken, and we need to emulate
