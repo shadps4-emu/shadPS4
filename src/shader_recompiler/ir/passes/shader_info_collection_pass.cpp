@@ -147,7 +147,6 @@ void Visit(Info& info, const IR::Inst& inst) {
         info.uses_group_ballot = true;
         break;
     case IR::Opcode::WriteLane:
-        // Emitted as a per-invocation select on SubgroupLocalInvocationId.
         info.uses_group_ballot = true;
         info.uses_lane_id = true;
         break;
