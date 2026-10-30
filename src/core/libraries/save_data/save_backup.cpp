@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <condition_variable>
 #include <deque>
 #include <mutex>
 #include <ranges>
@@ -9,8 +10,11 @@
 
 #include <magic_enum/magic_enum.hpp>
 
+#include "core/libraries/kernel/threads.h"
+#include "core/libraries/kernel/threads/pthread.h"
 #include "save_backup.h"
 #include "save_instance.h"
+#include "savedata_error.h"
 
 #include "common/io_file.h"
 #include "common/logging/formatter.h"
@@ -25,12 +29,16 @@ constexpr std::string_view backup_dir_old = "sce_backup_old"; // previous backup
 
 namespace fs = std::filesystem;
 
+namespace Libraries::SaveData {
+void DispatchBackupEvent(const Backup::BackupRequest& request);
+}
+
 namespace Libraries::SaveData::Backup {
 
 static void CopyShareReadWrite(const std::filesystem::path& from, const std::filesystem::path& to) {
     std::error_code ec;
     if (fs::is_directory(from, ec)) {
-        fs::create_directories(to, ec);
+        fs::create_directories(to);
         for (const auto& entry : fs::directory_iterator(from)) {
             CopyShareReadWrite(entry.path(), to / entry.path().filename());
         }
@@ -41,12 +49,16 @@ static void CopyShareReadWrite(const std::filesystem::path& from, const std::fil
                            Common::FS::FileShareFlag::ShareReadWrite};
     if (!src.IsOpen()) {
         LOG_ERROR(Lib_SaveData, "Backup: failed to open source {}", fmt::UTF(from.u8string()));
-        return;
+        throw fs::filesystem_error("backup source open failed", from,
+                                   std::make_error_code(std::errc::io_error));
     }
     const u64 size = src.GetSize();
     std::vector<u8> buf(size);
     if (size > 0) {
-        src.ReadRaw<u8>(buf.data(), size);
+        if (src.ReadRaw<u8>(buf.data(), size) != size) {
+            throw fs::filesystem_error("backup source read failed", from,
+                                       std::make_error_code(std::errc::io_error));
+        }
     }
     src.Close();
 
@@ -54,15 +66,20 @@ static void CopyShareReadWrite(const std::filesystem::path& from, const std::fil
                            Common::FS::FileShareFlag::ShareReadWrite};
     if (!dst.IsOpen()) {
         LOG_ERROR(Lib_SaveData, "Backup: failed to open destination {}", fmt::UTF(to.u8string()));
-        return;
+        throw fs::filesystem_error("backup destination open failed", to,
+                                   std::make_error_code(std::errc::io_error));
     }
     if (size > 0) {
-        dst.WriteRaw<u8>(buf.data(), size);
+        if (dst.WriteRaw<u8>(buf.data(), size) != size) {
+            throw fs::filesystem_error("backup destination write failed", to,
+                                       std::make_error_code(std::errc::io_error));
+        }
     }
     dst.Close();
 }
 
-static std::jthread g_backup_thread;
+// Use an emulated thread so guest callbacks have a valid guest TLS/stack context.
+static Kernel::Thread g_backup_thread;
 static std::counting_semaphore g_backup_thread_semaphore{0};
 
 static std::mutex g_backup_running_mutex;
@@ -73,11 +90,15 @@ static std::deque<BackupRequest> g_result_queue;
 
 static std::atomic_int g_backup_progress = 0;
 static std::atomic g_backup_status = WorkerStatus::NotStarted;
+static std::atomic_bool g_backup_stopping = false;
+static std::mutex g_backup_stop_mutex;
+static std::condition_variable g_backup_stop_cv;
 
 static void backup(const std::filesystem::path& dir_name) {
     std::unique_lock lk{g_backup_running_mutex};
     if (!fs::exists(dir_name)) {
-        return;
+        throw fs::filesystem_error("backup source directory missing", dir_name,
+                                   std::make_error_code(std::errc::no_such_file_or_directory));
     }
 
     const auto backup_dir = dir_name / ::backup_dir;
@@ -118,7 +139,7 @@ static void backup(const std::filesystem::path& dir_name) {
 
 static void BackupThreadBody() {
     Common::SetCurrentThreadName("shadPS4:SaveData:BackupThread");
-    while (g_backup_status != WorkerStatus::Stopping) {
+    while (!g_backup_stopping) {
         g_backup_status = WorkerStatus::Waiting;
 
         bool wait;
@@ -149,12 +170,13 @@ static void BackupThreadBody() {
                  fmt::UTF(req.save_path.u8string()));
         try {
             backup(req.save_path);
-        } catch (const std::filesystem::filesystem_error& err) {
+        } catch (const std::exception& err) {
+            req.error_code = static_cast<s32>(Error::INTERNAL);
             LOG_ERROR(Lib_SaveData, "Failed to backup {}: {}", fmt::UTF(req.save_path.u8string()),
                       err.what());
         }
-        LOG_DEBUG(Lib_SaveData, "Backing up the following directory: {} finished",
-                  fmt::UTF(req.save_path.u8string()));
+        LOG_INFO(Lib_SaveData, "Backup finished: {}, error={}", fmt::UTF(req.save_path.u8string()),
+                 req.error_code);
         {
             std::scoped_lock lk{g_backup_queue_mutex};
             g_backup_queue.front().done = true;
@@ -163,13 +185,21 @@ static void BackupThreadBody() {
             std::scoped_lock lk{g_backup_queue_mutex};
             g_backup_queue.pop_front();
             if (req.origin != OrbisSaveDataEventType::__DO_NOT_SAVE) {
-                g_result_queue.push_back(std::move(req));
+                g_result_queue.push_back(req);
                 if (g_result_queue.size() > 20) {
                     g_result_queue.pop_front();
                 }
             }
         }
-        std::this_thread::sleep_for(std::chrono::seconds(5)); // Don't backup too often
+        if (req.origin != OrbisSaveDataEventType::__DO_NOT_SAVE) {
+            DispatchBackupEvent(req);
+        }
+        {
+            // Don't backup too often, but wake immediately on StopThread().
+            std::unique_lock lk{g_backup_stop_mutex};
+            g_backup_stop_cv.wait_for(lk, std::chrono::seconds(5),
+                                      [] { return g_backup_stopping.load(); });
+        }
     }
     g_backup_status = WorkerStatus::NotStarted;
 }
@@ -178,9 +208,13 @@ void StartThread() {
     if (g_backup_status != WorkerStatus::NotStarted) {
         return;
     }
+    g_backup_thread.Join();
+    while (g_backup_thread_semaphore.try_acquire()) {
+    }
+    g_backup_stopping = false;
     LOG_DEBUG(Lib_SaveData, "Starting backup thread");
     g_backup_status = WorkerStatus::Waiting;
-    g_backup_thread = std::jthread{BackupThreadBody};
+    g_backup_thread.Run([](std::stop_token) { BackupThreadBody(); });
 }
 
 void StopThread() {
@@ -188,22 +222,36 @@ void StopThread() {
         return;
     }
     LOG_DEBUG(Lib_SaveData, "Stopping backup thread");
+    {
+        std::scoped_lock lk{g_backup_stop_mutex};
+        g_backup_stopping = true;
+    }
+    g_backup_stop_cv.notify_all();
     g_backup_status = WorkerStatus::Stopping;
     {
         std::scoped_lock lk{g_backup_queue_mutex};
         g_backup_queue.emplace_back(BackupRequest{});
     }
     g_backup_thread_semaphore.release();
-    while (GetWorkerStatus() != WorkerStatus::NotStarted) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    if (Kernel::g_curthread != nullptr) {
+        // Called from a guest thread (sceSaveDataTerminate): a guest join is valid here.
+        g_backup_thread.Join();
+    } else {
+        // Called from a host thread (Emulator::Shutdown via at_quick_exit).
+        for (int i = 0; i < 100 && g_backup_status != WorkerStatus::NotStarted; ++i) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        }
     }
+    std::scoped_lock lk{g_backup_queue_mutex};
+    g_backup_queue.clear();
 }
 
 bool NewRequest(Libraries::UserService::OrbisUserServiceUserId user_id, std::string_view title_id,
                 std::string_view dir_name, OrbisSaveDataEventType origin) {
     auto save_path = SaveInstance::MakeDirSavePath(user_id, title_id, dir_name);
 
-    if (g_backup_status != WorkerStatus::Waiting && g_backup_status != WorkerStatus::Running) {
+    if (g_backup_stopping ||
+        (g_backup_status != WorkerStatus::Waiting && g_backup_status != WorkerStatus::Running)) {
         LOG_ERROR(Lib_SaveData, "Called backup while status is {}. Backup request to {} ignored",
                   magic_enum::enum_name(g_backup_status.load()), fmt::UTF(save_path.u8string()));
         return false;
