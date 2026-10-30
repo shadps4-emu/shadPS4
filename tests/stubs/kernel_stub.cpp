@@ -49,4 +49,18 @@ s32 PS4_SYSV_ABI sceKernelGetSystemSwVersion(SwVersionStruct* ret) {
     return 0;
 }
 
+static s32 g_test_neo_mode = 0;
+
+void TestSetNeoMode(s32 neo) {
+    g_test_neo_mode = neo;
+}
+
+void TestResetNeoMode() {
+    g_test_neo_mode = 0;
+}
+
+s32 PS4_SYSV_ABI sceKernelIsNeoMode() {
+    return g_test_neo_mode;
+}
+
 } // namespace Libraries::Kernel
