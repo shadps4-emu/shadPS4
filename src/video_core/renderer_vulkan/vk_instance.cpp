@@ -220,7 +220,9 @@ bool Instance::CreateDevice() {
         vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT,
         vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT,
         vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR,
-        vk::PhysicalDeviceImage2DViewOf3DFeaturesEXT, vk::PhysicalDeviceShaderClockFeaturesKHR>();
+        vk::PhysicalDeviceImage2DViewOf3DFeaturesEXT, vk::PhysicalDeviceShaderClockFeaturesKHR,
+        vk::PhysicalDeviceConditionalRenderingFeaturesEXT,
+        vk::PhysicalDeviceTransformFeedbackFeaturesEXT>();
     features = feature_chain.get().features;
 
     const vk::StructureChain properties_chain = physical_device.getProperties2<
@@ -358,11 +360,29 @@ bool Instance::CreateDevice() {
     }
     image_view_min_lod = add_extension(VK_EXT_IMAGE_VIEW_MIN_LOD_EXTENSION_NAME);
     supports_memory_budget = add_extension(VK_EXT_MEMORY_BUDGET_EXTENSION_NAME);
+    conditional_rendering = add_extension(VK_EXT_CONDITIONAL_RENDERING_EXTENSION_NAME);
+    if (conditional_rendering) {
+        conditional_rendering_features =
+            feature_chain.get<vk::PhysicalDeviceConditionalRenderingFeaturesEXT>();
+        LOG_INFO(Render_Vulkan, "- conditionalRendering: {}",
+                 conditional_rendering_features.conditionalRendering);
+        LOG_INFO(Render_Vulkan, "- inheritedConditionalRendering: {}",
+                 conditional_rendering_features.inheritedConditionalRendering);
+    }
     shader_clock = add_extension(VK_KHR_SHADER_CLOCK_EXTENSION_NAME);
     if (shader_clock) {
         shader_clock_features = feature_chain.get<vk::PhysicalDeviceShaderClockFeaturesKHR>();
         LOG_INFO(Render_Vulkan, "- shaderSubgroupClock: {}",
                  shader_clock_features.shaderSubgroupClock);
+    }
+    transform_feedback = add_extension(VK_EXT_TRANSFORM_FEEDBACK_EXTENSION_NAME);
+    if (transform_feedback) {
+        transform_feedback_features =
+            feature_chain.get<vk::PhysicalDeviceTransformFeedbackFeaturesEXT>();
+        LOG_INFO(Render_Vulkan, "- transformFeedback: {}",
+                 transform_feedback_features.transformFeedback);
+        LOG_INFO(Render_Vulkan, "- geometryStreams: {}",
+                 transform_feedback_features.geometryStreams);
     }
     const bool calibrated_timestamps =
         TRACY_GPU_ENABLED ? add_extension(VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME) : false;
@@ -544,6 +564,15 @@ bool Instance::CreateDevice() {
         vk::PhysicalDeviceShaderClockFeaturesKHR{
             .shaderSubgroupClock = shader_clock_features.shaderSubgroupClock,
         },
+        vk::PhysicalDeviceConditionalRenderingFeaturesEXT{
+            .conditionalRendering = conditional_rendering_features.conditionalRendering,
+            .inheritedConditionalRendering =
+                conditional_rendering_features.inheritedConditionalRendering,
+        },
+        vk::PhysicalDeviceTransformFeedbackFeaturesEXT{
+            .transformFeedback = transform_feedback_features.transformFeedback,
+            .geometryStreams = transform_feedback_features.geometryStreams,
+        },
     };
 
     if (!custom_border_color) {
@@ -597,6 +626,12 @@ bool Instance::CreateDevice() {
     }
     if (!shader_clock) {
         device_chain.unlink<vk::PhysicalDeviceShaderClockFeaturesKHR>();
+    }
+    if (!conditional_rendering) {
+        device_chain.unlink<vk::PhysicalDeviceConditionalRenderingFeaturesEXT>();
+    }
+    if (!transform_feedback) {
+        device_chain.unlink<vk::PhysicalDeviceTransformFeedbackFeaturesEXT>();
     }
 
     auto [device_result, dev] = physical_device.createDeviceUnique(device_chain.get());
