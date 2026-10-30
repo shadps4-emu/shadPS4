@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <algorithm>
+
 #include "video_core/amdgpu/regs_color.h"
 #include "video_core/amdgpu/regs_depth.h"
 #include "video_core/amdgpu/regs_primitive.h"
@@ -180,6 +182,32 @@ union Regs {
             return &ls_program;
         }
         return nullptr;
+    }
+
+    /// Screen, window and generic scissors combined, with the window offset applied and
+    /// negative values clamped to 0.
+    Scissor GetCombinedScissor() const {
+        const bool enable_offset = !window_scissor.window_offset_disable;
+        const s16 x_offset = enable_offset ? window_offset.window_x_offset : 0;
+        const s16 y_offset = enable_offset ? window_offset.window_y_offset : 0;
+        const auto top_left = [](s16 scr, s16 win, s16 gen, s16 offset) {
+            return Scissor::Clamp(std::max({scr, s16(win + offset), s16(gen + offset)}));
+        };
+        const auto bottom_right = [](s16 scr, s16 win, s16 gen, s16 offset) {
+            return Scissor::Clamp(std::min({scr, s16(win + offset), s16(gen + offset)}));
+        };
+        Scissor scissor{};
+        scissor.top_left_x = top_left(screen_scissor.top_left_x, window_scissor.top_left_x,
+                                      generic_scissor.top_left_x, x_offset);
+        scissor.top_left_y = top_left(screen_scissor.top_left_y, window_scissor.top_left_y,
+                                      generic_scissor.top_left_y, y_offset);
+        scissor.bottom_right_x =
+            bottom_right(screen_scissor.bottom_right_x, window_scissor.bottom_right_x,
+                         generic_scissor.bottom_right_x, x_offset);
+        scissor.bottom_right_y =
+            bottom_right(screen_scissor.bottom_right_y, window_scissor.bottom_right_y,
+                         generic_scissor.bottom_right_y, y_offset);
+        return scissor;
     }
 
     bool IsClipDisabled() const {
