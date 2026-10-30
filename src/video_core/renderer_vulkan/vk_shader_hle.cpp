@@ -33,79 +33,40 @@ static bool ExecuteCopyShaderHLE(const Shader::Info& info, const AmdGpu::Compute
     ASSERT(ctl_buf_sharp.GetStride() == sizeof(CopyShaderControl));
     const auto ctl_buf = reinterpret_cast<const CopyShaderControl*>(ctl_buf_sharp.base_address);
 
+    const VideoCore::Buffer* last_src_buf{};
+    const VideoCore::Buffer* last_dst_buf{};
     static std::vector<vk::BufferCopy> copies;
     copies.clear();
     copies.reserve(cs_program.dim_x);
+
+    const auto do_copies = [&]() {
+        if (!copies.empty()) {
+            runtime.CopyBuffer(last_src_buf, last_dst_buf, copies);
+            copies.clear();
+        }
+    };
 
     for (u32 i = 0; i < cs_program.dim_x; i++) {
         const auto& [dst_idx, src_idx, end] = ctl_buf[i];
         const u32 local_dst_offset = dst_idx * buf_stride;
         const u32 local_src_offset = src_idx * buf_stride;
         const u32 local_size = (end + 1) * buf_stride;
-        copies.emplace_back(local_src_offset, local_dst_offset, local_size);
-    }
 
-    static constexpr vk::DeviceSize MaxDistanceForMerge = 64_MB;
-    u32 batch_start = 0;
-    u32 batch_end = 0;
+        const auto [src_buf, src_buf_offset] =
+            buffer_cache.ObtainBuffer(src_buf_sharp.base_address + local_src_offset, local_size);
+        const auto [dst_buf, dst_buf_offset] =
+            buffer_cache.ObtainBuffer(dst_buf_sharp.base_address + local_dst_offset, local_size,
+                                      VideoCore::ObtainBufferFlags::IsWritten);
 
-    while (batch_end < copies.size()) {
-        // Place first copy into the current batch
-        const auto& copy = copies[batch_start];
-        auto src_offset_min = copy.srcOffset;
-        auto src_offset_max = copy.srcOffset + copy.size;
-        auto dst_offset_min = copy.dstOffset;
-        auto dst_offset_max = copy.dstOffset + copy.size;
-
-        for (++batch_end; batch_end < copies.size(); batch_end++) {
-            // Compute new src and dst bounds if we were to batch this copy
-            const auto& [src_offset, dst_offset, size] = copies[batch_end];
-            auto new_src_offset_min = std::min(src_offset_min, src_offset);
-            auto new_src_offset_max = std::max(src_offset_max, src_offset + size);
-            if (new_src_offset_max - new_src_offset_min > MaxDistanceForMerge) {
-                break;
-            }
-
-            auto new_dst_offset_min = std::min(dst_offset_min, dst_offset);
-            auto new_dst_offset_max = std::max(dst_offset_max, dst_offset + size);
-            if (new_dst_offset_max - new_dst_offset_min > MaxDistanceForMerge) {
-                break;
-            }
-
-            // We can batch this copy
-            src_offset_min = new_src_offset_min;
-            src_offset_max = new_src_offset_max;
-            dst_offset_min = new_dst_offset_min;
-            dst_offset_max = new_dst_offset_max;
+        if (last_src_buf != src_buf || last_dst_buf != dst_buf) {
+            do_copies();
+            last_src_buf = src_buf;
+            last_dst_buf = dst_buf;
         }
 
-        // Obtain buffers for the total source and destination ranges.
-        const auto [src_buf, src_buf_offset] = buffer_cache.ObtainBuffer(
-            src_buf_sharp.base_address + src_offset_min, src_offset_max - src_offset_min);
-        const auto [dst_buf, dst_buf_offset] = buffer_cache.ObtainBuffer(
-            dst_buf_sharp.base_address + dst_offset_min, dst_offset_max - dst_offset_min,
-            VideoCore::ObtainBufferFlags::IgnoreStreamBuffer);
-
-        // Apply found buffer base.
-        const auto vk_copies = std::span{copies}.subspan(batch_start, batch_end - batch_start);
-        for (auto& copy : vk_copies) {
-            copy.srcOffset = copy.srcOffset - src_offset_min + src_buf_offset;
-            copy.dstOffset = copy.dstOffset - dst_offset_min + dst_buf_offset;
-        }
-
-        // Execute buffer copies.
-        LOG_TRACE(Render_Vulkan, "HLE buffer copy: src_size = {}, dst_size = {}",
-                  src_offset_max - src_offset_min, dst_offset_max - dst_offset_min);
-        runtime.CopyBuffer(src_buf, dst_buf, vk_copies);
-        batch_start = batch_end;
+        copies.emplace_back(src_buf_offset, dst_buf_offset, local_size);
     }
-
-    for (u32 i = 0; i < cs_program.dim_x; i++) {
-        const auto& [dst_idx, src_idx, end] = ctl_buf[i];
-        const VAddr dst_addr = dst_buf_sharp.base_address + (dst_idx * buf_stride);
-        const u32 size = (end + 1) * buf_stride;
-        buffer_cache.MarkRegionAsGpuModified(dst_addr, size);
-    }
+    do_copies();
 
     return true;
 }
