@@ -13,7 +13,7 @@
 namespace Serialization {
 /* You should increment versions below once corresponding serialization scheme is changed. */
 static constexpr u32 ShaderBinaryVersion = 11u;
-static constexpr u32 ShaderMetaVersion = 6u;
+static constexpr u32 ShaderMetaVersion = 7u;
 static constexpr u32 PipelineKeyVersion = 3u;
 } // namespace Serialization
 
@@ -251,6 +251,10 @@ bool PipelineCache::LoadPipelineStage(Serialization::Archive& ar, size_t stage) 
     spec.info = &program->info;
     size_t perm_idx{};
     if (!LoadShaderMeta(ar, program->info, spec, perm_idx)) {
+        return false;
+    }
+    if (program->info.skip_resource_guards !=
+        SkipResourceGuards(program->info.pgm_hash, program->info.hw_stage)) {
         return false;
     }
 

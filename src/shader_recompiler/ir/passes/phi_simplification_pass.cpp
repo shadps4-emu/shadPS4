@@ -405,6 +405,52 @@ static void DeduplicateSccs(std::vector<PhiScc>& sccs) {
     }
 }
 
+static void RemoveTrivialPhis(std::vector<IR::Inst*>& phis) {
+    auto worklist = phis;
+    while (!worklist.empty()) {
+        IR::Inst* phi = worklist.back();
+        worklist.pop_back();
+
+        if (phi->GetOpcode() == IR::Opcode::Void) {
+            continue;
+        }
+
+        IR::Value same;
+        bool non_trivial = false;
+        for (size_t i = 0; i < phi->NumArgs(); ++i) {
+            const IR::Value op{phi->Arg(i)};
+            if (op == same || op == IR::Value{phi}) {
+                // Unique value or self-reference
+                continue;
+            }
+            if (!same.IsEmpty()) {
+                // The phi merges at least two values: not trivial
+                non_trivial = true;
+                break;
+            }
+            same = op;
+        }
+        if (non_trivial) {
+            continue;
+        }
+
+        IR::Block* block = phi->GetParent();
+        ASSERT(!same.IsEmpty());
+
+        // Add phi users to worklist since they may have become trivial
+        for (const auto& [user, operand] : phi->Uses()) {
+            if (user->GetOpcode() == IR::Opcode::Phi && user != phi) {
+                worklist.push_back(user);
+            }
+        }
+        phi->ReplaceUsesWithAndRemove(same);
+        auto it = IR::Block::InstructionList::s_iterator_to(*phi);
+        block->Instructions().erase(it);
+    }
+
+    std::erase_if(phis, [](const IR::Inst* p) { return p->GetOpcode() == IR::Opcode::Void; });
+}
+
 void PhiSimplificationPass(IR::Program& program) {
     std::vector<IR::Inst*> all_phis;
     for (IR::Block* block : program.blocks) {
@@ -415,6 +461,7 @@ void PhiSimplificationPass(IR::Program& program) {
             all_phis.push_back(&inst);
         }
     }
+    RemoveTrivialPhis(all_phis);
 
     PhiSccFinder finder{all_phis};
     auto& sccs = finder.sccs;
