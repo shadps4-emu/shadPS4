@@ -93,14 +93,17 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::DepthBuffer& depth_buffer, AmdGpu::De
 ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info_,
                      const Image& image)
     : info{info_} {
+    // The image may have fewer levels than the guest view asks for, see ImageInfo.
+    const u32 image_levels = image.info.resources.levels;
+    const u32 base_level = std::min<u32>(info.range.base.level, image_levels - 1);
+    const u32 num_levels = std::min<u32>(info.range.extent.levels, image_levels - base_level);
     vk::ImageViewUsageCreateInfo usage_ci{.usage = image.usage_flags};
     if (!info.is_storage) {
         usage_ci.usage &= ~vk::ImageUsageFlagBits::eStorage;
     }
     vk::ImageViewMinLodCreateInfoEXT min_lod_ci{};
     if (info.min_lod != 0 && instance.IsImageViewMinLodSupported()) {
-        const float last_level =
-            static_cast<float>(info.range.base.level + info.range.extent.levels - 1);
+        const float last_level = static_cast<float>(base_level + num_levels - 1);
         min_lod_ci.minLod = std::min(static_cast<float>(info.min_lod) / 256.f, last_level);
         usage_ci.pNext = &min_lod_ci;
     }
@@ -130,8 +133,8 @@ ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info
         .components = components,
         .subresourceRange{
             .aspectMask = aspect,
-            .baseMipLevel = info.range.base.level,
-            .levelCount = info.range.extent.levels,
+            .baseMipLevel = base_level,
+            .levelCount = num_levels,
             .baseArrayLayer = info.range.base.layer,
             .layerCount = info.range.extent.layers,
         },
