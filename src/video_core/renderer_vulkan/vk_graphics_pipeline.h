@@ -47,6 +47,7 @@ struct GraphicsPipelineKey {
         AmdGpu::DepthBuffer::ZFormat z_format : 2;
         AmdGpu::DepthBuffer::StencilFormat stencil_format : 1;
         u32 depth_clamp_enable : 1;
+        u32 depth_clamp_user_defined_range : 1;
     };
     struct {
         AmdGpu::PrimitiveType prim_type : 5;
@@ -55,6 +56,8 @@ struct GraphicsPipelineKey {
         AmdGpu::ProvokingVtxLast provoking_vtx_last : 1;
         u32 depth_clip_enable : 1;
     };
+    float depth_clamp_min;
+    float depth_clamp_max;
 
     GraphicsPipelineKey() {
         std::memset(this, 0, sizeof(*this));
