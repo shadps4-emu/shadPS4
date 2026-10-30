@@ -147,7 +147,11 @@ vk::Pipeline TileManager::GetTilingPipeline(const ImageInfo& info, bool is_tiler
                         : std::span<const u32>{TILING_MICRO_128_COMP};
         break;
     default:
-        UNREACHABLE_MSG("Unsupported tiling pixel width {}", info.num_bits);
+        // A malformed descriptor (GT7 hands us a 4 Gbit pixel width while rebuilding render
+        // state) must not take the emulator down; fall back to leaving the image untiled.
+        LOG_ERROR(Render_Vulkan, "Unsupported tiling pixel width {}, leaving image untiled",
+                  info.num_bits);
+        return vk::Pipeline{};
     }
 
     const auto module = Vulkan::CompileSPV(code, device);
@@ -224,8 +228,12 @@ std::pair<const Buffer*, u64> TileManager::DetileImage(const VideoCore::Buffer* 
     scheduler.EndRendering();
     runtime.FlushBarriers();
 
+    const vk::Pipeline pipeline = GetTilingPipeline(info, false);
+    if (!pipeline) {
+        return {in_buffer, in_offset};
+    }
     const auto cmdbuf = scheduler.CommandBuffer();
-    cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, GetTilingPipeline(info, false));
+    cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline);
 
     const vk::DescriptorBufferInfo tiled_buffer_info{
         .buffer = in_buffer->Handle(),
