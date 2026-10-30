@@ -190,6 +190,9 @@ void Visit(Info& info, const IR::Inst& inst) {
     case IR::Opcode::Memtime:
         info.uses_shader_clock = true;
         break;
+    case IR::Opcode::ReadConstArray:
+        AddFlatbuf(info);
+        break;
     case IR::Opcode::ReadConst:
         AddFlatbuf(info);
         if (inst.Flags<u32>() == 0) {
