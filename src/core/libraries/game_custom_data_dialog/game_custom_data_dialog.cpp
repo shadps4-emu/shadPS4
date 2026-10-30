@@ -9,6 +9,7 @@
 #include <iterator>
 #include <string>
 #include <string_view>
+#include <fmt/format.h>
 #include <magic_enum/magic_enum.hpp>
 
 #include "common/logging/log.h"
