@@ -221,7 +221,8 @@ bool Instance::CreateDevice() {
         vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT,
         vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR,
         vk::PhysicalDeviceImage2DViewOf3DFeaturesEXT, vk::PhysicalDeviceShaderClockFeaturesKHR,
-        vk::PhysicalDeviceConditionalRenderingFeaturesEXT>();
+        vk::PhysicalDeviceConditionalRenderingFeaturesEXT,
+        vk::PhysicalDeviceTransformFeedbackFeaturesEXT>();
     features = feature_chain.get().features;
 
     const vk::StructureChain properties_chain = physical_device.getProperties2<
@@ -375,6 +376,15 @@ bool Instance::CreateDevice() {
         shader_clock_features = feature_chain.get<vk::PhysicalDeviceShaderClockFeaturesKHR>();
         LOG_INFO(Render_Vulkan, "- shaderSubgroupClock: {}",
                  shader_clock_features.shaderSubgroupClock);
+    }
+    transform_feedback = add_extension(VK_EXT_TRANSFORM_FEEDBACK_EXTENSION_NAME);
+    if (transform_feedback) {
+        transform_feedback_features =
+            feature_chain.get<vk::PhysicalDeviceTransformFeedbackFeaturesEXT>();
+        LOG_INFO(Render_Vulkan, "- transformFeedback: {}",
+                 transform_feedback_features.transformFeedback);
+        LOG_INFO(Render_Vulkan, "- geometryStreams: {}",
+                 transform_feedback_features.geometryStreams);
     }
     const bool calibrated_timestamps =
         TRACY_GPU_ENABLED ? add_extension(VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME) : false;
@@ -561,6 +571,10 @@ bool Instance::CreateDevice() {
             .inheritedConditionalRendering =
                 conditional_rendering_features.inheritedConditionalRendering,
         },
+        vk::PhysicalDeviceTransformFeedbackFeaturesEXT{
+            .transformFeedback = transform_feedback_features.transformFeedback,
+            .geometryStreams = transform_feedback_features.geometryStreams,
+        },
     };
 
     if (!custom_border_color) {
@@ -617,6 +631,9 @@ bool Instance::CreateDevice() {
     }
     if (!conditional_rendering) {
         device_chain.unlink<vk::PhysicalDeviceConditionalRenderingFeaturesEXT>();
+    }
+    if (!transform_feedback) {
+        device_chain.unlink<vk::PhysicalDeviceTransformFeedbackFeaturesEXT>();
     }
 
     auto [device_result, dev] = physical_device.createDeviceUnique(device_chain.get());

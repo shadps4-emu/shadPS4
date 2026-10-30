@@ -87,6 +87,9 @@ void Scheduler::EndRendering() {
     if (!is_rendering) {
         return;
     }
+    if (on_end_rendering) {
+        on_end_rendering();
+    }
     is_rendering = false;
     CommandBuffer().endRendering();
 }
