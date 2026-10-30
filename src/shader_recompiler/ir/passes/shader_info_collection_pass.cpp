@@ -3,6 +3,7 @@
 
 #include "core/emulator_settings.h"
 #include "shader_recompiler/ir/program.h"
+#include "shader_recompiler/ir/shared_memory.h"
 #include "shader_recompiler/profile.h"
 
 namespace Shader::Optimization {
@@ -15,6 +16,29 @@ static void AddFlatbuf(Info& info) {
         });
         info.has_flatbuf = true;
     }
+}
+
+static void RecordSharedMemInfo(Info& info, const IR::Inst& inst, IR::Type type) {
+    auto alignment = [&]() {
+        switch (type) {
+        case IR::Type::U16:
+            return 2;
+        case IR::Type::U32:
+        case IR::Type::F32:
+            return 4;
+        case IR::Type::U64:
+        case IR::Type::F64:
+            return 8;
+        default:
+            UNREACHABLE();
+        }
+    }();
+
+    auto flags = inst.Flags<SharedMemory::Flags>();
+    Info::SharedMemorySegment& segment_info =
+        flags.is_scratch ? info.shared_scratch_segment : info.shared_guest_segment;
+    segment_info.UseType(type);
+    segment_info.SetMinAlignment(alignment);
 }
 
 void Visit(Info& info, const IR::Inst& inst) {
@@ -48,7 +72,7 @@ void Visit(Info& info, const IR::Inst& inst) {
     }
     case IR::Opcode::LoadSharedU16:
     case IR::Opcode::WriteSharedU16:
-        info.shared_types |= IR::Type::U16;
+        RecordSharedMemInfo(info, inst, IR::Type::U16);
         break;
     case IR::Opcode::LoadSharedU32:
     case IR::Opcode::WriteSharedU32:
@@ -64,7 +88,7 @@ void Visit(Info& info, const IR::Inst& inst) {
     case IR::Opcode::SharedAtomicOr32:
     case IR::Opcode::SharedAtomicXor32:
     case IR::Opcode::SharedAtomicCmpSwap32:
-        info.shared_types |= IR::Type::U32;
+        RecordSharedMemInfo(info, inst, IR::Type::U32);
         break;
     case IR::Opcode::SharedAtomicIAdd64:
     case IR::Opcode::SharedAtomicISub64:
@@ -82,7 +106,7 @@ void Visit(Info& info, const IR::Inst& inst) {
         [[fallthrough]];
     case IR::Opcode::LoadSharedU64:
     case IR::Opcode::WriteSharedU64:
-        info.shared_types |= IR::Type::U64;
+        RecordSharedMemInfo(info, inst, IR::Type::U64);
         break;
     case IR::Opcode::ConvertF16F32:
     case IR::Opcode::ConvertF32F16:
@@ -187,6 +211,10 @@ void Visit(Info& info, const IR::Inst& inst) {
     case IR::Opcode::LaneId:
         info.uses_lane_id = true;
         break;
+    case IR::Opcode::WaveId:
+    case IR::Opcode::SubgroupId:
+        info.uses_subgroup_id = true;
+        break;
     case IR::Opcode::Memtime:
         info.uses_shader_clock = true;
         break;
@@ -234,6 +262,12 @@ void CollectShaderInfoPass(IR::Program& program, const Profile& profile) {
             .is_written = true,
         });
         LOG_ERROR(Render, "Enabling DMA for shader {:#x}", info.pgm_hash);
+    }
+
+    for (const auto& segment : {info.shared_guest_segment, info.shared_scratch_segment}) {
+        if (std::popcount(static_cast<u64>(segment.used_types)) > 1) {
+            info.uses_aliased_shared_memory = true;
+        }
     }
 }
 

@@ -457,7 +457,8 @@ OPCODE(CubeFaceMajorAxis,                                   F32,            F32,
 
 // Warp operations
 OPCODE(LaneId,                                              U32,                                                                                            )
-OPCODE(WarpId,                                              U32,                                                                                            )
+OPCODE(WaveId,                                              U32,                                                                                            )
+OPCODE(SubgroupId,                                          U32,                                                                                            )
 OPCODE(QuadBroadcast,                                       U32,            U32,            U32                                                             )
 OPCODE(Shuffle,                                             U32,            U32,            U32                                                             )
 OPCODE(ShuffleXor,                                          U32,            U32,            U32,                                                            )
