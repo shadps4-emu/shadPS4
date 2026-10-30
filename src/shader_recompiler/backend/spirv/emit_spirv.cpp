@@ -443,12 +443,7 @@ void DefineEntryPoint(const Info& info, const RuntimeInfo& runtime_info, EmitCon
         execution_model = spv::ExecutionModel::Geometry;
         ctx.AddExecutionMode(main, GetInputPrimitiveType(ctx.runtime_info.hw.gs.in_primitive));
         ctx.AddExecutionMode(main, GetOutputPrimitiveType(ctx.runtime_info.hw.gs.out_primitive[0]));
-        // The guest may program far more vertices than the copy shader reads, and declaring those
-        // can exceed maxGeometryTotalOutputComponents.
-        const u32 output_vertices = info.gs_output_vertices != 0
-                                        ? info.gs_output_vertices
-                                        : ctx.runtime_info.hw.gs.output_vertices;
-        ctx.AddExecutionMode(main, spv::ExecutionMode::OutputVertices, output_vertices);
+        ctx.AddExecutionMode(main, spv::ExecutionMode::OutputVertices, info.gs_output_vertices);
         ctx.AddExecutionMode(main, spv::ExecutionMode::Invocations,
                              ctx.runtime_info.hw.gs.num_invocations);
         break;
