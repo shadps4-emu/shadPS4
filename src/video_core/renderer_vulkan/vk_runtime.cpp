@@ -475,9 +475,10 @@ void Runtime::CopyColorAndDepth(VideoCore::Image* src, VideoCore::Image* dst) {
             FlushBarriers();
         }
 
+        const u32 actual_dst_samples = static_cast<u32>(dst->backing->image.image_ci.samples);
         blit_helper->ReinterpretColorAsMsDepth(
-            dst->info.size.width, dst->info.size.height, dst->info.num_samples,
-            src->info.pixel_format, dst->info.pixel_format, src->GetImage(), dst->GetImage());
+            dst->info.size.width, dst->info.size.height, actual_dst_samples, src->info.pixel_format,
+            dst->info.pixel_format, src->GetImage(), dst->GetImage());
     } else {
         LOG_WARNING(Render_Vulkan, "Unimplemented depth overlap copy");
     }
@@ -685,9 +686,11 @@ void Runtime::SetBackingSamples(VideoCore::Image* image, u32 num_samples, bool c
         FlushBarriers();
 
         // Copy between ms and non ms backing images
-        blit_helper->CopyBetweenMsImages(
-            info.size.width, info.size.height, new_backing->num_samples, info.pixel_format,
-            backing->num_samples > 1, backing->image, new_backing->image);
+        const u32 actual_dst_samples = static_cast<u32>(new_backing->image.image_ci.samples);
+        const bool actual_src_msaa = backing->image.image_ci.samples != vk::SampleCountFlagBits::e1;
+        blit_helper->CopyBetweenMsImages(info.size.width, info.size.height, actual_dst_samples,
+                                         info.pixel_format, actual_src_msaa, backing->image,
+                                         new_backing->image);
 
         // Update current layout in tracker to new backings layout
         new_backing->state.layout = dst_layout;
