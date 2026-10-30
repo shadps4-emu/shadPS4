@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -7,9 +7,11 @@
 #include <coroutine>
 #include <exception>
 #include <mutex>
+#include <optional>
 #include <semaphore>
 #include <span>
 #include <thread>
+#include <utility>
 #include <vector>
 #include <queue>
 
@@ -146,6 +148,45 @@ public:
         return gpu_id;
     }
 
+    [[nodiscard]] bool IsDrawPredicated() const noexcept {
+        return predication.enabled && predication.is_packet_predicated &&
+               (predication.address != 0);
+    }
+
+    [[nodiscard]] PM4CmdSetPredication::PredOp GetPredicationOp() const noexcept {
+        return predication.op;
+    }
+
+    [[nodiscard]] VAddr GetPredicationAddress() const noexcept {
+        return predication.address;
+    }
+
+    [[nodiscard]] bool IsPredicationInverted() const noexcept {
+        return predication.inverted;
+    }
+
+    bool IsPredicationHint() const noexcept {
+        return predication.hint;
+    }
+
+    bool IsPredicationContinue() const noexcept {
+        return predication.continue_bit;
+    }
+
+    bool GetPredicationAccumulatedResult() const noexcept {
+        return predication.accumulated_result;
+    }
+
+    void SetPredicationAccumulatedResult(bool result) noexcept {
+        if (predication.continue_bit) {
+            predication.accumulated_result = predication.accumulated_result && result;
+        } else {
+            predication.accumulated_result = result;
+        }
+    }
+
+    void RestorePredicatedIndexBase();
+
 #ifdef __linux__
     u32 GetGpuCommandProcessorThreadId() {
         return gpu_tid;
@@ -153,6 +194,7 @@ public:
 #endif
 
 private:
+    std::optional<std::pair<u32, u32>> saved_index_base;
     struct Task {
         struct promise_type {
             auto get_return_object() {
@@ -191,6 +233,7 @@ private:
     Task ProcessCeUpdate(std::span<const u32> ccb);
     template <bool is_indirect = false>
     Task ProcessCompute(std::span<const u32> acb, u32 vqid);
+    void ExecuteCopyData(const PM4CmdCopyData* copy_data);
 
     void ProcessCommands();
     void ProcessCeQueue();
@@ -210,9 +253,26 @@ private:
     std::queue<Task::Handle> ce_submits;
     u32 num_mapped_queues{1u}; // GFX is always available
 
+    struct PredicationState {
+        bool enabled{false};
+        PM4CmdSetPredication::PredOp op{PM4CmdSetPredication::PredOp::Disable};
+        VAddr address{0};
+        bool inverted{false};
+        bool hint{false};
+        bool continue_bit{false};
+        bool is_packet_predicated{false};
+        bool accumulated_result{true};
+    } predication{};
+
     VAddr indirect_args_addr{};
     u32 num_counter_pairs{};
     u64 pixel_counter{};
+    struct PipeStatControl {
+        u32 stride{16};
+        u32 num_dbs{8};
+        u32 instance_mask{0xff};
+    } pipe_stat_control{};
+    u64 streamout_counter{1000ULL};
     u32 vgt_strmout_buffer_filled_size[4]{};
 
     struct ConstantEngine {
