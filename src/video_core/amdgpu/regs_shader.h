@@ -3,8 +3,13 @@
 
 #pragma once
 
+#include <cstring>
+#include <utility>
+#include <vector>
+
 #include "common/assert.h"
 #include "common/types.h"
+#include "core/memory.h"
 #include "shader_recompiler/params.h"
 
 namespace AmdGpu {
@@ -228,33 +233,75 @@ struct ComputeProgram {
     }
 };
 
-static constexpr const BinaryInfo& SearchBinaryInfo(const u32* code) {
+static std::pair<BinaryInfo, VAddr> SearchBinaryInfo(VAddr address, auto&& read_memory) {
+    auto* memory = Core::Memory::Instance();
+    std::array<u32, 2> header;
+    read_memory(address, sizeof(header));
+    memory->CopySparseMemory(address, reinterpret_cast<u8*>(header.data()), sizeof(header));
     constexpr u32 token_mov_vcchi = 0xBEEB03FF;
-    if (code[0] == token_mov_vcchi) {
-        const auto* info = std::bit_cast<const BinaryInfo*>(code + (code[1] + 1) * 2);
-        if (info->Valid()) {
-            return *info;
+    BinaryInfo info;
+    if (header[0] == token_mov_vcchi) {
+        const auto info_address = address + (u64{header[1]} + 1) * 2 * sizeof(u32);
+        read_memory(info_address, sizeof(info));
+        memory->CopySparseMemory(info_address, reinterpret_cast<u8*>(&info), sizeof(info));
+        if (info.Valid()) {
+            return {info, info_address};
         }
     }
     constexpr u32 signature_size = sizeof(BinaryInfo::signature_ref) / sizeof(u8);
+    constexpr u32 signature_words = (signature_size + sizeof(u32) - 1) / sizeof(u32);
     constexpr u32 search_limit = 0x4000;
-    const u32* end = code + search_limit;
-    for (const u32* it = code; it < end; ++it) {
-        if (const BinaryInfo* info = std::bit_cast<const BinaryInfo*>(it); info->Valid()) {
-            return *info;
+    std::vector<u32> search(search_limit + signature_words - 1);
+    const auto search_size = search.size() * sizeof(u32);
+    read_memory(address, search_size);
+    memory->CopySparseMemory(address, reinterpret_cast<u8*>(search.data()), search_size);
+    for (u32 i = 0; i < search_limit; ++i) {
+        if (std::memcmp(search.data() + i, BinaryInfo::signature_ref.data(), signature_size) == 0) {
+            const auto info_address = address + i * sizeof(u32);
+            read_memory(info_address, sizeof(info));
+            memory->CopySparseMemory(info_address, reinterpret_cast<u8*>(&info), sizeof(info));
+            return {info, info_address};
         }
     }
     UNREACHABLE_MSG("Shader binary info not found.");
 }
 
-static constexpr Shader::ShaderParams GetParams(const auto& sh) {
+static Shader::ShaderParams GetParams(const auto& sh, auto&& read_memory) {
     const auto* code = sh.template Address<u32*>();
-    const auto& bininfo = SearchBinaryInfo(code);
-    return {
+    const auto [bininfo, info_address] = SearchBinaryInfo(std::bit_cast<VAddr>(code), read_memory);
+    read_memory(std::bit_cast<VAddr>(code), bininfo.length);
+    Shader::ShaderParams params = {
         .user_data = sh.user_data,
         .code = std::span{code, bininfo.length / sizeof(u32)},
         .hash = bininfo.shader_hash,
     };
+    if (bininfo.is_srt) {
+        const VAddr slots_address = info_address -
+                                    bininfo.chunk_usage_base_offset_in_dw * sizeof(u32) -
+                                    bininfo.num_input_usage_slots * sizeof(u32);
+        const VAddr start = std::bit_cast<VAddr>(code) + bininfo.length;
+        if (start < slots_address && slots_address < info_address) {
+            read_memory(start, info_address - start);
+            auto* memory = Core::Memory::Instance();
+            std::array<u8, 256 * sizeof(u32)> slots;
+            memory->CopySparseMemory(slots_address, slots.data(),
+                                     bininfo.num_input_usage_slots * sizeof(u32));
+            for (u32 i = 0; i < bininfo.num_input_usage_slots; ++i) {
+                if (slots[i * 4] == 0x0a) {
+                    params.srt_metadata.resize(slots_address - start);
+                    memory->CopySparseMemory(start, params.srt_metadata.data(),
+                                             params.srt_metadata.size());
+                    params.srt_user_data_base = slots[i * 4 + 2];
+                    break;
+                }
+            }
+        }
+    }
+    return params;
+}
+
+static Shader::ShaderParams GetParams(const auto& sh) {
+    return GetParams(sh, [](VAddr, u64) {});
 }
 
 } // namespace AmdGpu

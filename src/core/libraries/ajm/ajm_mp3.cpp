@@ -125,6 +125,8 @@ AjmMp3Decoder::~AjmMp3Decoder() {
 
 void AjmMp3Decoder::Reset() {
     avcodec_flush_buffers(m_codec_context);
+    av_parser_close(m_parser);
+    m_parser = av_parser_init(m_codec->id);
     m_header.reset();
     m_frame_samples = 0;
 }

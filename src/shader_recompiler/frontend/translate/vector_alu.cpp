@@ -852,7 +852,7 @@ void Translator::V_CVT_PKNORM_I16_F32(const GcnInst& inst) {
 void Translator::V_CVT_PKRTZ_F16_F32(const GcnInst& inst) {
     const IR::Value vec_f32 =
         ir.CompositeConstruct(GetSrc<IR::F32>(inst.src[0]), GetSrc<IR::F32>(inst.src[1]));
-    SetDst(inst.dst[0], ir.Pack2x16(AmdGpu::NumberFormat::Float, vec_f32));
+    SetDst(inst.dst[0], ir.Pack2x16(AmdGpu::NumberFormat::Float, vec_f32, true));
 }
 
 void Translator::V_ADD_F16(const GcnInst& inst) {

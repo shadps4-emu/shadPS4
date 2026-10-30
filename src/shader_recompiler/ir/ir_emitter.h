@@ -114,6 +114,7 @@ public:
     [[nodiscard]] T SharedAtomicDec(const U32& address, bool is_gds);
 
     [[nodiscard]] U32 ReadConst(const Value& base, const U32& offset);
+    [[nodiscard]] U32 ReadConstArray(const U32& base, const U32& offset);
     [[nodiscard]] U32 ReadConstBuffer(const Value& handle, const U32& index, BufferInstInfo info);
 
     [[nodiscard]] U8 LoadBufferU8(const Value& handle, const Value& address, BufferInstInfo info);
@@ -208,7 +209,8 @@ public:
     [[nodiscard]] F64 PackDouble2x32(const Value& vector);
     [[nodiscard]] Value UnpackDouble2x32(const F64& value);
 
-    [[nodiscard]] U32 Pack2x16(AmdGpu::NumberFormat number_format, const Value& vector);
+    [[nodiscard]] U32 Pack2x16(AmdGpu::NumberFormat number_format, const Value& vector,
+                               bool round_to_zero = false);
     [[nodiscard]] Value Unpack2x16(AmdGpu::NumberFormat number_format, const U32& value);
 
     [[nodiscard]] U32 Pack4x8(AmdGpu::NumberFormat number_format, const Value& vector);
@@ -370,6 +372,7 @@ public:
                                            TextureInstInfo info);
 
     [[nodiscard]] Value ImageHandle(const Value& tsharp_low, const Value& tsharp_high);
+    [[nodiscard]] Value ImageDescriptorHandle(const U32& binding, const U32& index);
 
     [[nodiscard]] Value ImageSampleRaw(const Value& handle, const Value& sampler_handle,
                                        const Value& address1, const Value& address2,
