@@ -24,6 +24,7 @@
 #include "core/libraries/ime/error_dialog.h"
 #include "core/libraries/ime/ime.h"
 #include "core/libraries/ime/ime_dialog.h"
+#include "core/libraries/game_custom_data_dialog/game_custom_data_dialog.h"
 #include "core/libraries/invitation_dialog/invitation_dialog.h"
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/keyboard/keyboard.h"
@@ -194,6 +195,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
             {"libSceContentExport.sprx", Libraries::ContentExport::RegisterLib},
             {"libSceVideoRecording.sprx", Libraries::VideoRecording::RegisterLib},
             {"libSceInvitationDialog.sprx", Libraries::InvitationDialog::RegisterLib},
+            {"libSceGameCustomDataDialog.sprx", Libraries::GameCustomDataDialog::RegisterLib},
             {"libSceNpUtility.sprx", Libraries::Np::NpUtility::RegisterLib},
 #ifdef ARCH_X86_64
             {"libSceFiber.sprx", Libraries::Fiber::RegisterLib},
