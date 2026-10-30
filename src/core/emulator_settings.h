@@ -707,7 +707,18 @@ public:
     // Network settings
     SETTING_FORWARD_BOOL(m_network, ConnectedToNetwork, connected_to_network)
     SETTING_FORWARD(m_network, ShadNetServer, shadnet_server)
-    SETTING_FORWARD(m_network, ShadNetWebApiServer, shadnet_webapi_server)
+    std::string GetShadNetWebApiServer() const {
+        // Strip trailing slashes if exists
+        std::string url = m_network.shadnet_webapi_server.get(m_configMode);
+        while (!url.empty() && url.back() == '/') {
+            url.pop_back();
+        }
+        return url;
+    }
+    void SetShadNetWebApiServer(const std::string& v, bool is_specific = false) {
+        m_network.shadnet_webapi_server.set(v, is_specific);
+    }
+
     SETTING_FORWARD_BOOL(m_network, UPnPEnabled, enable_upnp)
     SETTING_FORWARD(m_network, P2PPort, p2p_port)
     SETTING_FORWARD_BOOL(m_network, ForcedHttpsDisabled, disable_https)
