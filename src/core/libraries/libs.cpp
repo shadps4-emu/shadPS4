@@ -35,6 +35,7 @@
 #include "core/libraries/net/net.h"
 #include "core/libraries/network/http.h"
 #include "core/libraries/network/http2.h"
+#include "core/libraries/network/net_ctl_ap_dialog.h"
 #include "core/libraries/network/netctl.h"
 #include "core/libraries/network/ssl.h"
 #include "core/libraries/network/ssl2.h"
@@ -136,6 +137,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
             {"libSceHttp2.sprx", Libraries::Http2::RegisterLib},
             {"libSceNet.sprx", Libraries::Net::RegisterLib},
             {"libSceNetCtl.sprx", Libraries::NetCtl::RegisterLib},
+            {"libSceNetCtlApDialog.sprx", Libraries::NetCtlApDialog::RegisterLib},
             {"libSceSaveData.sprx", Libraries::SaveData::RegisterLib},
             {"libSceSaveDataDialog.sprx", Libraries::SaveData::Dialog::RegisterLib},
             {"libSceSsl2.sprx", Libraries::Ssl2::RegisterLib},
