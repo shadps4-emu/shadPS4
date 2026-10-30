@@ -1105,6 +1105,11 @@ RenderState Rasterizer::BeginRendering(const GraphicsPipeline* pipeline) {
              regs.depth_control.depth_write_enable) ||
             texture_cache.IsMetaCleared(htile_address, slice);
         const bool is_stencil_clear = regs.depth_render_control.stencil_clear_enable;
+        // A new host image is undefined, but guest memory starts as zero. Clear stencil that
+        // was never written to match.
+        const bool uses_stencil = image.info.props.has_stencil && regs.depth_buffer.StencilValid();
+        const bool stencil_init = uses_stencil && !image.stencil_defined;
+        image.stencil_defined |= uses_stencil;
         texture_cache.TouchMeta(htile_address, slice, false);
         ASSERT(desc.view_info.range.extent.levels == 1 && !image.binding.needs_rebind);
 
@@ -1144,7 +1149,7 @@ RenderState Rasterizer::BeginRendering(const GraphicsPipeline* pipeline) {
         if (regs.depth_buffer.StencilValid()) {
             attachment.clear_value[1] = is_stencil_clear ? regs.stencil_clear : 0u;
             attachment.has_stencil = true;
-            attachment.stencil_clear = is_stencil_clear;
+            attachment.stencil_clear = is_stencil_clear || stencil_init;
         }
 
         image.usage.depth_target = true;
@@ -1207,6 +1212,9 @@ void Rasterizer::DepthStencilCopy(bool is_depth, bool is_stencil) {
         regs.depth_buffer.StencilAddress(), regs.depth_buffer.DepthWriteAddress(),
         regs.depth_buffer.StencilWriteAddress()));
 
+    if (is_stencil) {
+        write_image.stencil_defined = true;
+    }
     runtime.CopyDepthStencil(&read_image, &write_image, sub_range);
 
     ScopeMarkerEnd();
