@@ -196,17 +196,17 @@ public:
 
     int CreateHandle();
     void DeleteHandle(int d);
-    File* GetFile(int d);
-    File* GetSocket(int d);
+    std::shared_ptr<File> GetFile(int d);
+    std::shared_ptr<File> GetSocket(int d);
     std::vector<int> GetSocketHandles();
-    File* GetFile(const std::filesystem::path& host_name);
-    int GetFileDescriptor(File* file);
+    std::shared_ptr<File> GetFile(const std::filesystem::path& host_name);
+    int GetFileDescriptor(const std::shared_ptr<File>& file);
 
     void CreateStdHandles();
     void FlushAll();
 
 private:
-    std::vector<File*> m_files;
+    std::vector<std::shared_ptr<File>> m_files;
     std::mutex m_mutex;
 };
 
