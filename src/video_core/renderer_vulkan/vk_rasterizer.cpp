@@ -639,54 +639,98 @@ bool Rasterizer::IsComputeImageCopy(const Pipeline* pipeline) {
         return false;
     }
 
-    // Ensure shader only has 2 bound buffers
     const auto& cs_pgm = liverpool->GetCsRegs();
     const auto& info = pipeline->GetStage(Shader::SwStage::Compute);
+    // A whole-image copy has one source and one destination. Some variants also use a small
+    // read-only buffer for the source and destination bounds.
     if (cs_pgm.num_thread_x.full != 64 || info.buffers.size() < 2 || info.buffers.size() > 3 ||
         !info.images.empty()) {
         return false;
     }
-
-    // Those 2 buffers must both be formatted. One must be source and another destination.
-    const auto& desc0 = info.buffers[0];
-    const auto& desc1 = info.buffers[1];
-    if (!desc0.is_formatted || !desc1.is_formatted || desc0.is_written == desc1.is_written) {
-        return false;
-    }
-    if (info.buffers.size() == 3 && info.buffers[2].buffer_type != Shader::BufferType::Flatbuf) {
-        return false;
-    }
-
-    // Buffers must have the same size and each thread of the dispatch must copy 1 dword of data
-    const AmdGpu::Buffer buf0 = desc0.GetSharp(info);
-    const AmdGpu::Buffer buf1 = desc1.GetSharp(info);
-    if (buf0.GetSize() != buf1.GetSize() || cs_pgm.dim_x != (buf0.GetSize() / 256)) {
+    const bool has_flatbuf =
+        info.buffers.size() == 3 && info.buffers[2].buffer_type == Shader::BufferType::Flatbuf;
+    const bool is_formatted_copy = info.buffers[0].is_formatted && info.buffers[1].is_formatted;
+    const bool is_bounded_raw_copy =
+        has_flatbuf && !info.buffers[0].is_formatted && !info.buffers[1].is_formatted;
+    if (!is_formatted_copy && !is_bounded_raw_copy) {
         return false;
     }
 
-    // Find images the buffer alias
-    const auto image0_id = texture_cache.FindImageFromRange(buf0.base_address, buf0.GetSize());
-    if (!image0_id) {
+    const Shader::BufferResource* dst_desc{};
+    for (const auto& desc : info.buffers) {
+        if (!desc.is_written) {
+            continue;
+        }
+        if (desc.IsSpecial() || dst_desc) {
+            return false;
+        }
+        dst_desc = &desc;
+    }
+    if (!dst_desc) {
         return false;
     }
-    const auto image1_id =
-        texture_cache.FindImageFromRange(buf1.base_address, buf1.GetSize(), false);
-    if (!image1_id) {
+    if (info.buffers.size() == 3 && !has_flatbuf) {
+        return false;
+    }
+
+    // Each invocation copies one dword and each workgroup contains 64 invocations.
+    const AmdGpu::Buffer dst_buffer = dst_desc->GetSharp(info);
+    if (static_cast<u64>(cs_pgm.dim_x) * 256 != dst_buffer.GetSize()) {
+        return false;
+    }
+
+    const Shader::BufferResource* src_desc{};
+    AmdGpu::Buffer src_buffer{};
+    for (const auto& desc : info.buffers) {
+        if (&desc == dst_desc) {
+            continue;
+        }
+        if (desc.buffer_type == Shader::BufferType::Flatbuf) {
+            continue;
+        }
+        if (desc.IsSpecial() || desc.is_written) {
+            return false;
+        }
+
+        const AmdGpu::Buffer buffer = desc.GetSharp(info);
+        const bool matches_copy =
+            desc.is_formatted == dst_desc->is_formatted && buffer.GetSize() == dst_buffer.GetSize();
+        if (matches_copy) {
+            if (src_desc) {
+                return false;
+            }
+            src_desc = &desc;
+            src_buffer = buffer;
+        } else {
+            return false;
+        }
+    }
+    if (!src_desc || src_buffer.base_address == dst_buffer.base_address) {
+        return false;
+    }
+
+    // Find the images aliased by the source and destination buffers.
+    const auto src_image_id =
+        texture_cache.FindImageFromRange(src_buffer.base_address, src_buffer.GetSize());
+    if (!src_image_id) {
+        return false;
+    }
+    const auto dst_image_id =
+        texture_cache.FindImageFromRange(dst_buffer.base_address, dst_buffer.GetSize(), false);
+    if (!dst_image_id) {
         return false;
     }
 
     // Image copy must be valid
-    VideoCore::Image& image0 = texture_cache.GetImage(image0_id);
-    VideoCore::Image& image1 = texture_cache.GetImage(image1_id);
-    if (image0.info.guest_size != image1.info.guest_size ||
-        image0.info.pitch != image1.info.pitch || image0.info.guest_size != buf0.GetSize() ||
-        image0.info.num_bits != image1.info.num_bits) {
+    VideoCore::Image& src_image = texture_cache.GetImage(src_image_id);
+    VideoCore::Image& dst_image = texture_cache.GetImage(dst_image_id);
+    if (src_image.info.guest_size != dst_image.info.guest_size ||
+        src_image.info.pitch != dst_image.info.pitch ||
+        src_image.info.guest_size != src_buffer.GetSize() ||
+        src_image.info.num_bits != dst_image.info.num_bits) {
         return false;
     }
 
-    // Perform image copy
-    VideoCore::Image& src_image = desc0.is_written ? image1 : image0;
-    VideoCore::Image& dst_image = desc0.is_written ? image0 : image1;
     runtime.CopyColorAndDepth(&src_image, &dst_image);
     return true;
 }
@@ -823,9 +867,7 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
                 if (desc.is_written) {
                     flags |= VideoCore::ObtainBufferFlags::IsWritten;
                 }
-                if (desc.is_formatted) {
-                    flags |= VideoCore::ObtainBufferFlags::IsTexelBuffer;
-                }
+                flags |= VideoCore::ObtainBufferFlags::SynchronizeImage;
                 const auto [buffer, offset] =
                     buffer_cache.ObtainBuffer(vsharp.base_address, size, flags);
                 const u64 offset_aligned = Common::AlignDown(offset, alignment);
@@ -1249,7 +1291,7 @@ void Rasterizer::CopyBuffer(VAddr dst, VAddr src, u32 num_bytes, bool dst_gds, b
             return {gds_buffer, src};
         }
         return buffer_cache.ObtainBuffer(src, num_bytes,
-                                         VideoCore::ObtainBufferFlags::IsTexelBuffer);
+                                         VideoCore::ObtainBufferFlags::SynchronizeImage);
     }();
     const auto [dst_buffer, dst_offset] = [&] -> std::pair<const VideoCore::Buffer*, u64> {
         if (dst_gds) {
@@ -1257,7 +1299,7 @@ void Rasterizer::CopyBuffer(VAddr dst, VAddr src, u32 num_bytes, bool dst_gds, b
         }
         return buffer_cache.ObtainBuffer(dst, num_bytes,
                                          VideoCore::ObtainBufferFlags::IsWritten |
-                                             VideoCore::ObtainBufferFlags::IsTexelBuffer);
+                                             VideoCore::ObtainBufferFlags::SynchronizeImage);
     }();
     const vk::BufferCopy copy = {
         .srcOffset = src_offset,
