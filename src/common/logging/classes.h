@@ -29,99 +29,99 @@ enum class Class {
     Kernel_Event,      ///< The event management implementation of the kernel.
     Kernel_Sce,        ///< The Sony-specific interfaces provided by the kernel.
     Lib, ///< HLE implementation of system library. Each major library should have its own subclass.
-    Lib_LibcInternal,        ///< The LibcInternal implementation.
-    Lib_Kernel,              ///< The LibKernel implementation.
-    Lib_Pad,                 ///< The LibScePad implementation.
-    Lib_SystemGesture,       ///< The LibSceSystemGesture implementation.
-    Lib_GnmDriver,           ///< The LibSceGnmDriver implementation.
-    Lib_SystemService,       ///< The LibSceSystemService implementation.
-    Lib_UserService,         ///< The LibSceUserService implementation.
-    Lib_VideoOut,            ///< The LibSceVideoOut implementation.
-    Lib_CommonDlg,           ///< The LibSceCommonDialog implementation.
-    Lib_MsgDlg,              ///< The LibSceMsgDialog implementation.
-    Lib_AudioOut,            ///< The LibSceAudioOut implementation.
-    Lib_AudioIn,             ///< The LibSceAudioIn implementation.
-    Lib_Move,                ///< The LibSceMove implementation.
-    Lib_Net,                 ///< The LibSceNet implementation.
-    Lib_NetCtl,              ///< The LibSceNetCtl implementation.
-    Lib_SaveData,            ///< The LibSceSaveData implementation.
-    Lib_SaveDataDialog,      ///< The LibSceSaveDataDialog implementation.
-    Lib_Ssl,                 ///< The LibSceSsl implementation.
-    Lib_Ssl2,                ///< The LibSceSsl2 implementation.
-    Lib_Http,                ///< The LibSceHttp implementation.
-    Lib_Http2,               ///< The LibSceHttp2 implementation.
-    Lib_SysModule,           ///< The LibSceSysModule implementation
-    Lib_NpCommon,            ///< The LibSceNpCommon implementation
-    Lib_NpCommerce,          ///< The LibSceNpCommerce implementation
-    Lib_NpAuth,              ///< The LibSceNpAuth implementation
-    Lib_NpManager,           ///< The LibSceNpManager implementation
-    Lib_NpMatching2,         ///< The LibSceNpMatching2 implementation
-    Lib_NpSignaling,         ///< The LibSceNpSignaling implementation
-    Lib_NpScore,             ///< The LibSceNpScore implementation
-    Lib_NpTrophy,            ///< The LibSceNpTrophy implementation
-    Lib_NpTus,               ///< The LibSceNpTus implementation
-    Lib_NpUtility,           ///< The LibSceNpUtility implementation
-    Lib_NpWebApi,            ///< The LibSceWebApi implementation
-    Lib_NpWebApi2,           ///< The LibSceWebApi2 implementation
-    Lib_NpProfileDialog,     ///< The LibSceNpProfileDialog implementation
-    Lib_NpSnsFacebookDialog, ///< The LibSceNpSnsFacebookDialog implementation
-    Lib_Screenshot,          ///< The LibSceScreenshot implementation
-    Lib_AppContent,          ///< The LibSceAppContent implementation.
-    Lib_Rtc,                 ///< The LibSceRtc implementation.
-    Lib_Rudp,                ///< The LibSceRudp implementation.
-    Lib_DiscMap,             ///< The LibSceDiscMap implementation.
-    Lib_Png,                 ///< The LibScePng implementation.
-    Lib_Jpeg,                ///< The LibSceJpeg implementation.
-    Lib_PlayGo,              ///< The LibScePlayGo implementation.
-    Lib_PlayGoDialog,        ///< The LibScePlayGoDialog implementation.
-    Lib_Random,              ///< The LibSceRandom implementation.
-    Lib_Usbd,                ///< The LibSceUsbd implementation.
-    Lib_Ajm,                 ///< The LibSceAjm implementation.
-    Lib_ErrorDialog,         ///< The LibSceErrorDialog implementation.
-    Lib_ImeDialog,           ///< The LibSceImeDialog implementation.
-    Lib_InvitationDialog,    ///< The LibSceInvitationDialog implementation.
+    Lib_LibcInternal,         ///< The LibcInternal implementation.
+    Lib_Kernel,               ///< The LibKernel implementation.
+    Lib_Pad,                  ///< The LibScePad implementation.
+    Lib_SystemGesture,        ///< The LibSceSystemGesture implementation.
+    Lib_GnmDriver,            ///< The LibSceGnmDriver implementation.
+    Lib_SystemService,        ///< The LibSceSystemService implementation.
+    Lib_UserService,          ///< The LibSceUserService implementation.
+    Lib_VideoOut,             ///< The LibSceVideoOut implementation.
+    Lib_CommonDlg,            ///< The LibSceCommonDialog implementation.
+    Lib_MsgDlg,               ///< The LibSceMsgDialog implementation.
+    Lib_AudioOut,             ///< The LibSceAudioOut implementation.
+    Lib_AudioIn,              ///< The LibSceAudioIn implementation.
+    Lib_Move,                 ///< The LibSceMove implementation.
+    Lib_Net,                  ///< The LibSceNet implementation.
+    Lib_NetCtl,               ///< The LibSceNetCtl implementation.
+    Lib_SaveData,             ///< The LibSceSaveData implementation.
+    Lib_SaveDataDialog,       ///< The LibSceSaveDataDialog implementation.
+    Lib_Ssl,                  ///< The LibSceSsl implementation.
+    Lib_Ssl2,                 ///< The LibSceSsl2 implementation.
+    Lib_Http,                 ///< The LibSceHttp implementation.
+    Lib_Http2,                ///< The LibSceHttp2 implementation.
+    Lib_SysModule,            ///< The LibSceSysModule implementation
+    Lib_NpCommon,             ///< The LibSceNpCommon implementation
+    Lib_NpCommerce,           ///< The LibSceNpCommerce implementation
+    Lib_NpAuth,               ///< The LibSceNpAuth implementation
+    Lib_NpManager,            ///< The LibSceNpManager implementation
+    Lib_NpMatching2,          ///< The LibSceNpMatching2 implementation
+    Lib_NpSignaling,          ///< The LibSceNpSignaling implementation
+    Lib_NpScore,              ///< The LibSceNpScore implementation
+    Lib_NpTrophy,             ///< The LibSceNpTrophy implementation
+    Lib_NpTus,                ///< The LibSceNpTus implementation
+    Lib_NpUtility,            ///< The LibSceNpUtility implementation
+    Lib_NpWebApi,             ///< The LibSceWebApi implementation
+    Lib_NpWebApi2,            ///< The LibSceWebApi2 implementation
+    Lib_NpProfileDialog,      ///< The LibSceNpProfileDialog implementation
+    Lib_NpSnsFacebookDialog,  ///< The LibSceNpSnsFacebookDialog implementation
+    Lib_Screenshot,           ///< The LibSceScreenshot implementation
+    Lib_AppContent,           ///< The LibSceAppContent implementation.
+    Lib_Rtc,                  ///< The LibSceRtc implementation.
+    Lib_Rudp,                 ///< The LibSceRudp implementation.
+    Lib_DiscMap,              ///< The LibSceDiscMap implementation.
+    Lib_Png,                  ///< The LibScePng implementation.
+    Lib_Jpeg,                 ///< The LibSceJpeg implementation.
+    Lib_PlayGo,               ///< The LibScePlayGo implementation.
+    Lib_PlayGoDialog,         ///< The LibScePlayGoDialog implementation.
+    Lib_Random,               ///< The LibSceRandom implementation.
+    Lib_Usbd,                 ///< The LibSceUsbd implementation.
+    Lib_Ajm,                  ///< The LibSceAjm implementation.
+    Lib_ErrorDialog,          ///< The LibSceErrorDialog implementation.
+    Lib_ImeDialog,            ///< The LibSceImeDialog implementation.
+    Lib_InvitationDialog,     ///< The LibSceInvitationDialog implementation.
     Lib_GameCustomDataDialog, ///< The LibSceGameCustomDataDialog implementation.
-    Lib_AvPlayer,            ///< The LibSceAvPlayer implementation.
-    Lib_Ngs2,                ///< The LibSceNgs2 implementation.
-    Lib_Audio3d,             ///< The LibSceAudio3d implementation.
-    Lib_Ime,                 ///< The LibSceIme implementation
-    Lib_GameLiveStreaming,   ///< The LibSceGameLiveStreaming implementation
-    Lib_Remoteplay,          ///< The LibSceRemotePlay implementation
-    Lib_SharePlay,           ///< The LibSceSharePlay implemenation
-    Lib_Fiber,               ///< The LibSceFiber implementation.
-    Lib_Vdec2,               ///< The LibSceVideodec2 implementation.
-    Lib_Vdecsw,              ///< The LibSceVdecsw implementation.
-    Lib_Videodec,            ///< The LibSceVideodec implementation.
-    Lib_VideoRecording,      ///< The LibSceVideoRecording implementation.
-    Lib_Voice,               ///< The LibSceVoice implementation.
-    Lib_RazorCpu,            ///< The LibRazorCpu implementation.
-    Lib_Mouse,               ///< The LibSceMouse implementation
-    Lib_Keyboard,            ///< The LibSceKeyboard implementation
-    Lib_WebBrowserDialog,    ///< The LibSceWebBrowserDialog implementation
-    Lib_NpParty,             ///< The LibSceNpParty implementation
-    Lib_NpPartner,           ///< The LibSceNpPartner implementation
-    Lib_Zlib,                ///< The LibSceZlib implementation.
-    Lib_Hmd,                 ///< The LibSceHmd implementation.
-    Lib_HmdSetupDialog,      ///< The LibSceHmdSetupDialog implementation.
-    Lib_SigninDialog,        ///< The LibSigninDialog implementation.
-    Lib_Camera,              ///< The LibCamera implementation.
-    Lib_CompanionHttpd,      ///< The LibCompanionHttpd implementation.
-    Lib_CompanionUtil,       ///< The LibCompanionUtil implementation.
-    Lib_ContentExport,       ///< The LibSceContentExport implementation.
-    Lib_VrTracker,           ///< The LibSceVrTracker implementation.
-    Lib_Font,                ///< The libSceFont implementation.
-    Lib_FontFt,              ///< The libSceFontFt implementation.
-    Frontend,                ///< Emulator UI
-    NpHandler,               ///< NpHandler shadNet manager
-    Render,                  ///< Video Core
-    Render_Vulkan,           ///< Vulkan backend
-    Render_Recompiler,       ///< Shader recompiler
-    ShadNet,                 ///< shadNet binary protocol client
-    ImGui,                   ///< ImGui
-    Loader,                  ///< ROM loader
-    Input,                   ///< Input emulation
-    Tty,                     ///< Debug output from emu
-    Count                    ///< Total number of logging classes
+    Lib_AvPlayer,             ///< The LibSceAvPlayer implementation.
+    Lib_Ngs2,                 ///< The LibSceNgs2 implementation.
+    Lib_Audio3d,              ///< The LibSceAudio3d implementation.
+    Lib_Ime,                  ///< The LibSceIme implementation
+    Lib_GameLiveStreaming,    ///< The LibSceGameLiveStreaming implementation
+    Lib_Remoteplay,           ///< The LibSceRemotePlay implementation
+    Lib_SharePlay,            ///< The LibSceSharePlay implemenation
+    Lib_Fiber,                ///< The LibSceFiber implementation.
+    Lib_Vdec2,                ///< The LibSceVideodec2 implementation.
+    Lib_Vdecsw,               ///< The LibSceVdecsw implementation.
+    Lib_Videodec,             ///< The LibSceVideodec implementation.
+    Lib_VideoRecording,       ///< The LibSceVideoRecording implementation.
+    Lib_Voice,                ///< The LibSceVoice implementation.
+    Lib_RazorCpu,             ///< The LibRazorCpu implementation.
+    Lib_Mouse,                ///< The LibSceMouse implementation
+    Lib_Keyboard,             ///< The LibSceKeyboard implementation
+    Lib_WebBrowserDialog,     ///< The LibSceWebBrowserDialog implementation
+    Lib_NpParty,              ///< The LibSceNpParty implementation
+    Lib_NpPartner,            ///< The LibSceNpPartner implementation
+    Lib_Zlib,                 ///< The LibSceZlib implementation.
+    Lib_Hmd,                  ///< The LibSceHmd implementation.
+    Lib_HmdSetupDialog,       ///< The LibSceHmdSetupDialog implementation.
+    Lib_SigninDialog,         ///< The LibSigninDialog implementation.
+    Lib_Camera,               ///< The LibCamera implementation.
+    Lib_CompanionHttpd,       ///< The LibCompanionHttpd implementation.
+    Lib_CompanionUtil,        ///< The LibCompanionUtil implementation.
+    Lib_ContentExport,        ///< The LibSceContentExport implementation.
+    Lib_VrTracker,            ///< The LibSceVrTracker implementation.
+    Lib_Font,                 ///< The libSceFont implementation.
+    Lib_FontFt,               ///< The libSceFontFt implementation.
+    Frontend,                 ///< Emulator UI
+    NpHandler,                ///< NpHandler shadNet manager
+    Render,                   ///< Video Core
+    Render_Vulkan,            ///< Vulkan backend
+    Render_Recompiler,        ///< Shader recompiler
+    ShadNet,                  ///< shadNet binary protocol client
+    ImGui,                    ///< ImGui
+    Loader,                   ///< ROM loader
+    Input,                    ///< Input emulation
+    Tty,                      ///< Debug output from emu
+    Count                     ///< Total number of logging classes
 };
 static constexpr int NUM_LOG_CLASSES = static_cast<int>(Class::Count);
 
