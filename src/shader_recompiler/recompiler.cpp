@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "common/logging/classes.h"
@@ -93,6 +93,26 @@ IR::Program TranslateProgram(const std::span<const u32>& code, Pools& pools, Inf
     // Run optimization passes on unstructured graph
     if (!profile.support_float64) {
         Shader::Optimization::LowerFp64ToFp32(program);
+    }
+    if (info.has_movrel) {
+        Pools temp_pools;
+        Common::ObjectPool<Gcn::Block> temp_gcn_block_pool{64};
+        Gcn::CFG temp_cfg{temp_gcn_block_pool, program.ins_list};
+        IR::Program temp_program{info};
+        temp_program.ins_list = program.ins_list;
+        EmitControlFlowGraph(temp_program, temp_pools, temp_cfg, runtime_info, profile);
+        Shader::InjectClipDistanceAttributes(temp_program, runtime_info);
+
+        if (!profile.support_float64) {
+            Shader::Optimization::LowerFp64ToFp32(temp_program);
+        }
+        Shader::Optimization::SsaRewritePass(temp_program);
+        Shader::Optimization::ConstantPropagationPass(temp_program.post_order_blocks);
+
+        const auto movrel_bounds =
+            Shader::Optimization::AnalyzeMovRelBounds(temp_program, runtime_info);
+
+        Shader::Optimization::LowerMovRelPass(program, runtime_info, movrel_bounds);
     }
     Shader::Optimization::SsaRewritePass(program);
     Shader::Optimization::ConstantPropagationPass(program.post_order_blocks);
