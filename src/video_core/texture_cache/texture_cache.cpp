@@ -29,23 +29,24 @@ static constexpr u32 MAX_SAMPLERS = std::numeric_limits<u16>::max();
 
 static u64 HashBackingMemory(VAddr virtual_addr, u64 size) {
     static constexpr std::array<u8, Core::GUEST_PAGE_SIZE> zeros{};
-    static const std::unique_ptr<XXH3_state_t, decltype(&XXH3_freeState)> state{XXH3_createState(),
-                                                                                XXH3_freeState};
+    auto* state = XXH3_createState();
     const auto& backing_pages = Core::Memory::Instance()->GetAddressSpace().BackingPages();
-    XXH3_64bits_reset(state.get());
+    XXH3_64bits_reset(state);
     while (size) {
         const u64 page = virtual_addr >> Core::GUEST_PAGE_BITS;
         const u64 offset_in_page = virtual_addr & (Core::GUEST_PAGE_SIZE - 1);
         const u64 hash_size = std::min<u64>(Core::GUEST_PAGE_SIZE - offset_in_page, size);
         if (auto* entry = backing_pages.find(page); entry && *entry) {
-            XXH3_64bits_update(state.get(), *entry + offset_in_page, hash_size);
+            XXH3_64bits_update(state, *entry + offset_in_page, hash_size);
         } else {
-            XXH3_64bits_update(state.get(), zeros.data(), hash_size);
+            XXH3_64bits_update(state, zeros.data(), hash_size);
         }
         size -= hash_size;
         virtual_addr += hash_size;
     }
-    return XXH3_64bits_digest(state.get());
+    const u64 hash = XXH3_64bits_digest(state);
+    XXH3_freeState(state);
+    return hash;
 }
 
 TextureCache::TextureCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_,
@@ -220,8 +221,8 @@ void TextureCache::InvalidateMemory(VAddr addr, size_t size) {
 
 void TextureCache::InvalidateMemoryFromGPU(VAddr address, size_t max_size) {
     ForEachImageInRegion(address, max_size, [&](ImageId image_id, Image& image) {
-        // Every image the write covers is stale, not only one starting at the same address:
-        // a title can regenerate a region and sample views that begin further into it.
+        // Only consider images that match base address.
+        // TODO: Maybe also consider subresources
         if (image.info.guest_address != address) {
             return;
         }
@@ -236,7 +237,6 @@ void TextureCache::MarkAsMaybeGpuDirty(VAddr addr, size_t size) {
             // Read backing pages directly, without faulting through the guest readback path.
             image.gpu_hash = HashBackingMemory(image.info.guest_address, image.info.guest_size);
         }
-        image.flags |= ImageFlagBits::MaybeGpuDirty;
     });
 }
 
@@ -572,14 +572,9 @@ ImageId TextureCache::ExpandImage(const ImageInfo& info, ImageId image_id) {
     // Only carry over the old contents when they hold GPU-written data that guest memory lacks.
     // A CPU-dirty source is stale (e.g. a streamed texture rewritten in a reused pool slot);
     // copying it would overwrite the fresh upload with old data.
-    // A source whose refresh is deferred is CPU-dirty but still holds this frame's GPU data.
     const bool src_has_gpu_data = src_image.HasGpuValidData() || IsRefreshDeferred(src_image);
 
     RefreshImage(new_image);
-    if (src_has_gpu_data) {
-        runtime.CopyImage(&src_image, &new_image);
-        new_image.last_gpu_write_epoch = src_image.last_gpu_write_epoch;
-    }
 
     if (src_image.binding.is_bound || src_image.binding.is_target) {
         src_image.binding.needs_rebind = 1u;
@@ -588,7 +583,8 @@ ImageId TextureCache::ExpandImage(const ImageInfo& info, ImageId image_id) {
     TrackImage(new_image_id);
     new_image.flags &= ~ImageFlagBits::Dirty;
     if (src_has_gpu_data) {
-        new_image.flags |= ImageFlagBits::GpuModified;
+        runtime.CopyImage(&src_image, &new_image);
+        new_image.last_gpu_write_epoch = src_image.last_gpu_write_epoch;
     }
     FreeImage(image_id);
 
@@ -722,8 +718,6 @@ ImageView& TextureCache::FindTexture(ImageId image_id, const ImageDesc& desc) {
         }
     }
     UpdateImage(image_id);
-    // Stamp after the refresh: RefreshImage skips an image already stamped for this frame,
-    // and the next frame's first use must still refresh.
     if (gpu_written) {
         image.last_gpu_write_epoch = frame_epoch.load(std::memory_order_relaxed);
     }
@@ -764,8 +758,6 @@ ImageView& TextureCache::FindRenderTarget(ImageId image_id, const ImageDesc& des
     }
     image.usage.render_target = 1u;
     UpdateImage(image_id);
-    // Stamp after the refresh: RefreshImage skips an image already stamped for this frame,
-    // and the next frame's first use must still refresh.
     image.last_gpu_write_epoch = frame_epoch.load(std::memory_order_relaxed);
 
     // Register meta data for this color buffer
@@ -805,8 +797,6 @@ ImageView& TextureCache::FindDepthTarget(ImageId image_id, const ImageDesc& desc
     image.flags |= ImageFlagBits::GpuModified;
     image.usage.depth_target = 1u;
     UpdateImage(image_id);
-    // Stamp after the refresh: RefreshImage skips an image already stamped for this frame,
-    // and the next frame's first use must still refresh.
     image.last_gpu_write_epoch = frame_epoch.load(std::memory_order_relaxed);
 
     // Register meta data for this depth buffer
@@ -868,11 +858,7 @@ void TextureCache::RefreshImage(Image& image) {
     if (False(image.flags & ImageFlagBits::Dirty) || image.info.num_samples > 1) {
         return;
     }
-    // A pipelined title may CPU-initialize a render target for the next frame while this batch
-    // still draws into and samples it. Applying that write now would clobber the rendered
-    // content, so keep the dirty flags (CpuDirty, or GpuDirty via an aliasing buffer) and
-    // refresh at the first use of the next frame. frame_epoch only advances on flips patched
-    // into the command stream; titles that flip from the CPU never pass the epoch > 1 check.
+
     if (IsRefreshDeferred(image)) {
         return;
     }
@@ -900,10 +886,10 @@ void TextureCache::RefreshImage(Image& image) {
         image.cpu_hash = hash;
     }
 
+    image.gpu_hash = 0;
+
     const u32 num_layers = image.info.resources.layers;
     const u32 num_mips = image.info.resources.levels;
-    const bool is_gpu_modified = True(image.flags & ImageFlagBits::GpuModified);
-    const bool is_gpu_dirty = True(image.flags & ImageFlagBits::GpuDirty);
 
     SmallVector<vk::BufferImageCopy, 14> image_copies;
     for (u32 m = 0; m < num_mips; m++) {
@@ -1028,6 +1014,7 @@ void TextureCache::TrackImage(ImageId image_id) {
     }
     image.track_addr = image_begin;
     image.track_addr_end = image_end;
+    MarkDirtyIfEdgesModified(image);
     image.head_hash = 0;
     image.tail_hash = 0;
 }
@@ -1054,6 +1041,7 @@ void TextureCache::UntrackImageHead(ImageId image_id) {
     }
     const auto addr = page_manager.GetNextPageAddr(image_begin);
     const auto size = addr - image_begin;
+    image.head_hash = HashBackingMemory(image_begin, size);
     page_manager.UpdatePageWatchers(image_begin, size, PageOp::Untrack);
 
     image.track_addr = addr;
@@ -1074,6 +1062,7 @@ void TextureCache::UntrackImageTail(ImageId image_id) {
     ASSERT(image.track_addr_end != 0);
     const auto addr = page_manager.GetPageAddr(image_end);
     const auto size = image_end - addr;
+    image.tail_hash = HashBackingMemory(addr, size);
     image.track_addr_end = addr;
     if (image.track_addr == image.track_addr_end) {
         // This image spans only 2 pages and both are modified,
@@ -1082,6 +1071,23 @@ void TextureCache::UntrackImageTail(ImageId image_id) {
         MarkAsMaybeDirty(image_id, image);
     }
     page_manager.UpdatePageWatchers(addr, size, PageOp::Untrack);
+}
+
+void TextureCache::MarkDirtyIfEdgesModified(Image& image) {
+    const auto image_begin = image.info.guest_address;
+    const auto image_end = image.info.guest_address + image.info.guest_size;
+    if (image.head_hash != 0) {
+        const auto head_end = page_manager.GetNextPageAddr(image_begin);
+        if (HashBackingMemory(image_begin, head_end - image_begin) != image.head_hash) {
+            image.flags |= ImageFlagBits::CpuDirty;
+        }
+    }
+    if (image.tail_hash != 0) {
+        const auto tail_begin = page_manager.GetPageAddr(image_end);
+        if (HashBackingMemory(tail_begin, image_end - tail_begin) != image.tail_hash) {
+            image.flags |= ImageFlagBits::CpuDirty;
+        }
+    }
 }
 
 void TextureCache::GarbageCollectImages() {
@@ -1109,6 +1115,8 @@ void TextureCache::GarbageCollectImages() {
         if (num_deletions == 0) {
             return true;
         }
+        // An edge write means the guest reused the memory, so the image is freed without download.
+        MarkDirtyIfEdgesModified(image);
         const bool download = image.HasGpuValidData();
         if (download && (!pressured || !image.CanBeDownloaded())) {
             return false;
@@ -1118,7 +1126,7 @@ void TextureCache::GarbageCollectImages() {
         if (download) {
             UntrackImage(image_id);
             UnregisterImage(image_id);
-            if (True(image.flags & ImageFlagBits::MaybeGpuDirty)) {
+            if (image.gpu_hash != 0) {
                 buffer_cache.ReadMemory(image.info.guest_address, image.info.guest_size, false,
                                         true, true);
                 maybe_download.push_back(image_id);
@@ -1236,10 +1244,6 @@ void TextureCache::RunGarbageCollector() {
 
 void TextureCache::TouchImage(Image& image) {
     image_lru_cache.Touch(image, gc_tick);
-
-    // Image is still valid
-    image.flags &= ~ImageFlagBits::MaybeGpuDirty;
-    image.gpu_hash = 0;
 }
 
 void TextureCache::DeleteImage(ImageId image_id) {
