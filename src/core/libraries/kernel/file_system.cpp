@@ -1499,12 +1499,30 @@ s32 PS4_SYSV_ABI posix_rename(const char* from, const char* to) {
         *__Error() = POSIX_EROFS;
         return -1;
     }
+    std::string dst_guest(to);
+    while (dst_guest.length() > 1 && dst_guest.back() == '/') {
+        dst_guest.pop_back();
+    }
+    const auto dst_parent = fs::path(dst_guest).parent_path().generic_string();
+    if (!mnt->IsDirectory(dst_parent)) {
+        *__Error() = mnt->Exists(dst_parent) ? POSIX_ENOTDIR : POSIX_ENOENT;
+        return -1;
+    }
     if (src_path == dst_path ||
         (fs::exists(dst_path, ec) && fs::equivalent(src_path, dst_path, ec))) {
         return ORBIS_OK;
     }
     const bool src_is_dir = fs::is_directory(src_path, ec);
     const bool dst_is_dir = fs::is_directory(dst_path, ec);
+
+    if (src_is_dir) {
+        // A directory can't be moved into itself.
+        const auto rel = dst_path.lexically_relative(src_path);
+        if (!rel.empty() && *rel.begin() != "..") {
+            *__Error() = POSIX_EINVAL;
+            return -1;
+        }
+    }
 
     if (fs::exists(dst_path, ec)) {
         if (src_is_dir && !dst_is_dir) {
