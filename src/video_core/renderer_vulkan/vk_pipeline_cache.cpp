@@ -436,7 +436,7 @@ bool PipelineCache::RefreshGraphicsKey() {
         color_buffer.num_format = col_buf.GetNumberFmt();
         color_buffer.num_conversion = col_buf.GetNumberConversion();
         color_buffer.export_format = regs.color_export_format.GetFormat(cb);
-        color_buffer.swizzle = col_buf.Swizzle();
+        color_buffer.swizzle = col_buf.ExportSwizzle();
 
         const auto& bc = regs.blend_control[cb];
         color_buffer.blend_self_scale =
@@ -472,8 +472,7 @@ bool PipelineCache::RefreshGraphicsKey() {
         }
 
         // Apply swizzle to target mask
-        key.write_masks[cb] =
-            vk::ColorComponentFlags{key.color_buffers[cb].swizzle.ApplyMask(target_mask)};
+        key.write_masks[cb] = vk::ColorComponentFlags{col_buf.Swizzle().ApplyMask(target_mask)};
 
         // Fill color samples
         const u8 prev_color_samples = std::exchange(color_samples, col_buf.NumSamples());
