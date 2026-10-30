@@ -38,6 +38,7 @@
 #include "core/file_sys/fs.h"
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/net/net_discovery.h"
 #include "core/libraries/np/np_handler/np_handler.h"
 #include "core/libraries/np/np_trophy.h"
 #include "core/libraries/save_data/save_backup.h"
@@ -87,6 +88,11 @@ Emulator::~Emulator() {}
 
 void Emulator::Shutdown() {
     static bool exit_done = false;
+    static thread_local bool in_shutdown = false;
+    if (in_shutdown) {
+        return;
+    }
+    in_shutdown = true;
     std::scoped_lock l{exit_mutex};
     if (exit_done) {
         return;
@@ -98,7 +104,10 @@ void Emulator::Shutdown() {
     if (play_time_thread.joinable()) {
         play_time_thread.join();
     }
-    UpdatePlayTime(Common::Singleton<Common::ElfInfo>::Instance()->GameSerial());
+    const auto* elf_info = Common::Singleton<Common::ElfInfo>::Instance();
+    if (elf_info->initialized) {
+        UpdatePlayTime(elf_info->GameSerial());
+    }
     if (controllers) {
         controllers->ResetLightbarColors();
         // need to give SDL time to do this before the runtime exits
@@ -694,6 +703,10 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         rpc->setStatusPlaying(game_info.title, id);
     }
 #endif
+
+    if (EmulatorSettings.IsConnectedToNetwork() && EmulatorSettings.IsDeviceDiscoveryEnabled()) {
+        Libraries::Net::DiscoveryResponder::Instance().Start();
+    }
 
     if (!id.empty()) {
         start_time = std::chrono::steady_clock::now();

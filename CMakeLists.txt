@@ -213,7 +213,7 @@ execute_process(
 
 # Set Version
 set(EMULATOR_VERSION_MAJOR "0")
-set(EMULATOR_VERSION_MINOR "20")
+set(EMULATOR_VERSION_MINOR "21")
 set(EMULATOR_VERSION_PATCH "1")
 
 set_source_files_properties(src/dist/shadps4.rc PROPERTIES COMPILE_DEFINITIONS "EMULATOR_VERSION_MAJOR=${EMULATOR_VERSION_MAJOR};EMULATOR_VERSION_MINOR=${EMULATOR_VERSION_MINOR};EMULATOR_VERSION_PATCH=${EMULATOR_VERSION_PATCH}")
@@ -884,6 +884,8 @@ set(NET_CORE  src/core/net/guest_net.cpp
 
 set(NET_LIB   src/core/libraries/net/net.cpp
               src/core/libraries/net/net.h
+              src/core/libraries/net/net_discovery.cpp
+              src/core/libraries/net/net_discovery.h
               src/core/libraries/net/net_error.h
               src/core/libraries/net/net_kernel.cpp
               src/core/libraries/net/net_kernel.h

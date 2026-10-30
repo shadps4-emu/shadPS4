@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <atomic>
 #include <cstring>
 #include "common/assert.h"
 #include "common/bit_field.h"
@@ -258,6 +259,7 @@ struct PM4CmdStrmoutBufferUpdate {
     union {
         BitField<0, 1, u32> update_memory;
         BitField<1, 2, SourceSelect> source_select;
+        BitField<7, 1, u32> data_type;
         BitField<8, 2, u32> buffer_select;
         u32 control;
     };
@@ -276,13 +278,13 @@ struct PM4CmdStrmoutBufferUpdate {
     template <typename T = u64>
     T DstAddress() const {
         ASSERT(update_memory.Value() == 1);
-        return reinterpret_cast<T>(dst_address_lo.Value() | u64(dst_address_hi & 0xFFFF) << 32);
+        return std::bit_cast<T>((u64(dst_address_lo.Value()) << 2) | (u64(dst_address_hi) << 32));
     }
 
     template <typename T = u64>
     T SrcAddress() const {
         ASSERT(source_select.Value() == SourceSelect::SrcAddress);
-        return reinterpret_cast<T>(src_address_lo.Value() | u64(src_address_hi & 0xFFFF) << 32);
+        return std::bit_cast<T>((u64(src_address_lo.Value()) << 2) | (u64(src_address_hi) << 32));
     }
 };
 
@@ -651,7 +653,8 @@ struct PM4CmdRewind {
     };
 
     bool Valid() const {
-        return valid;
+        return (std::atomic_ref<u32>{const_cast<u32&>(raw)}.load(std::memory_order_acquire) >>
+                31) != 0;
     }
 };
 
