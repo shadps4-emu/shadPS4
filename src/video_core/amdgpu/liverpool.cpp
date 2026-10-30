@@ -876,15 +876,87 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb) {
                     // TODO: handle proper synchronization, for now signal that update is done
                     // immediately
                     regs.cp_strmout_cntl.offset_update_done = 1;
-                } else if (event->event_index.Value() == EventIndex::ZpassDone) {
-                    if (event->event_type.Value() == EventType::PixelPipeStatDump) {
+                } else if (event->event_type.Value() == EventType::PixelPipeStatControl &&
+                           count >= 2) {
+                    const u32 dw2 = dwords[2];
+                    const u32 stride_enum = (dw2 >> 9) & 0x3;
+                    static constexpr std::array<u32, 4> Strides = {4, 8, 16, 32};
+                    pipe_stat_control.stride = Strides[stride_enum];
+                    pipe_stat_control.instance_mask = (dw2 >> 11) & 0x1fffff;
+                    pipe_stat_control.num_dbs = std::popcount(pipe_stat_control.instance_mask);
+                    if (pipe_stat_control.num_dbs == 0) {
+                        pipe_stat_control.num_dbs = num_counter_pairs;
+                    }
+                    LOG_TRACE(Render, "EventWrite: PixelPipeStatControl num_dbs = {}, stride = {}",
+                              pipe_stat_control.num_dbs, pipe_stat_control.stride);
+                } else if ((event->event_type.Value() == EventType::PixelPipeStatDump ||
+                            event->event_type.Value() == EventType::ZpassDone ||
+                            event->event_index.Value() == EventIndex::ZpassDone) &&
+                           count >= 3) {
+                    const VAddr addr = (u64(dwords[3]) << 32u) | u64(dwords[2]);
+                    const u32 num_dbs =
+                        pipe_stat_control.num_dbs ? pipe_stat_control.num_dbs : num_counter_pairs;
+                    const u32 stride = pipe_stat_control.stride ? pipe_stat_control.stride : 16;
+                    const u32 total_bytes = num_dbs * stride;
+                    LOG_TRACE(
+                        Render,
+                        "EventWrite: occlusion stats dump to {:#x}, num_dbs = {}, stride = {}",
+                        addr, num_dbs, stride);
+                    if (rasterizer) {
+                        rasterizer->InvalidateMemory(addr, total_bytes);
+                        rasterizer->OcclusionDump(addr, num_dbs, stride);
+                    } else {
                         static constexpr u64 OcclusionCounterValidMask = 0x8000000000000000ULL;
-                        static constexpr u64 OcclusionCounterStep = 0x2FFFFFFULL;
-                        u64* results = event->Address<u64*>();
-                        for (s32 i = 0; i < num_counter_pairs; ++i, results += 2) {
-                            *results = pixel_counter | OcclusionCounterValidMask;
+                        auto* memory = Core::Memory::Instance();
+                        if (addr != 0 && memory && memory->IsValidMapping(addr, total_bytes)) {
+                            u8* ptr = reinterpret_cast<u8*>(addr);
+                            for (u32 i = 0; i < num_dbs; ++i) {
+                                *reinterpret_cast<u64*>(ptr + i * stride) =
+                                    pixel_counter | OcclusionCounterValidMask;
+                            }
                         }
-                        pixel_counter += OcclusionCounterStep;
+                        pixel_counter += 0x2FFFFFFULL;
+                    }
+                } else if (event->event_index.Value() == EventIndex::SampleStreamoutStatSx ||
+                           event->event_index.Value() == EventIndex::SamplePipelineStat ||
+                           event->event_type.Value() == EventType::SampleStreamoutStats ||
+                           event->event_type.Value() == EventType::SampleStreamoutStats1 ||
+                           event->event_type.Value() == EventType::SampleStreamoutStats2 ||
+                           event->event_type.Value() == EventType::SampleStreamoutStats3 ||
+                           event->event_type.Value() == EventType::SamplePipelineStat) {
+                    if (count >= 3) {
+                        const VAddr addr = (u64(dwords[3]) << 32u) | u64(dwords[2]);
+                        u32 stream = 0;
+                        switch (event->event_type.Value()) {
+                        case EventType::SampleStreamoutStats1:
+                            stream = 1;
+                            break;
+                        case EventType::SampleStreamoutStats2:
+                            stream = 2;
+                            break;
+                        case EventType::SampleStreamoutStats3:
+                            stream = 3;
+                            break;
+                        default:
+                            stream = 0;
+                            break;
+                        }
+                        LOG_TRACE(Render, "EventWrite: primitive stats sample stream {} to {:#x}",
+                                  stream, addr);
+                        if (rasterizer) {
+                            rasterizer->StreamoutDump(addr, stream);
+                            rasterizer->InvalidateMemory(addr, sizeof(u64) * 2);
+                        } else {
+                            static constexpr u64 StreamoutCounterValidMask = 0x8000000000000000ULL;
+                            auto* memory = Core::Memory::Instance();
+                            if (addr != 0 && memory &&
+                                memory->IsValidMapping(addr, sizeof(u64) * 2)) {
+                                u64* ptr = reinterpret_cast<u64*>(addr);
+                                ptr[0] = streamout_counter | StreamoutCounterValidMask;
+                                ptr[1] = streamout_counter | StreamoutCounterValidMask;
+                            }
+                            streamout_counter += 1000ULL;
+                        }
                     }
                 }
                 break;
