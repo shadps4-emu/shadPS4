@@ -4,6 +4,7 @@
 #pragma once
 
 #include <deque>
+#include <set>
 #include <boost/container/small_vector.hpp>
 
 #include "common/enum.h"
@@ -94,6 +95,8 @@ public:
     /// Invalidates any buffer in the logical page range.
     void InvalidateMemory(VAddr device_addr, u64 size, bool assume_locks = false);
 
+    void UnmapMemory(VAddr device_addr, u64 size);
+
     /// Unmark a region as modified from the GPU.
     void UnmarkRegionAsGpuModified(VAddr device_addr, u64 size, bool is_write = false);
 
@@ -168,6 +171,7 @@ private:
     std::unique_ptr<FaultManager> fault_manager;
     std::unique_ptr<Buffer> bda_pagetable_buffer;
     bool fault_process_pending{};
+    std::set<VAddr> stream_promoted_ranges;
 
     std::array<const Buffer*, NUM_ARENA_PAGES> address_space{};
     std::deque<Buffer> arenas;
