@@ -108,8 +108,66 @@ void Runtime::TickFrame() {
     staging_pool.TickFrame();
 }
 
+void Runtime::SyncSessionRanges() {
+    if (session_ranges_id != scheduler.SessionId()) {
+        session_ranges.clear();
+        session_ranges_id = scheduler.SessionId();
+        session_untracked_access = false;
+    }
+}
+
+void Runtime::BlockCopyHoisting() {
+    SyncSessionRanges();
+    session_untracked_access = true;
+}
+
+IntervalList<Interval>* Runtime::FindSessionRanges(const VideoCore::Buffer* handle) {
+    const auto it = std::ranges::find(session_ranges, handle, &BufferRanges::first);
+    return it != session_ranges.end() ? &it->second : nullptr;
+}
+
+void Runtime::TrackSessionAccess(const VideoCore::Buffer* handle, u64 offset, u64 size) {
+    SyncSessionRanges();
+    auto* ranges = FindSessionRanges(handle);
+    if (!ranges) {
+        ranges = &session_ranges.emplace_back(handle, IntervalList<Interval>{}).second;
+    }
+    ranges->Add(Interval{.start = offset, .end = offset + size});
+}
+
+bool Runtime::TryHoistCopy(const VideoCore::Buffer* src, const VideoCore::Buffer* dst,
+                           std::span<const vk::BufferCopy> copies) {
+    if (!scheduler.IsRendering()) {
+        return false;
+    }
+    SyncSessionRanges();
+    if (session_untracked_access) {
+        return false;
+    }
+    const auto used = [&](const VideoCore::Buffer* handle, u64 offset, u64 size) {
+        const auto* ranges = FindSessionRanges(handle);
+        return ranges && ranges->Overlaps(offset, offset + size);
+    };
+    for (const auto& copy : copies) {
+        if (used(src, copy.srcOffset, copy.size) || used(dst, copy.dstOffset, copy.size)) {
+            return false;
+        }
+    }
+    scheduler.HoistCommandBuffer().copyBuffer(src->Handle(), dst->Handle(), copies);
+    for (const auto& copy : copies) {
+        TrackSessionAccess(src, copy.srcOffset, copy.size);
+        TrackSessionAccess(dst, copy.dstOffset, copy.size);
+    }
+    return true;
+}
+
 void Runtime::CopyBuffer(const VideoCore::Buffer* src, const VideoCore::Buffer* dst,
                          std::span<const vk::BufferCopy> copies) {
+    // A copy that touches no range used in this session can run before the session starts.
+    // Then it does not end the render pass.
+    if (TryHoistCopy(src, dst, copies)) {
+        return;
+    }
     scheduler.EndRendering();
 
     bool needs_flush{};
@@ -391,6 +449,8 @@ void Runtime::CopyImageWithBuffer(VideoCore::Image* src, VideoCore::Image* dst,
     }
     cmdbuf.copyBufferToImage(buffer->Handle(), dst->GetImage(),
                              vk::ImageLayout::eTransferDstOptimal, buffer_copies);
+    // Copies into this range must not be moved before it.
+    TrackSessionAccess(buffer, offset, copy_size);
 
     dst->flags |= (src->flags & VideoCore::ImageFlagBits::GpuModified);
     dst->flags &= ~VideoCore::ImageFlagBits::Dirty;
@@ -710,6 +770,7 @@ bool Runtime::IsBufferAccessed(const VideoCore::Buffer* handle, u64 offset, u64 
 
 void Runtime::AccessBuffer(const VideoCore::Buffer* handle, u64 offset, u64 size,
                            vk::PipelineStageFlags2 src_stage, vk::AccessFlags2 src_access) {
+    TrackSessionAccess(handle, offset, size);
     MakeCurrent(handle);
 
     const Interval range = {

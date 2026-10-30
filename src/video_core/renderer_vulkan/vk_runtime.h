@@ -71,6 +71,9 @@ public:
     void AccessBuffer(const VideoCore::Buffer* handle, u64 offset, u64 size,
                       vk::PipelineStageFlags2 src_stage, vk::AccessFlags2 src_access);
 
+    /// For GPU work whose buffer ranges are not known, such as DMA shaders.
+    void BlockCopyHoisting();
+
     bool IsBufferAccessed(const VideoCore::Buffer* handle, u64 offset, u64 size,
                           bool check_read_access = false);
 
@@ -78,6 +81,12 @@ public:
 
 private:
     void MakeCurrent(const VideoCore::Buffer* handle);
+
+    bool TryHoistCopy(const VideoCore::Buffer* src, const VideoCore::Buffer* dst,
+                      std::span<const vk::BufferCopy> copies);
+    IntervalList<Interval>* FindSessionRanges(const VideoCore::Buffer* handle);
+    void TrackSessionAccess(const VideoCore::Buffer* handle, u64 offset, u64 size);
+    void SyncSessionRanges();
 
 private:
     const Instance& instance;
@@ -92,6 +101,11 @@ private:
     };
     BufferBarriers* resource{};
     std::vector<BufferBarriers> resources;
+    // Buffer ranges the GPU used in the current scheduler session.
+    using BufferRanges = std::pair<const VideoCore::Buffer*, IntervalList<Interval>>;
+    std::vector<BufferRanges> session_ranges;
+    u64 session_ranges_id{};
+    bool session_untracked_access{};
     VideoCore::Image::Barriers image_barriers;
     vk::MemoryBarrier2 memory_barrier{};
 };
