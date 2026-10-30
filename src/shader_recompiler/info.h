@@ -109,6 +109,7 @@ struct Info : InfoPersistent {
 
     ReadConstType readconst_types{};
     CopyShaderData gs_copy_data;
+    u32 gs_output_vertices{};
     u32 uses_patches{};
 
     VAddr pgm_base;
