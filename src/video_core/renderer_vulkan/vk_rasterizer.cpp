@@ -413,6 +413,12 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
         return false;
     }
 
+    // Sync images before resource binding
+    // Prevent corruption
+    for (const VideoCore::ImageId image_id : bound_images) {
+        texture_cache.UpdateImage(image_id);
+    }
+
     set_write_index = 0;
     set_writes.clear();
     buffer_infos.clear();
@@ -1042,8 +1048,8 @@ RenderState Rasterizer::BeginRendering(const GraphicsPipeline* pipeline) {
         if (image->binding.needs_rebind) {
             image_id = bound_images.emplace_back(texture_cache.FindImage(desc));
             image = &texture_cache.GetImage(image_id);
+            texture_cache.UpdateImage(image_id);
         }
-        texture_cache.UpdateImage(image_id);
         runtime.SetBackingSamples(image, key.color_samples[cb]);
         const auto& image_view = texture_cache.FindRenderTarget(image_id, desc);
         const auto slice = image_view.info.range.base.layer;
