@@ -1,10 +1,11 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
 
 #include <atomic>
 #include <cstring>
+#include <type_traits>
 #include "common/assert.h"
 #include "common/bit_field.h"
 #include "common/types.h"
@@ -700,7 +701,10 @@ struct PM4CmdWaitRegMem {
     }
 
     bool Test(std::span<const u32> regs) const {
-        u32 value = mem_space.Value() == MemSpace::Memory ? *Address() : regs[Reg()];
+        u32 value =
+            mem_space.Value() == MemSpace::Memory
+                ? std::atomic_ref<u32>{*const_cast<u32*>(Address())}.load(std::memory_order_acquire)
+                : regs[Reg()];
         switch (function.Value()) {
         case Function::Always: {
             return true;
@@ -761,7 +765,11 @@ struct PM4CmdWriteData {
 
     template <typename T>
     T Address() const {
-        return reinterpret_cast<T>(addr64);
+        if constexpr (std::is_pointer_v<T>) {
+            return reinterpret_cast<T>(addr64);
+        } else {
+            return static_cast<T>(addr64);
+        }
     }
 };
 
@@ -1223,21 +1231,22 @@ struct PM4CmdMemSemaphore {
     }
 
     [[nodiscard]] bool Signaled() const {
-        return *Address<u64*>() > 0;
+        return std::atomic_ref<u64>{*Address<u64*>()}.load(std::memory_order_acquire) > 0;
     }
 
     void Decrement() const {
-        *Address<u64*>() -= 1;
+        std::atomic_ref<u64>{*Address<u64*>()}.fetch_sub(1, std::memory_order_acq_rel);
     }
 
     void Signal() const {
         auto* ptr = Address<u64*>();
+        std::atomic_ref<u64> ref{*ptr};
         switch (signal_type) {
         case SignalType::Increment:
-            *ptr += 1;
+            ref.fetch_add(1, std::memory_order_acq_rel);
             break;
         case SignalType::Write:
-            *ptr = 1;
+            ref.store(1, std::memory_order_release);
             break;
         default:
             UNREACHABLE_MSG("Unknown signal type {}", static_cast<u32>(signal_type.Value()));
@@ -1250,19 +1259,99 @@ struct PM4CmdCondExec {
     union {
         BitField<2, 30, u32> bool_addr_lo; ///< low 32 address bits for the block in memory from
                                            ///< where the CP will fetch the condition
+        u32 addr_lo_raw;
     };
     union {
-        BitField<0, 16, u32> bool_addr_hi; ///< high address bits for the condition
+        BitField<0, 16, u32> bool_addr_hi; ///< high address bits for the condition (GFX6)
         BitField<28, 4, u32> command;
+        u32 addr_hi_raw; ///< GFX7+ uses full high 32 bits
     };
     union {
-        BitField<0, 14, u32> exec_count; ///< Number of DWords that the CP will skip
-                                         ///< if bool pointed to is zero
+        BitField<0, 14, u32> exec_count_gfx6; ///< GFX6 exec_count
+        u32 reserved_gfx7;                    ///< GFX7+ reserved DWORD (DW3)
+    };
+    union {
+        BitField<0, 14, u32> exec_count_gfx7; ///< GFX7+ exec_count (DW4)
+        u32 exec_count_raw;
     };
 
-    bool* Address() const {
-        return std::bit_cast<bool*>(u64(bool_addr_hi.Value()) << 32 | u64(bool_addr_lo.Value())
-                                                                          << 2);
+    [[nodiscard]] u32 ExecCount() const {
+        if (header.count.Value() >= 3) {
+            return exec_count_gfx7.Value();
+        }
+        return exec_count_gfx6.Value();
+    }
+
+    template <typename T = VAddr>
+    [[nodiscard]] T Address() const {
+        const u64 hi = (header.count.Value() >= 3) ? u64(addr_hi_raw) : u64(bool_addr_hi.Value());
+        return std::bit_cast<T>((hi << 32) | (u64(bool_addr_lo.Value()) << 2));
+    }
+};
+
+struct PM4CmdSetPredication {
+    enum class PredOp : u32 {
+        Disable = 0u,
+        Zpass = 1u,
+        PrimCount = 2u,
+        Bool64 = 3u,
+        Bool32 = 4u,
+    };
+
+    PM4Type3Header header;
+    union {
+        u32 dw1;
+        BitField<4, 28, u32> addr_lo;
+    };
+    union {
+        u32 dw2;
+        BitField<0, 8, u32> addr_hi;
+        BitField<8, 1, u32> draw_op;
+        BitField<12, 1, u32> hint;
+        BitField<16, 3, PredOp> pred_op;
+        BitField<31, 1, u32> continue_bit;
+    };
+
+    template <typename T = VAddr>
+    [[nodiscard]] T Address() const {
+        return std::bit_cast<T>((u64(addr_hi.Value()) << 32) | (u64(addr_lo.Value()) << 4));
+    }
+};
+
+struct PM4CmdPredExec {
+    PM4Type3Header header;
+    union {
+        u32 dw1;
+        BitField<0, 14, u32> exec_count;
+        BitField<24, 8, u32> device_select;
+    };
+
+    [[nodiscard]] u32 ExecCount() const {
+        return exec_count.Value();
+    }
+};
+
+struct PM4CmdOcclusionQuery {
+    PM4Type3Header header;
+    union {
+        u32 dw1;
+        BitField<4, 28, u32> start_addr_lo;
+    };
+    u32 start_addr_hi;
+    union {
+        u32 dw3;
+        BitField<2, 30, u32> query_addr_lo;
+    };
+    u32 query_addr_hi;
+
+    template <typename T = VAddr>
+    [[nodiscard]] T StartAddress() const {
+        return std::bit_cast<T>((u64(start_addr_hi) << 32) | (u64(start_addr_lo.Value()) << 4));
+    }
+
+    template <typename T = VAddr>
+    [[nodiscard]] T QueryAddress() const {
+        return std::bit_cast<T>((u64(query_addr_hi) << 32) | (u64(query_addr_lo.Value()) << 2));
     }
 };
 
