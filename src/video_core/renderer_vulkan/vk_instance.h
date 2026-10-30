@@ -150,6 +150,11 @@ public:
         return conditional_rendering && conditional_rendering_features.conditionalRendering;
     }
 
+    /// Returns true when VK_EXT_transform_feedback is supported
+    bool IsTransformFeedbackSupported() const {
+        return transform_feedback && transform_feedback_features.transformFeedback;
+    }
+
     /// Returns true when inherited conditional rendering is supported
     bool IsInheritedConditionalRenderingSupported() const {
         return conditional_rendering &&
@@ -525,6 +530,7 @@ private:
     vk::PhysicalDeviceVulkan13Features vk13_features;
     vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT dynamic_state_3_features;
     vk::PhysicalDeviceConditionalRenderingFeaturesEXT conditional_rendering_features;
+    vk::PhysicalDeviceTransformFeedbackFeaturesEXT transform_feedback_features;
     vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT shader_atomic_float2_features;
     vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR
         workgroup_memory_explicit_layout_features;
@@ -544,6 +550,7 @@ private:
     u32 queue_family_index{0};
     bool custom_border_color{};
     bool conditional_rendering{};
+    bool transform_feedback{};
     bool fragment_shader_barycentric{};
     bool amd_shader_explicit_vertex_parameter{};
     bool depth_clip_control{};
