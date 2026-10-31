@@ -322,7 +322,9 @@ static void AudioOutputThread(std::shared_ptr<PortOut> port, const std::stop_tok
             next_output = std::max(next_output, now - 3 * period);
             if (now < next_output) {
                 lock.unlock();
-                Common::AccurateSleep(next_output - now, nullptr, false);
+                if (!Common::AccurateSleep(next_output - now, nullptr, false)) {
+                    std::this_thread::sleep_until(next_output);
+                }
                 lock.lock();
             }
             if (!port->impl || port->closing || stop.stop_requested()) {
@@ -337,8 +339,7 @@ static void AudioOutputThread(std::shared_ptr<PortOut> port, const std::stop_tok
                 const float mix_gain =
                     std::clamp(port->mixLevelPadSpk, 0, ORBIS_AUDIO_OUT_MIXLEVEL_PADSPK_0DB) /
                     static_cast<float>(ORBIS_AUDIO_OUT_MIXLEVEL_PADSPK_0DB);
-                ApplyGain(port->output_buffer, port->buffer_frames, port->format_info,
-                          mix_gain);
+                ApplyGain(port->output_buffer, port->buffer_frames, port->format_info, mix_gain);
             }
             port->impl->Output(port->output_buffer);
             port->output_ready = false;
