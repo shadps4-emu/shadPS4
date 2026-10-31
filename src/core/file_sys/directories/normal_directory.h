@@ -35,7 +35,7 @@ private:
 #pragma pack(pop)
 
     std::string guest_directory{};
-    s64 previous_file_offset = -1;
+    bool dirents_built = false;
 
     void RebuildDirents(void);
 };
