@@ -5,7 +5,6 @@
 #include <atomic>
 #include <cstring>
 #include <memory>
-#include <thread>
 #include <SDL3/SDL_audio.h>
 #include <SDL3/SDL_hints.h>
 
@@ -31,8 +30,6 @@ constexpr float INV_VOLUME_0DB = 1.0f / VOLUME_0DB;
 constexpr float VOLUME_EPSILON = 0.001f;
 // Timing constants
 constexpr u64 VOLUME_CHECK_INTERVAL_US = 50000; // Check every 50ms
-constexpr u64 MIN_SLEEP_THRESHOLD_US = 10;
-constexpr u64 TIMING_RESYNC_THRESHOLD_US = 100000; // Resync if >100ms behind
 
 // Queue management
 constexpr u32 QUEUE_MULTIPLIER = 4;
@@ -84,7 +81,6 @@ public:
         UpdateVolumeIfChanged();
         const u64 current_time = Kernel::sceKernelGetProcessTime();
         convert(ptr, internal_buffer, buffer_frames, nullptr);
-        HandleTiming(current_time);
 
         if ((output_count++ & 0xF) == 0) { // Check every 16 outputs
             ManageAudioQueue();
@@ -136,9 +132,6 @@ public:
 
 private:
     bool Initialize(OrbisAudioOutPort type) {
-        // Calculate timing parameters
-        period_us = (1000000ULL * buffer_frames + sample_rate / 2) / sample_rate;
-
         // Allocate aligned internal buffer for SIMD operations
         internal_buffer_size = buffer_frames * sizeof(float) * num_channels;
 
@@ -213,34 +206,6 @@ private:
             } else {
                 LOG_ERROR(Lib_AudioOut, "Failed to set audio stream gain: {}", SDL_GetError());
             }
-        }
-    }
-
-    void HandleTiming(u64 current_time) {
-        if (next_output_time == 0) [[unlikely]] {
-            // First output - set initial timing
-            next_output_time = current_time + period_us;
-            return;
-        }
-
-        const s64 time_diff = static_cast<s64>(current_time - next_output_time);
-
-        if (time_diff > static_cast<s64>(TIMING_RESYNC_THRESHOLD_US)) [[unlikely]] {
-            // We're far behind - resync
-            next_output_time = current_time + period_us;
-        } else if (time_diff < 0) {
-            // We're ahead of schedule - wait
-            const u64 time_to_wait = static_cast<u64>(-time_diff);
-            next_output_time += period_us;
-
-            if (time_to_wait > MIN_SLEEP_THRESHOLD_US) {
-                // Sleep for most of the wait period
-                const u64 sleep_duration = time_to_wait - MIN_SLEEP_THRESHOLD_US;
-                std::this_thread::sleep_for(std::chrono::microseconds(sleep_duration));
-            }
-        } else {
-            // Slightly behind or on time - just advance
-            next_output_time += period_us;
         }
     }
 
@@ -634,9 +599,7 @@ private:
     bool ps4_downmix{false};
     const std::array<int, 8> channel_layout;
 
-    alignas(64) u64 period_us{0};
     alignas(64) std::atomic<u64> last_output_time{0};
-    u64 next_output_time{0};
     u64 last_volume_check_time{0};
     u32 output_count{0};
 
