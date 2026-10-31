@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <bitset>
 
 #include "common/types.h"
@@ -66,6 +67,10 @@ struct FMaskSpecialization {
 struct SamplerSpecialization {
     u8 force_unnormalized : 1;
     u8 force_degamma : 1;
+    AmdGpu::ClampMode clamp_x{};
+    AmdGpu::ClampMode clamp_y{};
+    AmdGpu::Filter xy_mag_filter{};
+    AmdGpu::BorderColor border_color_type{};
 
     bool operator==(const SamplerSpecialization&) const = default;
 };
@@ -146,10 +151,20 @@ struct StageSpecialization {
                          spec.width = sharp.width;
                          spec.height = sharp.height;
                      });
+        const bool has_msaa_image = std::ranges::any_of(images, [](const auto& spec) {
+            return spec.type == AmdGpu::ImageType::Color2DMsaa ||
+                   spec.type == AmdGpu::ImageType::Color2DMsaaArray;
+        });
         ForEachSharp(samplers, info->samplers,
-                     [](auto& spec, const auto& desc, AmdGpu::Sampler sharp) {
+                     [has_msaa_image](auto& spec, const auto& desc, AmdGpu::Sampler sharp) {
                          spec.force_unnormalized = sharp.force_unnormalized;
                          spec.force_degamma = sharp.force_degamma;
+                         if (has_msaa_image) {
+                             spec.clamp_x = sharp.clamp_x;
+                             spec.clamp_y = sharp.clamp_y;
+                             spec.xy_mag_filter = sharp.xy_mag_filter;
+                             spec.border_color_type = sharp.border_color_type;
+                         }
                      });
 
         // Initialize runtime_info fields that rely on analysis in tessellation passes
