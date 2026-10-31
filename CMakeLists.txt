@@ -508,6 +508,8 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/video_recording/video_recording_error.h
                 src/core/libraries/game_custom_data_dialog/game_custom_data_dialog.cpp
                 src/core/libraries/game_custom_data_dialog/game_custom_data_dialog.h
+                src/core/libraries/game_custom_data_dialog/game_custom_data_dialog_ui.cpp
+                src/core/libraries/game_custom_data_dialog/game_custom_data_dialog_ui.h
                 src/core/libraries/invitation_dialog/invitation_dialog.cpp
                 src/core/libraries/invitation_dialog/invitation_dialog.h
                 src/core/libraries/invitation_dialog/invitation_dialog_ui.cpp

@@ -9,12 +9,15 @@
 #include <iterator>
 #include <string>
 #include <string_view>
+#include <vector>
 #include <fmt/format.h>
 #include <magic_enum/magic_enum.hpp>
 
 #include "common/logging/log.h"
 #include "common/path_util.h"
+#include "common/stb.h"
 #include "core/libraries/game_custom_data_dialog/game_custom_data_dialog.h"
+#include "core/libraries/game_custom_data_dialog/game_custom_data_dialog_ui.h"
 #include "core/libraries/libs.h"
 #include "core/user_settings.h"
 
@@ -36,10 +39,8 @@ constexpr u32 kMaxMultiLangStrings = 30;
 constexpr size_t kMaxPlatformNameBytes = 16;
 
 Status g_status = Status::NONE;
-Result g_result = Result::OK;
-void* g_callback_arg = nullptr;
-// Set by Close(): the dialog finishes with OK instead of the user cancelling it.
-bool g_close_requested = false;
+DialogState g_state;
+GameCustomDataDialogUi g_dialog_ui;
 
 template <typename T>
 bool AllZero(const T& bytes) {
@@ -251,6 +252,11 @@ Error ValidateParam(const Param* param) {
     }
 }
 
+// ---- Request dump ----
+// Everything the game asked to send is logged field by field, and the thumbnail and data are
+// written to <log dir>/game_custom_data/, so the payload can be inspected (and later replayed
+// to a server) even though nothing is sent yet.
+
 std::string Quote(const char* s, size_t max = kMaxDetailBytes) {
     if (s == nullptr) {
         return "(null)";
@@ -438,6 +444,58 @@ void LogRequest(const Param* param, const char* entry) {
     }
 }
 
+template <typename Send>
+void CaptureSend(const Send& send) {
+    auto& st = g_state;
+    st.data_name.assign(send.dataName, BoundedLength(send.dataName, kMaxNameBytes));
+    st.data_detail.assign(send.dataDetail, BoundedLength(send.dataDetail, kMaxDetailBytes));
+    const size_t msg_bytes =
+        std::min(BoundedLength(send.userMessage, kMaxMessageBytes), st.message.size() - 1);
+    std::memcpy(st.message.data(), send.userMessage, msg_bytes);
+    st.expire_minutes = send.expireMinutes;
+    for (u32 i = 0; i < send.availablePlatform.count; i++) {
+        const char* name = send.availablePlatform.platformName[i];
+        st.platforms.emplace_back(name, BoundedLength(name, kMaxPlatformNameBytes));
+    }
+    if constexpr (requires { send.dataUrl; }) {
+        st.data_url.assign(
+            send.dataUrl,
+            BoundedLength(send.dataUrl, ORBIS_GAME_CUSTOM_DATA_DIALOG_MAX_URL_LENGTH));
+        st.with_item_id = send.withItemId;
+    } else {
+        st.data_size = send.dataSize;
+    }
+
+    const auto* thumb = static_cast<const u8*>(send.thumbnail);
+    const char* ext;
+    DescribeImage(thumb, send.thumbnailSize, &ext);
+    int w, h, comp;
+    if (std::string_view{ext} != "bin" &&
+        stbi_info_from_memory(thumb, static_cast<int>(send.thumbnailSize), &w, &h, &comp)) {
+        st.thumbnail = ImGui::RefCountedTexture::DecodePngTexture(
+            std::vector<u8>(thumb, thumb + send.thumbnailSize));
+        st.has_thumbnail = true;
+    } else {
+        LOG_WARNING(Lib_GameCustomDataDialog, "  thumbnail can't be decoded, not shown");
+    }
+
+    const auto& address = send.addressParam;
+    if (address.addressType == ORBIS_GAME_CUSTOM_DATA_DIALOG_ADDRESS_TYPE_USERENABLE) {
+        st.user_editable = true;
+        st.user_max_count = address.addressInfo.UserSelectEnableAddress.userMaxCount;
+        return;
+    }
+    const auto& fixed = address.addressInfo.UserSelectDisableAddress;
+    if constexpr (requires { fixed.accountIds; }) {
+        st.fixed_account_ids.assign(fixed.accountIds, fixed.accountIds + fixed.accountIdsCount);
+    } else {
+        for (u32 i = 0; i < fixed.onlineIdsCount; i++) {
+            const auto& id = fixed.onlineIds[i].data;
+            st.fixed_online_ids.emplace_back(id, strnlen(id, sizeof(id)));
+        }
+    }
+}
+
 template <typename Param>
 Error OpenImpl(const Param* param, const char* entry) {
     if (g_status == Status::NONE) {
@@ -454,15 +512,21 @@ Error OpenImpl(const Param* param, const char* entry) {
     }
 
     LogRequest(param, entry);
-    LOG_WARNING(Lib_GameCustomDataDialog,
-                "{}: {} is not supported yet, closing as cancelled (nothing {})", entry,
-                ModeName(param->mode),
-                param->mode == ORBIS_GAME_CUSTOM_DATA_DIALOG_MODE_RECV ? "received" : "sent");
 
-    g_callback_arg = param->callbackArg;
-    g_result = Result::USER_CANCELED;
-    g_close_requested = false;
+    g_state = DialogState{};
+    g_state.mode = param->mode;
+    g_state.user_id = param->userId;
+    g_state.callback_arg = param->callbackArg;
+    g_state.result = Result::USER_CANCELED;
+    const auto& data = *param->dataParam;
+    if (param->mode == ORBIS_GAME_CUSTOM_DATA_DIALOG_MODE_SEND) {
+        CaptureSend(data.SendInfo);
+    } else if (param->mode == ORBIS_GAME_CUSTOM_DATA_DIALOG_MODE_SEND_URL) {
+        CaptureSend(data.SendUrlInfo);
+    }
+
     g_status = Status::RUNNING;
+    g_dialog_ui = GameCustomDataDialogUi{&g_status, &g_state};
     return Error::OK;
 }
 
@@ -480,20 +544,46 @@ s32 GetResultImpl(ResultT* result) {
     if (g_status != Status::FINISHED) {
         return static_cast<s32>(Error::NOT_FINISHED);
     }
-    LOG_INFO(Lib_GameCustomDataDialog, "result: {}, 0 recipients", magic_enum::enum_name(g_result));
-    result->callbackArg = g_callback_arg;
+    const bool sent = g_state.result == Result::OK;
+    const size_t count =
+        sent ? std::min<size_t>(
+                   std::max(g_state.sent_online_ids.size(), g_state.sent_account_ids.size()),
+                   ORBIS_GAME_CUSTOM_DATA_DIALOG_ADDRESS_USER_LIST_MAX_SIZE)
+             : 0;
+    LOG_INFO(Lib_GameCustomDataDialog, "result: {}, {} recipients",
+             magic_enum::enum_name(g_state.result), count);
+    result->callbackArg = g_state.callback_arg;
     result->errorCode = 0;
-    result->result = g_result;
+    result->result = g_state.result;
+    const auto copy_online_id = [](Libraries::Np::OrbisNpOnlineId& dst, const std::string& src) {
+        std::strncpy(dst.data, src.c_str(), sizeof(dst.data));
+    };
     if constexpr (requires { result->sentUsers; }) {
         if (result->sentUsers != nullptr) {
             std::memset(result->sentUsers, 0, sizeof(*result->sentUsers));
+            result->sentUsers->count = static_cast<u32>(count);
+            for (size_t i = 0; i < count; i++) {
+                auto& user = result->sentUsers->users[i];
+                if (i < g_state.sent_online_ids.size()) {
+                    copy_online_id(user.onlineId, g_state.sent_online_ids[i]);
+                }
+                if (i < g_state.sent_account_ids.size()) {
+                    user.accountId = g_state.sent_account_ids[i];
+                }
+            }
         }
     } else {
         if (result->sentOnlineIds != nullptr) {
             std::memset(result->sentOnlineIds, 0, sizeof(*result->sentOnlineIds));
+            // The older result only carries online IDs.
+            const size_t online = std::min(count, g_state.sent_online_ids.size());
+            result->sentOnlineIds->count = static_cast<u32>(online);
+            for (size_t i = 0; i < online; i++) {
+                copy_online_id(result->sentOnlineIds->onlineId[i], g_state.sent_online_ids[i]);
+            }
         }
     }
-    return static_cast<s32>(g_result);
+    return static_cast<s32>(g_state.result);
 }
 
 } // namespace
@@ -522,6 +612,7 @@ Error PS4_SYSV_ABI sceGameCustomDataDialogTerminate() {
         return Error::NOT_INITIALIZED;
     }
     LOG_INFO(Lib_GameCustomDataDialog, "terminated (was {})", magic_enum::enum_name(g_status));
+    g_dialog_ui.Finish(Result::USER_CANCELED);
     g_status = Status::NONE;
     CommonDialog::g_isUsed = false;
     return Error::OK;
@@ -543,16 +634,11 @@ Error PS4_SYSV_ABI sceGameCustomDataDialogClose() {
         return Error::NOT_RUNNING;
     }
     LOG_INFO(Lib_GameCustomDataDialog, "closed by the game");
-    g_close_requested = true;
+    g_dialog_ui.Finish(Result::OK);
     return Error::OK;
 }
 
 Status PS4_SYSV_ABI sceGameCustomDataDialogUpdateStatus() {
-    if (g_status == Status::RUNNING) {
-        g_result = g_close_requested ? Result::OK : Result::USER_CANCELED;
-        g_status = Status::FINISHED;
-        LOG_INFO(Lib_GameCustomDataDialog, "finished: {}", magic_enum::enum_name(g_result));
-    }
     return g_status;
 }
 
