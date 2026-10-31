@@ -241,6 +241,7 @@ struct NetworkSettings {
     Setting<int> p2p_port{3658}; // 0 is any free port, 3658 is the default PS4 port. With UPnP
                                  // enabled it is forwarded on the router.
     Setting<bool> disable_https{false};
+    Setting<bool> enable_device_discovery{false};
 
     std::vector<OverrideItem> GetOverrideableFields() const {
         return std::vector<OverrideItem>{
@@ -252,13 +253,15 @@ struct NetworkSettings {
                                            &NetworkSettings::shadnet_webapi_server),
             make_override<NetworkSettings>("enable_upnp", &NetworkSettings::enable_upnp),
             make_override<NetworkSettings>("p2p_port", &NetworkSettings::p2p_port),
-            make_override<NetworkSettings>("disable_https", &NetworkSettings::disable_https)};
+            make_override<NetworkSettings>("disable_https", &NetworkSettings::disable_https),
+            make_override<NetworkSettings>("enable_device_discovery",
+                                           &NetworkSettings::enable_device_discovery)};
     }
 };
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(NetworkSettings, connected_to_network, shad_net_enabled,
                                    shadnet_server, shadnet_webapi_server, enable_upnp, p2p_port,
-                                   disable_https)
+                                   disable_https, enable_device_discovery)
 
 // -------------------------------
 // Log settings
@@ -430,6 +433,7 @@ struct GPUSettings {
     Setting<int> rcas_attenuation{250};
     Setting<bool> userfaultfd{false};
     Setting<bool> inline_fetch_shader{false};
+    Setting<bool> fast_shader_math{false};
 
     std::vector<OverrideItem> GetOverrideableFields() const {
         return std::vector<OverrideItem>{
@@ -454,6 +458,7 @@ struct GPUSettings {
             make_override<GPUSettings>("vblank_frequency", &GPUSettings::vblank_frequency),
             make_override<GPUSettings>("userfaultfd", &GPUSettings::userfaultfd),
             make_override<GPUSettings>("inline_fetch_shader", &GPUSettings::inline_fetch_shader),
+            make_override<GPUSettings>("fast_shader_math", &GPUSettings::fast_shader_math),
         };
     }
 };
@@ -463,7 +468,7 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GPUSettings, window_width, window_height, int
                                    direct_memory_access_enabled, dump_shaders, patch_shaders,
                                    vblank_frequency, full_screen, full_screen_mode, present_mode,
                                    hdr_allowed, fsr_enabled, rcas_enabled, rcas_attenuation,
-                                   userfaultfd, inline_fetch_shader)
+                                   userfaultfd, inline_fetch_shader, fast_shader_math)
 
 // -------------------------------
 // Vulkan settings
@@ -702,10 +707,22 @@ public:
     // Network settings
     SETTING_FORWARD_BOOL(m_network, ConnectedToNetwork, connected_to_network)
     SETTING_FORWARD(m_network, ShadNetServer, shadnet_server)
-    SETTING_FORWARD(m_network, ShadNetWebApiServer, shadnet_webapi_server)
+    std::string GetShadNetWebApiServer() const {
+        // Strip trailing slashes if exists
+        std::string url = m_network.shadnet_webapi_server.get(m_configMode);
+        while (!url.empty() && url.back() == '/') {
+            url.pop_back();
+        }
+        return url;
+    }
+    void SetShadNetWebApiServer(const std::string& v, bool is_specific = false) {
+        m_network.shadnet_webapi_server.set(v, is_specific);
+    }
+
     SETTING_FORWARD_BOOL(m_network, UPnPEnabled, enable_upnp)
     SETTING_FORWARD(m_network, P2PPort, p2p_port)
     SETTING_FORWARD_BOOL(m_network, ForcedHttpsDisabled, disable_https)
+    SETTING_FORWARD_BOOL(m_network, DeviceDiscoveryEnabled, enable_device_discovery)
 
     // Log settings
     SETTING_FORWARD_BOOL(m_log, LogAppend, append)
@@ -758,6 +775,7 @@ public:
     SETTING_FORWARD_BOOL_READONLY(m_gpu, PatchShaders, patch_shaders)
     SETTING_FORWARD_BOOL(m_gpu, UserfaultfdTracking, userfaultfd)
     SETTING_FORWARD_BOOL_READONLY(m_gpu, InlineFetchShader, inline_fetch_shader)
+    SETTING_FORWARD_BOOL_READONLY(m_gpu, FastShaderMath, fast_shader_math)
 
     u32 GetVblankFrequency() {
         if (m_gpu.vblank_frequency.value < 30) {

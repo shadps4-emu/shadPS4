@@ -65,6 +65,18 @@ constexpr int ORBIS_KERNEL_O_DSYNC = 0x1000;
 constexpr int ORBIS_KERNEL_O_DIRECT = 0x00010000;
 constexpr int ORBIS_KERNEL_O_DIRECTORY = 0x00020000;
 
+// flags for flock
+constexpr int ORBIS_KERNEL_LOCK_SH = 0x01;
+constexpr int ORBIS_KERNEL_LOCK_EX = 0x02;
+constexpr int ORBIS_KERNEL_LOCK_NB = 0x04;
+constexpr int ORBIS_KERNEL_LOCK_UN = 0x08;
+
+// flags for access
+constexpr int ORBIS_KERNEL_F_OK = 0;
+constexpr int ORBIS_KERNEL_X_OK = 1;
+constexpr int ORBIS_KERNEL_W_OK = 2;
+constexpr int ORBIS_KERNEL_R_OK = 4;
+
 s32 PS4_SYSV_ABI posix_open(const char* path, s32 flags, u16 mode);
 s32 PS4_SYSV_ABI posix_close(s32 fd);
 s64 PS4_SYSV_ABI posix_lseek(s32 fd, s64 offset, s32 whence);
@@ -84,6 +96,8 @@ s32 PS4_SYSV_ABI posix_futimes(s32 fd, const OrbisKernelTimeval* times);
 s32 PS4_SYSV_ABI sceKernelFutimes(s32 fd, const OrbisKernelTimeval* times);
 s32 PS4_SYSV_ABI posix_fdatasync(s32 fd);
 s32 PS4_SYSV_ABI sceKernelFdatasync(s32 fd);
+s32 PS4_SYSV_ABI posix_flock(s32 fd, s32 operation);
+s32 PS4_SYSV_ABI sceKernelFlock(s32 fd, s32 operation);
 void PS4_SYSV_ABI posix_sync();
 void PS4_SYSV_ABI sceKernelSync();
 void RegisterFileSystem(Core::Loader::SymbolsResolver* sym);
