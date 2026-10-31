@@ -159,7 +159,7 @@
             clangStdenv.mkDerivation (finalAttrs: {
               name = "${finalAttrs.pname}-${finalAttrs.version}-${finalAttrs.system}";
               pname = "shadps4";
-              version = "0.20.1";
+              version = "0.21.1";
               system = "${clangStdenv.hostPlatform.system}";
               src = ./.;
 

@@ -886,15 +886,30 @@ s32 PS4_SYSV_ABI posix_access(const char* path, s32 mode) {
     }
 
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    const bool is_root = strncmp(path, "/", 2) == 0;
+    if (is_root) {
+        LOG_WARNING(Kernel_Fs, "Checking accessibility of filesystem root");
+        if (mode & ORBIS_KERNEL_W_OK) {
+            *__Error() = POSIX_EROFS;
+            return -1;
+        }
+        return ORBIS_OK;
+    }
+
     const bool is_dir = mnt->IsDirectory(path);
     const bool is_file = !is_dir && mnt->Exists(path);
-    const bool is_root = strncmp(path, "/", 2) == 0;
-    if (!is_dir && !is_file && !is_root) {
+    if (!is_dir && !is_file) {
         *__Error() = POSIX_ENOENT;
         return -1;
     }
-    if (is_root) {
-        LOG_WARNING(Kernel_Fs, "Checking accessibility of filesystem root");
+
+    if (mode & ORBIS_KERNEL_W_OK) {
+        bool ro = false;
+        mnt->GetHostPath(path, &ro);
+        if (ro) {
+            *__Error() = POSIX_EROFS;
+            return -1;
+        }
     }
     return ORBIS_OK;
 }
@@ -932,6 +947,7 @@ s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
     if (is_root) {
         LOG_WARNING(Kernel_Fs, "Attempting to access filesystem root");
         sb->st_mode = 0000777u | 0040000u;
+        sb->st_ino = 2;
         sb->st_nlink = 2;
         sb->st_size = 65536;
         sb->st_blksize = 65536;
@@ -956,7 +972,11 @@ s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
         sb->st_blocks = 128;
         sb->st_mtim.tv_sec =
             std::chrono::duration_cast<std::chrono::seconds>(mtimestamp.time_since_epoch()).count();
-        // TODO incomplete
+
+        Core::FileSys::FileStat fst{};
+        if (mnt->Stat(path, fst) && fst.inode != 0) {
+            sb->st_ino = fst.inode;
+        }
     } else {
         sb->st_mode = 0000777u | 0100000u;
         sb->st_nlink = 1;
@@ -1245,7 +1265,9 @@ s32 PS4_SYSV_ABI posix_chmod(const char* path, u32 mode) {
     }
 
     std::error_code ec;
-    fs::permissions(host_path, static_cast<fs::perms>(mode & 07777), ec);
+    const auto host_perms =
+        static_cast<fs::perms>(mode & 07777) | fs::perms::owner_read | fs::perms::owner_write;
+    fs::permissions(host_path, host_perms, ec);
     if (ec) {
         *__Error() = NativeToPosixErrno(ec.value());
         return -1;
@@ -1290,7 +1312,9 @@ s32 PS4_SYSV_ABI posix_fchmod(s32 fd, u32 mode) {
     }
 
     std::error_code ec;
-    fs::permissions(file->m_host_name, static_cast<fs::perms>(mode & 07777), ec);
+    const auto host_perms =
+        static_cast<fs::perms>(mode & 07777) | fs::perms::owner_read | fs::perms::owner_write;
+    fs::permissions(file->m_host_name, host_perms, ec);
     if (ec) {
         *__Error() = NativeToPosixErrno(ec.value());
         return -1;
