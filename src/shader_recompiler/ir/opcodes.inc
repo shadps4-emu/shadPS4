@@ -15,6 +15,7 @@ OPCODE(DebugPrint,                                          Void,           Stri
 
 // Constant memory operations
 OPCODE(ReadConst,                                           U32,            U32x2,          U32,                                                            )
+OPCODE(ReadConstArray, U32, U32, U32, U32, )
 OPCODE(ReadConstBuffer,                                     U32,            Opaque,         U32,                                                            )
 
 // Barriers
@@ -420,6 +421,7 @@ OPCODE(ConvertS32S16,                                       U32,            U16,
 
 // Image operations
 OPCODE(ImageHandle,                                         Opaque,         U32x4,          U32x4,                                                          )
+OPCODE(ImageDescriptorHandle, Opaque, U32, U32, )
 OPCODE(ImageSampleRaw,                                      F32x4,          Opaque,         Opaque,         F32x4,          F32x4,          F32x4,          F32,           )
 OPCODE(ImageSampleImplicitLod,                              F32x4,          Opaque,         F32x4,          F32,            Opaque,                         )
 OPCODE(ImageSampleExplicitLod,                              F32x4,          Opaque,         Opaque,         F32,            Opaque,                         )
