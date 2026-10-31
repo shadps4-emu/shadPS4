@@ -340,13 +340,13 @@ public:
         return 0;
     }
     s32 GetMaxPacketSize(libusb_device* dev, u8 endpoint) override {
-        libusb_device_descriptor* desc = nullptr;
+        libusb_device_descriptor desc{};
 
-        int r = GetDeviceDescriptor(dev, desc);
+        int r = GetDeviceDescriptor(dev, &desc);
         if (r < LIBUSB_SUCCESS) {
             return LIBUSB_ERROR_OTHER;
         }
-        return desc->bMaxPacketSize0;
+        return desc.bMaxPacketSize0;
     }
 
     s32 OpenDevice(libusb_device* dev, libusb_device_handle** dev_handle) override {
