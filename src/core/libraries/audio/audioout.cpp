@@ -192,7 +192,9 @@ static void AudioOutputThread(std::shared_ptr<PortOut> port, const std::stop_tok
             next_output = std::max(next_output, now - 3 * period);
             if (now < next_output) {
                 lock.unlock();
-                Common::AccurateSleep(next_output - now, nullptr, false);
+                if (!Common::AccurateSleep(next_output - now, nullptr, false)) {
+                    std::this_thread::sleep_until(next_output);
+                }
                 lock.lock();
             }
             if (!port->impl || port->closing || stop.stop_requested()) {
