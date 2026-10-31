@@ -669,6 +669,7 @@ set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/np_handler/np_handler_friends.cpp
             src/core/libraries/np/np_handler/np_handler_auth.cpp
             src/core/libraries/np/np_handler/np_handler_invitation.cpp
+            src/core/libraries/np/np_handler/np_handler_game_custom_data.cpp
             src/core/libraries/np/np_handler/np_handler_score.cpp
             src/core/libraries/np/np_handler/np_handler_trophy.cpp
             src/core/libraries/np/np_handler/np_handler_tus.cpp

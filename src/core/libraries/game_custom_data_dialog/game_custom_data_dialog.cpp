@@ -86,6 +86,8 @@ Error Reject(Error e, fmt::format_string<Args...> why, Args&&... args) {
     return e;
 }
 
+// Fixed recipients: account IDs for the A entry points (non-zero), online IDs for the older
+// ones (non-empty handle).
 bool ValidRecipient(const Libraries::Np::OrbisNpAccountId& id) {
     return id != 0;
 }
@@ -252,7 +254,7 @@ Error ValidateParam(const Param* param) {
     }
 }
 
-// ---- Request dump ----
+// Request dump
 // Everything the game asked to send is logged field by field, and the thumbnail and data are
 // written to <log dir>/game_custom_data/, so the payload can be inspected (and later replayed
 // to a server) even though nothing is sent yet.
@@ -339,6 +341,7 @@ void WriteFile(const std::filesystem::path& path, const void* bytes, u32 size) {
     }
 }
 
+// Writes the thumbnail and (for SEND) the data blob next to the logs, one folder per request.
 void DumpPayload(const void* thumbnail, u32 thumbnail_size, const char* thumbnail_ext,
                  const void* data, u32 data_size) {
     static u32 sequence = 0;
@@ -424,7 +427,8 @@ void LogSendRequest(const Send& send) {
         }
     }
 
-    DumpPayload(send.thumbnail, send.thumbnailSize, thumbnail_ext, data, data_size);
+    // DumpPayload(send.thumbnail, send.thumbnailSize, thumbnail_ext, data, data_size);//enabled it
+    // for debugging
 }
 
 template <typename Param>
@@ -464,16 +468,33 @@ void CaptureSend(const Send& send) {
         st.with_item_id = send.withItemId;
     } else {
         st.data_size = send.dataSize;
+        const auto* data = static_cast<const u8*>(send.data);
+        st.game_data.assign(data, data + send.dataSize);
     }
+    st.thumbnail_bytes.assign(static_cast<const u8*>(send.thumbnail),
+                              static_cast<const u8*>(send.thumbnail) + send.thumbnailSize);
+    const auto translations = [](const OrbisGameCustomDataMultiLanguageString* list, u32 count,
+                                 size_t max, auto& out) {
+        for (u32 i = 0; list != nullptr && i < count; i++) {
+            if (list[i].language != nullptr && list[i].str != nullptr) {
+                out.emplace_back(std::string(list[i].language, BoundedLength(list[i].language, 16)),
+                                 std::string(list[i].str, BoundedLength(list[i].str, max)));
+            }
+        }
+    };
+    translations(send.dataNameMultiLang, send.dataNameMultiLangNum, kMaxNameBytes,
+                 st.localized_names);
+    translations(send.dataDetailMultiLang, send.dataDetailMultiLangNum, kMaxDetailBytes,
+                 st.localized_details);
 
+    // Decode only images stb can read (PNG/JPEG); the texture loader doesn't handle failures.
     const auto* thumb = static_cast<const u8*>(send.thumbnail);
     const char* ext;
     DescribeImage(thumb, send.thumbnailSize, &ext);
     int w, h, comp;
     if (std::string_view{ext} != "bin" &&
         stbi_info_from_memory(thumb, static_cast<int>(send.thumbnailSize), &w, &h, &comp)) {
-        st.thumbnail = ImGui::RefCountedTexture::DecodePngTexture(
-            std::vector<u8>(thumb, thumb + send.thumbnailSize));
+        st.thumbnail = ImGui::RefCountedTexture::DecodePngTexture(st.thumbnail_bytes);
         st.has_thumbnail = true;
     } else {
         LOG_WARNING(Lib_GameCustomDataDialog, "  thumbnail can't be decoded, not shown");
@@ -612,6 +633,7 @@ Error PS4_SYSV_ABI sceGameCustomDataDialogTerminate() {
         return Error::NOT_INITIALIZED;
     }
     LOG_INFO(Lib_GameCustomDataDialog, "terminated (was {})", magic_enum::enum_name(g_status));
+    // Aborts a dialog that is still up.
     g_dialog_ui.Finish(Result::USER_CANCELED);
     g_status = Status::NONE;
     CommonDialog::g_isUsed = false;

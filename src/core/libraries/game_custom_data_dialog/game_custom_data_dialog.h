@@ -181,6 +181,21 @@ struct OrbisGameCustomDataDialogResult {
     u8 reserved[32];
 };
 
+static_assert(offsetof(OrbisGameCustomDataDialogResultA, reserved) == 0x18);
+static_assert(offsetof(OrbisGameCustomDataDialogResult, reserved) == 0x18);
+
+// SceNpGameCustomDataId
+using OrbisNpGameCustomDataId = u64;
+
+// SceNpGameCustomDataEventParam: delivered in SceSystemServiceEvent::data::param with
+// ORBIS_SYSTEM_SERVICE_EVENT_GAME_CUSTOM_DATA when the user chooses "Use game custom data". The
+// game then reads the item through the Game Custom Data Web API by itemId.
+struct OrbisNpGameCustomDataEventParam {
+    OrbisNpGameCustomDataId itemId;                        // game custom data ID
+    Libraries::Np::OrbisNpOnlineId onlineId;               // user who chose it
+    Libraries::UserService::OrbisUserServiceUserId userId; // same user
+};
+
 Libraries::CommonDialog::Error PS4_SYSV_ABI sceGameCustomDataDialogInitialize();
 Libraries::CommonDialog::Error PS4_SYSV_ABI sceGameCustomDataDialogTerminate();
 Libraries::CommonDialog::Error PS4_SYSV_ABI
