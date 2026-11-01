@@ -248,7 +248,9 @@ Id EmitImageQueryDimensions(EmitContext& ctx, IR::Inst* inst, u32 handle, Id lod
     const Id image = ctx.OpLoad(texture.image_type, texture.id);
     const Id zero = ctx.u32_zero_value;
     const auto mips{[&] { return has_mips ? ctx.OpImageQueryLevels(ctx.U32[1], image) : zero; }};
-    const bool uses_lod{texture.view_type != AmdGpu::ImageType::Color2DMsaa && !texture.is_storage};
+    const bool uses_lod{texture.view_type != AmdGpu::ImageType::Color2DMsaa &&
+                        texture.view_type != AmdGpu::ImageType::Color2DMsaaArray &&
+                        !texture.is_storage};
     const auto query{[&](Id type) {
         return uses_lod ? ctx.OpImageQuerySizeLod(type, image, lod)
                         : ctx.OpImageQuerySize(type, image);
@@ -268,6 +270,7 @@ Id EmitImageQueryDimensions(EmitContext& ctx, IR::Inst* inst, u32 handle, Id lod
     case AmdGpu::ImageType::Color2DMsaa:
         return ctx.OpCompositeConstruct(ctx.U32[4], query(ctx.U32[2]), zero, mips());
     case AmdGpu::ImageType::Color2DArray:
+    case AmdGpu::ImageType::Color2DMsaaArray:
     case AmdGpu::ImageType::Cube:
     case AmdGpu::ImageType::Color3D:
         return ctx.OpCompositeConstruct(ctx.U32[4], query(ctx.U32[3]), mips());
@@ -309,12 +312,14 @@ Id EmitImageRead(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id lod
     Id texel;
     if (!texture.is_storage) {
         const Id image = ctx.OpLoad(texture.image_type, texture.id);
-        if (texture.view_type == AmdGpu::ImageType::Color2DMsaa) {
-            // GCN hardware wraps out-of-range MSAA sample indices
+        Id sample_in_range{};
+        if (texture.view_type == AmdGpu::ImageType::Color2DMsaa ||
+            texture.view_type == AmdGpu::ImageType::Color2DMsaaArray) {
             if (Sirit::ValidId(ms)) {
                 const Id sample_count = ctx.OpImageQuerySamples(ctx.U32[1], image);
                 const Id wrapped_ms = ctx.OpUMod(ctx.U32[1], ms, sample_count);
                 operands.Add(spv::ImageOperandsMask::Sample, wrapped_ms);
+                sample_in_range = ctx.OpULessThan(ctx.U1[1], ms, sample_count);
             }
         } else {
             if (Sirit::ValidId(ms)) {
@@ -324,6 +329,9 @@ Id EmitImageRead(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id lod
             operands.Add(spv::ImageOperandsMask::Sample, ms);
         }
         texel = ctx.OpImageFetch(color_type, image, fixed_coords, operands.mask, operands.operands);
+        if (Sirit::ValidId(sample_in_range)) {
+            texel = ctx.OpSelect(color_type, sample_in_range, texel, ctx.ConstantNull(color_type));
+        }
     } else {
         Id image_ptr = texture.id;
         if (ctx.profile.supports_image_load_store_lod) {

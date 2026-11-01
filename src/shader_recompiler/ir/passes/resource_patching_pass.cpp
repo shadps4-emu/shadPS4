@@ -227,6 +227,14 @@ void PatchBufferSharp(const ResourceDiscovery& resource, Info& info, Descriptors
     inst.SetArg(0, ir.Imm32(buffer_binding));
 }
 
+IR::Value ImageAddressComponent(IR::IREmitter& ir, const IR::Value& address, u32 index) {
+    const IR::Inst* construct = address.TryInst();
+    if (construct && construct->GetOpcode() == IR::Opcode::CompositeConstructU32x4) {
+        return construct->Arg(index);
+    }
+    return ir.CompositeExtract(address, index);
+}
+
 void PatchImageSharp(const ResourceDiscovery& resource, Info& info, Descriptors& descriptors,
                      const Profile& profile) {
     IR::Inst& inst = *resource.user;
@@ -258,18 +266,19 @@ void PatchImageSharp(const ResourceDiscovery& resource, Info& info, Descriptors&
         // If index is dynamic, we will bind levels as an array
         const auto view_type = image.GetViewType(image_res.is_array);
 
-        IR::Inst* body = inst.Arg(1).Inst();
+        IR::IREmitter ir{*inst.GetParent(), IR::Block::InstructionList::s_iterator_to(inst)};
+        const auto body = [&](u32 index) { return ImageAddressComponent(ir, inst.Arg(1), index); };
         const auto lod_arg = [&] -> IR::Value {
             switch (view_type) {
             case AmdGpu::ImageType::Color1D: // x, [lod]
-                return body->Arg(1);
+                return body(1);
             case AmdGpu::ImageType::Color1DArray: // x, slice, [lod]
             case AmdGpu::ImageType::Color2D:      // x, y, [lod]
-                return body->Arg(2);
+                return body(2);
             case AmdGpu::ImageType::Color2DArray: // x, y, slice, [lod]
             case AmdGpu::ImageType::Cube:         // x, y, face, [lod]
             case AmdGpu::ImageType::Color3D:      // x, y, z, [lod]
-                return body->Arg(3);
+                return body(3);
             case AmdGpu::ImageType::Color2DMsaa:
             case AmdGpu::ImageType::Color2DMsaaArray:
             default:
@@ -637,6 +646,121 @@ void PatchBufferArgs(IR::Inst& inst, Info& info) {
                 CalculateBufferAddress(ir, inst, info, buffer, buffer.stride));
 }
 
+IR::Value SampleMsaaImage(IR::IREmitter& ir, const IR::Value& handle, const IR::Value& coords,
+                          const IR::Value& offset, const IR::Value& dimensions,
+                          const AmdGpu::Sampler& sampler, bool is_array, bool is_integer,
+                          IR::TextureInstInfo inst_info) {
+    const IR::U32 width{ir.CompositeExtract(dimensions, 0)};
+    const IR::U32 height{ir.CompositeExtract(dimensions, 1)};
+    const IR::U32 layer =
+        is_array ? IR::U32{ir.ConvertFToU(32, IR::F32{ir.CompositeExtract(coords, 2)})} : IR::U32{};
+    const auto is_border = [](AmdGpu::ClampMode mode) {
+        return mode == AmdGpu::ClampMode::ClampHalfBorder || mode == AmdGpu::ClampMode::ClampBorder;
+    };
+    const bool border_x = is_border(sampler.clamp_x);
+    const bool border_y = is_border(sampler.clamp_y);
+    const auto address = [&](const IR::U32& coord, const IR::U32& size,
+                             AmdGpu::ClampMode mode) -> IR::U32 {
+        const IR::U32 last{ir.ISub(size, ir.Imm32(1u))};
+        switch (mode) {
+        case AmdGpu::ClampMode::Wrap:
+            return ir.IMod(coord, size, true);
+        case AmdGpu::ClampMode::Mirror: {
+            const IR::U32 period{ir.IAdd(size, size)};
+            const IR::U32 pos = ir.IMod(coord, period, true);
+            return IR::U32{ir.Select(ir.ILessThan(pos, size, true), pos,
+                                     IR::U32{ir.ISub(ir.ISub(period, ir.Imm32(1u)), pos)})};
+        }
+        case AmdGpu::ClampMode::MirrorOnceLastTexel:
+        case AmdGpu::ClampMode::MirrorOnceHalfBorder:
+        case AmdGpu::ClampMode::MirrorOnceBorder: {
+            const IR::U32 mirrored{ir.Select(ir.ILessThan(coord, ir.Imm32(0), true),
+                                             IR::U32{ir.ISub(ir.Imm32(-1), coord)}, coord)};
+            return ir.SClamp(mirrored, ir.Imm32(0), last);
+        }
+        default:
+            return ir.SClamp(coord, ir.Imm32(0), last);
+        }
+    };
+
+    const IR::F32 zero{ir.Imm32(0.f)};
+    const IR::F32 one{is_integer ? ir.BitCast<IR::F32>(ir.Imm32(1u)) : ir.Imm32(1.f)};
+    const std::array<IR::F32, 4> border_color = [&] -> std::array<IR::F32, 4> {
+        switch (sampler.border_color_type) {
+        case AmdGpu::BorderColor::TransparentBlack:
+            return {zero, zero, zero, zero};
+        case AmdGpu::BorderColor::White:
+            return {one, one, one, one};
+        case AmdGpu::BorderColor::Custom:
+            if (border_x || border_y) {
+                LOG_WARNING(Render_Recompiler,
+                            "Custom border color is not supported on MSAA images, using black");
+            }
+            [[fallthrough]];
+        default:
+            return {zero, zero, zero, one};
+        }
+    }();
+    const auto fetch = [&](const IR::U32& x, const IR::U32& y) -> std::array<IR::F32, 4> {
+        const IR::U32 u = address(x, width, sampler.clamp_x);
+        const IR::U32 v = address(y, height, sampler.clamp_y);
+        const IR::Value texel_coords =
+            is_array ? ir.CompositeConstruct(u, v, layer) : ir.CompositeConstruct(u, v);
+        const IR::Value texel = ir.ImageRead(handle, texel_coords, {}, ir.Imm32(0u), inst_info);
+        std::array<IR::F32, 4> result;
+        for (u32 i = 0; i < 4; ++i) {
+            result[i] = IR::F32{ir.CompositeExtract(texel, i)};
+        }
+        if (border_x || border_y) {
+            const IR::U1 inside_x = border_x ? ir.ILessThan(x, width, false) : ir.Imm1(true);
+            const IR::U1 inside_y = border_y ? ir.ILessThan(y, height, false) : ir.Imm1(true);
+            const IR::U1 inside = ir.LogicalAnd(inside_x, inside_y);
+            for (u32 i = 0; i < 4; ++i) {
+                result[i] = IR::F32{ir.Select(inside, result[i], border_color[i])};
+            }
+        }
+        return result;
+    };
+
+    const auto texel_offset = [&](u32 comp) -> IR::U32 {
+        return offset.IsEmpty() ? ir.Imm32(0) : IR::U32{ir.CompositeExtract(offset, comp)};
+    };
+    const IR::F32 x{ir.CompositeExtract(coords, 0)};
+    const IR::F32 y{ir.CompositeExtract(coords, 1)};
+    const bool is_linear = !is_integer && (sampler.xy_mag_filter == AmdGpu::Filter::Bilinear ||
+                                           sampler.xy_mag_filter == AmdGpu::Filter::AnisoLinear);
+    if (!inst_info.is_gather && !is_linear) {
+        const IR::U32 i{ir.IAdd(ir.ConvertFToS(32, ir.FPFloor(x)), texel_offset(0))};
+        const IR::U32 j{ir.IAdd(ir.ConvertFToS(32, ir.FPFloor(y)), texel_offset(1))};
+        const auto texel = fetch(i, j);
+        return ir.CompositeConstruct(texel[0], texel[1], texel[2], texel[3]);
+    }
+
+    const IR::F32 x_base{ir.FPSub(x, ir.Imm32(0.5f))};
+    const IR::F32 y_base{ir.FPSub(y, ir.Imm32(0.5f))};
+    const IR::U32 i0{ir.IAdd(ir.ConvertFToS(32, ir.FPFloor(x_base)), texel_offset(0))};
+    const IR::U32 j0{ir.IAdd(ir.ConvertFToS(32, ir.FPFloor(y_base)), texel_offset(1))};
+    const IR::U32 i1{ir.IAdd(i0, ir.Imm32(1))};
+    const IR::U32 j1{ir.IAdd(j0, ir.Imm32(1))};
+    const auto t00 = fetch(i0, j0);
+    const auto t10 = fetch(i1, j0);
+    const auto t01 = fetch(i0, j1);
+    const auto t11 = fetch(i1, j1);
+    if (inst_info.is_gather) {
+        const u32 comp = inst_info.gather_comp;
+        return ir.CompositeConstruct(t01[comp], t11[comp], t10[comp], t00[comp]);
+    }
+    const IR::F32 alpha{ir.FPFract(x_base)};
+    const IR::F32 beta{ir.FPFract(y_base)};
+    std::array<IR::F32, 4> texel;
+    for (u32 i = 0; i < 4; ++i) {
+        const IR::F32 top{ir.FPFma(alpha, ir.FPSub(t10[i], t00[i]), t00[i])};
+        const IR::F32 bottom{ir.FPFma(alpha, ir.FPSub(t11[i], t01[i]), t01[i])};
+        texel[i] = IR::F32{ir.FPFma(beta, ir.FPSub(bottom, top), top)};
+    }
+    return ir.CompositeConstruct(texel[0], texel[1], texel[2], texel[3]);
+}
+
 void PatchImageSampleArgs(IR::Inst& inst, Info& info, const ImageResource& image_res,
                           const AmdGpu::Image& image) {
     const auto handle = inst.Arg(0);
@@ -699,6 +823,7 @@ void PatchImageSampleArgs(IR::Inst& inst, Info& info, const ImageResource& image
         case AmdGpu::ImageType::Color2D:
         case AmdGpu::ImageType::Color2DMsaa:
         case AmdGpu::ImageType::Color2DArray:
+        case AmdGpu::ImageType::Color2DMsaaArray:
         case AmdGpu::ImageType::Cube:
             return ir.CompositeConstruct(read(0), read(8));
         case AmdGpu::ImageType::Color3D:
@@ -722,6 +847,7 @@ void PatchImageSampleArgs(IR::Inst& inst, Info& info, const ImageResource& image
         case AmdGpu::ImageType::Color2D:
         case AmdGpu::ImageType::Color2DMsaa:
         case AmdGpu::ImageType::Color2DArray:
+        case AmdGpu::ImageType::Color2DMsaaArray:
         case AmdGpu::ImageType::Cube:
             // (du/dx, dv/dx), (du/dy, dv/dy)
             addr_reg = addr_reg + 4;
@@ -742,7 +868,7 @@ void PatchImageSampleArgs(IR::Inst& inst, Info& info, const ImageResource& image
     const bool is_msaa = view_type == AmdGpu::ImageType::Color2DMsaa ||
                          view_type == AmdGpu::ImageType::Color2DMsaaArray;
     const bool unnormalized = sampler.force_unnormalized || inst_info.is_unnormalized;
-    const bool needs_dimentions = (!is_msaa && unnormalized) || (is_msaa && !unnormalized);
+    const bool needs_dimentions = is_msaa || unnormalized;
     const auto dimensions =
         needs_dimentions ? ir.ImageQueryDimension(handle, ir.Imm32(0u), ir.Imm1(false), inst_info)
                          : IR::Value{};
@@ -751,11 +877,11 @@ void PatchImageSampleArgs(IR::Inst& inst, Info& info, const ImageResource& image
         if (is_msaa) {
             // For MSAA images preserve the unnormalized coord or manually unnormalize it
             if (unnormalized) {
-                return ir.ConvertFToU(32, coord);
+                return coord;
             } else {
                 const auto dim =
                     ir.ConvertUToF(32, 32, IR::U32{ir.CompositeExtract(dimensions, dim_idx)});
-                return ir.ConvertFToU(32, ir.FPMul(coord, dim));
+                return ir.FPMul(coord, dim);
             }
         }
         if (unnormalized) {
@@ -784,6 +910,14 @@ void PatchImageSampleArgs(IR::Inst& inst, Info& info, const ImageResource& image
             addr_reg = addr_reg + 3;
             return ir.CompositeConstruct(get_coord(addr_reg - 3, 0), get_coord(addr_reg - 2, 1),
                                          get_coord(addr_reg - 1, 2));
+        case AmdGpu::ImageType::Color2DMsaaArray: {
+            addr_reg = addr_reg + 3;
+            const IR::U32 layers{ir.CompositeExtract(dimensions, 2)};
+            const auto last_layer = ir.ConvertUToF(32, 32, ir.ISub(layers, ir.Imm32(1u)));
+            const auto slice = ir.FPMax(get_addr_reg(addr_reg - 1), ir.Imm32(0.f));
+            return ir.CompositeConstruct(get_coord(addr_reg - 3, 0), get_coord(addr_reg - 2, 1),
+                                         ir.FPMin(slice, last_layer));
+        }
         default:
             UNREACHABLE();
         }
@@ -798,7 +932,9 @@ void PatchImageSampleArgs(IR::Inst& inst, Info& info, const ImageResource& image
 
     auto texel = [&] -> IR::Value {
         if (is_msaa) {
-            return ir.ImageRead(handle, coords, {}, ir.Imm32(0U), inst_info);
+            return SampleMsaaImage(ir, handle, coords, offset, dimensions, sampler,
+                                   view_type == AmdGpu::ImageType::Color2DMsaaArray,
+                                   AmdGpu::IsInteger(image.GetNumberFmt()), inst_info);
         }
         if (inst_info.is_gather) {
             if (inst_info.is_depth) {
@@ -850,19 +986,19 @@ void PatchImageArgs(IR::Inst& inst, Info& info) {
     const auto view_type = image.GetViewType(image_res.is_array);
 
     // Now that we know the image type, adjust texture coordinate vector.
-    IR::Inst* body = inst.Arg(1).Inst();
+    const auto body = [&](u32 index) { return ImageAddressComponent(ir, inst.Arg(1), index); };
     const auto [coords, arg] = [&] -> std::pair<IR::Value, IR::Value> {
         switch (view_type) {
         case AmdGpu::ImageType::Color1D: // x, [lod]
-            return {body->Arg(0), body->Arg(1)};
+            return {body(0), body(1)};
         case AmdGpu::ImageType::Color1DArray: // x, slice, [lod]
         case AmdGpu::ImageType::Color2D:      // x, y, [lod]
-            return {ir.CompositeConstruct(body->Arg(0), body->Arg(1)), body->Arg(2)};
+            return {ir.CompositeConstruct(body(0), body(1)), body(2)};
         case AmdGpu::ImageType::Color2DMsaa: // x, y. (sample is passed on different argument)
         {
             auto skip_lod = false;
             if (inst_info.has_lod) {
-                const auto mipid = body->Arg(2);
+                const auto mipid = body(2);
                 if (mipid.IsImmediate() && mipid.U32() == 0) {
                     // if image_x_mip refers to a MSAA image, and mipid is 0, it is safe to be
                     // skipped and fragid is taken from the next arg
@@ -875,14 +1011,14 @@ void PatchImageArgs(IR::Inst& inst, Info& info) {
                         "Encountered a _mip instruction with MSAA image, and mipid is non-zero");
                 }
             }
-            return {ir.CompositeConstruct(body->Arg(0), body->Arg(1)), body->Arg(skip_lod ? 3 : 2)};
+            return {ir.CompositeConstruct(body(0), body(1)), body(skip_lod ? 3 : 2)};
         }
         case AmdGpu::ImageType::Color2DArray:     // x, y, slice, [lod]
         case AmdGpu::ImageType::Color2DMsaaArray: // x, y, slice. (sample is passed on different
                                                   // argument)
         case AmdGpu::ImageType::Cube:             // x, y, face, [lod]
         case AmdGpu::ImageType::Color3D:          // x, y, z, [lod]
-            return {ir.CompositeConstruct(body->Arg(0), body->Arg(1), body->Arg(2)), body->Arg(3)};
+            return {ir.CompositeConstruct(body(0), body(1), body(2)), body(3)};
         default:
             UNREACHABLE_MSG("Unknown image type {}", view_type);
         }
