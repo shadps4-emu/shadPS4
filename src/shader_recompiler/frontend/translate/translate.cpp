@@ -4,6 +4,7 @@
 #include "common/io_file.h"
 #include "common/path_util.h"
 #include "core/emulator_settings.h"
+#include "shader_recompiler/frontend/control_flow_graph.h"
 #include "shader_recompiler/frontend/decode.h"
 #include "shader_recompiler/frontend/fetch_shader.h"
 #include "shader_recompiler/frontend/translate/translate.h"
@@ -1220,7 +1221,10 @@ void Translator::Translate(IR::Block* block, u32 start_pc, IR::Condition cond,
     }
     ir = IR::IREmitter{*block, block->begin()};
     pc = start_pc;
-    for (const auto& inst : inst_list) {
+    const Gcn::Block& cfg_block = *block->cfg_block;
+    const bool is_jump_table = cfg_block.end_class == EndClass::IndirectBranch;
+    for (u32 i = 0; i < inst_list.size(); i++) {
+        const auto& inst = inst_list[i];
         pc += inst.length;
 
         // Special case for emitting fetch shader.
@@ -1230,11 +1234,22 @@ void Translator::Translate(IR::Block* block, u32 start_pc, IR::Condition cond,
             EmitFetch(inst);
             continue;
         }
+        // The jump table was read at compile time; the PC relative load can't be translated.
+        if (is_jump_table && cfg_block.begin_index + i == cfg_block.jump_table.load_index) {
+            continue;
+        }
 
         TranslateInstruction(inst);
     }
     if (cond != IR::Condition::True && cond != IR::Condition::False) {
         block->branch_cond = ir.ConditionRef(ir.Condition(cond));
+    }
+    if (is_jump_table) {
+        const auto& table = cfg_block.jump_table;
+        const IR::U32 offset = ir.GetScalarReg(IR::ScalarReg(table.index_reg));
+        for (const auto& [value, _] : table.targets) {
+            block->jump_table_conds.push_back(ir.ConditionRef(ir.IEqual(offset, ir.Imm32(value))));
+        }
     }
 }
 

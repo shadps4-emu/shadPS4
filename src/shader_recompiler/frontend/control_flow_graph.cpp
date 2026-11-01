@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <limits>
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "shader_recompiler/frontend/control_flow_graph.h"
@@ -101,10 +102,176 @@ static std::optional<u32> ResolveSetPcTarget(std::span<const GcnInst> list, u32 
     return result_pc & ~0x3u;
 }
 
+static std::optional<u32> GetConstant(const InstOperand& op) {
+    switch (op.field) {
+    case OperandField::ConstZero:
+        return 0U;
+    case OperandField::SignedConstIntPos:
+        return op.code - SignedConstIntPosMin + 1;
+    case OperandField::LiteralConst:
+        return op.code;
+    default:
+        return std::nullopt;
+    }
+}
+
+static bool WritesSgpr(const GcnInst& inst, u32 reg) {
+    return std::ranges::any_of(inst.dst, [&](const InstOperand& dst) {
+        if (dst.field != OperandField::ScalarGPR) {
+            return false;
+        }
+        u32 count = 1;
+        if (inst.category == InstCategory::ScalarMemory) {
+            count = inst.control.smrd.count;
+        } else if (dst.type == ScalarType::Uint64 || dst.type == ScalarType::Sint64 ||
+                   dst.type == ScalarType::Float64) {
+            count = 2;
+        }
+        return reg >= dst.code && reg < dst.code + count;
+    });
+}
+
+/// Returns the index of the last instruction before `index` that writes SGPR `reg`.
+static std::optional<u32> FindSgprWriter(std::span<const GcnInst> list, u32 index, u32 reg) {
+    while (index-- > 0) {
+        if (WritesSgpr(list[index], reg)) {
+            return index;
+        }
+    }
+    return std::nullopt;
+}
+
+/// Returns the constant operand of `inst` if its other operand is SGPR `reg`.
+static std::optional<u32> GetConstantWithSgpr(const GcnInst& inst, u32 reg) {
+    for (u32 i = 0; i < 2; i++) {
+        const auto& other = inst.src[i ^ 1];
+        if (other.field == OperandField::ScalarGPR && other.code == reg) {
+            if (const auto value = GetConstant(inst.src[i])) {
+                return value;
+            }
+        }
+    }
+    return std::nullopt;
+}
+
+struct JumpTableInfo {
+    u32 index_reg;
+    u32 load_index;
+    boost::container::small_vector<std::pair<u32, u32>, 16> targets; ///< (index value, target pc)
+};
+
+// Resolves an S_SETPC_B64 through a jump table, as emitted for switch statements:
+//   s_min_u32      s20, s20, N           ; clamp case index
+//   s_lshl_b32     s20, s20, 3           ; 8 byte entries
+//   s_add_u32      s20, s20, bias        ; optional
+//   s_getpc_b64    s[12:13]
+//   s_add_u32      s12, s12, table
+//   s_addc_u32     s13, s13, 0
+//   s_load_dwordx2 s[12:13], s[12:13], s20 ; offset relative to the second s_getpc_b64
+//   s_getpc_b64    s[36:37]
+//   s_add_u32      s36, s36, s12
+//   s_addc_u32     s37, s37, s13
+//   s_setpc_b64    s[36:37]
+// shortcut: only the s_min_u32 clamped form is recognized, extend if a game bounds the index
+// with a compare and branch instead.
+static std::optional<JumpTableInfo> ResolveJumpTable(std::span<const GcnInst> list, u32 setpc_index,
+                                                     std::span<const u32> pc_map, const u32* code) {
+    if (setpc_index < 3) {
+        return std::nullopt;
+    }
+    const auto& setpc = list[setpc_index];
+    const auto& getpc = list[setpc_index - 3];
+    const auto& add = list[setpc_index - 2];
+    const u32 target_reg = setpc.src[0].code;
+    if (getpc.opcode != Opcode::S_GETPC_B64 || getpc.dst[0].code != target_reg ||
+        add.opcode != Opcode::S_ADD_U32 || add.dst[0].code != target_reg ||
+        list[setpc_index - 1].opcode != Opcode::S_ADDC_U32) {
+        return std::nullopt;
+    }
+    const auto& offset_src = add.src[0].code == target_reg ? add.src[1] : add.src[0];
+    if (offset_src.field != OperandField::ScalarGPR) {
+        return std::nullopt;
+    }
+    const u32 offset_reg = offset_src.code;
+
+    // Table entry load.
+    const auto load_index = FindSgprWriter(list, setpc_index - 3, offset_reg);
+    if (!load_index) {
+        return std::nullopt;
+    }
+    const auto& load = list[*load_index];
+    if (load.opcode != Opcode::S_LOAD_DWORDX2 || load.dst[0].code != offset_reg ||
+        load.control.smrd.imm || load.src[1].field != OperandField::ScalarGPR) {
+        return std::nullopt;
+    }
+    const u32 base_reg = load.src[0].code * 2;
+    const u32 index_reg = load.src[1].code;
+
+    // Table base address: s_getpc_b64 + constant.
+    const auto base_add_index = FindSgprWriter(list, *load_index, base_reg);
+    if (!base_add_index || list[*base_add_index].opcode != Opcode::S_ADD_U32) {
+        return std::nullopt;
+    }
+    const auto table_offset = GetConstantWithSgpr(list[*base_add_index], base_reg);
+    const auto base_getpc_index = FindSgprWriter(list, *base_add_index, base_reg);
+    if (!table_offset || !base_getpc_index ||
+        list[*base_getpc_index].opcode != Opcode::S_GETPC_B64) {
+        return std::nullopt;
+    }
+    const u32 table_pc = pc_map[*base_getpc_index] + list[*base_getpc_index].length + *table_offset;
+
+    // Index computation: (min(x, N) << 3) + bias. It must still be live at the S_SETPC_B64.
+    auto index_writer = FindSgprWriter(list, *load_index, index_reg);
+    if (!index_writer || FindSgprWriter(list, setpc_index, index_reg) != index_writer) {
+        return std::nullopt;
+    }
+    u32 bias = 0;
+    const auto& bias_add = list[*index_writer];
+    if (bias_add.opcode == Opcode::S_ADD_U32 || bias_add.opcode == Opcode::S_ADD_I32) {
+        const auto bias_value = GetConstantWithSgpr(bias_add, index_reg);
+        if (!bias_value) {
+            return std::nullopt;
+        }
+        bias = *bias_value;
+        index_writer = FindSgprWriter(list, *index_writer, index_reg);
+    }
+    if (!index_writer || list[*index_writer].opcode != Opcode::S_LSHL_B32 ||
+        GetConstantWithSgpr(list[*index_writer], index_reg) != 3U) {
+        return std::nullopt;
+    }
+    const auto min_index = FindSgprWriter(list, *index_writer, index_reg);
+    if (!min_index || list[*min_index].opcode != Opcode::S_MIN_U32) {
+        return std::nullopt;
+    }
+    const auto& min = list[*min_index];
+    const auto max_case = GetConstant(min.src[1]).or_else([&] { return GetConstant(min.src[0]); });
+    // Bound reads of guest memory in case the pattern matched something unrelated.
+    constexpr u32 MaxJumpTableCases = 256;
+    if (!max_case || *max_case >= MaxJumpTableCases || ((table_pc + bias) & 3) != 0) {
+        return std::nullopt;
+    }
+
+    // Entries are 64-bit offsets relative to the value of the final s_getpc_b64.
+    const u32 base_pc = pc_map[setpc_index - 3] + getpc.length;
+    JumpTableInfo info{index_reg, *load_index, {}};
+    for (u32 i = 0; i <= *max_case; i++) {
+        const u32 value = bias + (i << 3);
+        const u32 entry_dw = (table_pc + value) / sizeof(u32);
+        const s64 offset = static_cast<s64>(code[entry_dw] | u64(code[entry_dw + 1]) << 32);
+        const s64 target = s64(base_pc) + offset;
+        if (target < 0 || target > std::numeric_limits<u32>::max() || (target & 3) != 0) {
+            return std::nullopt;
+        }
+        info.targets.emplace_back(value, static_cast<u32>(target));
+    }
+    return info;
+}
+
 static constexpr size_t LabelReserveSize = 32;
 
-CFG::CFG(Common::ObjectPool<Block>& block_pool_, std::span<const GcnInst> inst_list_)
-    : block_pool{block_pool_}, inst_list{inst_list_} {
+CFG::CFG(Common::ObjectPool<Block>& block_pool_, std::span<const GcnInst> inst_list_,
+         const u32* code_)
+    : block_pool{block_pool_}, inst_list{inst_list_}, code{code_} {
     index_to_pc.resize(inst_list.size() + 1);
     labels.reserve(LabelReserveSize);
     EmitLabels();
@@ -128,6 +295,13 @@ void CFG::EmitLabels() {
             if (inst.opcode == Opcode::S_SETPC_B64) {
                 if (auto t = ResolveSetPcTarget(inst_list, i, index_to_pc)) {
                     target = *t;
+                } else if (const auto table = ResolveJumpTable(inst_list, i, index_to_pc, code)) {
+                    for (const auto& [_, table_target] : table->targets) {
+                        AddLabel(table_target);
+                    }
+                    AddLabel(pc + inst.length);
+                    pc += inst.length;
+                    continue;
                 } else {
                     ASSERT_MSG(
                         false,
@@ -233,6 +407,7 @@ void CFG::SplitDivergenceScopes() {
                         epi_block->end_class = blk->end_class;
                         epi_block->branch_true = blk->branch_true;
                         epi_block->branch_false = blk->branch_false;
+                        epi_block->jump_table = std::exchange(blk->jump_table, {});
                         epi_block->num_predecessors = 2;
                         blocks.insert_before(next_blk, *epi_block);
 
@@ -335,12 +510,29 @@ void CFG::LinkBlocks() {
         const u32 branch_pc = block.end - end_inst.length;
         u32 target_pc = 0;
         if (end_inst.opcode == Opcode::S_SETPC_B64) {
-            auto tgt = ResolveSetPcTarget(inst_list, block.end_index, index_to_pc);
-            ASSERT_MSG(tgt,
-                       "S_SETPC_B64 without a resolvable offset at PC {:#x} (Index {}): Involved "
-                       "instructions not recognized or invalid pattern",
-                       branch_pc, block.end_index);
-            target_pc = *tgt;
+            if (auto tgt = ResolveSetPcTarget(inst_list, block.end_index, index_to_pc)) {
+                target_pc = *tgt;
+            } else {
+                // EmitLabels already asserted that the target resolves to one or the other.
+                const auto table =
+                    ResolveJumpTable(inst_list, block.end_index, index_to_pc, code).value();
+                ASSERT_MSG(table.load_index >= block.begin_index,
+                           "Jump table load at index {} is outside of S_SETPC_B64 block",
+                           table.load_index);
+                block.end_class = EndClass::IndirectBranch;
+                block.jump_table.index_reg = table.index_reg;
+                block.jump_table.load_index = table.load_index;
+                for (const auto& [value, pc] : table.targets) {
+                    Block* const target_block = get_block(pc);
+                    if (std::ranges::none_of(block.jump_table.targets, [&](const auto& target) {
+                            return target.second == target_block;
+                        })) {
+                        target_block->num_predecessors++;
+                    }
+                    block.jump_table.targets.emplace_back(value, target_block);
+                }
+                continue;
+            }
         } else {
             target_pc = end_inst.BranchTarget(branch_pc);
         }
@@ -408,6 +600,12 @@ std::string CFG::Dot() const {
             }
             if (block.cond != IR::Condition::True) {
                 add_branch(block.branch_false, false);
+            }
+            break;
+        case EndClass::IndirectBranch:
+            for (const auto& [value, target] : block.jump_table.targets) {
+                dot += fmt::format("\t\t{}->{} [label=\"s{} == {:#x}\"]\n", name, name_of(*target),
+                                   block.jump_table.index_reg, value);
             }
             break;
         case EndClass::Exit:
