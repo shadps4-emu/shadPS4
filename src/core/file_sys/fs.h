@@ -96,15 +96,15 @@ public:
     /// Normalizes and validates a guest path (resolves dot and dot-dot components).
     static std::optional<std::string> SanitizeGuestPath(std::string_view path);
 
-    const MntPair* GetMountFromHostPath(const std::string& host_path) {
+    std::shared_ptr<const MntPair> GetMountFromHostPath(const std::string& host_path) {
         std::scoped_lock lock{m_mutex};
-        const auto it = std::ranges::find_if(m_mnt_pairs, [&](const MntPair& mount) {
-            return host_path.starts_with(std::string{fmt::UTF(mount.host_path.u8string()).data});
+        const auto it = std::ranges::find_if(m_mnt_pairs, [&](const auto& mount) {
+            return host_path.starts_with(std::string{fmt::UTF(mount->host_path.u8string()).data});
         });
-        return it == m_mnt_pairs.end() ? nullptr : &*it;
+        return it == m_mnt_pairs.end() ? nullptr : *it;
     }
 
-    const MntPair* GetMount(std::string_view guest_path) {
+    std::shared_ptr<const MntPair> GetMount(std::string_view guest_path) {
         std::string normalized;
         if (guest_path.find("..") != std::string_view::npos ||
             guest_path.find("//") != std::string_view::npos) {
@@ -115,16 +115,16 @@ public:
         const auto it = std::ranges::find_if(m_mnt_pairs, [&](const auto& mount) {
             // When doing starts-with check, add a trailing slash to make sure we don't match
             // against only part of the mount path.
-            return guest_path == mount.mount || guest_path.starts_with(mount.mount + "/");
+            return guest_path == mount->mount || guest_path.starts_with(mount->mount + "/");
         });
         if (it == m_mnt_pairs.end()) {
             return nullptr;
         }
-        return &*it;
+        return *it;
     }
 
 private:
-    std::vector<MntPair> m_mnt_pairs;
+    std::vector<std::shared_ptr<const MntPair>> m_mnt_pairs;
     std::vector<std::filesystem::path> path_parts;
     tsl::robin_map<std::filesystem::path, std::filesystem::path> path_cache;
     std::mutex m_mutex;

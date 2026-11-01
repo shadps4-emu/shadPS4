@@ -821,7 +821,7 @@ s32 PS4_SYSV_ABI posix_rmdir(const char* path) {
         sanitized_path.pop_back();
     }
 
-    const auto* mount = mnt->GetMount(sanitized_path);
+    const auto mount = mnt->GetMount(sanitized_path);
     if (sanitized_path == "/" || (mount && sanitized_path == mount->mount)) {
         LOG_WARNING(Kernel_Fs, "Cannot remove mount point '{}'", sanitized_path);
         *__Error() = POSIX_EBUSY;
@@ -1300,7 +1300,7 @@ s32 PS4_SYSV_ABI posix_fchmod(s32 fd, u32 mode) {
     }
 
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    const auto* mount = mnt->GetMount(file->m_guest_name);
+    const auto mount = mnt->GetMount(file->m_guest_name);
     if ((file->handle && file->handle->IsReadOnly()) || (mount && mount->read_only)) {
         *__Error() = POSIX_EROFS;
         return -1;
@@ -1436,7 +1436,7 @@ s32 PS4_SYSV_ABI posix_futimes(s32 fd, const OrbisKernelTimeval* times) {
     }
 
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    const auto* mount = mnt->GetMount(file->m_guest_name);
+    const auto mount = mnt->GetMount(file->m_guest_name);
     if ((file->handle && file->handle->IsReadOnly()) || (mount && mount->read_only)) {
         *__Error() = POSIX_EROFS;
         return -1;
