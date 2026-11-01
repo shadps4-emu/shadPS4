@@ -28,6 +28,10 @@ namespace Serialization {
 struct Archive;
 }
 
+namespace VideoCore {
+class BufferCache;
+}
+
 namespace Shader {
 struct Info;
 }
@@ -73,7 +77,8 @@ struct DrawIndirectParams {
 class PipelineCache {
 public:
     explicit PipelineCache(const Instance& instance, Scheduler& scheduler,
-                           AmdGpu::Liverpool* liverpool, u32 sparse_page_shift);
+                           AmdGpu::Liverpool* liverpool, VideoCore::BufferCache& buffer_cache,
+                           u32 sparse_page_shift);
     ~PipelineCache();
 
     void WarmUp();
@@ -123,6 +128,7 @@ private:
     const Instance& instance;
     Scheduler& scheduler;
     AmdGpu::Liverpool* liverpool;
+    VideoCore::BufferCache& buffer_cache;
     DescriptorHeap desc_heap;
     vk::UniquePipelineCache pipeline_cache;
     vk::UniquePipelineLayout pipeline_layout;
