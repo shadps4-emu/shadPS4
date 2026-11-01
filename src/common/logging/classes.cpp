@@ -143,6 +143,8 @@ std::string_view NameOf(Class log_class) {
         return "Lib.ImeDialog";
     case Class::Lib_InvitationDialog:
         return "Lib.InvitationDialog";
+    case Class::Lib_GameCustomDataDialog:
+        return "Lib.GameCustomDataDialog";
     case Class::Lib_AvPlayer:
         return "Lib.AvPlayer";
     case Class::Lib_Ngs2:
