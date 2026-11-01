@@ -675,6 +675,13 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
     image.tick_accessed_last = scheduler.CurrentTick();
     TouchImage(image);
 
+    if (auto mip = info.MipOf(image.info); mip >= 0) {
+        if (auto slice = info.SliceOf(image.info, mip); slice >= 0) {
+            view_mip = mip;
+            view_slice = slice;
+        }
+    }
+
     // If the image requested is a subresource of the image from cache record its location.
     if (view_mip > 0) {
         desc.view_info.range.base.level = view_mip;

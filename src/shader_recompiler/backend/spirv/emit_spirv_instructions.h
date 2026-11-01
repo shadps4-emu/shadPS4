@@ -63,6 +63,7 @@ void EmitGetMaskLaneVariable(EmitContext& ctx);
 void EmitSetScc(EmitContext& ctx);
 Id EmitReadConst(EmitContext& ctx, IR::Inst* inst, Id addr, Id offset);
 Id EmitReadConstBuffer(EmitContext& ctx, u32 handle, Id index);
+Id EmitReadConstArray(EmitContext& ctx, u32 base, Id offset);
 Id EmitLoadBufferU8(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address);
 Id EmitLoadBufferU16(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address);
 Id EmitLoadBufferU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address);
@@ -133,6 +134,7 @@ Id EmitUndefU32x2(EmitContext& ctx);
 Id EmitUndefU32x3(EmitContext& ctx);
 Id EmitUndefU32x4(EmitContext& ctx);
 Id EmitUndefF32(EmitContext& ctx);
+Id EmitUndefF32x2(EmitContext& ctx);
 Id EmitUndefU64(EmitContext& ctx);
 Id EmitLoadSharedU16(EmitContext& ctx, Id offset);
 Id EmitLoadSharedU32(EmitContext& ctx, Id offset);
@@ -432,6 +434,7 @@ Id EmitConvertS32S8(EmitContext& ctx, Id value);
 Id EmitConvertS32S16(EmitContext& ctx, Id value);
 
 Id EmitImageHandle(EmitContext& ctx, Id, Id);
+Id EmitImageDescriptorHandle(EmitContext& ctx, u32 binding, Id index);
 Id EmitImageSampleRaw(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address1, Id address2,
                       Id address3, Id address4);
 Id EmitImageSampleImplicitLod(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id bias,

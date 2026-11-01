@@ -66,6 +66,9 @@ ArgType Arg(EmitContext& ctx, const IR::Value& arg) {
     } else if constexpr (std::is_same_v<ArgType, const IR::Value&>) {
         return arg;
     } else if constexpr (std::is_same_v<ArgType, u32>) {
+        if (!arg.IsImmediate() && arg.Inst()->GetOpcode() == IR::Opcode::ImageDescriptorHandle) {
+            return arg.Inst()->Arg(0).U32();
+        }
         return arg.U32();
     } else if constexpr (std::is_same_v<ArgType, u64>) {
         return arg.U64();
@@ -145,6 +148,8 @@ Id TypeId(const EmitContext& ctx, IR::Type type) {
         return ctx.U32[4];
     case IR::Type::F32:
         return ctx.F32[1];
+    case IR::Type::F32x2:
+        return ctx.F32[2];
     case IR::Type::U64:
         return ctx.U64;
     default:
