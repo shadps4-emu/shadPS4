@@ -815,19 +815,18 @@ void Rasterizer::MirrorComputeDepthPlaneFill(const Pipeline* pipeline) {
     VideoCore::Image* target = nullptr;
     bool stencil_plane = false;
     const VAddr window = dst_addr > 0x4000000 ? dst_addr - 0x4000000 : 0;
-    texture_cache.ForEachImageInRegion(window, dst_addr - window + dst_size,
-                                       [&](VideoCore::ImageId, VideoCore::Image& im) {
-                                           if (!im.info.props.is_depth || target) {
-                                               return;
-                                           }
-                                           if (im.info.props.has_stencil &&
-                                               im.info.stencil_addr == dst_addr) {
-                                               target = &im;
-                                               stencil_plane = true;
-                                           } else if (im.info.guest_address == dst_addr) {
-                                               target = &im;
-                                           }
-                                       });
+    texture_cache.ForEachImageInRegion(
+        window, dst_addr - window + dst_size, [&](VideoCore::ImageId, VideoCore::Image& im) {
+            if (!im.info.props.is_depth || target) {
+                return;
+            }
+            if (im.info.props.has_stencil && im.info.stencil_addr == dst_addr) {
+                target = &im;
+                stencil_plane = true;
+            } else if (im.info.guest_address == dst_addr) {
+                target = &im;
+            }
+        });
     if (!target) {
         return;
     }
@@ -849,8 +848,8 @@ void Rasterizer::MirrorComputeDepthPlaneFill(const Pipeline* pipeline) {
         runtime.FlushBarriers();
     }
     const vk::ImageSubresourceRange range = {
-        .aspectMask = stencil_plane ? vk::ImageAspectFlagBits::eStencil
-                                    : vk::ImageAspectFlagBits::eDepth,
+        .aspectMask =
+            stencil_plane ? vk::ImageAspectFlagBits::eStencil : vk::ImageAspectFlagBits::eDepth,
         .baseMipLevel = 0,
         .levelCount = 1,
         .baseArrayLayer = 0,
