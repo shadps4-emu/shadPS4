@@ -430,6 +430,8 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
         IsComputeImageClear(pipeline)) {
         return false;
     }
+    // Unlike the cases above, the shader still has to run so guest memory keeps its contents.
+    MirrorComputeDepthPlaneFill(pipeline);
 
     set_write_index = 0;
     set_writes.clear();
@@ -769,6 +771,96 @@ bool Rasterizer::IsComputeImageClear(const Pipeline* pipeline) {
     };
     runtime.ClearImage(&image1, range, clear);
     return true;
+}
+
+// Some games clear a depth or stencil plane by memsetting its memory with a compute shader instead
+// of using a render pass clear. IsComputeImageClear() does not cover this: it expects a formatted
+// buffer holding a vec4 and explicitly rejects depth images. The host depth image never observes
+// those raw buffer writes, so the plane keeps its previous contents. Diablo II: Resurrected clears
+// its stencil plane this way every frame; without mirroring it, the stale stencil masks out the
+// whole scene and only the UI remains visible.
+//
+// The compute dispatch itself is left alone, so guest memory is still written as the game expects.
+void Rasterizer::MirrorComputeDepthPlaneFill(const Pipeline* pipeline) {
+    if (!pipeline->IsCompute()) {
+        return;
+    }
+    const auto& cs = pipeline->GetStage(Shader::SwStage::Compute);
+    if (cs.has_bitwise_xor) {
+        return;
+    }
+
+    // Look for the memset shape: exactly one written buffer and a four byte pattern source.
+    VAddr dst_addr = 0, pattern_addr = 0;
+    u64 dst_size = 0;
+    u32 num_written = 0;
+    for (const auto& desc : cs.buffers) {
+        if (desc.IsSpecial()) {
+            continue;
+        }
+        const auto vs = desc.GetSharp(cs);
+        if (desc.is_written) {
+            dst_addr = vs.base_address;
+            dst_size = vs.GetSize();
+            ++num_written;
+        } else if (vs.GetSize() == 4) {
+            pattern_addr = vs.base_address;
+        }
+    }
+    if (num_written != 1 || !pattern_addr || dst_size < 0x1000) {
+        return;
+    }
+
+    // The write must line up with the start of a depth image's depth or stencil plane.
+    VideoCore::Image* target = nullptr;
+    bool stencil_plane = false;
+    const VAddr window = dst_addr > 0x4000000 ? dst_addr - 0x4000000 : 0;
+    texture_cache.ForEachImageInRegion(window, dst_addr - window + dst_size,
+                                       [&](VideoCore::ImageId, VideoCore::Image& im) {
+                                           if (!im.info.props.is_depth || target) {
+                                               return;
+                                           }
+                                           if (im.info.props.has_stencil &&
+                                               im.info.stencil_addr == dst_addr) {
+                                               target = &im;
+                                               stencil_plane = true;
+                                           } else if (im.info.guest_address == dst_addr) {
+                                               target = &im;
+                                           }
+                                       });
+    if (!target) {
+        return;
+    }
+
+    const u32 pattern = *std::bit_cast<const u32*>(pattern_addr);
+    vk::ClearDepthStencilValue value{};
+    if (stencil_plane) {
+        value.stencil = pattern & 0xFF;
+    } else if (target->info.pixel_format == vk::Format::eD16Unorm ||
+               target->info.pixel_format == vk::Format::eD16UnormS8Uint) {
+        value.depth = static_cast<float>(pattern & 0xFFFF) / 65535.0f;
+    } else {
+        value.depth = std::bit_cast<float>(pattern);
+    }
+
+    scheduler.EndRendering();
+    if (runtime.Transit(target, vk::ImageLayout::eTransferDstOptimal,
+                        vk::PipelineStageFlagBits2::eClear, vk::AccessFlagBits2::eTransferWrite)) {
+        runtime.FlushBarriers();
+    }
+    const vk::ImageSubresourceRange range = {
+        .aspectMask = stencil_plane ? vk::ImageAspectFlagBits::eStencil
+                                    : vk::ImageAspectFlagBits::eDepth,
+        .baseMipLevel = 0,
+        .levelCount = 1,
+        .baseArrayLayer = 0,
+        .layerCount = target->info.resources.layers,
+    };
+    scheduler.CommandBuffer().clearDepthStencilImage(
+        target->GetImage(), vk::ImageLayout::eTransferDstOptimal, value, range);
+    target->flags |= VideoCore::ImageFlagBits::GpuModified;
+    LOG_DEBUG(Render_Vulkan, "Mirrored compute {} plane fill at {:#x} with value {:#x}",
+              stencil_plane ? "stencil" : "depth", dst_addr, pattern);
 }
 
 void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Bindings& binding,
