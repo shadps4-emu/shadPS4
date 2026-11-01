@@ -12,7 +12,9 @@ namespace Libraries::AudioIn {
 
 class SDLInPortBackend : public PortInBackend {
 public:
-    explicit SDLInPortBackend(const PortIn& port) : port(port) {
+    explicit SDLInPortBackend(const PortIn& port)
+        : samples_num(port.samples_num), sample_size(port.sample_size),
+          channels_num(port.channels_num) {
         SDL_AudioFormat sampleFormat = SDL_AUDIO_S16; // PS4 uses S16 format
 
         SDL_AudioSpec fmt;
@@ -78,7 +80,7 @@ public:
     }
 
     int Read(void* out_buffer) override {
-        const int bytesToRead = port.samples_num * port.sample_size * port.channels_num;
+        const int bytesToRead = samples_num * sample_size * channels_num;
 
         if (stream) {
             // Read from actual audio device
@@ -96,16 +98,36 @@ public:
                 return 0;
             }
 
-            const int framesRead = bytesRead / (port.sample_size * port.channels_num);
+            const int framesRead = bytesRead / (sample_size * channels_num);
             return framesRead;
         } else if (internal_buffer) {
             // Return silence from null device buffer
             std::memcpy(out_buffer, internal_buffer, bytesToRead);
-            return port.samples_num;
+            return samples_num;
         } else {
             // No device available
             return 0;
         }
+    }
+
+    int TryRead(void* out_buffer) override {
+        const int bytesToRead = samples_num * sample_size * channels_num;
+
+        if (stream) {
+            if (SDL_GetAudioStreamAvailable(stream) < bytesToRead) {
+                return 0;
+            }
+            const int bytesRead = SDL_GetAudioStreamData(stream, out_buffer, bytesToRead);
+            if (bytesRead < 0) {
+                LOG_ERROR(Lib_AudioIn, "Audio input read error: {}", SDL_GetError());
+                return 0;
+            }
+            return bytesRead / (sample_size * channels_num);
+        } else if (internal_buffer) {
+            std::memcpy(out_buffer, internal_buffer, bytesToRead);
+            return samples_num;
+        }
+        return 0;
     }
 
     void Clear() override {
@@ -114,15 +136,13 @@ public:
         }
     }
     bool IsAvailable() override {
-        if (nullDevice) {
-            return false;
-        } else {
-            return true;
-        }
+        return !nullDevice && stream != nullptr;
     }
 
 private:
-    const PortIn& port;
+    const u32 samples_num;
+    const u32 sample_size;
+    const u32 channels_num;
     SDL_AudioStream* stream = nullptr;
     void* internal_buffer = nullptr;
     bool nullDevice = false;
