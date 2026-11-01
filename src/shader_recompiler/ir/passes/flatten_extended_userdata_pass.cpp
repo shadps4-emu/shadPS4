@@ -22,6 +22,7 @@
 #include "shader_recompiler/ir/reg.h"
 #include "shader_recompiler/ir/srt_gvn_table.h"
 #include "shader_recompiler/ir/value.h"
+#include "shader_recompiler/profile.h"
 
 #ifdef ARCH_X86_64
 
@@ -741,11 +742,113 @@ void SimplifyReadConstAddressAdd(IR::Inst& inst) {
     }
 }
 
+struct ReadConstArray {
+    IR::Inst* user;
+    IR::Inst* first_dword;
+};
+
+struct SrtReadSource {
+    u32 reg;
+    std::vector<u32> pointer_offsets;
+
+    bool operator==(const SrtReadSource&) const = default;
+};
+
+static std::optional<SrtReadSource> FindSrtReadSource(IR::Value value) {
+    std::vector<u32> pointer_offsets;
+    while (auto* address = value.TryInst()) {
+        if (address->GetOpcode() != IR::Opcode::CompositeConstructU32x2) {
+            break;
+        }
+        auto* lo = address->Arg(0).TryInst();
+        auto* hi = address->Arg(1).TryInst();
+        if (!lo || !hi) {
+            break;
+        }
+        if (lo->GetOpcode() == IR::Opcode::GetUserData &&
+            hi->GetOpcode() == IR::Opcode::GetUserData) {
+            const u32 reg = u32(lo->Arg(0).ScalarReg());
+            if (reg + 1 >= NUM_USER_DATA_REGS || u32(hi->Arg(0).ScalarReg()) != reg + 1) {
+                break;
+            }
+            std::ranges::reverse(pointer_offsets);
+            return SrtReadSource{reg, std::move(pointer_offsets)};
+        }
+        if (lo->GetOpcode() != IR::Opcode::ReadConst || hi->GetOpcode() != IR::Opcode::ReadConst ||
+            lo->Arg(0) != hi->Arg(0) || !lo->Arg(1).IsImmediate() || !hi->Arg(1).IsImmediate() ||
+            u64(lo->Arg(1).U32()) + 1 != hi->Arg(1).U32()) {
+            break;
+        }
+        pointer_offsets.push_back(lo->Arg(1).U32());
+        value = lo->Arg(0);
+    }
+    return std::nullopt;
+}
+
+static std::vector<ReadConstArray> PrepareSrtReadArrays(IR::Program& program,
+                                                        const Profile& profile) {
+    std::vector<ReadConstArray> arrays;
+    if (!program.info.params ||
+        (EmulatorSettings.IsDirectMemoryAccessEnabled() && profile.support_bda)) {
+        return arrays;
+    }
+    std::vector<IR::Inst*> reads;
+    for (auto* block : program.blocks) {
+        for (auto& inst : *block) {
+            if (inst.GetOpcode() == IR::Opcode::ReadConst) {
+                reads.push_back(&inst);
+            }
+        }
+    }
+    const u32 max_dwords = std::numeric_limits<SharpLocation>::max();
+    size_t reserved_dwords = NUM_USER_DATA_REGS + reads.size();
+    struct Snapshot {
+        SrtReadSource source;
+        IR::Inst* first_dword;
+    };
+    std::vector<Snapshot> snapshots;
+    for (auto* read : reads) {
+        if (read->Arg(1).IsImmediate()) {
+            continue;
+        }
+        const auto source = FindSrtReadSource(read->Arg(0));
+        if (!source) {
+            continue;
+        }
+        const auto pointer =
+            program.info.params->FindSrtPointer(source->reg, source->pointer_offsets);
+        if (!pointer) {
+            continue;
+        }
+        auto snapshot = std::ranges::find(snapshots, *source, &Snapshot::source);
+        if (snapshot == snapshots.end()) {
+            if (reserved_dwords >= max_dwords ||
+                pointer->size_in_dwords > max_dwords - reserved_dwords) {
+                continue;
+            }
+            reserved_dwords += pointer->size_in_dwords;
+            IR::IREmitter ir{*read->GetParent(), IR::Block::InstructionList::s_iterator_to(*read)};
+            IR::Inst* first_dword{};
+            for (u32 dw = 0; dw < pointer->size_in_dwords; ++dw) {
+                auto value = ir.ReadConst(read->Arg(0), ir.Imm32(dw));
+                if (dw == 0) {
+                    first_dword = value.Inst();
+                }
+            }
+            snapshots.push_back({*source, first_dword});
+            snapshot = std::prev(snapshots.end());
+        }
+        arrays.push_back({read, snapshot->first_dword});
+    }
+    return arrays;
+}
+
 } // Anonymous namespace
 
-void FlattenExtendedUserdataPass(IR::Program& program) {
+void FlattenExtendedUserdataPass(IR::Program& program, const Profile& profile) {
     auto& post_order = program.post_order_blocks;
     PassInfo pass_info;
+    const auto arrays = PrepareSrtReadArrays(program, profile);
 
     // traverse at end and assign offsets to duplicate readconsts, using
     // vn_to_inst as the source
@@ -757,6 +860,9 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
         for (IR::Inst& inst : *block) {
             if (inst.GetOpcode() != IR::Opcode::ReadConst &&
                 inst.GetOpcode() != IR::Opcode::ReadConstBuffer) {
+                continue;
+            }
+            if (std::ranges::find(arrays, &inst, &ReadConstArray::user) != arrays.end()) {
                 continue;
             }
 
@@ -855,6 +961,12 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
         SetFlatbufOffset(readconst, GetFlatbufOffset(original));
     }
 
+    for (const auto& array : arrays) {
+        array.user->ReplaceOpcode(IR::Opcode::ReadConstArray);
+        array.user->SetArg(0, IR::Value{u32(GetFlatbufOffset(array.first_dword))});
+        array.user->SetFlags(0u);
+    }
+
     program.info.RefreshFlatBuf();
 }
 
@@ -870,7 +982,7 @@ PFN_SrtWalker RegisterWalkerCode(const u8* ptr, size_t size) {
 
 namespace Optimization {
 
-void FlattenExtendedUserdataPass(IR::Program& program) {
+void FlattenExtendedUserdataPass(IR::Program& program, const Profile& profile) {
     UNREACHABLE_MSG("FlattenExtendedUserdataPass unimplemented for target architecture.");
 }
 

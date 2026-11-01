@@ -212,10 +212,6 @@ s32 ImageInfo::MipOf(const ImageInfo& info) const {
         return -1;
     }
 
-    if (info.array_mode != array_mode) {
-        return -1;
-    }
-
     // Currently we expect only one level to be copied.
     if (resources.levels != 1) {
         return -1;
@@ -227,6 +223,14 @@ s32 ImageInfo::MipOf(const ImageInfo& info) const {
     // Find mip
     auto mip = -1;
     for (auto m = 0; m < info.resources.levels; ++m) {
+        const auto mip_array_mode = (info.micro_tiled_mips & (1u << m)) != 0
+                                        ? (AmdGpu::GetMicroTileThickness(info.array_mode) > 1
+                                               ? AmdGpu::ArrayMode::Array1DTiledThick
+                                               : AmdGpu::ArrayMode::Array1DTiledThin1)
+                                        : info.array_mode;
+        if (array_mode != mip_array_mode) {
+            continue;
+        }
         const auto& [mip_size, mip_pitch, mip_height, mip_ofs] = info.mips_layout[m];
         const VAddr mip_base = info.guest_address + mip_ofs;
         const VAddr mip_end = mip_base + mip_size;
@@ -291,19 +295,20 @@ s32 ImageInfo::SliceOf(const ImageInfo& info, s32 mip) const {
         return -1;
     }
 
-    // Check for size alignment.
+    // A single mip target can retain the full texture's array-slice stride.
     const u32 slice_size = info.mips_layout[mip].size / info.resources.layers;
-    if (guest_size % slice_size != 0) {
+    if (resources.layers > 1 && guest_size != slice_size * resources.layers) {
         return -1;
     }
 
     // Ensure that address is aligned too.
     const auto addr_diff = guest_address - (info.guest_address + info.mips_layout[mip].offset);
-    if ((addr_diff % guest_size) != 0) {
+    if ((addr_diff % slice_size) != 0 ||
+        addr_diff / slice_size + resources.layers > info.resources.layers) {
         return -1;
     }
 
-    return addr_diff / guest_size;
+    return addr_diff / slice_size;
 }
 
 } // namespace VideoCore
