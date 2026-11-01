@@ -849,7 +849,17 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb) {
                 const u64* wait_addr = wait_reg_mem->Address<u64*>();
                 if (vo_port->IsVoLabel(wait_addr) &&
                     num_submits == mapped_queues[GfxQueueId].submits.size()) {
-                    vo_port->WaitVoLabel([&] { return wait_reg_mem->Test(regs.reg_array); });
+                    // The label is written when the flip completes, and a non-EOP flip reaches
+                    // the presenter only through this thread's command queue. Sleeping without
+                    // servicing that queue deadlocks the two: the task waits for a flip that can
+                    // only be issued once the task yields. Poll in short slices and drain the
+                    // queue in between.
+                    while (!wait_reg_mem->Test(regs.reg_array)) {
+                        ProcessCommands();
+                        vo_port->WaitVoLabelFor(
+                            [&] { return wait_reg_mem->Test(regs.reg_array); },
+                            std::chrono::milliseconds(5));
+                    }
                     break;
                 }
                 while (!wait_reg_mem->Test(regs.reg_array)) {
