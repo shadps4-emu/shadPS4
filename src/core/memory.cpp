@@ -305,21 +305,26 @@ s32 MemoryManager::Free(PAddr phys_addr, u64 size, bool is_checked) {
             break;
         }
         auto& dmem_area = phys_handle->second;
-        if (dmem_area.dma_type == PhysicalMemoryType::Free) {
+        const PAddr current_phys_addr = std::max<PAddr>(phys_addr, phys_handle->first);
+        const u64 start_in_dma = current_phys_addr - phys_handle->first;
+        const u64 size_in_dma =
+            std::min<u64>(remaining_size, phys_handle->second.size - start_in_dma);
+
+        // Pool memory is not released through the direct memory calls.
+        if (dmem_area.dma_type == PhysicalMemoryType::Free ||
+            dmem_area.dma_type == PhysicalMemoryType::Pooled ||
+            dmem_area.dma_type == PhysicalMemoryType::Committed) {
             if (is_checked) {
                 // Checked frees will error if anything in the area isn't allocated.
                 // Unchecked frees will just ignore free areas.
                 LOG_ERROR(Kernel_Vmm, "Attempting to release a free dmem area");
                 return ORBIS_KERNEL_ERROR_ENOENT;
             }
+            remaining_size -= size_in_dma;
             continue;
         }
 
         // Store physical address and size to release
-        const PAddr current_phys_addr = std::max<PAddr>(phys_addr, phys_handle->first);
-        const u64 start_in_dma = current_phys_addr - phys_handle->first;
-        const u64 size_in_dma =
-            std::min<u64>(remaining_size, phys_handle->second.size - start_in_dma);
         free_list.emplace_back(current_phys_addr, size_in_dma);
 
         // Track remaining size to free
@@ -873,13 +878,20 @@ s32 MemoryManager::PoolDecommit(VAddr virtual_addr, u64 size) {
                 u64 size_in_dma =
                     std::min<u64>(size_to_free, phys_handle->second.size - dma_offset);
 
-                // Create a new dmem area reflecting the pooled region
-                const auto new_dmem_handle = CarvePhysArea(dmem_map, phys_addr, size_in_dma);
-                auto& new_dmem_area = new_dmem_handle->second;
-                new_dmem_area.dma_type = PhysicalMemoryType::Pooled;
+                // Create a new dmem area reflecting the pooled region. The range can span several
+                // dmem areas if another mapping split it after this VMA cached its areas.
+                PAddr chunk_addr = phys_addr;
+                const PAddr chunk_end = phys_addr + size_in_dma;
+                while (chunk_addr < chunk_end) {
+                    const PAddr area_end = FindDmemArea(chunk_addr)->second.GetEnd();
+                    const u64 chunk = std::min<u64>(chunk_end, area_end) - chunk_addr;
+                    const auto new_dmem_handle = CarvePhysArea(dmem_map, chunk_addr, chunk);
+                    new_dmem_handle->second.dma_type = PhysicalMemoryType::Pooled;
 
-                // Coalesce with nearby direct memory areas.
-                MergeAdjacent(dmem_map, new_dmem_handle);
+                    // Coalesce with nearby direct memory areas.
+                    MergeAdjacent(dmem_map, new_dmem_handle);
+                    chunk_addr += chunk;
+                }
 
                 // Increment loop
                 size_to_free -= size_in_dma;
@@ -958,20 +970,34 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
 
             // Create a new dmem area reflecting the pooled region
             if (vma_type == VMAType::Direct) {
-                const auto new_dmem_handle = CarvePhysArea(dmem_map, phys_addr, size_in_dma);
-                auto& new_dmem_area = new_dmem_handle->second;
-                new_dmem_area.dma_type = PhysicalMemoryType::Allocated;
+                // The range can span several dmem areas if another mapping of the same memory
+                // split it after this VMA cached its areas.
+                PAddr chunk_addr = phys_addr;
+                const PAddr chunk_end = phys_addr + size_in_dma;
+                while (chunk_addr < chunk_end) {
+                    const PAddr area_end = FindDmemArea(chunk_addr)->second.GetEnd();
+                    const u64 chunk = std::min<u64>(chunk_end, area_end) - chunk_addr;
+                    const auto new_dmem_handle = CarvePhysArea(dmem_map, chunk_addr, chunk);
+                    new_dmem_handle->second.dma_type = PhysicalMemoryType::Allocated;
 
-                // Coalesce with nearby direct memory areas.
-                MergeAdjacent(dmem_map, new_dmem_handle);
+                    // Coalesce with nearby direct memory areas.
+                    MergeAdjacent(dmem_map, new_dmem_handle);
+                    chunk_addr += chunk;
+                }
             } else if (vma_type == VMAType::Flexible) {
                 // Update fmem_map
-                const auto new_fmem_handle = CarvePhysArea(fmem_map, phys_addr, size_in_dma);
-                auto& new_fmem_area = new_fmem_handle->second;
-                new_fmem_area.dma_type = PhysicalMemoryType::Free;
+                PAddr chunk_addr = phys_addr;
+                const PAddr chunk_end = phys_addr + size_in_dma;
+                while (chunk_addr < chunk_end) {
+                    const PAddr area_end = FindFmemArea(chunk_addr)->second.GetEnd();
+                    const u64 chunk = std::min<u64>(chunk_end, area_end) - chunk_addr;
+                    const auto new_fmem_handle = CarvePhysArea(fmem_map, chunk_addr, chunk);
+                    new_fmem_handle->second.dma_type = PhysicalMemoryType::Free;
 
-                // Coalesce with nearby flexible memory areas.
-                MergeAdjacent(fmem_map, new_fmem_handle);
+                    // Coalesce with nearby flexible memory areas.
+                    MergeAdjacent(fmem_map, new_fmem_handle);
+                    chunk_addr += chunk;
+                }
 
                 // Zero out the old memory data
                 const auto unmap_hardware_address = impl.BackingBase() + phys_addr;
@@ -1237,18 +1263,40 @@ s32 MemoryManager::DirectMemoryQuery(PAddr addr, bool find_next,
 
     std::shared_lock lk{mutex};
     auto dmem_area = FindDmemArea(addr);
-    while (dmem_area != dmem_map.end() && dmem_area->second.dma_type == PhysicalMemoryType::Free &&
+    while (dmem_area != dmem_map.end() &&
+           (dmem_area->second.dma_type == PhysicalMemoryType::Free ||
+            dmem_area->second.dma_type == PhysicalMemoryType::Pooled ||
+            dmem_area->second.dma_type == PhysicalMemoryType::Committed) &&
            find_next) {
         dmem_area++;
     }
 
-    if (dmem_area == dmem_map.end() || dmem_area->second.dma_type == PhysicalMemoryType::Free) {
+    if (dmem_area == dmem_map.end() ||
+        (dmem_area->second.dma_type != PhysicalMemoryType::Mapped &&
+         dmem_area->second.dma_type != PhysicalMemoryType::Allocated)) {
         LOG_WARNING(Kernel_Vmm, "Unable to find allocated direct memory region to query!");
         return ORBIS_KERNEL_ERROR_EACCES;
     }
 
     out_info->start = dmem_area->second.base;
     out_info->memoryType = dmem_area->second.memory_type;
+
+    // Mapping state splits dmem areas, but the hardware reports the whole run of allocated memory
+    // of one type: walk back to its start as well.
+    if (dmem_area->second.dma_type == PhysicalMemoryType::Mapped ||
+        dmem_area->second.dma_type == PhysicalMemoryType::Allocated) {
+        auto first = dmem_area;
+        while (first != dmem_map.begin()) {
+            const auto& area = std::prev(first)->second;
+            if (area.memory_type != out_info->memoryType ||
+                (area.dma_type != PhysicalMemoryType::Mapped &&
+                 area.dma_type != PhysicalMemoryType::Allocated)) {
+                break;
+            }
+            --first;
+        }
+        out_info->start = first->second.base;
+    }
 
     // Loop through all sequential mapped or allocated dmem areas
     // to determine the hardware accurate end.
@@ -1335,11 +1383,17 @@ s32 MemoryManager::SetDirectMemoryType(VAddr addr, u64 size, s32 memory_type) {
                 // Update internal physical areas
                 phys_handle->second.memory_type = memory_type;
 
-                // Carve a new dmem area in dmem_map, update memory type there
-                auto dmem_handle =
-                    CarvePhysArea(dmem_map, phys_handle->second.base, phys_handle->second.size);
-                auto& dmem_area = dmem_handle->second;
-                dmem_area.memory_type = memory_type;
+                // Carve a new dmem area in dmem_map, update memory type there. The range can span
+                // several dmem areas if another mapping split it after this VMA cached its areas.
+                PAddr phys_addr = phys_handle->second.base;
+                const PAddr phys_end = phys_addr + phys_handle->second.size;
+                while (phys_addr < phys_end) {
+                    const PAddr area_end = FindDmemArea(phys_addr)->second.GetEnd();
+                    const u64 chunk = std::min<u64>(phys_end, area_end) - phys_addr;
+                    auto dmem_handle = CarvePhysArea(dmem_map, phys_addr, chunk);
+                    dmem_handle->second.memory_type = memory_type;
+                    phys_addr += chunk;
+                }
 
                 // Increment phys_handle
                 phys_handle++;
@@ -1406,14 +1460,36 @@ s32 MemoryManager::GetDirectMemoryType(PAddr addr, s32* directMemoryTypeOut,
     }
 
     std::shared_lock lk{mutex};
-    const auto& dmem_area = FindDmemArea(addr)->second;
-    if (dmem_area.dma_type == PhysicalMemoryType::Free) {
+    const auto dmem_handle = FindDmemArea(addr);
+    const auto& dmem_area = dmem_handle->second;
+    if (dmem_area.dma_type == PhysicalMemoryType::Free ||
+        dmem_area.dma_type == PhysicalMemoryType::Pooled ||
+        dmem_area.dma_type == PhysicalMemoryType::Committed) {
         LOG_ERROR(Kernel_Vmm, "Unable to find allocated direct memory region to check type!");
         return ORBIS_KERNEL_ERROR_ENOENT;
     }
 
-    *directMemoryStartOut = reinterpret_cast<void*>(dmem_area.base);
-    *directMemoryEndOut = reinterpret_cast<void*>(dmem_area.GetEnd());
+    // Mapping state splits dmem areas, but the hardware reports the whole run of allocated memory
+    // of one type.
+    const auto in_run = [&](const PhysicalMemoryArea& area) {
+        return area.memory_type == dmem_area.memory_type &&
+               (area.dma_type == PhysicalMemoryType::Mapped ||
+                area.dma_type == PhysicalMemoryType::Allocated);
+    };
+    PAddr start = dmem_area.base;
+    PAddr end = dmem_area.GetEnd();
+    if (in_run(dmem_area)) {
+        for (auto it = dmem_handle; it != dmem_map.begin() && in_run(std::prev(it)->second);) {
+            --it;
+            start = it->second.base;
+        }
+        for (auto it = std::next(dmem_handle); it != dmem_map.end() && in_run(it->second); ++it) {
+            end = it->second.GetEnd();
+        }
+    }
+
+    *directMemoryStartOut = reinterpret_cast<void*>(start);
+    *directMemoryEndOut = reinterpret_cast<void*>(end);
     *directMemoryTypeOut = dmem_area.memory_type;
     return ORBIS_OK;
 }
