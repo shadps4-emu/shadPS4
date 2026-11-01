@@ -436,6 +436,20 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
     buffer_infos.clear();
     image_infos.clear();
 
+    size_t image_info_count = 0;
+    for (const auto* stage : pipeline->GetStages()) {
+        if (!stage) {
+            continue;
+        }
+        image_info_count += stage->samplers.size();
+        for (const auto& image : stage->images) {
+            // Mip indices are four bits; budget their full range without decoding live sharps.
+            image_info_count +=
+                image.mip_fallback_mode == Shader::MipStorageFallbackMode::DynamicIndex ? 16 : 1;
+        }
+    }
+    image_infos.reserve(image_info_count);
+
     bool uses_dma = false;
 
     // Bind resource buffers and textures.
