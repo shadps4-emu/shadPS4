@@ -4,6 +4,7 @@
 #include "common/debug.h"
 #include "core/debug_state.h"
 #include "core/emulator_settings.h"
+#include "core/libraries/kernel/process.h"
 #include "core/memory.h"
 #include "shader_recompiler/resource.h"
 #include "shader_recompiler/runtime_info.h"
@@ -22,6 +23,8 @@
 
 namespace Vulkan {
 
+static constexpr u32 DbCountControl = 0xA001;
+
 static Shader::PushData MakeUserData(const AmdGpu::Regs& regs) {
     // TODO(roamic): Add support for multiple viewports and geometry shaders when ViewportIndex
     // is encountered and implemented in the recompiler.
@@ -33,6 +36,180 @@ static Shader::PushData MakeUserData(const AmdGpu::Regs& regs) {
     return push_data;
 }
 
+class ConditionalRenderingScope {
+public:
+    explicit ConditionalRenderingScope(const Instance& instance, AmdGpu::Liverpool* liverpool,
+                                       VideoCore::BufferCache& buffer_cache, Runtime& runtime,
+                                       OcclusionCounter& occlusion, bool& needs_barrier) {
+        if (!liverpool || !liverpool->IsDrawPredicated()) {
+            return;
+        }
+        if (liverpool->IsPredicationContinue() && !liverpool->GetPredicationAccumulatedResult()) {
+            should_draw = false;
+            return;
+        }
+
+        const auto op = liverpool->GetPredicationOp();
+        pred_address = liverpool->GetPredicationAddress();
+        inverted = liverpool->IsPredicationInverted();
+        const bool hint = liverpool->IsPredicationHint();
+
+        if (op == AmdGpu::PM4CmdSetPredication::PredOp::Zpass) {
+            const bool draw_if_visible = !inverted;
+            const ZpassPredicate result = occlusion.EvaluateZpass(pred_address, draw_if_visible);
+            switch (result.kind) {
+            case ZpassPredicate::Kind::Visible:
+            case ZpassPredicate::Kind::Occluded: {
+                const bool visible = (result.kind == ZpassPredicate::Kind::Visible);
+                should_draw = (visible == draw_if_visible);
+                if (!should_draw) {
+                    LOG_TRACE(Render_Vulkan,
+                              "Predication op Zpass at {:#x}: draw culled (visible={})",
+                              pred_address, visible);
+                }
+                break;
+            }
+            case ZpassPredicate::Kind::Gpu:
+                if (instance.IsConditionalRenderingSupported()) {
+                    vk_buffer = occlusion.PredicateBuffer();
+                    offset = result.offset;
+                    active = true;
+                    inverted = false;
+                } else {
+                    should_draw = true;
+                }
+                break;
+            case ZpassPredicate::Kind::Unknown:
+                // ZPass results are not ready or not final.
+                // Per GCN hardware spec (PREDICATION_HINT_NOWAIT_DRAW /
+                // V_201_DRAW_IF_NOT_FINAL_ZPASS_WRITTEN): never cull on CPU when query results are
+                // unready; draw conservatively.
+                LOG_TRACE(Render_Vulkan,
+                          "Predication op Zpass at {:#x}: results not ready, drawing "
+                          "conservatively",
+                          pred_address);
+                should_draw = true;
+                break;
+            }
+            liverpool->SetPredicationAccumulatedResult(should_draw);
+            return;
+        }
+
+        if (op == AmdGpu::PM4CmdSetPredication::PredOp::PrimCount) {
+            static constexpr u64 PrimitiveCounterValidMask = 0x8000000000000000ULL;
+            const bool draw_if_no_overflow = !inverted;
+            auto* memory = Core::Memory::Instance();
+            if (pred_address != 0 && memory) {
+                if (buffer_cache.IsRegionGpuModified(pred_address, sizeof(u64) * 4)) {
+                    buffer_cache.ReadMemory(pred_address, sizeof(u64) * 4, false, true, true);
+                }
+                if (memory->IsValidMapping(pred_address, sizeof(u64) * 4)) {
+                    const auto* q = reinterpret_cast<const u64*>(pred_address);
+                    if ((q[0] & q[1] & q[2] & q[3] & PrimitiveCounterValidMask) != 0) {
+                        const u64 storage_needed = (q[2] - q[0]) & ~PrimitiveCounterValidMask;
+                        const u64 prims_written = (q[3] - q[1]) & ~PrimitiveCounterValidMask;
+                        const bool no_overflow = (storage_needed == prims_written);
+                        should_draw = (no_overflow == draw_if_no_overflow);
+                        if (!should_draw) {
+                            LOG_TRACE(Render_Vulkan,
+                                      "Predication op PrimCount at {:#x}: draw culled "
+                                      "(needed={}, written={})",
+                                      pred_address, storage_needed, prims_written);
+                        }
+                        liverpool->SetPredicationAccumulatedResult(should_draw);
+                        return;
+                    }
+                }
+                if (memory->IsValidMapping(pred_address, sizeof(u64) * 2)) {
+                    const auto* q = reinterpret_cast<const u64*>(pred_address);
+                    if ((q[0] & q[1] & PrimitiveCounterValidMask) != 0) {
+                        const u64 storage_needed = q[0] & ~PrimitiveCounterValidMask;
+                        const u64 prims_written = q[1] & ~PrimitiveCounterValidMask;
+                        const bool no_overflow = (storage_needed == prims_written);
+                        should_draw = (no_overflow == draw_if_no_overflow);
+                        if (!should_draw) {
+                            LOG_TRACE(Render_Vulkan,
+                                      "Predication op PrimCount at {:#x}: draw culled "
+                                      "(needed={}, written={})",
+                                      pred_address, storage_needed, prims_written);
+                        }
+                        liverpool->SetPredicationAccumulatedResult(should_draw);
+                        return;
+                    }
+                }
+            }
+            LOG_TRACE(Render_Vulkan,
+                      "Predication op PrimCount at {:#x}: results not ready, drawing "
+                      "conservatively",
+                      pred_address);
+            should_draw = true;
+            liverpool->SetPredicationAccumulatedResult(should_draw);
+            return;
+        }
+
+        pred_size =
+            (op == AmdGpu::PM4CmdSetPredication::PredOp::Bool32) ? sizeof(u32) : sizeof(u64);
+
+        if (instance.IsConditionalRenderingSupported()) {
+            std::tie(buffer, offset) = buffer_cache.ObtainBuffer(pred_address, pred_size);
+            if (buffer) {
+                vk_buffer = buffer->Handle();
+                needs_barrier |= runtime.IsBufferAccessed(buffer, offset, pred_size);
+                active = true;
+            } else {
+                LOG_WARNING(Render_Vulkan,
+                            "Predication active at {:#x}, but buffer not found in cache",
+                            pred_address);
+            }
+            return;
+        }
+
+        should_draw = true;
+        liverpool->SetPredicationAccumulatedResult(should_draw);
+    }
+
+    [[nodiscard]] bool ShouldDraw() const {
+        return should_draw;
+    }
+
+    void Begin(vk::CommandBuffer cmdbuf) const {
+        if (active && vk_buffer) {
+            LOG_TRACE(Render_Vulkan,
+                      "beginConditionalRenderingEXT: addr = {:#x}, offset = {:#x}, inverted = {}",
+                      pred_address, offset, inverted);
+            const vk::ConditionalRenderingBeginInfoEXT cr_info = {
+                .buffer = vk_buffer,
+                .offset = offset,
+                .flags = inverted ? vk::ConditionalRenderingFlagBitsEXT::eInverted
+                                  : vk::ConditionalRenderingFlagsEXT{},
+            };
+            cmdbuf.beginConditionalRenderingEXT(cr_info);
+        }
+    }
+
+    void End(vk::CommandBuffer cmdbuf, Runtime& runtime) {
+        if (active && vk_buffer) {
+            cmdbuf.endConditionalRenderingEXT();
+            if (buffer) {
+                runtime.AccessBuffer(buffer, offset, pred_size,
+                                     vk::PipelineStageFlagBits2::eConditionalRenderingEXT,
+                                     vk::AccessFlagBits2::eConditionalRenderingReadEXT);
+            }
+            active = false;
+        }
+    }
+
+private:
+    VAddr pred_address{0};
+    const VideoCore::Buffer* buffer{nullptr};
+    vk::Buffer vk_buffer{};
+    u64 offset{0};
+    u64 pred_size{sizeof(u32)};
+    bool inverted{false};
+    bool active{false};
+    bool should_draw{true};
+};
+
 Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_, Runtime& runtime_,
                        AmdGpu::Liverpool* liverpool_)
     : instance{instance_}, scheduler{scheduler_}, runtime{runtime_}, page_manager{this},
@@ -40,6 +217,8 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_, Runtime
       texture_cache{instance, scheduler, runtime, liverpool_, buffer_cache, page_manager},
       liverpool{liverpool_}, memory{Core::Memory::Instance()},
       pipeline_cache{instance, scheduler, liverpool, buffer_cache.GetSparsePageShift()},
+      occlusion{instance, scheduler, memory->GetAddressSpace(),
+                Libraries::Kernel::sceKernelIsNeoMode() ? 16u : 8u},
       host_markers_enabled{EmulatorSettings.IsVkHostMarkersEnabled()},
       guest_markers_enabled{EmulatorSettings.IsVkGuestMarkersEnabled()},
       submit_draw_interval{EmulatorSettings.GetSubmitDrawInterval()} {
@@ -48,9 +227,11 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_, Runtime
     }
     memory->SetRasterizer(this);
 
+    scheduler.SetEndRenderingCallback([this] { occlusion.OnEndRendering(); });
     scheduler.SetSubmitCallback([this](Vulkan::SubmitInfo& info) {
         runtime.FlushBarriers();
         buffer_cache.SubmitPendingArenaBinds(info);
+        occlusion.OnSubmit(scheduler.CurrentTick() - 1);
     });
 }
 
@@ -192,14 +373,22 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
         return;
     }
 
+    ConditionalRenderingScope cr_scope{instance, liverpool, buffer_cache,
+                                       runtime,  occlusion, needs_barrier};
+    if (!cr_scope.ShouldDraw()) {
+        return;
+    }
+
     const auto& regs = liverpool->regs;
     const GraphicsPipeline* pipeline = pipeline_cache.GetGraphicsPipeline();
     if (!pipeline) {
+        needs_barrier = false;
         return;
     }
 
     PrepareRenderState(pipeline);
     if (!BindResources(pipeline)) {
+        ResetBindings(false);
         return;
     }
     const auto state = BeginRendering(pipeline);
@@ -224,6 +413,8 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->Handle());
 
+    occlusion.BeforeDraw(liverpool->regs.reg_array[DbCountControl]);
+    cr_scope.Begin(cmdbuf);
     if (is_indexed) {
         cmdbuf.drawIndexed(regs.num_indices, regs.num_instances.NumInstances(), 0,
                            s32(vertex_offset), instance_offset);
@@ -231,6 +422,49 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
         cmdbuf.draw(regs.num_indices, regs.num_instances.NumInstances(), vertex_offset,
                     instance_offset);
     }
+
+    cr_scope.End(cmdbuf, runtime);
+
+    u32 prims = 0;
+    switch (regs.primitive_type) {
+    case AmdGpu::PrimitiveType::PointList:
+        prims = regs.num_indices;
+        break;
+    case AmdGpu::PrimitiveType::LineList:
+        prims = regs.num_indices / 2;
+        break;
+    case AmdGpu::PrimitiveType::LineStrip:
+        prims = regs.num_indices > 1 ? regs.num_indices - 1 : 0;
+        break;
+    case AmdGpu::PrimitiveType::TriangleList:
+    case AmdGpu::PrimitiveType::RectList:
+        prims = regs.num_indices / 3;
+        break;
+    case AmdGpu::PrimitiveType::TriangleStrip:
+        prims = regs.num_indices > 2 ? regs.num_indices - 2 : 0;
+        break;
+    default:
+        prims = regs.num_indices / 3;
+        break;
+    }
+    const u64 prim_count = u64(prims) * std::max(1u, regs.num_instances.NumInstances());
+    if (regs.vgt_strmout_config.raw) {
+        if (regs.vgt_strmout_config.streamout_0_en) {
+            streamout_primitives[0] += prim_count;
+        }
+        if (regs.vgt_strmout_config.streamout_1_en) {
+            streamout_primitives[1] += prim_count;
+        }
+        if (regs.vgt_strmout_config.streamout_2_en) {
+            streamout_primitives[2] += prim_count;
+        }
+        if (regs.vgt_strmout_config.streamout_3_en) {
+            streamout_primitives[3] += prim_count;
+        }
+    } else {
+        streamout_primitives[0] += prim_count;
+    }
+
     DebugState.IncDrawCall();
 
     ResetBindings(false);
@@ -248,6 +482,12 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
         return;
     }
 
+    ConditionalRenderingScope cr_scope{instance, liverpool, buffer_cache,
+                                       runtime,  occlusion, needs_barrier};
+    if (!cr_scope.ShouldDraw()) {
+        return;
+    }
+
     const DrawIndirectParams params = {
         .vertex_sgpr_offset = vertex_sgpr_offset,
         .instance_sgpr_offset = instance_sgpr_offset,
@@ -255,11 +495,13 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
     };
     const GraphicsPipeline* pipeline = pipeline_cache.GetGraphicsPipeline(params);
     if (!pipeline) {
+        needs_barrier = false;
         return;
     }
 
     PrepareRenderState(pipeline);
     if (!BindResources(pipeline)) {
+        ResetBindings(false);
         return;
     }
     const auto state = BeginRendering(pipeline);
@@ -294,6 +536,8 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline->Handle());
 
+    occlusion.BeforeDraw(liverpool->regs.reg_array[DbCountControl]);
+    cr_scope.Begin(cmdbuf);
     if (is_indexed) {
         ASSERT(sizeof(VkDrawIndexedIndirectCommand) == stride);
 
@@ -316,6 +560,27 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
         DebugState.IncDrawCall();
     }
 
+    cr_scope.End(cmdbuf, runtime);
+
+    const auto& regs = liverpool->regs;
+    const u64 prim_count = u64(max_count) * 100ULL;
+    if (regs.vgt_strmout_config.raw) {
+        if (regs.vgt_strmout_config.streamout_0_en) {
+            streamout_primitives[0] += prim_count;
+        }
+        if (regs.vgt_strmout_config.streamout_1_en) {
+            streamout_primitives[1] += prim_count;
+        }
+        if (regs.vgt_strmout_config.streamout_2_en) {
+            streamout_primitives[2] += prim_count;
+        }
+        if (regs.vgt_strmout_config.streamout_3_en) {
+            streamout_primitives[3] += prim_count;
+        }
+    } else {
+        streamout_primitives[0] += prim_count;
+    }
+
     ResetBindings(false);
 }
 
@@ -325,18 +590,31 @@ void Rasterizer::DispatchDirect() {
     FlushPeriodically();
     scheduler.PopPendingOperations();
 
+    ConditionalRenderingScope cr_scope{instance, liverpool, buffer_cache,
+                                       runtime,  occlusion, needs_barrier};
+    if (!cr_scope.ShouldDraw()) {
+        return;
+    }
+
     const auto& cs_program = liverpool->GetCsRegs();
+    if (cs_program.dim_x == 0 || cs_program.dim_y == 0 || cs_program.dim_z == 0 ||
+        cs_program.address == 0) {
+        return;
+    }
     const ComputePipeline* pipeline = pipeline_cache.GetComputePipeline();
     if (!pipeline) {
+        needs_barrier = false;
         return;
     }
 
     const auto& cs = pipeline->GetStage(Shader::SwStage::Compute);
     if (ExecuteShaderHLE(cs, liverpool->regs, cs_program, *this)) {
+        needs_barrier = false;
         return;
     }
 
     if (!BindResources(pipeline)) {
+        ResetBindings(true);
         return;
     }
 
@@ -349,7 +627,11 @@ void Rasterizer::DispatchDirect() {
 
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Handle());
+
+    cr_scope.Begin(cmdbuf);
     cmdbuf.dispatch(cs_program.dim_x, cs_program.dim_y, cs_program.dim_z);
+    cr_scope.End(cmdbuf, runtime);
+
     DebugState.IncDispatch();
 
     ResetBindings(true);
@@ -361,13 +643,21 @@ void Rasterizer::DispatchIndirect(VAddr address, u32 offset, u32 size) {
     FlushPeriodically();
     scheduler.PopPendingOperations();
 
+    ConditionalRenderingScope cr_scope{instance, liverpool, buffer_cache,
+                                       runtime,  occlusion, needs_barrier};
+    if (!cr_scope.ShouldDraw()) {
+        return;
+    }
+
     const auto& cs_program = liverpool->GetCsRegs();
     const ComputePipeline* pipeline = pipeline_cache.GetComputePipeline();
     if (!pipeline) {
+        needs_barrier = false;
         return;
     }
 
     if (!BindResources(pipeline)) {
+        ResetBindings(true);
         return;
     }
 
@@ -384,7 +674,11 @@ void Rasterizer::DispatchIndirect(VAddr address, u32 offset, u32 size) {
 
     const auto cmdbuf = scheduler.CommandBuffer();
     cmdbuf.bindPipeline(vk::PipelineBindPoint::eCompute, pipeline->Handle());
+
+    cr_scope.Begin(cmdbuf);
     cmdbuf.dispatchIndirect(buffer->Handle(), base);
+    cr_scope.End(cmdbuf, runtime);
+
     DebugState.IncDispatch();
 
     ResetBindings(true);
@@ -423,6 +717,7 @@ void Rasterizer::OnSubmit() {
 
 void Rasterizer::OnFence() {
     texture_cache.ProcessDownloadImages();
+    occlusion.OnFence();
 }
 
 bool Rasterizer::BindResources(const Pipeline* pipeline) {
@@ -1343,6 +1638,17 @@ void Rasterizer::UnmapMemory(VAddr addr, u64 size) {
     {
         std::scoped_lock lock{mapped_ranges_mutex};
         mapped_ranges -= decltype(mapped_ranges)::interval_type::right_open(addr, addr + size);
+    }
+}
+
+void Rasterizer::StreamoutDump(VAddr address, u32 stream) {
+    static constexpr u64 PrimitiveCounterValidMask = 0x8000000000000000ULL;
+    if (address != 0 && memory && memory->IsValidMapping(address, sizeof(u64) * 2)) {
+        u64* ptr = reinterpret_cast<u64*>(address);
+        const u32 stream_idx = std::min(stream, 3u);
+        const u64 count = std::max<u64>(1ULL, streamout_primitives[stream_idx]);
+        ptr[0] = count | PrimitiveCounterValidMask;
+        ptr[1] = count | PrimitiveCounterValidMask;
     }
 }
 
