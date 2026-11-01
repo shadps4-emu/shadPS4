@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "shader_recompiler/frontend/translate/translate.h"
@@ -76,6 +76,8 @@ void Translator::EmitDataShare(const GcnInst& inst) {
         return DS_CONSUME(inst);
     case Opcode::DS_APPEND:
         return DS_APPEND(inst);
+    case Opcode::DS_ORDERED_COUNT:
+        return DS_ORDERED_COUNT(inst);
     case Opcode::DS_WRITE_B16:
         return DS_WRITE(16, false, false, false, inst);
     case Opcode::DS_WRITE_B64:
@@ -347,6 +349,35 @@ void Translator::DS_CONSUME(const GcnInst& inst) {
     const IR::U32 base = ir.BitFieldExtract(ir.GetM0(), ir.Imm32(16), ir.Imm32(16));
     const IR::U32 gds_offset = ir.IAdd(base, ir.Imm32(inst_offset));
     const IR::U32 prev = ir.DataConsume(ir.ShiftRightLogical(gds_offset, ir.Imm32(2u)));
+    SetDst(inst.dst[0], prev);
+}
+
+void Translator::DS_ORDERED_COUNT(const GcnInst& inst) {
+    // In AMD GCN ISA, DS_ORDERED_COUNT is always a GDS instruction.
+    const bool is_gds = true;
+    const IR::U32 addr = GetSrc(inst.src[0]);
+    // offset0 specifies the GDS ordered counter index / byte offset (counter_idx * 4).
+    // offset1 contains control bits (wave_release, wave_done, count) and is not part of the
+    // address.
+    const u32 counter_offset = u32(inst.control.ds.offset0);
+    const IR::U32 addr_offset = ir.IAdd(addr, ir.Imm32(counter_offset));
+
+    // In GFX7/GFX8, bit 4 of offset1 indicates wave_release (release mutex/ordered count).
+    const bool is_release = (inst.control.ds.offset1 & 0x10u) != 0;
+
+    // DS_ORDERED_COUNT operates per-wavefront on the first active lane.
+    // To ensure the counter is incremented exactly once per wave across all SIMD lanes:
+    // Only the first active lane in the wavefront increments by 1 (or 0 on release),
+    // while all other lanes add 0.
+    const IR::U64 active_mask = ir.Ballot(ir.Imm1(true));
+    const IR::U32 first_active_lane = ir.BallotFindLsb(active_mask);
+    const IR::U1 is_first_lane = ir.IEqual(ir.LaneId(), first_active_lane);
+
+    const IR::U32 wave_inc = is_release ? ir.Imm32(0u) : ir.Imm32(1u);
+    const IR::U32 inc_amount{ir.Select(is_first_lane, wave_inc, ir.Imm32(0u))};
+
+    const IR::U32 prev_first{ir.SharedAtomicIAdd(addr_offset, inc_amount, is_gds)};
+    const IR::U32 prev = ir.ReadFirstLane(prev_first);
     SetDst(inst.dst[0], prev);
 }
 

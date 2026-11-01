@@ -13,4 +13,7 @@ void TestResetSdkVersion();
 void TestSetSystemSwVersion(u32 hex_version);
 void TestResetSystemSwVersion();
 
+void TestSetNeoMode(s32 neo);
+void TestResetNeoMode();
+
 } // namespace Libraries::Kernel
