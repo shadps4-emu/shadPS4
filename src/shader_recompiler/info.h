@@ -45,7 +45,6 @@ struct InfoPersistent {
     FMaskResourceList fmasks;
 
     u32 fetch_shader_sgpr_base{};
-    u32 shared_memory_scratch_size{};
 
     u64 pgm_hash{};
 
@@ -111,6 +110,27 @@ struct Info : InfoPersistent {
     CopyShaderData gs_copy_data;
     u32 uses_patches{};
 
+    struct SharedMemorySegment {
+        IR::Type used_types;
+        u32 size;
+        u32 alignment;
+
+        inline void UseType(IR::Type type) {
+            used_types |= type;
+        }
+        inline void SetMinAlignment(u32 min_align) {
+            alignment = std::max(alignment, min_align);
+        }
+        inline void SetMinSize(u32 min_size) {
+            size = std::max(size, min_size);
+        }
+    };
+
+    SharedMemorySegment shared_guest_segment{};
+    SharedMemorySegment shared_scratch_segment{};
+
+    bool uses_aliased_shared_memory{};
+
     VAddr pgm_base;
     bool has_storage_images{};
     bool has_discard{};
@@ -119,12 +139,12 @@ struct Info : InfoPersistent {
     bool has_flatbuf{};
     bool uses_buffer_atomic_float_min_max{};
     bool uses_image_atomic_float_min_max{};
+    bool uses_subgroup_id{};
     bool uses_lane_id{};
     bool uses_shader_clock{};
     bool uses_group_quad{};
     bool uses_group_shuffle{};
     bool uses_group_ballot{};
-    IR::Type shared_types{};
     bool uses_fp16{};
     bool uses_fp64{};
     bool uses_pack_10_11_11{};
