@@ -41,7 +41,8 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_, Runtime
       buffer_cache{instance, scheduler, runtime, liverpool_, texture_cache, page_manager},
       texture_cache{instance, scheduler, runtime, liverpool_, buffer_cache, page_manager},
       liverpool{liverpool_}, memory{Core::Memory::Instance()},
-      pipeline_cache{instance, scheduler, liverpool, buffer_cache.GetSparsePageShift()},
+      pipeline_cache{instance, scheduler, liverpool, buffer_cache,
+                     buffer_cache.GetSparsePageShift()},
       host_markers_enabled{EmulatorSettings.IsVkHostMarkersEnabled()},
       guest_markers_enabled{EmulatorSettings.IsVkGuestMarkersEnabled()},
       submit_draw_interval{EmulatorSettings.GetSubmitDrawInterval()} {
