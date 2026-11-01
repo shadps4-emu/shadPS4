@@ -247,12 +247,9 @@ void Image::GetBarriers(Barriers& barriers, vk::ImageLayout dst_layout, vk::Acce
         // Otherwise all subresources need to be set to the same state so we can use a full
         // resource transition for the next time.
         const u32 start_mip = needs_partial_transition ? subres_range->base.level : u16{0};
-        // Guest views may ask for more levels than the image has, see ImageInfo.
-        const u32 end_mip =
-            needs_partial_transition
-                ? std::min<u32>(subres_range->base.level + subres_range->extent.levels,
-                                info.resources.levels)
-                : info.resources.levels;
+        const u32 end_mip = needs_partial_transition
+                                ? subres_range->base.level + subres_range->extent.levels
+                                : info.resources.levels;
         const u32 start_layer = needs_partial_transition ? subres_range->base.layer : u16{0};
         const u32 end_layer = needs_partial_transition
                                   ? subres_range->base.layer + subres_range->extent.layers
