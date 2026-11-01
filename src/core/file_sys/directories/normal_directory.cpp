@@ -46,6 +46,12 @@ s32 NormalDirectory::fstat(Libraries::Kernel::OrbisKernelStat* stat) {
     stat->st_size = directory_size;
     stat->st_blksize = 0x8000;
     stat->st_blocks = 8;
+
+    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    Core::FileSys::FileStat fst{};
+    if (mnt->Stat(guest_directory, fst) && fst.inode != 0) {
+        stat->st_ino = fst.inode;
+    }
     return ORBIS_OK;
 }
 

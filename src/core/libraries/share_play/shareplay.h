@@ -13,6 +13,9 @@ class SymbolsResolver;
 
 namespace Libraries::SharePlay {
 
+constexpr s32 ORBIS_SHARE_PLAY_ERROR_INVALID_ARGUMENT = static_cast<s32>(0x810e0001);
+constexpr s32 ORBIS_SHARE_PLAY_ERROR_NOT_INITIALIZED = static_cast<s32>(0x810e0004);
+
 constexpr int ORBIS_SHARE_PLAY_CONNECTION_STATUS_DORMANT = 0x00;
 constexpr int ORBIS_SHARE_PLAY_CONNECTION_STATUS_READY = 0x01;
 constexpr int ORBIS_SHARE_PLAY_CONNECTION_STATUS_CONNECTED = 0x02;
@@ -20,15 +23,28 @@ constexpr int ORBIS_SHARE_PLAY_CONNECTION_STATUS_CONNECTED = 0x02;
 struct OrbisSharePlayConnectionInfo {
     int status;
     int mode;
-    Libraries::Np::OrbisNpOnlineId hostOnlineId;
-    Libraries::Np::OrbisNpOnlineId visitorOnlineId;
+    char hostOnlineId[Libraries::Np::ORBIS_NP_ONLINEID_MAX_LENGTH];
     Libraries::UserService::OrbisUserServiceUserId hostUserId;
+    char visitorOnlineId[Libraries::Np::ORBIS_NP_ONLINEID_MAX_LENGTH];
     Libraries::UserService::OrbisUserServiceUserId visitorUserId;
+    int reserved[2];
 };
+static_assert(sizeof(OrbisSharePlayConnectionInfo) == 0x38);
+
+struct OrbisSharePlayConnectionInfoA {
+    int status;
+    int mode;
+    char hostOnlineId[Libraries::Np::ORBIS_NP_ONLINEID_MAX_LENGTH];
+    Libraries::UserService::OrbisUserServiceUserId hostUserId;
+    char visitorOnlineId[Libraries::Np::ORBIS_NP_ONLINEID_MAX_LENGTH];
+    Libraries::UserService::OrbisUserServiceUserId visitorUserId;
+    u8 reserved[24];
+};
+static_assert(sizeof(OrbisSharePlayConnectionInfoA) == 0x48);
 
 int PS4_SYSV_ABI sceSharePlayCrashDaemon();
 int PS4_SYSV_ABI sceSharePlayGetCurrentConnectionInfo(OrbisSharePlayConnectionInfo* pInfo);
-int PS4_SYSV_ABI sceSharePlayGetCurrentConnectionInfoA();
+int PS4_SYSV_ABI sceSharePlayGetCurrentConnectionInfoA(OrbisSharePlayConnectionInfoA* pInfo);
 int PS4_SYSV_ABI sceSharePlayGetCurrentInfo();
 int PS4_SYSV_ABI sceSharePlayGetEvent();
 int PS4_SYSV_ABI sceSharePlayInitialize();
