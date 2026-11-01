@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <array>
@@ -155,6 +155,17 @@ void IREmitter::SetVectorReg(IR::VectorReg reg, const U32F32& value) {
     ASSERT(reg < IR::VectorReg::Max);
     const U32 value_typed = value.Type() == Type::F32 ? BitCast<U32>(F32{value}) : U32{value};
     Inst(Opcode::SetVectorRegister, reg, value_typed);
+}
+
+U32 IREmitter::VMovRelS(IR::VectorReg reg, const U32& m0) {
+    ASSERT(reg < IR::VectorReg::Max);
+    return Inst<U32>(Opcode::VMovRelS, reg, m0);
+}
+
+void IREmitter::VMovRelD(IR::VectorReg reg, const U32& value, const U32& m0) {
+    ASSERT(reg < IR::VectorReg::Max);
+    const U32 value_typed = value.Type() == Type::F32 ? BitCast<U32>(F32{value}) : U32{value};
+    Inst(Opcode::VMovRelD, reg, value_typed, m0);
 }
 
 Value IREmitter::GetVirtualReg(IR::VirtualReg reg) {

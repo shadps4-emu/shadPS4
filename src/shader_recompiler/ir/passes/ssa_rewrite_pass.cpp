@@ -16,6 +16,7 @@
 #include <vector>
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/opcodes.h"
+#include "shader_recompiler/ir/passes/ir_passes.h"
 #include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/ir/reg.h"
 #include "shader_recompiler/ir/value.h"
@@ -227,8 +228,7 @@ private:
 };
 
 void VisitInst(Pass& pass, IR::Block* block, IR::Inst& inst) {
-    const IR::Opcode opcode{inst.GetOpcode()};
-    switch (opcode) {
+    switch (inst.GetOpcode()) {
     case IR::Opcode::SetScalarRegister:
         pass.WriteVariable(IR::RegTag{inst.Arg(0).ScalarReg()}, block, inst.Arg(1));
         break;

@@ -46,6 +46,11 @@ void LowerPhisToRegsPass(IR::Program& program) {
                 break;
             }
 
+            if (!inst.HasUses()) {
+                inst.Invalidate();
+                continue;
+            }
+
             IR::IREmitter ir{*block, it};
             if (const auto tag = inst.GetRegTag()) {
                 inst.ReplaceUsesWithAndRemove(LoadForRegType(ir, tag));
