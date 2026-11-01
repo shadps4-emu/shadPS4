@@ -773,14 +773,9 @@ bool Rasterizer::IsComputeImageClear(const Pipeline* pipeline) {
     return true;
 }
 
-// Some games clear a depth or stencil plane by memsetting its memory with a compute shader instead
-// of using a render pass clear. IsComputeImageClear() does not cover this: it expects a formatted
-// buffer holding a vec4 and explicitly rejects depth images. The host depth image never observes
-// those raw buffer writes, so the plane keeps its previous contents. Diablo II: Resurrected clears
-// its stencil plane this way every frame; without mirroring it, the stale stencil masks out the
-// whole scene and only the UI remains visible.
-//
-// The compute dispatch itself is left alone, so guest memory is still written as the game expects.
+// Mirrors a compute shader that memsets a depth or stencil plane onto the host image.
+// IsComputeImageClear() rejects depth images, so it does not cover this case.
+// The dispatch itself still runs, so guest memory keeps its contents.
 void Rasterizer::MirrorComputeDepthPlaneFill(const Pipeline* pipeline) {
     if (!pipeline->IsCompute()) {
         return;
