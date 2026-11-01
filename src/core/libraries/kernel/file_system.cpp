@@ -246,6 +246,8 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
     const std::string& path = *sanitized_path;
     u32 handle = h->CreateHandle();
     auto* file = h->GetFile(handle);
+    file->open_flags = flags & ORBIS_KERNEL_O_FILE_STATUS_MASK;
+    file->close_on_exec = (flags & ORBIS_KERNEL_O_CLOEXEC) != 0;
 
     if (path.starts_with("/dev/")) {
         for (const auto& [prefix, factory] : available_device) {
@@ -1944,6 +1946,112 @@ s32 PS4_SYSV_ABI sceKernelFlock(s32 fd, s32 operation) {
     return result;
 }
 
+static s32 GetFileStatusFlags(s32 fd, Core::FileSys::File* file) {
+    s32 flags = file->open_flags;
+    if (file->type == Core::FileSys::FileType::Socket ||
+        file->type == Core::FileSys::FileType::Equeue) {
+        flags = (flags & ~ORBIS_KERNEL_O_ACCMODE) | ORBIS_KERNEL_O_RDWR;
+    }
+    bool nonblocking = false;
+    if (file->type == Core::FileSys::FileType::Socket &&
+        Libraries::Net::KernelGetNonBlocking(fd, &nonblocking)) {
+        flags =
+            nonblocking ? (flags | ORBIS_KERNEL_O_NONBLOCK) : (flags & ~ORBIS_KERNEL_O_NONBLOCK);
+    }
+    return flags;
+}
+
+static void SetFileStatusFlags(s32 fd, Core::FileSys::File* file, s32 flags) {
+    if (file->type == Core::FileSys::FileType::Socket) {
+        Libraries::Net::KernelSetNonBlocking(fd, (flags & ORBIS_KERNEL_O_NONBLOCK) != 0);
+    }
+    s32 current = file->open_flags;
+    while (!file->open_flags.compare_exchange_weak(
+        current, (current & ~ORBIS_KERNEL_O_FCNTL_SETTABLE_MASK) |
+                     (flags & ORBIS_KERNEL_O_FCNTL_SETTABLE_MASK))) {
+    }
+}
+
+static s32 RecordLock(Core::FileSys::File* file, s32 cmd, OrbisKernelFlock* lock) {
+    if (file->type == Core::FileSys::FileType::Socket ||
+        file->type == Core::FileSys::FileType::Equeue) {
+        *__Error() = POSIX_EBADF;
+        return -1;
+    }
+    if (lock == nullptr) {
+        *__Error() = POSIX_EFAULT;
+        return -1;
+    }
+
+    const s32 access_mode = file->open_flags & ORBIS_KERNEL_O_ACCMODE;
+    switch (lock->l_type) {
+    case ORBIS_KERNEL_F_RDLCK:
+        if (cmd != ORBIS_KERNEL_F_GETLK && access_mode == ORBIS_KERNEL_O_WRONLY) {
+            *__Error() = POSIX_EBADF;
+            return -1;
+        }
+        break;
+    case ORBIS_KERNEL_F_WRLCK:
+        if (cmd != ORBIS_KERNEL_F_GETLK && access_mode == ORBIS_KERNEL_O_RDONLY) {
+            *__Error() = POSIX_EBADF;
+            return -1;
+        }
+        break;
+    case ORBIS_KERNEL_F_UNLCK:
+        break;
+    default:
+        *__Error() = POSIX_EINVAL;
+        return -1;
+    }
+
+    // Record locks are owned by the process, so a single guest process never conflicts with itself
+    if (cmd == ORBIS_KERNEL_F_GETLK) {
+        lock->l_type = ORBIS_KERNEL_F_UNLCK;
+    }
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI posix_fcntl(s32 fd, s32 cmd, u64 arg) {
+    LOG_TRACE(Kernel_Fs, "fd = {}, cmd = {}, arg = {:#x}", fd, cmd, arg);
+
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    auto* file = h->GetFile(fd);
+    if (file == nullptr) {
+        *__Error() = POSIX_EBADF;
+        return -1;
+    }
+
+    switch (cmd) {
+    case ORBIS_KERNEL_F_GETFD:
+        return file->close_on_exec ? ORBIS_KERNEL_FD_CLOEXEC : 0;
+    case ORBIS_KERNEL_F_SETFD:
+        file->close_on_exec = (arg & ORBIS_KERNEL_FD_CLOEXEC) != 0;
+        return ORBIS_OK;
+    case ORBIS_KERNEL_F_GETFL:
+        return GetFileStatusFlags(fd, file);
+    case ORBIS_KERNEL_F_SETFL:
+        SetFileStatusFlags(fd, file, static_cast<s32>(arg));
+        return ORBIS_OK;
+    case ORBIS_KERNEL_F_GETLK:
+    case ORBIS_KERNEL_F_SETLK:
+    case ORBIS_KERNEL_F_SETLKW:
+        return RecordLock(file, cmd, reinterpret_cast<OrbisKernelFlock*>(arg));
+    default:
+        LOG_ERROR(Kernel_Fs, "fd = {}, unsupported cmd = {}", fd, cmd);
+        *__Error() = POSIX_EINVAL;
+        return -1;
+    }
+}
+
+s32 PS4_SYSV_ABI sceKernelFcntl(s32 fd, s32 cmd, u64 arg) {
+    s32 result = posix_fcntl(fd, cmd, arg);
+    if (result < 0) {
+        LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
+        return ErrnoToSceKernelError(*__Error());
+    }
+    return result;
+}
+
 static s64 GetDents(s32 fd, char* buf, u64 nbytes, s64* basep) {
     if (buf == nullptr) {
         *__Error() = POSIX_EFAULT;
@@ -2377,6 +2485,10 @@ void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("9eMlfusH4sU", "libkernel", 1, "libkernel", posix_flock);
     LIB_FUNCTION("9eMlfusH4sU", "libScePosix", 1, "libkernel", posix_flock);
     LIB_FUNCTION("YDg-SQj66AQ", "libkernel", 1, "libkernel", sceKernelFlock);
+    LIB_FUNCTION("t0fXUzq61Z4", "libkernel", 1, "libkernel", posix_fcntl);
+    LIB_FUNCTION("8nY19bKoiZk", "libkernel", 1, "libkernel", posix_fcntl);
+    LIB_FUNCTION("8nY19bKoiZk", "libScePosix", 1, "libkernel", posix_fcntl);
+    LIB_FUNCTION("SoZkxZkCHaw", "libkernel", 1, "libkernel", sceKernelFcntl);
     LIB_FUNCTION("AUXVxWeJU-A", "libkernel", 1, "libkernel", sceKernelUnlink);
     LIB_FUNCTION("T8fER+tIGgk", "libScePosix", 1, "libkernel", posix_select);
     LIB_FUNCTION("T8fER+tIGgk", "libkernel", 1, "libkernel", posix_select);
