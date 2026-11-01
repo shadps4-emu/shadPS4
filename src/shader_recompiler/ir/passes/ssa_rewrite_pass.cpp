@@ -106,6 +106,8 @@ constexpr IR::Opcode UndefOpcode(IR::RegTag tag) noexcept {
             return IR::Opcode::UndefU32x4;
         case IR::Type::F32:
             return IR::Opcode::UndefF32;
+        case IR::Type::F32x2:
+            return IR::Opcode::UndefF32x2;
         case IR::Type::U1:
             return IR::Opcode::UndefU1;
         default:
