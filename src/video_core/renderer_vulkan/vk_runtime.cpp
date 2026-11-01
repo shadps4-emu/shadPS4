@@ -322,6 +322,42 @@ void Runtime::CopyImage(VideoCore::Image* src, VideoCore::Image* dst) {
     dst->flags &= ~VideoCore::ImageFlagBits::Dirty;
 }
 
+void Runtime::CopySubrect(VideoCore::Image* src, VideoCore::Image* dst) {
+    ASSERT(dst->info.IsSubrectOf(src->info));
+    SetBackingSamples(dst, dst->info.num_samples, false);
+    SetBackingSamples(src, src->info.num_samples);
+    scheduler.EndRendering();
+
+    const auto src_state = src->backing->state;
+    bool needs_flush =
+        Transit(src, vk::ImageLayout::eTransferSrcOptimal, vk::PipelineStageFlagBits2::eCopy,
+                vk::AccessFlagBits2::eTransferRead);
+    needs_flush |= Transit(dst, vk::ImageLayout::eTransferDstOptimal,
+                           vk::PipelineStageFlagBits2::eCopy, vk::AccessFlagBits2::eTransferWrite);
+    if (needs_flush) {
+        FlushBarriers();
+    }
+
+    const vk::ImageCopy copy{
+        .srcSubresource = {vk::ImageAspectFlagBits::eColor, 0, 0, 1},
+        .srcOffset = {0, 0, 0},
+        .dstSubresource = {vk::ImageAspectFlagBits::eColor, 0, 0, 1},
+        .dstOffset = {0, 0, 0},
+        .extent = {dst->info.size.width, dst->info.size.height, 1},
+    };
+    scheduler.CommandBuffer().copyImage(src->GetImage(), vk::ImageLayout::eTransferSrcOptimal,
+                                        dst->GetImage(), vk::ImageLayout::eTransferDstOptimal,
+                                        copy);
+
+    // The source may already have a descriptor bound in this draw.
+    if (Transit(src, src_state.layout, src_state.pl_stage, src_state.access_mask)) {
+        FlushBarriers();
+    }
+    dst->contents_version = src->contents_version;
+    dst->flags |= VideoCore::ImageFlagBits::GpuModified;
+    dst->flags &= ~VideoCore::ImageFlagBits::Dirty;
+}
+
 void Runtime::CopyImageWithBuffer(VideoCore::Image* src, VideoCore::Image* dst,
                                   const VideoCore::Buffer* buffer, u64 offset) {
     const u32 num_mips = std::min(src->info.resources.levels, dst->info.resources.levels);
