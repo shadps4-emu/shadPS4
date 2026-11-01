@@ -301,7 +301,7 @@ bool EqueueInternal::CheckIoEvent(EqueueEvent& ev) {
     }
 
     auto* handles = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto* file = handles->GetFile(static_cast<s32>(ev.event.ident));
+    auto file = handles->GetFile(static_cast<s32>(ev.event.ident));
     if (!file) {
         ev.TriggerIo(ORBIS_KERNEL_ERROR_EBADF, 0, OrbisKernelEvent::Flags::Error);
         return true;
@@ -450,7 +450,7 @@ s32 PS4_SYSV_ABI posix_kqueue() {
     // Reserve a file handle for the kqueue
     auto* handles = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     s32 kqueue_handle = handles->CreateHandle();
-    auto* kqueue_file = handles->GetFile(kqueue_handle);
+    auto kqueue_file = handles->GetFile(kqueue_handle);
     kqueue_file->type = Core::FileSys::FileType::Equeue;
 
     // Plenty of equeue logic uses names to identify queues.
@@ -573,7 +573,7 @@ int PS4_SYSV_ABI sceKernelCreateEqueue(OrbisKernelEqueue* eq, const char* name) 
     // Reserve a file handle for the kqueue
     auto* handles = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     OrbisKernelEqueue kqueue_handle = handles->CreateHandle();
-    auto* kqueue_file = handles->GetFile(kqueue_handle);
+    auto kqueue_file = handles->GetFile(kqueue_handle);
     kqueue_file->type = Core::FileSys::FileType::Equeue;
 
     // Create the equeue

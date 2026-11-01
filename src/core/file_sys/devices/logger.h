@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -11,7 +11,7 @@
 
 namespace Core::Devices {
 
-class Logger final : BaseDevice {
+class Logger final : public BaseDevice {
     std::string prefix;
     bool is_err;
 
