@@ -298,9 +298,6 @@ void PatchImageSharp(const ResourceDiscovery& resource, Info& info, Descriptors&
             inst.ReplaceUsesWith(ir.CompositeConstruct(fmaskx, fmasky));
             return;
         }
-        case IR::Opcode::ImageQueryLod:
-            inst.ReplaceUsesWith(ir.Imm32(1));
-            return;
         case IR::Opcode::ImageQueryDimensions: {
             IR::Value dims = ir.CompositeConstruct(ir.Imm32(static_cast<u32>(image.width)),  // x
                                                    ir.Imm32(static_cast<u32>(image.height)), // y
@@ -788,6 +785,11 @@ void PatchImageSampleArgs(IR::Inst& inst, Info& info, const ImageResource& image
             UNREACHABLE();
         }
     }();
+
+    if (inst_info.is_lod_query) {
+        inst.ReplaceUsesWith(ir.ImageQueryLod(handle, coords, inst_info));
+        return;
+    }
 
     ASSERT(!inst_info.has_lod || !inst_info.has_lod_clamp);
     const bool explicit_lod = inst_info.has_lod || inst_info.force_level0;
