@@ -157,6 +157,10 @@ void MntPoints::Mount(const std::filesystem::path& host_folder, const std::strin
     stack.push_back(std::move(base));
 
     m_mnt_pairs.emplace_back(host_folder, guest_folder_sanitized, read_only, std::move(stack));
+    // Keep mounts sorted by prefix length in descending order for longest-prefix matching.
+    std::stable_sort(
+        m_mnt_pairs.begin(), m_mnt_pairs.end(),
+        [](const MntPair& a, const MntPair& b) { return a.mount.size() > b.mount.size(); });
     LOG_INFO(Kernel_Fs, "Mounted '{}' -> '{}'", guest_folder_sanitized, host_folder.string());
 }
 
