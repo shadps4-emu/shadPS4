@@ -62,16 +62,21 @@ public:
         });
     }
 
+    void RequestReadback(VAddr cpu_addr, u64 size) {
+        IteratePages(cpu_addr, size, [](RegionManager* manager, u64 offset, u64 size) {
+            manager->RequestReadback(offset, size);
+        });
+    }
+
     /// Removes all protection from a page and ensures GPU data has been flushed if requested
     void InvalidateRegion(VAddr cpu_addr, u64 size, auto&& on_flush) noexcept {
-        if (readbacks_mode == GpuReadbacksMode::Disabled) {
-            return MarkRegionAsCpuModified(cpu_addr, size);
-        }
         bool should_flush = false;
-        IteratePages(cpu_addr, size, [&should_flush](RegionManager* manager, u64 offset, u64 size) {
+        IteratePages(cpu_addr, size, [&](RegionManager* manager, u64 offset, u64 size) {
             const auto bounds = manager->GetBounds(offset, size);
             manager->Lock(bounds);
-            const bool modified = manager->template IsRegionModified<Type::GPU>(offset, size);
+            const bool modified = manager->template IsRegionModified<Type::GPU>(offset, size) &&
+                                  (readbacks_mode != GpuReadbacksMode::Disabled ||
+                                   manager->IsReadbackRequested(offset, size));
             if (!modified) {
                 manager->template ChangeRegionState<StateOp::Set, StateOp::None, false>(offset,
                                                                                         size);
