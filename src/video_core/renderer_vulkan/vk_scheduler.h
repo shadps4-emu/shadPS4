@@ -433,11 +433,7 @@ public:
     /// Will be run when submitting or calling PopPendingOperations.
     void DeferOperation(Common::UniqueFunction<void>&& func) {
         std::unique_lock lk(pending_ops_mutex);
-        // Set the flag before pushing: a concurrent fast-path observer can then only see
-        // "true" while the operation is not yet in the queue (equivalent to it not existing
-        // yet), never "already queued but skipped".
         pending_ops_empty.store(false, std::memory_order_relaxed);
-
         pending_ops.emplace(std::move(func), CurrentTick());
     }
 
