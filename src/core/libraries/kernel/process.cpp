@@ -12,21 +12,35 @@
 
 namespace Libraries::Kernel {
 
+static s32 g_neo_mode = -1;
+
 s32 PS4_SYSV_ABI sceKernelIsInSandbox() {
     return 1;
 }
 
-s32 PS4_SYSV_ABI sceKernelIsNeoMode() {
-    static s32 IsNeoMode = -1;
-    if (IsNeoMode == -1) {
-        IsNeoMode = EmulatorSettings.IsNeo() &&
-                    Common::ElfInfo::Instance().GetPSFAttributes().support_neo_mode;
-    }
-    return IsNeoMode;
-}
-
 s32 PS4_SYSV_ABI sceKernelHasNeoMode() {
     return EmulatorSettings.IsNeo();
+}
+
+s32 PS4_SYSV_ABI sceKernelIsAuthenticNeo() {
+    return EmulatorSettings.IsNeo();
+}
+
+s32 PS4_SYSV_ABI sceKernelIsNeoMode() {
+    if (g_neo_mode == -1) {
+        g_neo_mode = EmulatorSettings.IsNeo() &&
+                     Common::ElfInfo::Instance().GetPSFAttributes().support_neo_mode;
+    }
+    return g_neo_mode;
+}
+
+s32 PS4_SYSV_ABI sceKernelSwitchToNeoMode(u32 flags) {
+    LOG_INFO(Lib_Kernel, "called with flags: {:#x}", flags);
+    if (!EmulatorSettings.IsNeo()) {
+        return ORBIS_KERNEL_ERROR_ENODEV;
+    }
+    g_neo_mode = 1;
+    return 0;
 }
 
 s32 PS4_SYSV_ABI sceKernelIsDevkit() {
@@ -326,6 +340,8 @@ void RegisterProcess(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("WB66evu8bsU", "libkernel", 1, "libkernel", sceKernelGetCompiledSdkVersion);
     LIB_FUNCTION("WslcK1FQcGI", "libkernel", 1, "libkernel", sceKernelIsNeoMode);
     LIB_FUNCTION("rNRtm1uioyY", "libkernel", 1, "libkernel", sceKernelHasNeoMode);
+    LIB_FUNCTION("cbn9Di01j0k", "libkernel", 1, "libkernel", sceKernelIsAuthenticNeo);
+    LIB_FUNCTION("+DVcq4YF6Xg", "libkernel", 1, "libkernel", sceKernelSwitchToNeoMode);
     LIB_FUNCTION("QNjGUdj1HPM", "libkernel", 1, "libkernel", sceKernelIsDevkit);
     LIB_FUNCTION("mpxAdqW7dKY", "libkernel", 1, "libkernel", sceKernelIsProspero);
     LIB_FUNCTION("mpxAdqW7dKY", "libkernel_cpumode_platform", 1, "libkernel", sceKernelIsProspero);

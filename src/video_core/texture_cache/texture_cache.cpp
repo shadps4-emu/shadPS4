@@ -95,10 +95,15 @@ TextureCache::~TextureCache() = default;
 
 void TextureCache::ProcessDownloadImages() {
     std::unique_lock lk{download_images_mutex};
+    if (download_images.empty()) {
+        return;
+    }
     for (const ImageId image_id : download_images) {
-        DownloadImageMemory(image_id, DownloadMemoryFlags::Sync);
+        DownloadImageMemory(image_id);
     }
     download_images.clear();
+    scheduler.Finish();
+    scheduler.PopPendingOperations();
 }
 
 void TextureCache::DownloadImageMemory(ImageId image_id, DownloadMemoryFlags flags) {
@@ -219,15 +224,22 @@ void TextureCache::InvalidateMemory(VAddr addr, size_t size) {
 }
 
 void TextureCache::InvalidateMemoryFromGPU(VAddr address, size_t max_size) {
-    ForEachImageInRegion(address, max_size, [&](ImageId image_id, Image& image) {
-        // Only consider images that match base address.
-        // TODO: Maybe also consider subresources
-        if (image.info.guest_address != address) {
-            return;
-        }
-        // Ensure image is reuploaded when accessed again.
-        image.flags |= ImageFlagBits::GpuDirty;
-    });
+    // Mark the image at the written address, then follow images stored right after it
+    // (e.g. the chroma planes after a luma plane).
+    const VAddr end = address + max_size;
+    VAddr next = address;
+    while (next < end) {
+        VAddr next_end = 0;
+        ForEachImageWithAddress(next, [&](ImageId image_id, Image& image) {
+            if (image.info.guest_address != next) {
+                return;
+            }
+            // Ensure image is reuploaded when accessed again.
+            image.flags |= ImageFlagBits::GpuDirty;
+            next_end = std::max<VAddr>(next_end, next + image.info.guest_size);
+        });
+        next = next_end > next ? next_end : end;
+    }
 }
 
 void TextureCache::MarkAsMaybeGpuDirty(VAddr addr, size_t size) {
@@ -261,7 +273,7 @@ ImageId TextureCache::ResolveDepthOverlap(const ImageInfo& requested_info, Bindi
     const bool bpp_match = requested_info.num_bits == cache_image.info.num_bits;
 
     // If an image in the cache has less slices we need to expand it
-    bool recreate = cache_image.info.resources < requested_info.resources;
+    bool recreate = !cache_image.info.resources.Contains(requested_info.resources);
 
     switch (binding) {
     case BindingType::Texture:
@@ -380,7 +392,7 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
 
         // Size and resources are greater, expand the image.
         if (image_info.type == cache_image.info.type &&
-            image_info.resources > cache_image.info.resources) {
+            !cache_image.info.resources.Contains(image_info.resources)) {
             return {ExpandImage(image_info, cache_image_id), -1, -1};
         }
 
@@ -646,7 +658,7 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
         if (exact_fmt && info.pixel_format != image_resolved.info.pixel_format) {
             // Cannot reuse this image as we need the exact requested format.
             image_id = {};
-        } else if (image_resolved.info.resources < info.resources) {
+        } else if (!image_resolved.info.resources.Contains(info.resources)) {
             // The image was clearly picked up wrong.
             FreeImage(image_id);
             image_id = {};
@@ -868,10 +880,10 @@ void TextureCache::RefreshImage(Image& image) {
         image.cpu_hash = hash;
     }
 
+    image.gpu_hash = 0;
+
     const u32 num_layers = image.info.resources.layers;
     const u32 num_mips = image.info.resources.levels;
-    const bool is_gpu_modified = True(image.flags & ImageFlagBits::GpuModified);
-    const bool is_gpu_dirty = True(image.flags & ImageFlagBits::GpuDirty);
 
     SmallVector<vk::BufferImageCopy, 14> image_copies;
     for (u32 m = 0; m < num_mips; m++) {
@@ -996,6 +1008,9 @@ void TextureCache::TrackImage(ImageId image_id) {
     }
     image.track_addr = image_begin;
     image.track_addr_end = image_end;
+    MarkDirtyIfEdgesModified(image);
+    image.head_hash = 0;
+    image.tail_hash = 0;
 }
 
 void TextureCache::UntrackImage(ImageId image_id) {
@@ -1020,6 +1035,7 @@ void TextureCache::UntrackImageHead(ImageId image_id) {
     }
     const auto addr = page_manager.GetNextPageAddr(image_begin);
     const auto size = addr - image_begin;
+    image.head_hash = HashBackingMemory(image_begin, size);
     page_manager.UpdatePageWatchers(image_begin, size, PageOp::Untrack);
 
     image.track_addr = addr;
@@ -1040,6 +1056,7 @@ void TextureCache::UntrackImageTail(ImageId image_id) {
     ASSERT(image.track_addr_end != 0);
     const auto addr = page_manager.GetPageAddr(image_end);
     const auto size = image_end - addr;
+    image.tail_hash = HashBackingMemory(addr, size);
     image.track_addr_end = addr;
     if (image.track_addr == image.track_addr_end) {
         // This image spans only 2 pages and both are modified,
@@ -1048,6 +1065,23 @@ void TextureCache::UntrackImageTail(ImageId image_id) {
         MarkAsMaybeDirty(image_id, image);
     }
     page_manager.UpdatePageWatchers(addr, size, PageOp::Untrack);
+}
+
+void TextureCache::MarkDirtyIfEdgesModified(Image& image) {
+    const auto image_begin = image.info.guest_address;
+    const auto image_end = image.info.guest_address + image.info.guest_size;
+    if (image.head_hash != 0) {
+        const auto head_end = page_manager.GetNextPageAddr(image_begin);
+        if (HashBackingMemory(image_begin, head_end - image_begin) != image.head_hash) {
+            image.flags |= ImageFlagBits::CpuDirty;
+        }
+    }
+    if (image.tail_hash != 0) {
+        const auto tail_begin = page_manager.GetPageAddr(image_end);
+        if (HashBackingMemory(tail_begin, image_end - tail_begin) != image.tail_hash) {
+            image.flags |= ImageFlagBits::CpuDirty;
+        }
+    }
 }
 
 void TextureCache::GarbageCollectImages() {
@@ -1075,6 +1109,8 @@ void TextureCache::GarbageCollectImages() {
         if (num_deletions == 0) {
             return true;
         }
+        // An edge write means the guest reused the memory, so the image is freed without download.
+        MarkDirtyIfEdgesModified(image);
         const bool download = image.HasGpuValidData();
         if (download && (!pressured || !image.CanBeDownloaded())) {
             return false;
@@ -1202,9 +1238,6 @@ void TextureCache::RunGarbageCollector() {
 
 void TextureCache::TouchImage(Image& image) {
     image_lru_cache.Touch(image, gc_tick);
-
-    // Image is still valid
-    image.gpu_hash = 0;
 }
 
 void TextureCache::DeleteImage(ImageId image_id) {

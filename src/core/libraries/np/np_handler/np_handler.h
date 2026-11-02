@@ -203,9 +203,11 @@ public:
                       std::function<void(const std::vector<std::pair<s32, u64>>&)> on_merged);
 
     // Submit a RecordScore request to the shadNet server.
+    // compareDate: SceRtcTick ticks, 0 = no conflict check.
     s32 RecordScore(s32 user_id, s32 service_label, u32 boardId, s32 pcId, s64 score,
                     const char* comment, size_t commentLen, const u8* gameInfoData,
-                    size_t gameInfoSize, std::shared_ptr<NpScore::ScoreRequestCtx> req);
+                    size_t gameInfoSize, u64 compareDate,
+                    std::shared_ptr<NpScore::ScoreRequestCtx> req);
 
     s32 RecordGameData(s32 user_id, s32 service_label, u32 boardId, s32 pcId, s64 score,
                        const u8* data, size_t size, std::shared_ptr<NpScore::ScoreRequestCtx> req);
@@ -257,7 +259,8 @@ public:
 
     // Submit a GetFriendsRanking request to the shadNet server.
     s32 GetFriendsRanking(s32 user_id, s32 service_label, u32 boardId, bool includeSelf,
-                          u32 arrayNum, NpScore::OrbisNpScoreRankData* rankArray,
+                          u32 startSerialRank, u32 arrayNum,
+                          NpScore::OrbisNpScoreRankData* rankArray,
                           NpScore::OrbisNpScoreComment* commentArray,
                           NpScore::OrbisNpScoreGameInfo* infoArray,
                           Libraries::Rtc::OrbisRtcTick* lastSortDate, u32* totalRecord,
@@ -265,7 +268,8 @@ public:
 
     // A-variant of GetFriendsRanking
     s32 GetFriendsRankingA(s32 user_id, s32 service_label, u32 boardId, bool includeSelf,
-                           u32 arrayNum, NpScore::OrbisNpScoreRankDataA* rankArray,
+                           u32 startSerialRank, u32 arrayNum,
+                           NpScore::OrbisNpScoreRankDataA* rankArray,
                            NpScore::OrbisNpScoreComment* commentArray,
                            NpScore::OrbisNpScoreGameInfo* infoArray,
                            Libraries::Rtc::OrbisRtcTick* lastSortDate, u32* totalRecord,

@@ -89,6 +89,14 @@ struct OrbisVideodec2FrameBuffer {
 };
 static_assert(sizeof(OrbisVideodec2FrameBuffer) == 0x20);
 
+struct OrbisVideodec2DirectMemoryInfo {
+    u64 this_size;
+    u64 memory_size;
+    void* memory_addr;
+    u64 reserved;
+};
+static_assert(sizeof(OrbisVideodec2DirectMemoryInfo) == 0x20);
+
 struct OrbisVideodec2ComputeMemoryInfo {
     u64 this_size;
     u64 cpu_gpu_memory_size;
@@ -266,9 +274,17 @@ s32 PS4_SYSV_ABI
 sceVideodec2QueryDecoderMemoryInfo(const OrbisVideodec2DecoderConfigInfo* decoder_cfg_info,
                                    OrbisVideodec2DecoderMemoryInfo* decoder_mem_info);
 
+s32 PS4_SYSV_ABI
+sceVideodec2QueryHevcDecoderMemoryInfo(const OrbisVideodec2DecoderConfigInfo* decoder_cfg_info,
+                                       OrbisVideodec2DecoderMemoryInfo* decoder_mem_info);
+
 s32 PS4_SYSV_ABI sceVideodec2CreateDecoder(const OrbisVideodec2DecoderConfigInfo* decoder_cfg_info,
                                            const OrbisVideodec2DecoderMemoryInfo* decoder_mem_info,
                                            OrbisVideodec2Decoder* decoder);
+
+s32 PS4_SYSV_ABI sceVideodec2CreateHevcDecoder(
+    const OrbisVideodec2DecoderConfigInfo* decoder_cfg_info,
+    const OrbisVideodec2DecoderMemoryInfo* decoder_mem_info, OrbisVideodec2Decoder* decoder);
 
 s32 PS4_SYSV_ABI sceVideodec2DeleteDecoder(OrbisVideodec2Decoder decoder);
 
@@ -291,6 +307,9 @@ s32 PS4_SYSV_ABI sceVideodec2GetAvcPictureInfo(const OrbisVideodec2OutputInfo* o
 
 s32 PS4_SYSV_ABI sceVideodec2GetHevcPictureInfo(const OrbisVideodec2OutputInfo* p_output_info,
                                                 OrbisVideodec2HevcPictureInfo* p_picture_info);
+
+s32 PS4_SYSV_ABI sceVideodec2MapDirectMemory(OrbisVideodec2Decoder decoder,
+                                             const OrbisVideodec2DirectMemoryInfo* mem_info);
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Videodec2

@@ -75,7 +75,9 @@
 #include "core/libraries/usbd/usbd.h"
 #include "core/libraries/usbd/usbstorage.h"
 #include "core/libraries/video_recording/video_recording.h"
+#include "core/libraries/videodec/vdeccore.h"
 #include "core/libraries/videodec/vdecsw.h"
+#include "core/libraries/videodec/videocore_server.h"
 #include "core/libraries/videodec/videodec.h"
 #include "core/libraries/videodec/videodec2.h"
 #include "core/libraries/videoout/video_out.h"
@@ -167,6 +169,8 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
             {"libSceVdecsw.sprx", Libraries::Vdecsw::RegisterLib},
             {"libSceVideodec.sprx", Libraries::Videodec::RegisterLib},
             {"libSceVideodec2.sprx", Libraries::Videodec2::RegisterLib},
+            {"libSceVdecCore.sprx", Libraries::VdecCore::RegisterLib},
+            {"libSceVideoCoreServerInterface.sprx", Libraries::VideoCoreServer::RegisterLib},
             {"libSceIme.sprx", Libraries::Ime::RegisterLib},
             {"libSceGameLiveStreaming.sprx", Libraries::GameLiveStreaming::RegisterLib},
             {"libSceSharePlay.sprx", Libraries::SharePlay::RegisterLib},

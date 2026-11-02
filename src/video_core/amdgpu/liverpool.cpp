@@ -193,12 +193,19 @@ Liverpool::Task Liverpool::ProcessCeUpdate(std::span<const u32> ccb) {
 
         const auto* header = reinterpret_cast<const PM4Header*>(ccb.data());
         const u32 type = header->type;
+        if (type == 2) {
+            ccb = NextPacket(ccb, 1);
+            continue;
+        }
         if (type != 3) {
             // No other types of packets were spotted so far
             UNREACHABLE_MSG("Invalid PM4 type {}", type);
         }
 
         const PM4ItOpcode opcode = header->type3.opcode;
+        // Read the size before running the packet: once it signals the guest, the guest may
+        // already reuse the buffer.
+        const u32 packet_words = header->type3.NumWords() + 1;
         const auto* it_body = reinterpret_cast<const u32*>(header) + 1;
         switch (opcode) {
         case PM4ItOpcode::Nop: {
@@ -244,12 +251,22 @@ Liverpool::Task Liverpool::ProcessCeUpdate(std::span<const u32> ccb) {
             }
             break;
         }
+        case PM4ItOpcode::Rewind: {
+            if (!rasterizer) {
+                break;
+            }
+            const auto* rewind = reinterpret_cast<const PM4CmdRewind*>(header);
+            while (!rewind->Valid()) {
+                YIELD_CE();
+            }
+            break;
+        }
         default:
             const u32 count = header->type3.NumWords();
             UNREACHABLE_MSG("Unknown PM4 type 3 opcode {:#x} with count {}",
                             static_cast<u32>(opcode), count);
         }
-        ccb = NextPacket(ccb, header->type3.NumWords() + 1);
+        ccb = NextPacket(ccb, packet_words);
     }
 
     FIBER_EXIT;
@@ -258,7 +275,7 @@ Liverpool::Task Liverpool::ProcessCeUpdate(std::span<const u32> ccb) {
 Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb) {
     FIBER_ENTER(dcb_task_name);
 
-    const auto base_addr = reinterpret_cast<uintptr_t>(dcb.data());
+    auto base_addr = reinterpret_cast<uintptr_t>(dcb.data());
     while (!dcb.empty()) {
         ProcessCommands();
 
@@ -842,6 +859,13 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb) {
             }
             case PM4ItOpcode::IndirectBuffer: {
                 const auto* indirect_buffer = reinterpret_cast<const PM4CmdIndirectBuffer*>(header);
+                if (indirect_buffer->chain) {
+                    // A chained buffer replaces the current one: the CP never comes back to the
+                    // rest of this buffer, which in reused segments still holds old commands.
+                    dcb = {indirect_buffer->Address<const u32>(), indirect_buffer->ib_size};
+                    base_addr = reinterpret_cast<uintptr_t>(dcb.data());
+                    continue;
+                }
                 auto task = ProcessGraphics(
                     {indirect_buffer->Address<const u32>(), indirect_buffer->ib_size});
                 SCOPE_EXIT {
@@ -870,16 +894,49 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb) {
             }
             case PM4ItOpcode::StrmoutBufferUpdate: {
                 const auto* strmout = reinterpret_cast<const PM4CmdStrmoutBufferUpdate*>(header);
-                LOG_WARNING(Render_Vulkan,
-                            "Unimplemented IT_STRMOUT_BUFFER_UPDATE, update_memory = {}, "
-                            "source_select = {}, buffer_select = {}",
-                            strmout->update_memory.Value(),
-                            magic_enum::enum_name(strmout->source_select.Value()),
-                            strmout->buffer_select.Value());
+                const u32 buf_idx = strmout->buffer_select.Value();
+                LOG_DEBUG(Render,
+                          "IT_STRMOUT_BUFFER_UPDATE buffer_select = {}, source_select = {}, "
+                          "update_memory = {}",
+                          buf_idx, magic_enum::enum_name(strmout->source_select.Value()),
+                          strmout->update_memory.Value());
+                u32 offset = vgt_strmout_buffer_filled_size[buf_idx];
+                switch (strmout->source_select.Value()) {
+                case SourceSelect::BufferOffset:
+                    offset = strmout->buffer_offset;
+                    break;
+                case SourceSelect::VgtStrmoutBufferFilledSize:
+                    offset = vgt_strmout_buffer_filled_size[buf_idx];
+                    break;
+                case SourceSelect::SrcAddress: {
+                    const VAddr src_addr = strmout->SrcAddress<VAddr>();
+                    auto* memory = Core::Memory::Instance();
+                    if (src_addr && memory && memory->IsValidMapping(src_addr, sizeof(offset))) {
+                        std::memcpy(&offset, reinterpret_cast<const void*>(src_addr),
+                                    sizeof(offset));
+                    }
+                    break;
+                }
+                case SourceSelect::None:
+                    break;
+                }
+                if (strmout->source_select.Value() != SourceSelect::None) {
+                    vgt_strmout_buffer_filled_size[buf_idx] = offset;
+                }
+                if (strmout->update_memory.Value()) {
+                    const VAddr dst_addr = strmout->DstAddress<VAddr>();
+                    auto* memory = Core::Memory::Instance();
+                    if (dst_addr && memory && memory->IsValidMapping(dst_addr, sizeof(offset))) {
+                        std::memcpy(reinterpret_cast<void*>(dst_addr),
+                                    &vgt_strmout_buffer_filled_size[buf_idx], sizeof(offset));
+                    }
+                }
+                regs.cp_strmout_cntl.offset_update_done = 1;
                 break;
             }
             case PM4ItOpcode::GetLodStats: {
-                LOG_WARNING(Render_Vulkan, "Unimplemented IT_GET_LOD_STATS");
+                const auto* get_lod = reinterpret_cast<const PM4CmdGetLodStats*>(header);
+                HandleGetLodStats(get_lod);
                 break;
             }
             case PM4ItOpcode::CondExec: {
@@ -899,7 +956,9 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb) {
                 UNREACHABLE_MSG("Unknown PM4 type 3 opcode {:#x} with count {}",
                                 static_cast<u32>(opcode), count);
             }
-            dcb = NextPacket(dcb, header->type3.NumWords() + 1);
+            // The size read before running the packet: a flip or an EOP interrupt lets the guest
+            // reuse this buffer while we are still on it, so the header may be gone by now.
+            dcb = NextPacket(dcb, count + 1);
             break;
         }
     }
@@ -972,6 +1031,15 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
         }
         case PM4ItOpcode::IndirectBuffer: {
             const auto* indirect_buffer = reinterpret_cast<const PM4CmdIndirectBuffer*>(header);
+            if constexpr (is_indirect) {
+                if (indirect_buffer->chain) {
+                    // As for graphics, a chained buffer replaces the current one.
+                    acb = {indirect_buffer->Address<const u32>(), indirect_buffer->ib_size};
+                    base_addr = reinterpret_cast<VAddr>(acb.data());
+                    acb_size = acb.size_bytes();
+                    continue;
+                }
+            }
             auto task = ProcessCompute<true>(
                 {indirect_buffer->Address<const u32>(), indirect_buffer->ib_size}, vqid);
             SCOPE_EXIT {
@@ -1163,6 +1231,11 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
             // const auto* event = reinterpret_cast<const PM4CmdEventWrite*>(header);
             break;
         }
+        case PM4ItOpcode::GetLodStats: {
+            const auto* get_lod = reinterpret_cast<const PM4CmdGetLodStats*>(header);
+            HandleGetLodStats(get_lod);
+            break;
+        }
         default:
             UNREACHABLE_MSG("Unknown PM4 type 3 opcode {:#x} with count {}",
                             static_cast<u32>(opcode), header->type3.NumWords());
@@ -1177,6 +1250,11 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
     }
 
     FIBER_EXIT;
+}
+
+void Liverpool::HandleGetLodStats(const PM4CmdGetLodStats* get_lod) {
+    LOG_DEBUG(Render, "IT_GET_LOD_STATS: buffer = {:#x}, offset = {:#x}", get_lod->Address(),
+              get_lod->DataOffset());
 }
 
 Liverpool::CmdBuffer Liverpool::CopyCmdBuffers(std::span<const u32> dcb, std::span<const u32> ccb) {

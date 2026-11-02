@@ -319,7 +319,7 @@ private:
         return std::prev(fmem_map.upper_bound(target));
     }
 
-    bool HasPhysicalBacking(VirtualMemoryArea vma) {
+    bool HasPhysicalBacking(const VirtualMemoryArea& vma) {
         return vma.type == VMAType::Direct || vma.type == VMAType::Flexible ||
                vma.type == VMAType::Pooled;
     }
