@@ -969,6 +969,7 @@ Id ImageType(EmitContext& ctx, const ImageResource& desc, Id sampled_type) {
     const auto image = desc.GetSharp(ctx.info);
     const auto format = desc.is_atomic ? GetFormat(image) : spv::ImageFormat::Unknown;
     const auto type = image.GetViewType(desc.is_array);
+    const bool is_multisampled = image.NumSamples() > 1;
     const u32 sampled = desc.is_written ? 2 : 1;
     switch (type) {
     case AmdGpu::ImageType::Color1D:
@@ -979,9 +980,11 @@ Id ImageType(EmitContext& ctx, const ImageResource& desc, Id sampled_type) {
     case AmdGpu::ImageType::Cube:
         return ctx.TypeImage(sampled_type, spv::Dim::Dim2D, false, true, false, sampled, format);
     case AmdGpu::ImageType::Color2DMsaa:
-        return ctx.TypeImage(sampled_type, spv::Dim::Dim2D, false, false, true, sampled, format);
+        return ctx.TypeImage(sampled_type, spv::Dim::Dim2D, false, false, is_multisampled, sampled,
+                             format);
     case AmdGpu::ImageType::Color2DMsaaArray:
-        return ctx.TypeImage(sampled_type, spv::Dim::Dim2D, false, true, true, sampled, format);
+        return ctx.TypeImage(sampled_type, spv::Dim::Dim2D, false, true, is_multisampled, sampled,
+                             format);
     case AmdGpu::ImageType::Color3D:
         return ctx.TypeImage(sampled_type, spv::Dim::Dim3D, false, false, false, sampled, format);
     default:
@@ -1021,6 +1024,7 @@ void EmitContext::DefineImagesAndSamplers() {
             .view_type = sharp.GetViewType(image_desc.is_array),
             .is_integer = is_integer,
             .is_storage = is_storage,
+            .is_multisampled = sharp.NumSamples() > 1,
             .mip_fallback_mode = mip_fallback_mode,
         });
         interfaces.push_back(id);

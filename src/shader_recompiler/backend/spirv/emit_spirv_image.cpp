@@ -131,9 +131,12 @@ struct ImageOperands {
         Add(spv::ImageOperandsMask::Grad, derivatives_dx, derivatives_dy);
     }
 
-    Id AddSample(EmitContext& ctx, Id image, Id sample) {
+    Id AddSample(EmitContext& ctx, Id image, bool is_multisampled, Id sample) {
         if (!Sirit::ValidId(sample)) {
             return {};
+        }
+        if (!is_multisampled) {
+            return ctx.OpIEqual(ctx.U1[1], sample, ctx.u32_zero_value);
         }
         const Id sample_count = ctx.OpImageQuerySamples(ctx.U32[1], image);
         Add(spv::ImageOperandsMask::Sample, ctx.OpUMod(ctx.U32[1], sample, sample_count));
@@ -257,9 +260,7 @@ Id EmitImageQueryDimensions(EmitContext& ctx, IR::Inst* inst, u32 handle, Id lod
     const Id image = ctx.OpLoad(texture.image_type, texture.id);
     const Id zero = ctx.u32_zero_value;
     const auto mips{[&] { return has_mips ? ctx.OpImageQueryLevels(ctx.U32[1], image) : zero; }};
-    const bool uses_lod{texture.view_type != AmdGpu::ImageType::Color2DMsaa &&
-                        texture.view_type != AmdGpu::ImageType::Color2DMsaaArray &&
-                        !texture.is_storage};
+    const bool uses_lod{!texture.is_multisampled && !texture.is_storage};
     const auto query{[&](Id type) {
         return uses_lod ? ctx.OpImageQuerySizeLod(type, image, lod)
                         : ctx.OpImageQuerySize(type, image);
@@ -324,7 +325,7 @@ Id EmitImageRead(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id lod
         const Id image = ctx.OpLoad(texture.image_type, texture.id);
         if (texture.view_type == AmdGpu::ImageType::Color2DMsaa ||
             texture.view_type == AmdGpu::ImageType::Color2DMsaaArray) {
-            sample_in_range = operands.AddSample(ctx, image, ms);
+            sample_in_range = operands.AddSample(ctx, image, texture.is_multisampled, ms);
         } else {
             if (Sirit::ValidId(ms)) {
                 LOG_ERROR(Render_Recompiler, "image is not MS but ms operand is provided");
@@ -352,7 +353,7 @@ Id EmitImageRead(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id lod
 #endif
         }
         const Id image = ctx.OpLoad(texture.image_type, image_ptr);
-        sample_in_range = operands.AddSample(ctx, image, ms);
+        sample_in_range = operands.AddSample(ctx, image, texture.is_multisampled, ms);
         texel = ctx.OpImageRead(color_type, image, fixed_coords, operands.mask, operands.operands);
     }
     if (Sirit::ValidId(sample_in_range)) {
@@ -379,7 +380,7 @@ void EmitImageWrite(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id 
     }
     const Id image = ctx.OpLoad(texture.image_type, image_ptr);
     const Id texel = texture.is_integer ? ctx.OpBitcast(color_type, color) : color;
-    const Id sample_in_range = operands.AddSample(ctx, image, ms);
+    const Id sample_in_range = operands.AddSample(ctx, image, texture.is_multisampled, ms);
     if (!Sirit::ValidId(sample_in_range)) {
         ctx.OpImageWrite(image, fixed_coords, texel, operands.mask, operands.operands);
         return;
