@@ -136,10 +136,6 @@ void Scheduler::PopPendingOperations() {
         return;
     }
     std::unique_lock lk(pending_ops_mutex);
-    if (pending_ops.empty()) {
-        pending_ops_empty.store(true, std::memory_order_relaxed);
-        return;
-    }
     work_semaphore.Refresh();
     while (!pending_ops.empty() && work_semaphore.IsFree(pending_ops.front().gpu_tick)) {
         pending_ops.front().callback();
