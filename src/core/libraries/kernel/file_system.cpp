@@ -290,6 +290,7 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
             }
             // Create a file if it doesn't exist
             Common::FS::IOFile out(file->m_host_name, Common::FS::FileAccessMode::Create);
+            mnt->InvalidateCache(file->m_guest_name);
         }
     } else if (!exists) {
         // If we're not creating a file, and it doesn't exist, return ENOENT
@@ -826,6 +827,7 @@ s32 PS4_SYSV_ABI posix_mkdir(const char* path, u16 mode) {
         return -1;
     }
 
+    mnt->InvalidateCache(sanitized_path);
     return ORBIS_OK;
 }
 
@@ -892,6 +894,7 @@ s32 PS4_SYSV_ABI posix_rmdir(const char* path) {
         *__Error() = (ec.value() == EACCES || ec.value() == EPERM) ? POSIX_EACCES : POSIX_EIO;
         return -1;
     }
+    mnt->InvalidateCache(sanitized_path);
     return ORBIS_OK;
 }
 
@@ -1621,6 +1624,9 @@ s32 PS4_SYSV_ABI posix_rename(const char* from, const char* to) {
         file->m_guest_name = to;
     }
 
+    mnt->InvalidateCache(from);
+    mnt->InvalidateCache(to);
+
     return ORBIS_OK;
 }
 
@@ -2149,6 +2155,8 @@ s32 PS4_SYSV_ABI posix_unlink(const char* path) {
     } else if (auto* host = file->GetHostFile()) {
         host->Unlink();
     }
+
+    mnt->InvalidateCache(path);
 
     LOG_INFO(Kernel_Fs, "Unlinked {}", path);
     return ORBIS_OK;
