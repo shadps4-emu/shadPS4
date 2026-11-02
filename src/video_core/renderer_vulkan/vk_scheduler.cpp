@@ -142,7 +142,6 @@ void Scheduler::PopPendingOperations() {
         pending_ops.pop();
     }
     pending_ops_empty.store(pending_ops.empty(), std::memory_order_relaxed);
-
 }
 
 void Scheduler::BeginSession() {
