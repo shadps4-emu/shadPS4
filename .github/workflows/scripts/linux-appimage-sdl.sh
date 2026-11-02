@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2024 shadPS4 Emulator Project
+# SPDX-FileCopyrightText: 2024-2026 shadPS4 Emulator Project
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 #!/bin/bash
@@ -17,5 +17,5 @@ chmod a+x linuxdeploy-plugin-checkrt-x86_64.sh
 # Build AppImage
 ./linuxdeploy-x86_64.AppImage --appdir AppDir
 ./linuxdeploy-plugin-checkrt-x86_64.sh --appdir AppDir
-./linuxdeploy-x86_64.AppImage --appdir AppDir -d "$GITHUB_WORKSPACE"/src/dist/net.shadps4.shadPS4.desktop  -e "$GITHUB_WORKSPACE"/build/shadps4 -i "$GITHUB_WORKSPACE"/src/dist/net.shadps4.shadPS4.svg --output appimage
+./linuxdeploy-x86_64.AppImage --appdir AppDir -d "$GITHUB_WORKSPACE"/src/dist/net.shadps4.shadPS4.desktop -e "$GITHUB_WORKSPACE"/build/shadps4 -i "$GITHUB_WORKSPACE"/src/dist/net.shadps4.shadPS4.png --output appimage
 mv shadPS4-x86_64.AppImage Shadps4-sdl.AppImage
