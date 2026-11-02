@@ -198,7 +198,7 @@ struct Image {
     }
 
     bool Valid() const {
-        return (type & 0x8u) != 0 && NumSamples() <= 8;
+        return (type & 0x8u) != 0;
     }
 
     VAddr Address() const {
@@ -249,7 +249,7 @@ struct Image {
 
     u32 NumSamples() const {
         if (GetType() == ImageType::Color2DMsaa || GetType() == ImageType::Color2DMsaaArray) {
-            return 1u << last_level;
+            return std::min(1u << last_level, 8u);
         }
         return 1;
     }
