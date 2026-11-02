@@ -6,6 +6,7 @@
 #include <map>
 #include <memory>
 #include <mutex>
+#include <string>
 #include <vector>
 #include <core/user_settings.h>
 #include "common/elf_info.h"
@@ -274,7 +275,8 @@ s32 PS4_SYSV_ABI sceNpScoreRecordScore(s32 reqId, OrbisNpScoreBoardId boardId,
 
     const s32 dispatch_err = NpHandler::GetInstance().RecordScore(
         req->userId, ServiceLabelForRequest(req), boardId, req->pcId, score, commentBytes,
-        commentLen, gameInfoBytes, gameInfoLen, req);
+        commentLen, gameInfoBytes, gameInfoLen, compareDate != nullptr ? compareDate->tick : 0,
+        req);
     if (dispatch_err != ORBIS_OK) {
         req->SetResult(dispatch_err);
         return dispatch_err;
@@ -327,7 +329,8 @@ s32 PS4_SYSV_ABI sceNpScoreRecordScoreAsync(s32 reqId, OrbisNpScoreBoardId board
 
     const s32 dispatch_err = NpHandler::GetInstance().RecordScore(
         req->userId, ServiceLabelForRequest(req), boardId, req->pcId, score, commentBytes,
-        commentLen, gameInfoBytes, gameInfoLen, req);
+        commentLen, gameInfoBytes, gameInfoLen, compareDate != nullptr ? compareDate->tick : 0,
+        req);
     if (dispatch_err != ORBIS_OK) {
         // Dispatch failed synchronously (user signed out, not authed, etc.).
         // Complete the request with the error so PollAsync/WaitAsync observe it.
@@ -830,14 +833,12 @@ static int GetFriendsRankingImpl(s32 reqId, OrbisNpScoreBoardId boardId, s32 inc
     s32 dispatch_err;
     if (is_a_variant) {
         dispatch_err = NpHandler::GetInstance().GetFriendsRankingA(
-            req->userId, ServiceLabelForRequest(req), boardId, includeSelf != 0,
+            req->userId, ServiceLabelForRequest(req), boardId, includeSelf != 0, startSerialRank,
             static_cast<u32>(arrayNum), aRankArrayIn, commentArray, infoArray, lastSortDate,
             totalRecord, req);
     } else {
-        // todo support startSerialRank and opt->hits , currently we return the full friend set
-        // capped at max in score order without rank-slice semantics
         dispatch_err = NpHandler::GetInstance().GetFriendsRanking(
-            req->userId, ServiceLabelForRequest(req), boardId, includeSelf != 0,
+            req->userId, ServiceLabelForRequest(req), boardId, includeSelf != 0, startSerialRank,
             static_cast<u32>(arrayNum), rankArray, commentArray, infoArray, lastSortDate,
             totalRecord, req);
     }
@@ -1224,6 +1225,37 @@ s32 PS4_SYSV_ABI sceNpScoreGetBoardInfoAsync(s32 reqId, OrbisNpScoreBoardId boar
 //***********************************
 // GetGameData functions
 //***********************************
+
+static bool ServeGameDataFromCache(const std::shared_ptr<ScoreRequestCtx>& req,
+                                   const std::string& key, u64* totalSize, u64 recvSize, void* data,
+                                   bool is_async, s32* ret) {
+    if (req->gameDataRecvOffset == 0 || req->gameDataRecvKey != key) {
+        req->gameDataRecvOffset = 0;
+        req->gameDataRecvCache.clear();
+        req->gameDataRecvKey = key;
+        return false;
+    }
+    const auto& cache = req->gameDataRecvCache;
+    const u64 start = std::min<u64>(req->gameDataRecvOffset, cache.size());
+    const u64 n = (data != nullptr) ? std::min<u64>(cache.size() - start, recvSize) : 0;
+    if (n > 0) {
+        std::memcpy(data, cache.data() + start, static_cast<size_t>(n));
+    }
+    if (totalSize != nullptr) {
+        *totalSize = cache.size();
+    }
+    if (n < recvSize) {
+        req->gameDataRecvOffset = 0; // transfer complete
+        req->gameDataRecvCache.clear();
+    } else {
+        req->gameDataRecvOffset = start + n;
+    }
+    LOG_INFO(Lib_NpScore, "GetGameData: served {} cached bytes from offset {} (total {})", n, start,
+             cache.size());
+    req->SetResult(static_cast<s32>(n));
+    *ret = is_async ? ORBIS_OK : static_cast<s32>(n);
+    return true;
+}
 static int GetGameDataImpl(s32 reqId, OrbisNpScoreBoardId boardId, const OrbisNpId* npId,
                            u64* totalSize, u64 recvSize, void* data, void* option, bool is_async) {
     if (npId == nullptr) {
@@ -1257,6 +1289,12 @@ static int GetGameDataImpl(s32 reqId, OrbisNpScoreBoardId boardId, const OrbisNp
     }
 
     const s32 pcId = req->pcId;
+
+    s32 cached_ret;
+    if (ServeGameDataFromCache(req, std::to_string(boardId) + ":npid:" + npIdStr, totalSize,
+                               recvSize, data, is_async, &cached_ret)) {
+        return cached_ret;
+    }
 
     const s32 dispatch_err =
         NpHandler::GetInstance().GetGameData(req->userId, ServiceLabelForRequest(req), boardId,
@@ -1297,6 +1335,12 @@ static int GetGameDataByAccountIdImpl(s32 reqId, OrbisNpScoreBoardId boardId,
     }
 
     const s32 pcId = req->pcId;
+
+    s32 cached_ret;
+    if (ServeGameDataFromCache(req, std::to_string(boardId) + ":acc:" + std::to_string(accountId),
+                               totalSize, recvSize, data, is_async, &cached_ret)) {
+        return cached_ret;
+    }
 
     const s32 dispatch_err = NpHandler::GetInstance().GetGameDataByAccountId(
         req->userId, ServiceLabelForRequest(req), boardId, accountId, pcId, data, recvSize,
