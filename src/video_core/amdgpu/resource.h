@@ -198,7 +198,7 @@ struct Image {
     }
 
     bool Valid() const {
-        return (type & 0x8u) != 0 && NumSamples() <= 16;
+        return (type & 0x8u) != 0 && NumSamples() <= 8;
     }
 
     VAddr Address() const {
