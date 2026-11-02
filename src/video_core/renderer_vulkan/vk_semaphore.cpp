@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <limits>
+#include <thread>
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_semaphore.h"
 
@@ -54,7 +55,19 @@ void Semaphore::Wait(u64 tick) {
     if (IsFree(tick)) {
         return;
     }
-
+    // Spin-poll briefly before blocking: counter queries are cheap while blocking
+    // timeline-semaphore waits have a high fixed latency on some drivers.
+    constexpr u32 MaxSpinCount = 128;
+    for (u32 i = 0; i < MaxSpinCount; i++) {
+        Refresh();
+        if (IsFree(tick)) {
+            return;
+        }
+        if (i % 32 == 31) {
+            std::this_thread::yield();
+        }
+    }
+    
     // If none of the above is hit, fallback to a regular wait
     const vk::SemaphoreWaitInfo wait_info = {
         .semaphoreCount = 1,
