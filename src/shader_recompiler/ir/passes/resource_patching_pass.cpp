@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <limits>
+#include <optional>
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/ir_emitter.h"
@@ -113,7 +114,9 @@ public:
 
     u32 Add(const ImageResource& desc) {
         const u32 index{Add(image_resources, desc, [&desc](const auto& existing) {
-            return desc.sharp_fetch == existing.sharp_fetch && desc.is_array == existing.is_array &&
+            return desc.sharp_fetch == existing.sharp_fetch &&
+                   desc.descriptor_count == existing.descriptor_count &&
+                   desc.is_array == existing.is_array &&
                    desc.mip_fallback_mode == existing.mip_fallback_mode &&
                    desc.constant_mip_index == existing.constant_mip_index &&
                    desc.post_op == existing.post_op;
@@ -227,6 +230,53 @@ void PatchBufferSharp(const ResourceDiscovery& resource, Info& info, Descriptors
     inst.SetArg(0, ir.Imm32(buffer_binding));
 }
 
+static std::optional<ImageResource> PrepareBufferImageArray(const ResourceDiscovery& resource,
+                                                            Info& info, const Profile& profile) {
+    if (resource.image_array_index.IsEmpty() || !info.read_descriptor_memory) {
+        return std::nullopt;
+    }
+    const BufferResource source{
+        .sharp_fetch = ConstructSharpFetch<AmdGpu::Buffer>(resource.image_array_buffer),
+    };
+    const auto table = source.GetSharp(info);
+    const u64 count = table.GetSize() / sizeof(AmdGpu::Image);
+    if (!table || table.base_address == 0 || table.swizzle_enable || count == 0 ||
+        table.GetSize() % sizeof(AmdGpu::Image) != 0) {
+        LOG_WARNING(Render_Recompiler, "Unsupported image descriptor table: size={:#x}",
+                    table.GetSize());
+        return std::nullopt;
+    }
+    for (const auto& image : info.images) {
+        if (image.descriptor_count == count + 1 &&
+            image.descriptor_table.sharp_fetch == source.sharp_fetch) {
+            return image;
+        }
+    }
+    const u32 base = info.srt_info.flattened_bufsize_dw;
+    u64 descriptors = count + 1;
+    for (const auto& image : info.images) {
+        descriptors += image.NumBindings(info);
+    }
+    if (descriptors + NUM_IMAGES > profile.max_sampled_image_descriptors ||
+        count + 1 > (std::numeric_limits<u16>::max() - base) / 8) {
+        LOG_WARNING(Render_Recompiler,
+                    "Image descriptor table exceeds host or flat-buffer capacity: count={}", count);
+        return std::nullopt;
+    }
+    ImageResource image{};
+    image.sharp_fetch.summary = SharpFetch<AmdGpu::Image>::Summary::SingleLoad;
+    image.sharp_fetch.offsets[0] = base;
+    image.descriptor_count = static_cast<u32>(count + 1);
+    image.descriptor_table = source;
+    info.srt_info.flattened_bufsize_dw += image.descriptor_count * 8;
+    info.flattened_ud_buf.resize(info.srt_info.flattened_bufsize_dw);
+    info.RefreshImageDescriptorTable(image);
+    LOG_INFO(Render_Recompiler,
+             "Bound dynamic image descriptor table: count={}, stage={}, shader={:#x}", count,
+             info.hw_stage, info.pgm_hash);
+    return image;
+}
+
 void PatchImageSharp(const ResourceDiscovery& resource, Info& info, Descriptors& descriptors,
                      const Profile& profile) {
     IR::Inst& inst = *resource.user;
@@ -239,8 +289,12 @@ void PatchImageSharp(const ResourceDiscovery& resource, Info& info, Descriptors&
     // need fallback (TODO is this 100% true?)
     const bool needs_mip_storage_fallback =
         inst_info.has_lod && is_written && !profile.supports_image_load_store_lod;
+    const auto array = PrepareBufferImageArray(resource, info, profile);
     ImageResource image_res = {
-        .sharp_fetch = ConstructSharpFetch<AmdGpu::Image>(resource.sharps[0]),
+        .sharp_fetch =
+            array ? array->sharp_fetch : ConstructSharpFetch<AmdGpu::Image>(resource.sharps[0]),
+        .descriptor_count = array ? array->descriptor_count : 0,
+        .descriptor_table = array ? array->descriptor_table : BufferResource{},
         .is_depth = bool(inst_info.is_depth),
         .is_atomic = is_atomic,
         .is_array = bool(inst_info.is_array),
@@ -322,6 +376,19 @@ void PatchImageSharp(const ResourceDiscovery& resource, Info& info, Descriptors&
 
     IR::IREmitter ir{*inst.GetParent(), IR::Block::InstructionList::s_iterator_to(inst)};
 
+    if (array) {
+        for (const auto value : resource.sharps[0].dwords) {
+            auto* read = value.TryInst();
+            if (read && read->GetOpcode() == IR::Opcode::ReadConstBuffer) {
+                IR::IREmitter reader{*read->GetParent(),
+                                     IR::Block::InstructionList::s_iterator_to(*read)};
+                read->ReplaceUsesWith(reader.ReadConstArray(
+                    reader.Imm32(array->sharp_fetch.offsets[0]), IR::U32{read->Arg(1)},
+                    reader.Imm32((array->descriptor_count - 1) * 8)));
+            }
+        }
+    }
+
     if (inst.GetOpcode() == IR::Opcode::ImageSampleRaw) {
         auto& lod_prod = resource.sharps[1].post_op_data.lod_prod;
         const u32 sampler_binding = descriptors.Add(SamplerResource{
@@ -331,9 +398,13 @@ void PatchImageSharp(const ResourceDiscovery& resource, Info& info, Descriptors&
                 lod_prod.IsEmpty() ? UNKNOWN_LOCATION : SharpLocationFromSource(lod_prod.Inst()),
             .is_depth = bool(inst_info.is_depth), // true for the _C (compare) opcodes
         });
-        inst.SetArg(0, ir.Imm32(image_binding | sampler_binding << 16));
+        const auto handle = ir.Imm32(image_binding | sampler_binding << 16);
+        inst.SetArg(0, array ? ir.ImageDescriptorHandle(handle, IR::U32{resource.image_array_index})
+                             : IR::Value{handle});
     } else {
-        inst.SetArg(0, ir.Imm32(image_binding));
+        const auto handle = ir.Imm32(image_binding);
+        inst.SetArg(0, array ? ir.ImageDescriptorHandle(handle, IR::U32{resource.image_array_index})
+                             : IR::Value{handle});
     }
 }
 
@@ -640,7 +711,8 @@ void PatchBufferArgs(IR::Inst& inst, Info& info) {
 void PatchImageSampleArgs(IR::Inst& inst, Info& info, const ImageResource& image_res,
                           const AmdGpu::Image& image) {
     const auto handle = inst.Arg(0);
-    const auto& sampler_res = info.samplers[(handle.U32() >> 16) & 0xFFFF];
+    const u32 binding = handle.IsImmediate() ? handle.U32() : handle.Inst()->Arg(0).U32();
+    const auto& sampler_res = info.samplers[(binding >> 16) & 0xFFFF];
     const auto sampler = sampler_res.GetSharp(info);
 
     IR::IREmitter ir{*inst.GetParent(), IR::Block::InstructionList::s_iterator_to(inst)};
@@ -836,7 +908,9 @@ void PatchImageArgs(IR::Inst& inst, Info& info) {
     }
 
     const auto image_handle = inst.Arg(0);
-    const auto binding_index = image_handle.U32() & 0xFFFF;
+    const u32 binding_index =
+        (image_handle.IsImmediate() ? image_handle.U32() : image_handle.Inst()->Arg(0).U32()) &
+        0xFFFF;
     const auto& image_res = info.images[binding_index];
     auto image = image_res.GetSharp(info);
 

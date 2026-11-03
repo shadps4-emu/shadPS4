@@ -432,6 +432,8 @@ Id EmitConvertS32S8(EmitContext& ctx, Id value);
 Id EmitConvertS32S16(EmitContext& ctx, Id value);
 
 Id EmitImageHandle(EmitContext& ctx, Id, Id);
+Id EmitImageDescriptorHandle(EmitContext& ctx, u32 binding, Id index);
+Id EmitReadConstArray(EmitContext& ctx, u32 base, Id offset, u32 count);
 Id EmitImageSampleRaw(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address1, Id address2,
                       Id address3, Id address4);
 Id EmitImageSampleImplicitLod(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id bias,

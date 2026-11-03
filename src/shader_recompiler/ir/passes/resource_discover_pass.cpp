@@ -389,6 +389,119 @@ void DiscoverImageSharp(IR::Block& block, IR::Inst& inst, ResourceDiscoveryList&
     MarkReadConstBufferSharpSources(ssharp);
 }
 
+struct DescriptorOffset {
+    IR::Value index;
+    u64 scale = 1;
+    u64 offset = 0;
+};
+
+static DescriptorOffset DescribeDescriptorOffset(IR::Value value) {
+    auto* inst = value.TryInst();
+    if (!inst) {
+        return {value};
+    }
+    const auto opcode = inst->GetOpcode();
+    if ((opcode == IR::Opcode::IAdd32 || opcode == IR::Opcode::IMul32) &&
+        inst->Arg(0).IsImmediate() != inst->Arg(1).IsImmediate()) {
+        const bool immediate_first = inst->Arg(0).IsImmediate();
+        auto result = DescribeDescriptorOffset(inst->Arg(immediate_first ? 1 : 0));
+        const u32 immediate = inst->Arg(immediate_first ? 0 : 1).U32();
+        if (opcode == IR::Opcode::IAdd32) {
+            result.offset += immediate;
+        } else {
+            result.scale *= immediate;
+            result.offset *= immediate;
+        }
+        if (result.scale <= UINT32_MAX && result.offset <= UINT32_MAX) {
+            return result;
+        }
+    } else if ((opcode == IR::Opcode::ShiftLeftLogical32 ||
+                opcode == IR::Opcode::ShiftRightLogical32) &&
+               inst->Arg(1).IsImmediate()) {
+        const u32 shift = inst->Arg(1).U32();
+        if (shift >= 32) {
+            return {value};
+        }
+        auto result = DescribeDescriptorOffset(inst->Arg(0));
+        if (opcode == IR::Opcode::ShiftLeftLogical32) {
+            result.scale <<= shift;
+            result.offset <<= shift;
+            if (result.scale <= UINT32_MAX && result.offset <= UINT32_MAX) {
+                return result;
+            }
+        } else if ((result.scale | result.offset) % (u64{1} << shift) == 0) {
+            result.scale >>= shift;
+            result.offset >>= shift;
+            return result;
+        }
+    }
+    return {value};
+}
+
+static void DiscoverBufferImageArrays(ResourceDiscoveryList& resources, const Profile& profile) {
+    if (!profile.supports_sampled_image_array_non_uniform_indexing) {
+        return;
+    }
+    for (auto& resource : resources) {
+        const auto& sharp = resource.sharps[0];
+        const auto opcode = resource.user->GetOpcode();
+        if (!IsImageInstruction(*resource.user) || sharp.num_dwords != 8 ||
+            sharp.post_op != SharpFetchPostOp::None || opcode == IR::Opcode::ImageWrite ||
+            IsImageAtomicInstruction(*resource.user) ||
+            resource.user->Flags<IR::TextureInstInfo>().is_r128) {
+            continue;
+        }
+        auto* first = sharp.dwords[0].TryInst();
+        if (!first || first->GetOpcode() != IR::Opcode::ReadConstBuffer ||
+            first->Arg(1).IsImmediate()) {
+            continue;
+        }
+        const auto table = first->Arg(0);
+        auto* descriptor = table.TryInst();
+        if (!descriptor || descriptor->GetOpcode() != IR::Opcode::CompositeConstructU32x4) {
+            continue;
+        }
+        const auto offset = DescribeDescriptorOffset(first->Arg(1));
+        bool contiguous = offset.scale == 8 && offset.offset == 0;
+        for (u32 dw = 1; dw < 8 && contiguous; ++dw) {
+            auto* read = sharp.dwords[dw].TryInst();
+            if (!read || read->GetOpcode() != IR::Opcode::ReadConstBuffer ||
+                read->Arg(0) != table) {
+                contiguous = false;
+                break;
+            }
+            const auto next = DescribeDescriptorOffset(read->Arg(1));
+            contiguous = next.index == offset.index && next.scale == 8 && next.offset == dw;
+        }
+        bool scalar_source = true;
+        for (u32 dw = 0; dw < 4; ++dw) {
+            const auto value = descriptor->Arg(dw);
+            scalar_source &=
+                value.IsImmediate() || (value.TryInst() && IsSharpSource(value.Inst()));
+        }
+        if (!contiguous || !scalar_source) {
+            continue;
+        }
+        resource.image_array_buffer.num_dwords = 4;
+        for (u32 dw = 0; dw < 4; ++dw) {
+            resource.image_array_buffer.dwords[dw] = descriptor->Arg(dw);
+        }
+        MarkReadConstBufferSharpSources(resource.image_array_buffer);
+        resource.image_array_index = offset.index;
+    }
+    for (const auto& resource : resources) {
+        if (resource.image_array_index.IsEmpty()) {
+            continue;
+        }
+        for (const auto value : resource.sharps[0].dwords) {
+            auto* read = value.Inst();
+            auto flags = read->Flags<IR::BufferInstInfo>();
+            flags.sharp_source.Assign(0u);
+            read->SetFlags(flags);
+        }
+    }
+}
+
 ResourceDiscoveryList ResourceDiscoverPass(IR::Program& program, const Profile& profile) {
     ResourceDiscoveryList sharp_usages;
 
@@ -403,6 +516,7 @@ ResourceDiscoveryList ResourceDiscoverPass(IR::Program& program, const Profile& 
             }
         }
     }
+    DiscoverBufferImageArrays(sharp_usages, profile);
     return sharp_usages;
 }
 

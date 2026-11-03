@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <algorithm>
+#include <functional>
 #include <span>
 #include <vector>
 #include <boost/container/static_vector.hpp>
@@ -100,6 +102,7 @@ struct Info : InfoPersistent {
         Qualifier auxiliary;
     };
 
+    std::function<bool(VAddr, void*, u64)> read_descriptor_memory;
     std::span<const u32> user_data;
     std::vector<u32> flattened_ud_buf;
     PersistentSrtInfo srt_info;
@@ -161,7 +164,10 @@ struct Info : InfoPersistent {
 
     void AddBindings(Backend::Bindings& bnd) const {
         bnd.buffer += buffers.size();
-        bnd.unified += buffers.size() + images.size() + samplers.size();
+        bnd.unified += buffers.size() + samplers.size();
+        for (const auto& image : images) {
+            bnd.unified += image.NumBindings(*this);
+        }
     }
 
     void RefreshFlatBuf() {
@@ -170,6 +176,26 @@ struct Info : InfoPersistent {
         std::memcpy(flattened_ud_buf.data(), user_data.data(), user_data.size_bytes());
         if (srt_info.walker_func) {
             srt_info.walker_func(user_data.data(), flattened_ud_buf.data());
+        }
+        for (const auto& image : images) {
+            if (image.descriptor_count != 0) {
+                RefreshImageDescriptorTable(image);
+            }
+        }
+    }
+
+    void RefreshImageDescriptorTable(const ImageResource& image) {
+        if (!read_descriptor_memory) {
+            return;
+        }
+        auto* destination = flattened_ud_buf.data() + image.sharp_fetch.offsets[0];
+        std::fill_n(destination, image.descriptor_count * 8, 0u);
+        const auto table = image.descriptor_table.GetSharp(*this);
+        const u64 size = std::min<u64>(table.GetSize(), (image.descriptor_count - 1) * 32ull);
+        if (table && table.base_address != 0 && size != 0) {
+            if (!read_descriptor_memory(table.base_address, destination, size)) {
+                std::fill_n(destination, image.descriptor_count * 8, 0u);
+            }
         }
     }
 

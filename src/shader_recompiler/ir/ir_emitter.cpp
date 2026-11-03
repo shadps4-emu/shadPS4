@@ -2104,6 +2104,14 @@ Value IREmitter::ImageHandle(const Value& tsharp_low, const Value& tsharp_high) 
     return Inst(Opcode::ImageHandle, tsharp_low, tsharp_high);
 }
 
+Value IREmitter::ImageDescriptorHandle(const U32& binding, const U32& index) {
+    return Inst(Opcode::ImageDescriptorHandle, binding, index);
+}
+
+U32 IREmitter::ReadConstArray(const U32& base, const U32& offset, const U32& count) {
+    return Inst<U32>(Opcode::ReadConstArray, base, offset, count);
+}
+
 Value IREmitter::ImageSampleRaw(const Value& image_handle, const Value& sampler_handle,
                                 const Value& address1, const Value& address2, const Value& address3,
                                 const Value& address4, TextureInstInfo info) {
