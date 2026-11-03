@@ -68,7 +68,7 @@ void Semaphore::Wait(u64 tick) {
             std::this_thread::yield();
         }
     }
-    
+
     // If none of the above is hit, fallback to a regular wait
     const vk::SemaphoreWaitInfo wait_info = {
         .semaphoreCount = 1,
