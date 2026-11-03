@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include "common/lru_cache.h"
 #include "video_core/amdgpu/regs_texture.h"
 #include "video_core/amdgpu/resource.h"
 #include "video_core/renderer_vulkan/vk_common.h"
@@ -13,10 +14,10 @@ class Instance;
 
 namespace VideoCore {
 
-class Sampler {
+class Sampler : public Common::LRUNode<> {
 public:
     explicit Sampler(const Vulkan::Instance& instance, const AmdGpu::Sampler& sampler,
-                     const AmdGpu::BorderColorBuffer border_color_base);
+                     const AmdGpu::BorderColorBuffer border_color_base, bool is_depth);
     ~Sampler();
 
     Sampler(const Sampler&) = delete;
@@ -29,7 +30,7 @@ public:
         return *handle;
     }
 
-    size_t lru_id{};
+    u64 hash;
 
 private:
     vk::UniqueSampler handle;

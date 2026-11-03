@@ -20,7 +20,7 @@ void EmitBarrier(EmitContext& ctx) {
     const auto execution{spv::Scope::Workgroup};
     spv::Scope memory;
     spv::MemorySemanticsMask memory_semantics;
-    if (ctx.l_stage == Shader::LogicalStage::TessellationControl) {
+    if (ctx.sw_stage == Shader::SwStage::TessellationControl) {
         memory = spv::Scope::Invocation;
         memory_semantics = spv::MemorySemanticsMask::MaskNone;
     } else {
@@ -31,6 +31,13 @@ void EmitBarrier(EmitContext& ctx) {
     ctx.OpControlBarrier(ctx.ConstU32(static_cast<u32>(execution)),
                          ctx.ConstU32(static_cast<u32>(memory)),
                          ctx.ConstU32(static_cast<u32>(memory_semantics)));
+}
+
+void EmitSubgroupBarrier(EmitContext& ctx) {
+    const auto semantics{static_cast<u32>(spv::MemorySemanticsMask::AcquireRelease |
+                                          spv::MemorySemanticsMask::WorkgroupMemory)};
+    ctx.OpMemoryBarrier(ctx.ConstU32(static_cast<u32>(spv::Scope::Subgroup)),
+                        ctx.ConstU32(semantics));
 }
 
 void EmitWorkgroupMemoryBarrier(EmitContext& ctx) {

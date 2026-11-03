@@ -67,6 +67,7 @@ enum OrbisNpMatching2Event : u16 {
     ORBIS_NP_MATCHING2_REQUEST_EVENT_SEND_ROOM_MESSAGE = 0x0108,
     ORBIS_NP_MATCHING2_REQUEST_EVENT_SET_ROOM_DATA_INTERNAL = 0x0109,
     ORBIS_NP_MATCHING2_REQUEST_EVENT_GET_ROOM_DATA_INTERNAL = 0x010A,
+    ORBIS_NP_MATCHING2_REQUEST_EVENT_SET_ROOM_MEMBER_DATA_INTERNAL = 0x010B,
     ORBIS_NP_MATCHING2_REQUEST_EVENT_JOIN_LOBBY = 0x0201,
     ORBIS_NP_MATCHING2_REQUEST_EVENT_SIGNALING_GET_PING_INFO = 0x0E01,
     ORBIS_NP_MATCHING2_ROOM_EVENT_MEMBER_JOINED = 0x1101,
@@ -88,6 +89,7 @@ enum OrbisNpMatching2Event : u16 {
     ORBIS_NP_MATCHING2_REQUEST_EVENT_GET_ROOM_MEMBER_DATA_EXTERNAL_LIST_A = 0x7003,
     ORBIS_NP_MATCHING2_REQUEST_EVENT_GET_ROOM_DATA_EXTERNAL_LIST_A = 0x7005,
     ORBIS_NP_MATCHING2_REQUEST_EVENT_SEARCH_ROOM_A = 0x7106,
+    ORBIS_NP_MATCHING2_REQUEST_EVENT_GET_ROOM_MEMBER_DATA_INTERNAL_A = 0x710C,
     ORBIS_NP_MATCHING2_ROOM_EVENT_MEMBER_JOINED_A = 0x8101,
     ORBIS_NP_MATCHING2_ROOM_EVENT_MEMBER_LEFT_A = 0x8102,
     ORBIS_NP_MATCHING2_ROOM_EVENT_UPDATED_ROOM_MEMBER_DATA_INTERNAL_A = 0x8107,
@@ -347,17 +349,24 @@ struct OrbisNpMatching2RoomMessageInfo {
     void* msg;
     u32 msgLen;
 };
+static_assert(sizeof(OrbisNpMatching2RoomMessageInfo) == 0x28);
 
 struct OrbisNpMatching2RoomMessageInfoA {
     bool filtered;
     OrbisNpMatching2CastType castType;
-    u8 padding[2];
+    u8 padding[6];
+    Libraries::Np::OrbisNpPeerAddressA srcMember;
+    Libraries::Np::OrbisNpOnlineId srcMemberOnlineId;
     OrbisNpMatching2RoomMessageDestination* dst;
-    Libraries::Np::OrbisNpPeerAddressA* srcMember;
-    Libraries::Np::OrbisNpOnlineId* srcOnlineId;
-    void* msg;
-    u32 msgLen;
+    const void* msg;
+    u64 msgLen;
 };
+static_assert(offsetof(OrbisNpMatching2RoomMessageInfoA, srcMember) == 0x08);
+static_assert(offsetof(OrbisNpMatching2RoomMessageInfoA, srcMemberOnlineId) == 0x18);
+static_assert(offsetof(OrbisNpMatching2RoomMessageInfoA, dst) == 0x30);
+static_assert(offsetof(OrbisNpMatching2RoomMessageInfoA, msg) == 0x38);
+static_assert(offsetof(OrbisNpMatching2RoomMessageInfoA, msgLen) == 0x40);
+static_assert(sizeof(OrbisNpMatching2RoomMessageInfoA) == 0x48);
 
 // Room-internal binary attribute
 struct OrbisNpMatching2RoomBinAttrInternal {
@@ -812,6 +821,39 @@ struct OrbisNpMatching2GetRoomDataInternalRequest {
     u64 attrIdNum;
 };
 
+// SetRoomMemberDataInternal request
+struct OrbisNpMatching2SetRoomMemberDataInternalRequest {
+    OrbisNpMatching2RoomId roomId;
+    OrbisNpMatching2RoomMemberId memberId;
+    OrbisNpMatching2TeamId teamId;
+    u8 padding[5];
+    OrbisNpMatching2FlagAttr flagFilter;
+    OrbisNpMatching2FlagAttr flagAttr;
+    const OrbisNpMatching2BinAttr* roomMemberBinAttrInternal;
+    u64 roomMemberBinAttrInternalNum;
+};
+static_assert(sizeof(OrbisNpMatching2SetRoomMemberDataInternalRequest) == 0x28);
+
+// GetRoomMemberDataInternal request
+struct OrbisNpMatching2GetRoomMemberDataInternalRequest {
+    OrbisNpMatching2RoomId roomId;
+    OrbisNpMatching2RoomMemberId memberId;
+    u8 padding[6];
+    const OrbisNpMatching2AttributeId* attrId;
+    u64 attrIdNum;
+};
+static_assert(sizeof(OrbisNpMatching2GetRoomMemberDataInternalRequest) == 0x20);
+
+// GetRoomMemberDataInternal response
+struct OrbisNpMatching2GetRoomMemberDataInternalResponse {
+    OrbisNpMatching2RoomMemberDataInternal* roomMemberDataInternal;
+};
+
+// GetRoomMemberDataInternal response (account-id variant)
+struct OrbisNpMatching2GetRoomMemberDataInternalResponseA {
+    OrbisNpMatching2RoomMemberDataInternalA* roomMemberDataInternal;
+};
+
 // SetUserInfo request
 struct OrbisNpMatching2SetUserInfoRequest {
     OrbisNpMatching2ServerId serverId;
@@ -889,6 +931,36 @@ struct OrbisNpMatching2RoomDataInternalUpdate {
     OrbisNpMatching2RoomBinAttrInternal** chgRoomBinAttrInternal;
     u64 chgRoomBinAttrInternalNum;
 };
+
+// Room member data internal update information
+struct OrbisNpMatching2RoomMemberDataInternalUpdate {
+    OrbisNpMatching2RoomMemberDataInternal* chgRoomMemberDataInternal;
+    OrbisNpMatching2FlagAttr* chgFlagAttr;
+    OrbisNpMatching2FlagAttr* prevFlagAttr;
+    OrbisNpMatching2TeamId* chgTeamId;
+    OrbisNpMatching2RoomMemberBinAttrInternal** chgRoomMemberBinAttrInternal;
+    u64 chgRoomMemberBinAttrInternalNum;
+};
+static_assert(sizeof(OrbisNpMatching2RoomMemberDataInternalUpdate) == 0x30);
+static_assert(offsetof(OrbisNpMatching2RoomMemberDataInternalUpdate,
+                       chgRoomMemberBinAttrInternal) == 0x20);
+static_assert(offsetof(OrbisNpMatching2RoomMemberDataInternalUpdate,
+                       chgRoomMemberBinAttrInternalNum) == 0x28);
+
+// Room member data internal update information (account-id variant)
+struct OrbisNpMatching2RoomMemberDataInternalUpdateA {
+    OrbisNpMatching2RoomMemberDataInternalA* chgRoomMemberDataInternal;
+    OrbisNpMatching2FlagAttr* chgFlagAttr;
+    OrbisNpMatching2FlagAttr* prevFlagAttr;
+    OrbisNpMatching2TeamId* chgTeamId;
+    OrbisNpMatching2RoomMemberBinAttrInternal** chgRoomMemberBinAttrInternal;
+    u64 chgRoomMemberBinAttrInternalNum;
+};
+static_assert(sizeof(OrbisNpMatching2RoomMemberDataInternalUpdateA) == 0x30);
+static_assert(offsetof(OrbisNpMatching2RoomMemberDataInternalUpdateA,
+                       chgRoomMemberBinAttrInternal) == 0x20);
+static_assert(offsetof(OrbisNpMatching2RoomMemberDataInternalUpdateA,
+                       chgRoomMemberBinAttrInternalNum) == 0x28);
 
 // Room update information
 struct OrbisNpMatching2RoomUpdate {

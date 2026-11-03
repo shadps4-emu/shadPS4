@@ -73,6 +73,7 @@ struct ColorControl {
         CopyInverted = 0x33,
         AndReverse = 0x44,
         Invert = 0x55,
+        BrushXor = 0x5a,
         Xor = 0x66,
         Nand = 0x77,
         And = 0x88,

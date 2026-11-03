@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <cstring>
 #include "common/alignment.h"
 #include "common/assert.h"
 #include "common/bit_field.h"
@@ -28,7 +29,8 @@ struct Buffer {
     u32 element_size : 2;
     u32 index_stride : 2;
     u32 add_tid_enable : 1;
-    u32 _padding1 : 6;
+    u32 _padding1 : 3;
+    u32 mtype : 3;
     u32 type : 2; // overlaps with T# type, so should be 0 for buffer
 
     static constexpr Buffer Null() {
@@ -224,10 +226,11 @@ struct Image {
     [[nodiscard]] u32 NumLayers() const noexcept {
         // Depth is the number of layers for Array images.
         u32 slices = depth + 1;
-        if (GetType() == ImageType::Color3D) {
+        const auto image_type = GetType();
+        if (image_type == ImageType::Color3D) {
             // Depth is the actual texture depth for 3D images.
             slices = 1;
-        } else if (IsCube()) {
+        } else if (image_type == ImageType::Cube) {
             // Depth is the number of full cubes for Cube images.
             slices *= 6;
         }
@@ -241,7 +244,13 @@ struct Image {
         if (GetType() == ImageType::Color2DMsaa || GetType() == ImageType::Color2DMsaaArray) {
             return 1;
         }
-        return last_level + 1;
+        // Guests may declare more levels than the extent's full mip chain has (the extra ones
+        // would be 1x1), which Vulkan does not allow and makes uploads run past the image.
+        const u32 mip_width = width + 1;
+        const u32 mip_height = height + 1;
+        const u32 mip_depth = GetType() == ImageType::Color3D ? depth + 1 : 1;
+        const u32 max_levels = std::bit_width(std::max(std::max(mip_width, mip_height), mip_depth));
+        return std::min<u32>(last_level + 1, max_levels);
     }
 
     u32 NumSamples() const {
@@ -251,12 +260,8 @@ struct Image {
         return 1;
     }
 
-    bool IsCube() const noexcept {
-        return static_cast<ImageType>(type) == ImageType::Cube;
-    }
-
     ImageType GetType() const noexcept {
-        return IsCube() ? ImageType::Color2DArray : static_cast<ImageType>(type);
+        return static_cast<ImageType>(type);
     }
 
     DataFormat GetDataFmt() const noexcept {
@@ -298,10 +303,8 @@ struct Image {
         if (base_type == ImageType::Color1DArray) {
             return ImageType::Color1D;
         }
-        if (base_type == ImageType::Color2DArray) {
-            return ImageType::Color2D;
-        }
-        if (base_type == ImageType::Color2DMsaa || base_type == ImageType::Color2DMsaaArray) {
+        if (base_type == ImageType::Color2DArray || base_type == ImageType::Color2DMsaa ||
+            base_type == ImageType::Color2DMsaaArray || base_type == ImageType::Cube) {
             return ImageType::Color2D;
         }
         return base_type;
@@ -309,10 +312,6 @@ struct Image {
 
     ImageType GetViewType(const bool is_array) const noexcept {
         const auto base_type = GetType();
-        if (IsCube()) {
-            // Cube needs to remain array type regardless of instruction array specifier.
-            return base_type;
-        }
         if (base_type == ImageType::Color1DArray && !is_array) {
             return ImageType::Color1D;
         }
@@ -457,7 +456,8 @@ struct Sampler {
     }
 
     bool Valid() const {
-        return true;
+        return max_aniso.Value() <= AnisoRatio::Sixteen && filter_mode.Value() <= FilterMode::Max &&
+               mip_filter.Value() <= MipFilter::Linear;
     }
 
     bool operator==(const Sampler& other) const noexcept {

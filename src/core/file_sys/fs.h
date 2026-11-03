@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -15,12 +15,6 @@
 #include "core/file_sys/devices/base_device.h"
 #include "core/file_sys/directories/base_directory.h"
 #include "core/file_sys/ifile.h"
-
-namespace Libraries::Net {
-struct Socket;
-struct Epoll;
-struct Resolver;
-} // namespace Libraries::Net
 
 namespace Core::FileSys {
 
@@ -61,9 +55,11 @@ public:
     explicit MntPoints() = default;
     ~MntPoints() = default;
 
+    std::shared_ptr<IBackend> CreateBackend(const std::filesystem::path& host_path, bool read_only);
+
     void Mount(const std::filesystem::path& host_folder, const std::string& guest_folder,
                bool read_only = false);
-    void Unmount(const std::filesystem::path& host_folder, const std::string& guest_folder);
+    void Unmount(const std::string& guest_folder);
     void UnmountAll();
 
     std::filesystem::path GetHostPath(std::string_view guest_directory,
@@ -81,6 +77,7 @@ public:
     /// Returns true if the guest path resolves to a directory in any
     /// backend of the mount stack.
     bool IsDirectory(std::string_view guest_path);
+    bool Stat(std::string_view guest_path, FileStat& out);
 
     /// Opens the guest path through the mount's backend stack. Returns
     /// nullptr when the path does not exist or the caller requested
@@ -96,25 +93,35 @@ public:
     /// when the file does not exist or is unreadable.
     std::optional<std::vector<u8>> ReadFile(std::string_view guest_path);
 
+    /// Normalizes and validates a guest path (resolves dot and dot-dot components).
+    static std::optional<std::string> SanitizeGuestPath(std::string_view path);
+
+    /// Invalidates path and case caches for the given guest path or all caches if empty.
+    void InvalidateCache(std::string_view guest_path = "");
     const MntPair* GetMountFromHostPath(const std::string& host_path) {
+        const auto host_norm = std::filesystem::path(host_path).generic_string();
         std::scoped_lock lock{m_mutex};
         const auto it = std::ranges::find_if(m_mnt_pairs, [&](const MntPair& mount) {
-            return host_path.starts_with(std::string{fmt::UTF(mount.host_path.u8string()).data});
+            const auto mnt_host = mount.host_path.generic_string();
+            return host_norm == mnt_host || host_norm.starts_with(mnt_host + "/");
         });
         return it == m_mnt_pairs.end() ? nullptr : &*it;
     }
 
-    const MntPair* GetMount(const std::string& guest_path) {
+    const MntPair* GetMount(std::string_view guest_path) {
+        std::string normalized;
+        if (guest_path.find("..") != std::string_view::npos ||
+            guest_path.find("//") != std::string_view::npos) {
+            normalized = std::filesystem::path(guest_path).lexically_normal().generic_string();
+            guest_path = normalized;
+        }
         std::scoped_lock lock{m_mutex};
         const auto it = std::ranges::find_if(m_mnt_pairs, [&](const auto& mount) {
             // When doing starts-with check, add a trailing slash to make sure we don't match
             // against only part of the mount path.
             return guest_path == mount.mount || guest_path.starts_with(mount.mount + "/");
         });
-        if (it == m_mnt_pairs.end()) {
-            return nullptr;
-        }
-        return &*it;
+        return it == m_mnt_pairs.end() ? nullptr : &*it;
     }
 
 private:
@@ -129,8 +136,6 @@ enum class FileType {
     Directory,
     Device,
     Socket,
-    Epoll,
-    Resolver,
     Equeue
 };
 
@@ -143,9 +148,6 @@ struct File {
     std::mutex m_mutex;
     std::shared_ptr<Directories::BaseDirectory> directory; // only valid for type == Directory
     std::shared_ptr<Devices::BaseDevice> device;           // only valid for type == Device
-    std::shared_ptr<Libraries::Net::Socket> socket;        // only valid for type == Socket
-    std::shared_ptr<Libraries::Net::Epoll> epoll;          // only valid for type == Epoll
-    std::shared_ptr<Libraries::Net::Resolver> resolver;    // only valid for type == Resolver
 
     bool IsBackendOpen() const {
         return handle && handle->IsOpen();
@@ -175,6 +177,10 @@ struct File {
         return handle ? handle->Flush() : false;
     }
 
+    bool IsReadOnly() const {
+        return handle ? handle->IsReadOnly() : false;
+    }
+
     bool IsWriteOnly() const {
         return handle ? handle->IsWriteOnly() : false;
     }
@@ -194,12 +200,11 @@ public:
     File* GetFile(int d);
     File* GetSocket(int d);
     std::vector<int> GetSocketHandles();
-    File* GetEpoll(int d);
-    File* GetResolver(int d);
     File* GetFile(const std::filesystem::path& host_name);
     int GetFileDescriptor(File* file);
 
     void CreateStdHandles();
+    void FlushAll();
 
 private:
     std::vector<File*> m_files;

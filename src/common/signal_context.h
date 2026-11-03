@@ -14,5 +14,6 @@ void* GetRip(void* ctx);
 void IncrementRip(void* ctx, u64 length);
 
 bool IsWriteError(void* ctx);
+bool IsExecuteError(void* ctx);
 
 } // namespace Common

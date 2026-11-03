@@ -4,13 +4,23 @@
 #include "core/emulator_settings.h"
 #include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/profile.h"
-#include "video_core/buffer_cache/buffer_cache.h"
 
 namespace Shader::Optimization {
+
+static void AddFlatbuf(Info& info) {
+    if (!info.has_flatbuf) {
+        info.buffers.push_back({
+            .used_types = IR::Type::U32,
+            .buffer_type = BufferType::Flatbuf,
+        });
+        info.has_flatbuf = true;
+    }
+}
 
 void Visit(Info& info, const IR::Inst& inst) {
     switch (inst.GetOpcode()) {
     case IR::Opcode::GetAttribute:
+    case IR::Opcode::GetAttributeU1:
     case IR::Opcode::GetAttributeU32:
         info.loads.Set(inst.Arg(0).Attribute(), inst.Arg(1).U32());
         break;
@@ -18,7 +28,7 @@ void Visit(Info& info, const IR::Inst& inst) {
         info.stores.Set(inst.Arg(0).Attribute(), inst.Arg(2).U32());
         break;
     case IR::Opcode::GetUserData:
-        info.ud_mask.Set(inst.Arg(0).ScalarReg());
+        AddFlatbuf(info);
         break;
     case IR::Opcode::SetPatch: {
         const auto patch = inst.Arg(0).Patch();
@@ -53,6 +63,7 @@ void Visit(Info& info, const IR::Inst& inst) {
     case IR::Opcode::SharedAtomicAnd32:
     case IR::Opcode::SharedAtomicOr32:
     case IR::Opcode::SharedAtomicXor32:
+    case IR::Opcode::SharedAtomicCmpSwap32:
         info.shared_types |= IR::Type::U32;
         break;
     case IR::Opcode::SharedAtomicIAdd64:
@@ -66,6 +77,7 @@ void Visit(Info& info, const IR::Inst& inst) {
     case IR::Opcode::SharedAtomicAnd64:
     case IR::Opcode::SharedAtomicOr64:
     case IR::Opcode::SharedAtomicXor64:
+    case IR::Opcode::SharedAtomicCmpSwap64:
         info.uses_shared_int64_atomics = true;
         [[fallthrough]];
     case IR::Opcode::LoadSharedU64:
@@ -80,13 +92,55 @@ void Visit(Info& info, const IR::Inst& inst) {
         break;
     case IR::Opcode::PackDouble2x32:
     case IR::Opcode::UnpackDouble2x32:
+    case IR::Opcode::FPAbs64:
+    case IR::Opcode::FPAdd64:
+    case IR::Opcode::FPFma64:
+    case IR::Opcode::FPMax64:
+    case IR::Opcode::FPMin64:
+    case IR::Opcode::FPMul64:
+    case IR::Opcode::FPDiv64:
+    case IR::Opcode::FPNeg64:
+    case IR::Opcode::FPRecip64:
+    case IR::Opcode::FPRecipSqrt64:
+    case IR::Opcode::FPSaturate64:
+    case IR::Opcode::FPClamp64:
+    case IR::Opcode::FPRoundEven64:
+    case IR::Opcode::FPFloor64:
+    case IR::Opcode::FPCeil64:
+    case IR::Opcode::FPTrunc64:
+    case IR::Opcode::FPFract64:
+    case IR::Opcode::FPFrexpSig64:
+    case IR::Opcode::FPFrexpExp64:
+    case IR::Opcode::FPOrdEqual64:
+    case IR::Opcode::FPUnordEqual64:
+    case IR::Opcode::FPOrdNotEqual64:
+    case IR::Opcode::FPUnordNotEqual64:
+    case IR::Opcode::FPOrdLessThan64:
+    case IR::Opcode::FPUnordLessThan64:
+    case IR::Opcode::FPOrdGreaterThan64:
+    case IR::Opcode::FPUnordGreaterThan64:
+    case IR::Opcode::FPOrdLessThanEqual64:
+    case IR::Opcode::FPUnordLessThanEqual64:
+    case IR::Opcode::FPOrdGreaterThanEqual64:
+    case IR::Opcode::FPUnordGreaterThanEqual64:
+    case IR::Opcode::FPIsNan64:
+    case IR::Opcode::FPIsInf64:
+    case IR::Opcode::ConvertS32F64:
+    case IR::Opcode::ConvertF32F64:
+    case IR::Opcode::ConvertF64F32:
+    case IR::Opcode::ConvertF64S32:
+    case IR::Opcode::ConvertF64U32:
         info.uses_fp64 = true;
         break;
     case IR::Opcode::ImageWrite:
         info.has_storage_images = true;
         break;
-    case IR::Opcode::QuadShuffle:
+    case IR::Opcode::QuadBroadcast:
         info.uses_group_quad = true;
+        break;
+    case IR::Opcode::Shuffle:
+    case IR::Opcode::ShuffleXor:
+        info.uses_group_shuffle = true;
         break;
     case IR::Opcode::ReadLane:
     case IR::Opcode::ReadFirstLane:
@@ -123,25 +177,26 @@ void Visit(Info& info, const IR::Inst& inst) {
     case IR::Opcode::BufferAtomicUMin64:
         info.uses_buffer_int64_atomics = true;
         break;
+    case IR::Opcode::DataAppend:
+    case IR::Opcode::DataConsume:
+    case IR::Opcode::Ballot:
+    case IR::Opcode::InverseBallot:
+    case IR::Opcode::BallotFindLsb:
+        info.uses_group_ballot = true;
+        [[fallthrough]];
     case IR::Opcode::LaneId:
         info.uses_lane_id = true;
         break;
+    case IR::Opcode::Memtime:
+        info.uses_shader_clock = true;
+        break;
     case IR::Opcode::ReadConst:
-        if (!info.uses_dma) {
-            info.buffers.push_back({
-                .used_types = IR::Type::U32,
-                // We can't guarantee that flatbuf will not grow past UBO
-                // limit if there are a lot of ReadConsts. (We could specialize)
-                .inline_cbuf = AmdGpu::Buffer::Placeholder(std::numeric_limits<u32>::max()),
-                .buffer_type = BufferType::Flatbuf,
-            });
-        }
-        if (inst.Flags<u32>() != 0) {
+        AddFlatbuf(info);
+        if (inst.Flags<u32>() == 0) {
             info.readconst_types |= Info::ReadConstType::Immediate;
-        } else {
             info.readconst_types |= Info::ReadConstType::Dynamic;
+            info.uses_dma = true;
         }
-        info.uses_dma = true;
         break;
     case IR::Opcode::PackUfloat10_11_11:
         info.uses_pack_10_11_11 = true;
@@ -155,14 +210,14 @@ void Visit(Info& info, const IR::Inst& inst) {
 }
 
 void CollectShaderInfoPass(IR::Program& program, const Profile& profile) {
-    auto& info = program.info;
+    Info& info = program.info;
     for (IR::Block* const block : program.post_order_blocks) {
         for (IR::Inst& inst : block->Instructions()) {
             Visit(info, inst);
         }
     }
 
-    if (!EmulatorSettings.IsDirectMemoryAccessEnabled()) {
+    if (!EmulatorSettings.IsDirectMemoryAccessEnabled() || !profile.support_bda) {
         info.uses_dma = false;
         info.readconst_types = Info::ReadConstType::None;
     }
@@ -170,16 +225,15 @@ void CollectShaderInfoPass(IR::Program& program, const Profile& profile) {
     if (info.uses_dma) {
         info.buffers.push_back({
             .used_types = IR::Type::U64,
-            .inline_cbuf = AmdGpu::Buffer::Placeholder(VideoCore::BufferCache::BDA_PAGETABLE_SIZE),
             .buffer_type = BufferType::BdaPagetable,
             .is_written = true,
         });
         info.buffers.push_back({
             .used_types = IR::Type::U32,
-            .inline_cbuf = AmdGpu::Buffer::Placeholder(std::numeric_limits<u32>::max()),
             .buffer_type = BufferType::FaultBuffer,
             .is_written = true,
         });
+        LOG_ERROR(Render, "Enabling DMA for shader {:#x}", info.pgm_hash);
     }
 }
 

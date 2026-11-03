@@ -29,6 +29,8 @@
 namespace Libraries::Kernel {
 
 static u64 initial_ptc;
+static std::chrono::system_clock::time_point network_boottime;
+static std::chrono::steady_clock::time_point initial_uptime;
 static std::unique_ptr<Common::NativeClock> clock;
 
 u64 PS4_SYSV_ABI sceKernelGetTscFrequency() {
@@ -129,8 +131,15 @@ s32 PS4_SYSV_ABI posix_clock_gettime(u32 clock_id, OrbisKernelTimespec* ts) {
     }
     if (clock_id == ORBIS_CLOCK_EXT_NETWORK || clock_id == ORBIS_CLOCK_EXT_DEBUG_NETWORK ||
         clock_id == ORBIS_CLOCK_EXT_AD_NETWORK || clock_id == ORBIS_CLOCK_EXT_RAW_NETWORK) {
-        LOG_ERROR(Lib_Kernel, "Unsupported clock type {}, using CLOCK_MONOTONIC", clock_id);
-        clock_id = ORBIS_CLOCK_MONOTONIC;
+        const auto current_time =
+            network_boottime + (std::chrono::steady_clock::now() - initial_uptime);
+        const auto epoch_ns =
+            std::chrono::duration_cast<std::chrono::nanoseconds>(current_time.time_since_epoch())
+                .count();
+
+        ts->tv_sec = epoch_ns / 1'000'000'000;
+        ts->tv_nsec = epoch_ns % 1'000'000'000;
+        return 0;
     }
 
 #ifdef _WIN32
@@ -300,8 +309,9 @@ s32 PS4_SYSV_ABI posix_clock_getres(u32 clock_id, OrbisKernelTimespec* res) {
 
     if (clock_id == ORBIS_CLOCK_EXT_NETWORK || clock_id == ORBIS_CLOCK_EXT_DEBUG_NETWORK ||
         clock_id == ORBIS_CLOCK_EXT_AD_NETWORK || clock_id == ORBIS_CLOCK_EXT_RAW_NETWORK) {
-        LOG_ERROR(Lib_Kernel, "Unsupported clock type {}, using CLOCK_MONOTONIC", clock_id);
-        clock_id = ORBIS_CLOCK_MONOTONIC;
+        res->tv_sec = 0;
+        res->tv_nsec = 1;
+        return 0;
     }
 
 #ifdef _WIN32
@@ -416,21 +426,30 @@ s32 PS4_SYSV_ABI posix_gettimeofday(OrbisKernelTimeval* tp, OrbisKernelTimezone*
             _tzset();
             tzflag++;
         }
-        tz->tz_minuteswest = _timezone / 60;
-        tz->tz_dsttime = _daylight;
+        time_t t = 0;
+        time(&t);
+        struct tm tm_val;
+        localtime_s(&tm_val, &t);
+        tz->tz_minuteswest = -static_cast<s32>(_timezone / 60);
+        tz->tz_dsttime = (tm_val.tm_isdst > 0) ? 60 : 0;
     }
     return 0;
 #else
-    struct timezone tzz;
     timeval tv;
-    const auto ret = gettimeofday(&tv, &tzz);
+    const auto ret = gettimeofday(&tv, nullptr);
     if (tp) {
         tp->tv_sec = tv.tv_sec;
         tp->tv_usec = tv.tv_usec;
     }
     if (tz) {
-        tz->tz_dsttime = tzz.tz_dsttime;
-        tz->tz_minuteswest = tzz.tz_minuteswest;
+        time_t t = tv.tv_sec;
+        struct tm tm_val;
+        localtime_r(&t, &tm_val);
+        s32 is_dst = (tm_val.tm_isdst > 0) ? 1 : 0;
+        s32 dst_sec_val = is_dst ? 3600 : 0;
+        s32 standard_offset_sec = static_cast<s32>(tm_val.tm_gmtoff) - dst_sec_val;
+        tz->tz_minuteswest = standard_offset_sec / 60;
+        tz->tz_dsttime = dst_sec_val / 60;
     }
     if (ret < 0) {
         SetPosixErrno(errno);
@@ -456,7 +475,6 @@ s32 PS4_SYSV_ABI sceKernelGettimezone(OrbisKernelTimezone* tz) {
 
 s32 PS4_SYSV_ABI sceKernelConvertLocaltimeToUtc(time_t param_1, int64_t param_2, time_t* seconds,
                                                 OrbisKernelTimezone* timezone, s32* dst_seconds) {
-    LOG_INFO(Kernel, "called");
     if (timezone) {
         sceKernelGettimezone(timezone);
         param_1 -= (timezone->tz_minuteswest + timezone->tz_dsttime) * 60;
@@ -487,38 +505,47 @@ s32 PS4_SYSV_ABI sceKernelConvertUtcToLocaltime(time_t time, time_t* local_time,
                                                 struct OrbisTimesec* st, u64* dst_sec) {
     LOG_TRACE(Kernel, "Called");
 #ifdef _WIN32
-    TIME_ZONE_INFORMATION tz{};
-    DWORD res = GetTimeZoneInformation(&tz);
-    *local_time = time - tz.Bias;
+    time_t t = time;
+    struct tm tm_val;
+    localtime_s(&tm_val, &t);
+    s32 is_dst = (tm_val.tm_isdst > 0) ? 1 : 0;
+    s32 dst_sec_val = is_dst ? 3600 : 0;
+    _tzset();
+    s32 west_sec_val = -static_cast<s32>(_timezone);
+
+    if (local_time != nullptr) {
+        *local_time = time + west_sec_val + dst_sec_val;
+    }
 
     if (st != nullptr) {
         st->t = time;
-        st->west_sec = -tz.Bias * 60;
-        st->dst_sec = res == TIME_ZONE_ID_DAYLIGHT ? -_dstbias : 0;
+        st->west_sec = west_sec_val;
+        st->dst_sec = dst_sec_val;
     }
 
     if (dst_sec != nullptr) {
-        *dst_sec = res == TIME_ZONE_ID_DAYLIGHT ? -_dstbias : 0;
+        *dst_sec = dst_sec_val;
     }
 #else
-#if defined(__APPLE__) || defined(__FreeBSD__)
-    // std::chrono::current_zone() not available yet.
-    const auto* time_zone = date::current_zone();
-#else
-    const auto* time_zone = std::chrono::current_zone();
-#endif // __APPLE__
-    auto info = time_zone->get_info(std::chrono::system_clock::now());
+    time_t t = time;
+    struct tm tm_val;
+    localtime_r(&t, &tm_val);
+    s32 is_dst = (tm_val.tm_isdst > 0) ? 1 : 0;
+    s32 dst_sec_val = is_dst ? 3600 : 0;
+    s32 west_sec_val = static_cast<s32>(tm_val.tm_gmtoff) - dst_sec_val;
 
-    *local_time = info.offset.count() + info.save.count() * 60 + time;
+    if (local_time != nullptr) {
+        *local_time = time + tm_val.tm_gmtoff;
+    }
 
     if (st != nullptr) {
         st->t = time;
-        st->west_sec = info.offset.count();
-        st->dst_sec = info.save.count() * 60;
+        st->west_sec = west_sec_val;
+        st->dst_sec = dst_sec_val;
     }
 
     if (dst_sec != nullptr) {
-        *dst_sec = info.save.count() * 60;
+        *dst_sec = dst_sec_val;
     }
 #endif // _WIN32
 
@@ -546,6 +573,8 @@ s32 PS4_SYSV_ABI sceKernelSettimeofday(OrbisKernelTimeval* _tv, OrbisKernelTimez
 void RegisterTime(Core::Loader::SymbolsResolver* sym) {
     clock = std::make_unique<Common::NativeClock>();
     initial_ptc = clock->GetUptime();
+    network_boottime = std::chrono::system_clock::now();
+    initial_uptime = std::chrono::steady_clock::now();
 
     // POSIX
     LIB_FUNCTION("NhpspxdjEKU", "libkernel", 1, "libkernel", posix_nanosleep);

@@ -19,6 +19,7 @@ namespace MemoryPatcher {
 
 EXPORT uintptr_t g_eboot_address;
 uint64_t g_eboot_image_size;
+std::string g_eboot_name;
 std::string g_game_serial;
 std::string patch_file;
 bool patches_applied = false;
@@ -144,7 +145,11 @@ void ApplyPatchesFromXML(std::filesystem::path path) {
                 if (std::string(it->attribute("isEnabled").value()) == "true") {
                     std::string currentPatchName = it->attribute("Name").value();
                     std::string metadataAppVer = it->attribute("AppVer").value();
+                    std::string metadataAppElf = it->attribute("AppElf").value();
                     bool versionMatches = metadataAppVer == app_version;
+
+                    if (metadataAppElf != g_eboot_name)
+                        continue;
 
                     auto patchList = it->first_child();
                     for (pugi::xml_node_iterator patchLineIt = patchList.children().begin();
@@ -230,8 +235,31 @@ void OnGameLoaded() {
             if (!repo.is_directory()) {
                 continue;
             }
-            std::ifstream json_file{repo.path() / "files.json"};
-            nlohmann::json available_patches = nlohmann::json::parse(json_file);
+
+            const auto files_json_path = repo.path() / "files.json";
+
+            if (!std::filesystem::is_regular_file(files_json_path)) {
+                LOG_ERROR(Loader, "The folder '{}' does not contain the files.json file.",
+                          repo.path().filename().string());
+                continue;
+            }
+
+            std::ifstream json_file{files_json_path};
+            nlohmann::json available_patches;
+
+            if (!json_file.is_open()) {
+                LOG_ERROR(Loader, "Could not open patch index: {}", files_json_path.string());
+                continue;
+            }
+
+            try {
+                available_patches = nlohmann::json::parse(json_file);
+            } catch (const nlohmann::json::parse_error& e) {
+                LOG_ERROR(Loader, "Could not parse patch index {}: {}", files_json_path.string(),
+                          e.what());
+                continue;
+            }
+
             std::filesystem::path game_patch_file;
             for (auto const& [filename, serials] : available_patches.items()) {
                 if (std::find(serials.begin(), serials.end(), g_game_serial) != serials.end()) {

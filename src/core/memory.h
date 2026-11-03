@@ -29,6 +29,8 @@ class MemoryMapViewer;
 namespace Core {
 
 constexpr u64 DEFAULT_MAPPING_BASE = 0x200000000;
+constexpr u64 GUEST_PAGE_BITS = 14;
+constexpr u64 GUEST_PAGE_SIZE = 1ULL << GUEST_PAGE_BITS;
 
 enum class MemoryProt : u32 {
     NoAccess = 0,
@@ -153,6 +155,20 @@ struct VirtualMemoryArea {
         }
 
         return true;
+    }
+
+    void ForEachPhysArea(u64 offset, u64 size, auto&& func) {
+        if (size == 0) {
+            return;
+        }
+        const u64 end = offset + size;
+        auto it = std::prev(phys_areas.upper_bound(offset));
+        for (; it != phys_areas.end() && it->first < end; ++it) {
+            const auto& pma = it->second;
+            const u64 clip_start = std::max<u64>(it->first, offset);
+            const u64 clip_end = std::min<u64>(it->first + pma.size, end);
+            func(pma.base + (clip_start - it->first), clip_end - clip_start);
+        }
     }
 };
 
@@ -303,7 +319,7 @@ private:
         return std::prev(fmem_map.upper_bound(target));
     }
 
-    bool HasPhysicalBacking(VirtualMemoryArea vma) {
+    bool HasPhysicalBacking(const VirtualMemoryArea& vma) {
         return vma.type == VMAType::Direct || vma.type == VMAType::Flexible ||
                vma.type == VMAType::Pooled;
     }

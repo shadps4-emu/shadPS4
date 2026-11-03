@@ -41,7 +41,7 @@ public:
     }
 
     auto GetStages() const {
-        static_assert(static_cast<u32>(Shader::LogicalStage::Compute) == Shader::MaxStageTypes - 1);
+        static_assert(static_cast<u32>(Shader::SwStage::Compute) == Shader::MaxStageTypes - 1);
         if (is_compute) {
             return std::span{stages.cend() - 1, stages.cend()};
         } else {
@@ -49,7 +49,7 @@ public:
         }
     }
 
-    const Shader::Info& GetStage(Shader::LogicalStage stage) const noexcept {
+    const Shader::Info& GetStage(Shader::SwStage stage) const noexcept {
         return *stages[u32(stage)];
     }
 
@@ -58,10 +58,7 @@ public:
     }
 
     using DescriptorWrites = std::vector<vk::WriteDescriptorSet>;
-    using BufferBarriers = boost::container::small_vector<vk::BufferMemoryBarrier2, 16>;
-
-    void BindResources(DescriptorWrites& set_writes, const BufferBarriers& buffer_barriers,
-                       const Shader::PushData& push_data) const;
+    void BindResources(DescriptorWrites& set_writes, const Shader::PushData& push_data) const;
 
 protected:
     [[nodiscard]] std::string GetDebugString() const;

@@ -83,7 +83,7 @@ struct FrameDump {
 
 struct ShaderDump {
     std::string name;
-    Shader::LogicalStage l_stage;
+    Shader::SwStage l_stage;
     vk::ShaderModule module;
 
     std::vector<u32> spv;
@@ -98,7 +98,7 @@ struct ShaderDump {
     std::string cache_isa_disasm{};
     std::string cache_patch_disasm{};
 
-    ShaderDump(std::string name, Shader::LogicalStage l_stage, vk::ShaderModule module,
+    ShaderDump(std::string name, Shader::SwStage l_stage, vk::ShaderModule module,
                std::vector<u32> spv, std::vector<u32> isa, std::vector<u32> patch_spv,
                bool is_patched)
         : name(std::move(name)), l_stage(l_stage), module(module), spv(std::move(spv)),
@@ -258,10 +258,9 @@ public:
     using CsState = AmdGpu::ComputeProgram;
     void PushRegsDumpCompute(uintptr_t base_addr, uintptr_t header_addr, const CsState& cs_state);
 
-    void CollectShader(const std::string& name, Shader::LogicalStage l_stage,
-                       vk::ShaderModule module, std::span<const u32> spv,
-                       std::span<const u32> raw_code, std::span<const u32> patch_spv,
-                       bool is_patched);
+    void CollectShader(const std::string& name, Shader::SwStage l_stage, vk::ShaderModule module,
+                       std::span<const u32> spv, std::span<const u32> raw_code,
+                       std::span<const u32> patch_spv, bool is_patched);
 
 private:
     std::optional<RegDump*> GetRegDump(uintptr_t base_addr, uintptr_t header_addr);

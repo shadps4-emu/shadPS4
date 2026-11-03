@@ -231,7 +231,9 @@ std::expected<void, ErrorInfo> Runner::initialize() {
         .shaderFloat16 = VK_TRUE,
         .shaderInt8 = VK_TRUE,
     };
+    supports_float64_ = physical_device_.getFeatures().shaderFloat64;
     vk::PhysicalDeviceFeatures phys_feat{
+        .shaderFloat64 = supports_float64_,
         .shaderInt64 = VK_TRUE,
         .shaderInt16 = VK_TRUE,
     };

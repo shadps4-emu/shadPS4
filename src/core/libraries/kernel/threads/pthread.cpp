@@ -8,6 +8,10 @@
 #else
 #include <csignal>
 #include <pthread.h>
+#ifdef __APPLE__
+#include <mach/mach.h>
+#include <mach/thread_act.h>
+#endif
 #endif
 #include "core/debug_state.h"
 #include "core/libraries/kernel/kernel.h"
@@ -18,6 +22,7 @@
 #include "core/libraries/kernel/threads/thread_state.h"
 #include "core/libraries/libs.h"
 #include "core/memory.h"
+#include "core/signals.h"
 
 #if defined(ARCH_X86_64) || defined(__arm64__) || defined(__aarch64__)
 extern "C" void* PS4_SYSV_ABI _runOnAnotherStack(void* arg, void* func,
@@ -264,10 +269,6 @@ static void* RunThread(void* arg) {
 
 #ifndef _WIN32
     UnblockPthreadCancelSignal();
-#endif
-
-#ifdef WIN32
-    std::set_terminate(Common::Log::Terminate);
 #endif
 
     /* Run the current thread's start routine with argument: */
@@ -864,8 +865,8 @@ static bool SigDflHandler(int sig) {
     case POSIX_SIGPROF:
     case POSIX_SIGUSR1:
     case POSIX_SIGUSR2:
-        return false;
     case POSIX_SIGTRAP:
+        return false;
     default:
         LOG_DEBUG(Lib_Kernel, "called, sig: {}", sig);
         return true;
@@ -1197,6 +1198,220 @@ int PS4_SYSV_ABI scePthreadSetaffinity(PthreadT thread, const u64 mask) {
     return posix_pthread_setaffinity_np(thread, sizeof(Cpuset), &cpuset);
 }
 
+int PS4_SYSV_ABI posix_pthread_suspend_user_context_np(PthreadT thread) {
+    if (thread == nullptr) {
+        return POSIX_EINVAL;
+    }
+    auto* thread_state = ThrState::Instance();
+    if (int ret = thread_state->FindThread(thread, false); ret != 0) {
+        return ret;
+    }
+    thread->flags |= ThreadFlags::Suspended;
+    thread->lock->unlock();
+
+#ifdef __APPLE__
+    if (thread->native_thr && thread != g_curthread) {
+        pthread_t pthr = reinterpret_cast<pthread_t>(thread->native_thr->GetHandle());
+        if (pthr) {
+            mach_port_t mach_th = pthread_mach_thread_np(pthr);
+            thread_suspend(mach_th);
+        }
+    }
+#elif defined(_WIN64)
+    if (thread->native_thr && thread != g_curthread) {
+        HANDLE h = reinterpret_cast<HANDLE>(thread->native_thr->GetHandle());
+        if (h) {
+            SuspendThread(h);
+        }
+    }
+#else
+    if (thread->native_thr && thread != g_curthread) {
+        pthread_t pthr = reinterpret_cast<pthread_t>(thread->native_thr->GetHandle());
+        if (pthr) {
+            pthread_kill(pthr, SIGSLEEP);
+            for (int i = 0; i < 1000 && !thread->is_suspended_in_signal; ++i) {
+                std::this_thread::yield();
+            }
+        }
+    }
+#endif
+
+    return 0;
+}
+
+int PS4_SYSV_ABI posix_pthread_resume_user_context_np(PthreadT thread) {
+    if (thread == nullptr) {
+        return POSIX_EINVAL;
+    }
+    auto* thread_state = ThrState::Instance();
+    if (int ret = thread_state->FindThread(thread, false); ret != 0) {
+        return ret;
+    }
+    thread->flags &= ~ThreadFlags::Suspended;
+    thread->lock->unlock();
+
+#ifdef __APPLE__
+    if (thread->native_thr && thread != g_curthread) {
+        pthread_t pthr = reinterpret_cast<pthread_t>(thread->native_thr->GetHandle());
+        if (pthr) {
+            mach_port_t mach_th = pthread_mach_thread_np(pthr);
+            thread_resume(mach_th);
+        }
+    }
+#elif defined(_WIN64)
+    if (thread->native_thr && thread != g_curthread) {
+        HANDLE h = reinterpret_cast<HANDLE>(thread->native_thr->GetHandle());
+        if (h) {
+            ResumeThread(h);
+        }
+    }
+#else
+    if (thread->native_thr && thread != g_curthread) {
+        pthread_t pthr = reinterpret_cast<pthread_t>(thread->native_thr->GetHandle());
+        if (pthr) {
+            pthread_kill(pthr, SIGSLEEP);
+        }
+    }
+#endif
+
+    return 0;
+}
+
+int PS4_SYSV_ABI posix_pthread_get_user_context_np(PthreadT thread, Ucontext* ctx) {
+    if (thread == nullptr || ctx == nullptr) {
+        return POSIX_EINVAL;
+    }
+    auto* thread_state = ThrState::Instance();
+    if (int ret = thread_state->FindThread(thread, false); ret != 0) {
+        return ret;
+    }
+    const uintptr_t stack_base = reinterpret_cast<uintptr_t>(thread->attr.stackaddr_attr);
+    const size_t stack_size = thread->attr.stacksize_attr;
+    const uintptr_t stack_top = stack_base + stack_size;
+    const uintptr_t start_pc = reinterpret_cast<uintptr_t>(thread->start_routine);
+    thread->lock->unlock();
+
+    std::memset(ctx, 0, sizeof(Ucontext));
+
+    bool got_state = false;
+    if (thread == g_curthread) {
+#ifdef ARCH_X86_64
+        uint64_t cur_rsp = 0, cur_rbp = 0;
+        asm volatile("movq %%rsp, %0\n movq %%rbp, %1\n" : "=r"(cur_rsp), "=r"(cur_rbp));
+        ctx->uc_mcontext.mc_rsp = cur_rsp;
+        ctx->uc_mcontext.mc_rbp = cur_rbp;
+        ctx->uc_mcontext.mc_rip = reinterpret_cast<uint64_t>(__builtin_return_address(0));
+        got_state = true;
+#endif
+    } else {
+#ifdef __APPLE__
+        if (thread->native_thr) {
+            pthread_t pthr = reinterpret_cast<pthread_t>(thread->native_thr->GetHandle());
+            if (pthr) {
+                mach_port_t mach_th = pthread_mach_thread_np(pthr);
+                x86_thread_state64_t state;
+                mach_msg_type_number_t count = x86_THREAD_STATE64_COUNT;
+                if (thread_get_state(mach_th, x86_THREAD_STATE64, (thread_state_t)&state, &count) ==
+                    KERN_SUCCESS) {
+                    ctx->uc_mcontext.mc_rax = state.__rax;
+                    ctx->uc_mcontext.mc_rbx = state.__rbx;
+                    ctx->uc_mcontext.mc_rcx = state.__rcx;
+                    ctx->uc_mcontext.mc_rdx = state.__rdx;
+                    ctx->uc_mcontext.mc_rdi = state.__rdi;
+                    ctx->uc_mcontext.mc_rsi = state.__rsi;
+                    ctx->uc_mcontext.mc_rbp = state.__rbp;
+                    ctx->uc_mcontext.mc_rsp = state.__rsp;
+                    ctx->uc_mcontext.mc_r8 = state.__r8;
+                    ctx->uc_mcontext.mc_r9 = state.__r9;
+                    ctx->uc_mcontext.mc_r10 = state.__r10;
+                    ctx->uc_mcontext.mc_r11 = state.__r11;
+                    ctx->uc_mcontext.mc_r12 = state.__r12;
+                    ctx->uc_mcontext.mc_r13 = state.__r13;
+                    ctx->uc_mcontext.mc_r14 = state.__r14;
+                    ctx->uc_mcontext.mc_r15 = state.__r15;
+                    ctx->uc_mcontext.mc_rip = state.__rip;
+                    ctx->uc_mcontext.mc_rflags = state.__rflags;
+                    ctx->uc_mcontext.mc_cs = state.__cs;
+                    ctx->uc_mcontext.mc_fs = state.__fs;
+                    ctx->uc_mcontext.mc_gs = state.__gs;
+                    got_state = true;
+                }
+            }
+        }
+#elif defined(_WIN64)
+        if (thread->native_thr) {
+            HANDLE h = reinterpret_cast<HANDLE>(thread->native_thr->GetHandle());
+            if (h) {
+                CONTEXT win_ctx{};
+                win_ctx.ContextFlags = CONTEXT_FULL;
+                if (GetThreadContext(h, &win_ctx)) {
+                    ctx->uc_mcontext.mc_rax = win_ctx.Rax;
+                    ctx->uc_mcontext.mc_rbx = win_ctx.Rbx;
+                    ctx->uc_mcontext.mc_rcx = win_ctx.Rcx;
+                    ctx->uc_mcontext.mc_rdx = win_ctx.Rdx;
+                    ctx->uc_mcontext.mc_rdi = win_ctx.Rdi;
+                    ctx->uc_mcontext.mc_rsi = win_ctx.Rsi;
+                    ctx->uc_mcontext.mc_rbp = win_ctx.Rbp;
+                    ctx->uc_mcontext.mc_rsp = win_ctx.Rsp;
+                    ctx->uc_mcontext.mc_r8 = win_ctx.R8;
+                    ctx->uc_mcontext.mc_r9 = win_ctx.R9;
+                    ctx->uc_mcontext.mc_r10 = win_ctx.R10;
+                    ctx->uc_mcontext.mc_r11 = win_ctx.R11;
+                    ctx->uc_mcontext.mc_r12 = win_ctx.R12;
+                    ctx->uc_mcontext.mc_r13 = win_ctx.R13;
+                    ctx->uc_mcontext.mc_r14 = win_ctx.R14;
+                    ctx->uc_mcontext.mc_r15 = win_ctx.R15;
+                    ctx->uc_mcontext.mc_rip = win_ctx.Rip;
+                    ctx->uc_mcontext.mc_rflags = win_ctx.EFlags;
+                    ctx->uc_mcontext.mc_cs = win_ctx.SegCs;
+                    ctx->uc_mcontext.mc_fs = win_ctx.SegFs;
+                    ctx->uc_mcontext.mc_gs = win_ctx.SegGs;
+                    got_state = true;
+                }
+            }
+        }
+#else
+        if (thread->is_suspended_in_signal) {
+            ctx->uc_mcontext = thread->suspended_context;
+            got_state = true;
+        }
+#endif
+    }
+
+    if (stack_base != 0 && stack_size != 0) {
+        if (!got_state || ctx->uc_mcontext.mc_rsp < stack_base ||
+            ctx->uc_mcontext.mc_rsp >= stack_top) {
+            ctx->uc_mcontext.mc_rsp = (stack_top - 0x100) & ~static_cast<uintptr_t>(0xF);
+            ctx->uc_mcontext.mc_rbp = ctx->uc_mcontext.mc_rsp;
+        }
+    }
+    if (ctx->uc_mcontext.mc_rip == 0) {
+        ctx->uc_mcontext.mc_rip = start_pc;
+    }
+
+    return 0;
+}
+
+int PS4_SYSV_ABI posix_pthread_set_user_context_np(PthreadT thread, const Ucontext* ctx) {
+    if (thread == nullptr || ctx == nullptr) {
+        return POSIX_EINVAL;
+    }
+    auto* thread_state = ThrState::Instance();
+    if (int ret = thread_state->FindThread(thread, false); ret != 0) {
+        return ret;
+    }
+    thread->lock->unlock();
+    return 0;
+}
+
+int PS4_SYSV_ABI posix_pthread_suspend_np(PthreadT thread) {
+    return posix_pthread_suspend_user_context_np(thread);
+}
+
+int PS4_SYSV_ABI posix_pthread_resume_np(PthreadT thread) {
+    return posix_pthread_resume_user_context_np(thread);
+}
+
 void RegisterThread(Core::Loader::SymbolsResolver* sym) {
 #ifndef _WIN32
     InstallPthreadCancelSignalHandler();
@@ -1238,6 +1453,7 @@ void RegisterThread(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("CBNtXOoef-E", "libkernel", 1, "libkernel", posix_sched_get_priority_max);
     LIB_FUNCTION("m0iS6jNsXds", "libkernel", 1, "libkernel", posix_sched_get_priority_min);
     LIB_FUNCTION("Xs9hdiD7sAA", "libkernel", 1, "libkernel", posix_pthread_setschedparam);
+    LIB_FUNCTION("9vyP6Z7bqzc", "libkernel", 1, "libkernel", posix_pthread_rename_np);
     LIB_FUNCTION("+U1R4WtXvoc", "libkernel", 1, "libkernel", posix_pthread_detach);
     LIB_FUNCTION("7Xl257M4VNI", "libkernel", 1, "libkernel", posix_pthread_equal);
     LIB_FUNCTION("h9CcP3J0oVM", "libkernel", 1, "libkernel", posix_pthread_join);
@@ -1258,6 +1474,7 @@ void RegisterThread(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("P41kTWUS3EI", "libkernel", 1, "libkernel", ORBIS(posix_pthread_getschedparam));
     LIB_FUNCTION("oIRFTjoILbg", "libkernel", 1, "libkernel", ORBIS(posix_pthread_setschedparam));
     LIB_FUNCTION("How7B8Oet6k", "libkernel", 1, "libkernel", ORBIS(posix_pthread_getname_np));
+    LIB_FUNCTION("9HzfhdtESio", "libkernel", 1, "libkernel", posix_pthread_getname_np);
     LIB_FUNCTION("3kg7rT0NQIs", "libkernel", 1, "libkernel", posix_pthread_exit);
     LIB_FUNCTION("aI+OeCz8xrQ", "libkernel", 1, "libkernel", posix_pthread_self);
     LIB_FUNCTION("qBDmpCyGssE", "libkernel", 1, "libkernel", scePthreadCancel);
@@ -1275,6 +1492,24 @@ void RegisterThread(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("HoLVWNanBBc", "libkernel", 1, "libkernel", posix_getpid);
     LIB_FUNCTION("rcrVFJsQWRY", "libkernel", 1, "libkernel", ORBIS(scePthreadGetaffinity));
     LIB_FUNCTION("bt3CTBKmGyI", "libkernel", 1, "libkernel", ORBIS(scePthreadSetaffinity));
+
+    // User Context & Suspend/Resume
+    LIB_FUNCTION("cfjAjVTFG6A", "libkernel", 1, "libkernel", posix_pthread_suspend_user_context_np);
+    LIB_FUNCTION("cfjAjVTFG6A", "libkernel_psmkit", 1, "libkernel",
+                 posix_pthread_suspend_user_context_np);
+    LIB_FUNCTION("QRdE7dBfNks", "libkernel", 1, "libkernel", posix_pthread_resume_user_context_np);
+    LIB_FUNCTION("QRdE7dBfNks", "libkernel_psmkit", 1, "libkernel",
+                 posix_pthread_resume_user_context_np);
+    LIB_FUNCTION("YkGOXpJEtO8", "libkernel", 1, "libkernel", posix_pthread_get_user_context_np);
+    LIB_FUNCTION("YkGOXpJEtO8", "libkernel_psmkit", 1, "libkernel",
+                 posix_pthread_get_user_context_np);
+    LIB_FUNCTION("el9stmu6290", "libkernel", 1, "libkernel", posix_pthread_set_user_context_np);
+    LIB_FUNCTION("el9stmu6290", "libkernel_psmkit", 1, "libkernel",
+                 posix_pthread_set_user_context_np);
+    LIB_FUNCTION("4e9dMKt+UYA", "libkernel", 1, "libkernel", posix_pthread_suspend_np);
+    LIB_FUNCTION("4e9dMKt+UYA", "libkernel_psmkit", 1, "libkernel", posix_pthread_suspend_np);
+    LIB_FUNCTION("BYM3L--ojzI", "libkernel", 1, "libkernel", posix_pthread_resume_np);
+    LIB_FUNCTION("BYM3L--ojzI", "libkernel_psmkit", 1, "libkernel", posix_pthread_resume_np);
 }
 
 } // namespace Libraries::Kernel

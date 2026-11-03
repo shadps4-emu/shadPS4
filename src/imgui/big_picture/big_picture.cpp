@@ -1,10 +1,13 @@
 //  SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 //  SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
+#include <bit>
 #include <fstream>
 #include <stb_image.h>
 
 #include "common/logging/log.h"
+#include "common/path_util.h"
 #include "core/devtools/layer.h"
 #include "core/emulator_settings.h"
 #include "core/file_format/psf.h"
@@ -88,6 +91,8 @@ void SetGameIcons(std::vector<IconInfo>& gameIcons) {
             if (ImGui::ImageButton(ButtonNameChar, id,
                                    ImVec2(gameImageSize * uiScale, gameImageSize * uiScale))) {
                 done = true;
+                Core::FileSys::MntPoints::ignore_game_patches =
+                    ImGui::IsKeyDown(ImGuiKey::ImGuiKey_LeftCtrl);
                 runEbootPath = gameIcons[i].ebootPath;
             }
         }
@@ -157,62 +162,108 @@ SDL_Texture* LoadSdlTextureDataFromFile(std::filesystem::path filePath) {
     return LoadSdlTextureData(data);
 }
 
+void scanFolder(std::vector<IconInfo>& icons, std::filesystem::path folderPath, int depth) {
+    if (depth > EmulatorSettings.GetBigPictureFolderDepth()) {
+        return;
+    }
+
+    std::error_code ec;
+    std::filesystem::directory_iterator it(folderPath, std::filesystem::directory_options::none,
+                                           ec);
+    std::filesystem::directory_iterator end;
+
+    if (ec) {
+        LOG_ERROR(ImGui, "Cannot open folder: {} due to filesystem error: {}", folderPath.string(),
+                  ec.message());
+        return;
+    }
+
+    while (it != end) {
+        // For access errors getting it.path may not be safe, so log parent folder
+        if (ec) {
+            LOG_ERROR(ImGui, "Cannot access item inside folder {} due to error: {}",
+                      folderPath.string(), ec.message());
+            ec.clear();
+            it.increment(ec);
+            continue;
+        }
+
+        const auto& entry = *it;
+        bool isEntryDir = std::filesystem::is_directory(entry, ec);
+
+        if (ec) {
+            LOG_ERROR(ImGui, "Skipping file/subfolder {} due to filesystem error: {}",
+                      entry.path().string(), ec.message());
+            ec.clear();
+            it.increment(ec);
+            continue;
+        }
+
+        if (isEntryDir && !std::filesystem::exists(entry.path() / "eboot.bin", ec)) {
+            scanFolder(icons, entry.path(), depth + 1);
+        }
+
+        std::string pathstring = entry.path().filename().string();
+        if (pathstring.ends_with("-UPDATE") || pathstring.ends_with("-patch") ||
+            (!isEntryDir && !Core::FileSys::IsZArchiveFile(entry))) {
+            it.increment(ec);
+            continue;
+        }
+
+        if (Core::FileSys::IsZArchiveFile(entry)) {
+            size_t start = pathstring.length() - 3;
+            for (size_t i = start; i < pathstring.length(); ++i) {
+                pathstring[i] =
+                    static_cast<char>(std::tolower(static_cast<unsigned char>(pathstring[i])));
+            }
+
+            if (pathstring.ends_with("-UPDATE.zar") || pathstring.ends_with("-patch.zar")) {
+                it.increment(ec);
+                continue;
+            }
+        }
+
+        IconInfo icon;
+        PSF psf;
+        const std::string sfoFileName = "param.sfo";
+        std::filesystem::path sfoPath = UpdateChecker(sfoFileName, entry.path());
+
+        if (std::filesystem::exists(sfoPath, ec) && psf.Open(sfoPath)) {
+            if (const auto title = psf.GetString("TITLE"); title.has_value()) {
+                icon.title = *title;
+            }
+
+            if (const auto title_id = psf.GetString("TITLE_ID"); title_id.has_value()) {
+                icon.serial = *title_id;
+            }
+        } else {
+            it.increment(ec);
+            continue;
+        }
+
+        const std::string iconFileName = "icon0.png";
+        std::filesystem::path iconPath = UpdateChecker(iconFileName, entry.path());
+
+        SDL_Texture* texture = LoadSdlTextureDataFromFile(iconPath);
+        icon.textureId = ImTextureID(texture);
+
+        icon.ebootPath = entry.path() / "eboot.bin";
+        if (Core::FileSys::IsZArchiveFile(entry.path())) {
+            icon.ebootPath = entry.path();
+        }
+
+        icon.focusState = false;
+        icons.push_back(icon);
+        it.increment(ec);
+    }
+}
+
 void GetGameIconInfo(std::vector<IconInfo>& icons) {
     icons.clear();
 
     for (const auto& installLoc : EmulatorSettings.GetAllGameInstallDirs()) {
         if (installLoc.enabled && std::filesystem::exists(installLoc.path)) {
-            for (const auto& entry : std::filesystem::directory_iterator(installLoc.path)) {
-
-                std::string pathstring = entry.path().filename().string();
-                if (pathstring.ends_with("-UPDATE") || pathstring.ends_with("-patch") ||
-                    (!entry.is_directory() && !Core::FileSys::IsZArchiveFile(entry))) {
-                    continue;
-                }
-
-                if (Core::FileSys::IsZArchiveFile(entry)) {
-                    size_t start = pathstring.length() - 3;
-                    for (size_t i = start; i < pathstring.length(); ++i) {
-                        pathstring[i] = static_cast<char>(
-                            std::tolower(static_cast<unsigned char>(pathstring[i])));
-                    }
-
-                    if (pathstring.ends_with("-UPDATE.zar") || pathstring.ends_with("-patch.zar")) {
-                        continue;
-                    }
-                }
-
-                IconInfo icon;
-                PSF psf;
-                const std::string sfoFileName = "param.sfo";
-                std::filesystem::path sfoPath = UpdateChecker(sfoFileName, entry.path());
-
-                if (std::filesystem::exists(sfoPath) && psf.Open(sfoPath)) {
-                    if (const auto title = psf.GetString("TITLE"); title.has_value()) {
-                        icon.title = *title;
-                    }
-
-                    if (const auto title_id = psf.GetString("TITLE_ID"); title_id.has_value()) {
-                        icon.serial = *title_id;
-                    }
-                } else {
-                    continue;
-                }
-
-                const std::string iconFileName = "icon0.png";
-                std::filesystem::path iconPath = UpdateChecker(iconFileName, entry.path());
-
-                SDL_Texture* texture = LoadSdlTextureDataFromFile(iconPath);
-                icon.textureId = ImTextureID(texture);
-
-                icon.ebootPath = entry.path() / "eboot.bin";
-                if (Core::FileSys::IsZArchiveFile(entry.path())) {
-                    icon.ebootPath = entry.path();
-                }
-
-                icon.focusState = false;
-                icons.push_back(icon);
-            }
+            scanFolder(icons, installLoc.path, 0);
         }
     }
 
@@ -259,7 +310,12 @@ void Launch(char* executableName, bool sameProcess) {
     io.FontDefault = ImGui::FontStack::AddPrimaryUiFont(
         io.Fonts, 64.0f, EmulatorSettings.GetConsoleLanguage(), cfgBase, true);
     io.FontGlobalScale = 0.5f;
-    io.Fonts->Build();
+    // size the big picture font atlas cap from the renderer limit
+    const auto max_dim = SDL_GetNumberProperty(SDL_GetRendererProperties(renderer),
+                                               SDL_PROP_RENDERER_MAX_TEXTURE_SIZE_NUMBER, 8192);
+    const int atlas_max = static_cast<int>(std::bit_floor(std::max<u64>(max_dim, 512)));
+    io.Fonts->TexMaxWidth = atlas_max;
+    io.Fonts->TexMaxHeight = atlas_max;
 
     ImGui_ImplSDL3_InitForSDLRenderer(window, renderer);
     ImGui_ImplSDLRenderer3_Init(renderer);
@@ -310,6 +366,7 @@ void Launch(char* executableName, bool sameProcess) {
         ImGuiViewport* viewport = ImGui::GetMainViewport();
         ImGui::SetNextWindowPos(viewport->WorkPos);
         ImGui::SetNextWindowSize(viewport->WorkSize);
+
         ImGuiWindowFlags window_flags =
             ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollWithMouse;
 
@@ -317,15 +374,18 @@ void Launch(char* executableName, bool sameProcess) {
         ImGui::DrawPrettyBackground();
         ImGui::SetWindowFontScale(uiScale);
 
-        ImGuiWindowFlags child_flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
-                                       ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NavFlattened;
+        ImGuiChildFlags child_flags = ImGuiChildFlags_Borders | ImGuiChildFlags_NavFlattened;
+
+        ImGuiWindowFlags child_window_flags =
+            ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse;
 
         if (ImGui::IsWindowAppearing()) {
             ImGui::SetNextWindowFocus();
         }
 
-        ImGui::BeginChild("ContentRegion", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()), true,
-                          child_flags);
+        ImGui::BeginChild("ContentRegion", ImVec2(0, -ImGui::GetFrameHeightWithSpacing()),
+                          child_flags, child_window_flags);
+
         Overlay::TextCentered("Select Game");
         ImGui::Dummy(ImVec2(0.0f, 10.f * uiScale));
 

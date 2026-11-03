@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <fmt/format.h>
 #include "common/arch.h"
 #include "common/assert.h"
 #include "common/decoder.h"
@@ -8,6 +9,7 @@
 #include "core/cpu_patches.h" // Windows static guest red-zone protection
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/threads/exception.h"
+#include "core/libraries/kernel/threads/pthread.h"
 #include "core/signals.h"
 #include "emulator.h"
 
@@ -29,7 +31,7 @@ namespace Core {
 static LONG WINAPI SignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
     using namespace Libraries::Kernel;
     const auto* signals = Signals::Instance();
-    // Windows static guest red-zone protection
+
     const bool use_static_windows_guest_red_zone_protection =
         WindowsGuestRedZoneProtection::IsStaticPatchingEnabled();
     DWORD code = 0;
@@ -137,11 +139,9 @@ static LONG WINAPI SignalHandler(EXCEPTION_POINTERS* pExp) noexcept {
         }
     }
 
-    // Windows static guest red-zone protection
-    const bool report_unhandled = use_static_windows_guest_red_zone_protection
-                                      ? static_protection_exception
-                                      : code != EXCEPTION_BREAKPOINT;
-    if (report_unhandled) { // Windows static guest red-zone protection
+    const bool report_unhandled =
+        use_static_windows_guest_red_zone_protection ? static_protection_exception : true;
+    if (report_unhandled) {
         LOG_CRITICAL(Debug, "Unhandled Exception code {:#x} at {}", code, address);
         Common::Singleton<Core::Emulator>::Instance()->Shutdown();
     }
@@ -270,12 +270,16 @@ void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
     case SIGSEGV:
     case SIGBUS: {
         const bool is_write = Common::IsWriteError(raw_context);
+        const bool is_exec = Common::IsExecuteError(raw_context);
         if (!signals->DispatchAccessViolation(raw_context, info->si_addr)) {
             if (thread && thread->DispatchSignal(NativeToOrbisSignal(sig), info_p, context_p)) {
                 return;
             }
             UNREACHABLE_MSG("Unhandled access violation at code address {}: {} address {}",
-                            fmt::ptr(code_address), is_write ? "Write to" : "Read from",
+                            fmt::ptr(code_address),
+                            is_write  ? "Write to"
+                            : is_exec ? "Executed from"
+                                      : "Read from",
                             fmt::ptr(info->si_addr));
         }
         break;
@@ -286,6 +290,7 @@ void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
         }
     case SIGFPE:
     case SIGTRAP:
+    case SIGABRT:
     case SIGSYS: {
         if (thread && thread->DispatchSignal(NativeToOrbisSignal(sig), info_p, context_p)) {
             return;
@@ -294,11 +299,18 @@ void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
         UNREACHABLE_MSG("Unhandled signal {} at code address {}", sig, fmt::ptr(code_address));
     }
     case SIGSLEEP: {
+        if (thread) {
+            thread->suspended_context = context.uc_mcontext;
+            thread->is_suspended_in_signal = true;
+        }
         // Sleep thread until signal is received again
         sigset_t sigset;
         sigemptyset(&sigset);
         sigaddset(&sigset, SIGSLEEP);
         sigwait(&sigset, &sig);
+        if (thread) {
+            thread->is_suspended_in_signal = false;
+        }
         break;
     }
     case SIGUSR1:
@@ -325,9 +337,10 @@ SignalDispatch::SignalDispatch() {
 
     ASSERT_MSG(
         sigaction(SIGSEGV, &action, nullptr) == 0 && sigaction(SIGBUS, &action, nullptr) == 0 &&
-            sigaction(SIGILL, &action, nullptr) == 0 && sigaction(SIGFPE, &action, nullptr) == 0 &&
+            sigaction(SIGILL, &action, nullptr) == 0 && sigaction(SIGABRT, &action, nullptr) == 0 &&
             sigaction(SIGTRAP, &action, nullptr) == 0 && sigaction(SIGSYS, &action, nullptr) == 0 &&
-            sigaction(SIGUSR1, &action, nullptr) == 0 && sigaction(SIGSLEEP, &action, nullptr) == 0,
+            sigaction(SIGUSR1, &action, nullptr) == 0 && sigaction(SIGFPE, &action, nullptr) == 0 &&
+            sigaction(SIGSLEEP, &action, nullptr) == 0,
         "Failed to register signal handlers.");
 #endif
 }
@@ -349,7 +362,7 @@ void SignalDispatch::RemoveHandlers() {
     if (!(sigaction(SIGSEGV, &action, nullptr) == 0 && sigaction(SIGBUS, &action, nullptr) == 0 &&
           sigaction(SIGILL, &action, nullptr) == 0 && sigaction(SIGFPE, &action, nullptr) == 0 &&
           sigaction(SIGTRAP, &action, nullptr) == 0 && sigaction(SIGSYS, &action, nullptr) == 0 &&
-          sigaction(SIGUSR1, &action, nullptr) == 0 &&
+          sigaction(SIGUSR1, &action, nullptr) == 0 && sigaction(SIGABRT, &action, nullptr) == 0 &&
           sigaction(SIGSLEEP, &action, nullptr) == 0)) {
         LOG_CRITICAL(Core, "Failed to remove signal handlers.");
         std::quick_exit(1);

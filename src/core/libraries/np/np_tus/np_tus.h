@@ -169,12 +169,16 @@ struct OrbisNpTusDataStatusForCrossSave {
 s32 PS4_SYSV_ABI sceNpTssCreateNpTitleCtx(OrbisNpServiceLabel serviceLabel, OrbisNpId* npId);
 s32 PS4_SYSV_ABI sceNpTssCreateNpTitleCtxA(OrbisNpServiceLabel serviceLabel,
                                            Libraries::UserService::OrbisUserServiceUserId userId);
-s32 PS4_SYSV_ABI sceNpTssGetData();
+s32 PS4_SYSV_ABI sceNpTssGetData(int reqId, s32 slotId, OrbisNpTssDataStatus* dataStatus,
+                                 u64 dataStatusSize, void* data, u64 recvSize,
+                                 OrbisNpTssGetDataOptParam* option);
 s32 PS4_SYSV_ABI sceNpTssGetDataAsync(int reqId, s32 slotId, OrbisNpTssDataStatus* dataStatus,
                                       u64 dataStatusSize, void* data, u64 dataSize,
                                       OrbisNpTssGetDataOptParam* option);
-s32 PS4_SYSV_ABI sceNpTssGetSmallStorage();
-s32 PS4_SYSV_ABI sceNpTssGetSmallStorageAsync(int reqId);
+s32 PS4_SYSV_ABI sceNpTssGetSmallStorage(int reqId, void* data, u64 maxSize, u64* contentLength,
+                                         void* option);
+s32 PS4_SYSV_ABI sceNpTssGetSmallStorageAsync(int reqId, void* data, u64 maxSize,
+                                              u64* contentLength, void* option);
 s32 PS4_SYSV_ABI sceNpTssGetStorage();
 s32 PS4_SYSV_ABI sceNpTssGetStorageAsync(int reqId);
 s32 PS4_SYSV_ABI sceNpTusAbortRequest(int reqId);

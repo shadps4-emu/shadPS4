@@ -79,6 +79,8 @@ enum class CommandType : u16 {
     GetScoreGameDataByAccId = 38,
     GetToken = 39,
     SetAppearOffline = 40,
+    LookupOnlineId = 41,
+    GetAuthorizationCode = 42,
     // Matchmaking
     ContextStart = 100,
     CreateRoom = 101,
@@ -96,6 +98,7 @@ enum class CommandType : u16 {
     GetUserInfoList = 113,
     GetRoomMemberDataExternalList = 114,
     SendRoomMessage = 115,
+    SetRoomMemberDataInternal = 116,
     // Title User Storage (TUS)
     TusSetData = 201,
     TusGetData = 202,
@@ -110,6 +113,7 @@ enum class CommandType : u16 {
     TusTryAndSetVariable = 211,
     TusGetFriendsVariable = 212,
     TusDeleteMultiSlotVariable = 213,
+    TssGetData = 214,
     // Trophies
     UnlockTrophy = 301,
     SyncTrophies = 302,
@@ -122,7 +126,9 @@ enum class NotificationType : u16 {
     FriendStatus = 8,
     RoomEvent = 10,
     RoomMessage = 11,
-    WebApiPushEvent = 17, // Generic NP WebApi push event
+    WebApiPushEvent = 17,    // Generic NP WebApi push event
+    ServiceUnavailable = 18, // Server refused a service (e.g. matchmaking full)
+    ClientRejected = 19,     // Server is signing this client out (e.g. version not accepted)
 };
 
 enum class ErrorType : uint8_t {
@@ -160,6 +166,7 @@ enum class ErrorType : uint8_t {
     ScoreHasData = 31,
     CondFail = 32,
     Unsupported = 33,
+    TooLarge = 34, // TSS file on the server exceeds the slot's documented maximum
 };
 
 enum class ShadNetState {
@@ -209,6 +216,23 @@ struct NotifyFriendStatus {
     bool online = false;
     u64 timestamp = 0;
 };
+// Notification 18 (NotifyServiceUnavailable): why the server refused a service.
+struct NotifyServiceUnavailable {
+    enum : u32 { ServiceMatching2 = 1 };
+    enum : u32 { ReasonServerFull = 1, ReasonNotAllowed = 2, ReasonDisabled = 3 };
+    u32 service = 0;
+    u32 reason = 0;
+    u32 inUse = 0; // set for ReasonServerFull
+    u32 limit = 0; // set for ReasonServerFull
+};
+// Notification 19 (NotifyClientRejected): the server is signing this client out and will
+// disconnect right after.
+struct NotifyClientRejected {
+    enum : u32 { ReasonVersion = 1 };
+    u32 reason = 0;
+    std::string message; // for the player, from the server's rule
+    std::string version; // the version the server checked ("" = none reported)
+};
 struct NotifyWebApiPushEvent {
     std::string npServiceName; // may be empty (catch-all listeners match any)
     u32 npServiceLabel = 0;
@@ -219,6 +243,9 @@ struct NotifyWebApiPushEvent {
     // Optional extended-data (key,value) pairs (e.g. friendlist trigger/additionalTrigger,
     // presence gameStatus/gameData). Empty when the server sends none / is older.
     std::vector<std::pair<std::string, std::string>> extdData;
+    // Optional trailing account ids (server >= push-account-ids). 0 = unknown / not sent.
+    u64 fromAccountId = 0;
+    u64 toAccountId = 0;
 };
 
 struct MatchingBinAttr {
@@ -298,6 +325,8 @@ public:
     u32 GetAddrLocal() const;
     u32 GetAddrServer() const;
     bool IsMatching2Enabled() const;
+    // True on the thread that reads replies. Code running there must not wait for a reply.
+    static bool OnReaderThread();
     bool IsTrophiesEnabled() const;
     u64 ReportClientVersion();
     static std::string BuildVersionString();
@@ -319,6 +348,8 @@ public:
     std::function<void(const NotifyRoomEvent&)> onRoomEvent;
     std::function<void(const NotifyRoomMessage&)> onRoomMessage;
     std::function<void(const NotifyWebApiPushEvent&)> onWebApiPushEvent;
+    std::function<void(const NotifyServiceUnavailable&)> onServiceUnavailable;
+    std::function<void(const NotifyClientRejected&)> onClientRejected;
     // Async reply callback.
     //   cmd    —command this reply is for (matches the request's cmd)
     //   pkt_id —packet id echoed back from the original request header
@@ -339,6 +370,10 @@ public:
     u64 RemoveBlock(const std::string& npid);
     // Set the Appear-Offline preference mid-session (server handles us as offline while set).
     u64 SetAppearOffline(bool enable);
+    // Global online ID to account ID resolution
+    u64 LookupOnlineId(const std::string& npid);
+    // Single-use authorization code for a game's backend (sceNpAuthGetAuthorizationCode)
+    u64 GetAuthorizationCode(const std::string& client_id, const std::string& scope);
 
 private:
     void ConnectThread();

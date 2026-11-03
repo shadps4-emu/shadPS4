@@ -12,7 +12,7 @@ using Sirit::Id;
 constexpr u32 SPIRV_VERSION_1_5 = 0x00010500;
 
 struct QuadRectListEmitter : public Sirit::Module {
-    explicit QuadRectListEmitter(const FragmentRuntimeInfo& fs_info_)
+    explicit QuadRectListEmitter(const HwFragmentRuntimeInfo& fs_info_)
         : Sirit::Module{SPIRV_VERSION_1_5}, fs_info{fs_info_} {
         void_id = TypeVoid();
         bool_id = TypeBool();
@@ -288,7 +288,7 @@ private:
     }
 
 private:
-    FragmentRuntimeInfo fs_info;
+    HwFragmentRuntimeInfo fs_info;
     Id main;
     Id void_id;
     Id bool_id;
@@ -319,7 +319,7 @@ private:
     std::vector<Id> interfaces;
 };
 
-std::vector<u32> EmitAuxilaryTessShader(AuxShaderType type, const FragmentRuntimeInfo& fs_info) {
+std::vector<u32> EmitAuxilaryTessShader(AuxShaderType type, const HwFragmentRuntimeInfo& fs_info) {
     QuadRectListEmitter ctx{fs_info};
     switch (type) {
     case AuxShaderType::RectListTCS:

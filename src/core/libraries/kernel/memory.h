@@ -152,6 +152,13 @@ s32 PS4_SYSV_ABI sceKernelReserveVirtualRange(void** addr, u64 len, s32 flags, u
 s32 PS4_SYSV_ABI sceKernelMapNamedFlexibleMemory(void** addr_in_out, u64 len, s32 prot, s32 flags,
                                                  const char* name);
 s32 PS4_SYSV_ABI sceKernelMapFlexibleMemory(void** addr_in_out, u64 len, s32 prot, s32 flags);
+s32 PS4_SYSV_ABI sceKernelMapNamedSystemFlexibleMemory(void** addr_in_out, u64 len, s32 prot,
+                                                       s32 flags, const char* name);
+s32 PS4_SYSV_ABI posix_mlock(const void* addr, u64 len);
+s32 PS4_SYSV_ABI sceKernelMlock(void* addr, u64 len);
+s32 PS4_SYSV_ABI posix_munlock(const void* addr, u64 len);
+s32 PS4_SYSV_ABI sceKernelMunlock(void* addr, u64 len);
+s32 PS4_SYSV_ABI sceKernelReleaseFlexibleMemory(void* addr, u64 len);
 s32 PS4_SYSV_ABI sceKernelQueryMemoryProtection(void* addr, void** start, void** end, u32* prot);
 
 s32 PS4_SYSV_ABI sceKernelMprotect(const void* addr, u64 size, s32 prot);
@@ -173,6 +180,7 @@ s32 PS4_SYSV_ABI sceKernelBatchMap2(OrbisKernelBatchMapEntry* entries, s32 numEn
                                     s32* numEntriesOut, s32 flags);
 
 s32 PS4_SYSV_ABI sceKernelSetVirtualRangeName(const void* addr, u64 len, const char* name);
+s32 PS4_SYSV_ABI sceKernelClearVirtualRangeName(const void* addr, u64 len);
 
 s32 PS4_SYSV_ABI sceKernelMemoryPoolExpand(u64 searchStart, u64 searchEnd, u64 len, u64 alignment,
                                            u64* physAddrOut);

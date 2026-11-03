@@ -3,21 +3,22 @@
 
 #pragma once
 
+#include <mutex>
+#include <optional>
+
 #include "common/enum.h"
 #include "common/incremental_id.h"
+#include "common/lru_cache.h"
+#include "common/small_vector.h"
 #include "common/types.h"
 #include "video_core/renderer_vulkan/vk_common.h"
+#include "video_core/texture_cache/host_compatibility.h"
 #include "video_core/texture_cache/image_info.h"
 #include "video_core/texture_cache/image_view.h"
 
-#include <deque>
-#include <optional>
-#include <boost/container/small_vector.hpp>
-#include <boost/container/static_vector.hpp>
-
 namespace Vulkan {
 class Instance;
-class Scheduler;
+class Runtime;
 } // namespace Vulkan
 
 VK_DEFINE_HANDLE(VmaAllocation)
@@ -29,11 +30,11 @@ enum ImageFlagBits : u32 {
     Empty = 0,
     MaybeCpuDirty = 1 << 0, ///< The page this image is in was touched before the image address
     CpuDirty = 1 << 1,      ///< Contents have been modified from the CPU
-    GpuDirty = 1 << 2, ///< Contents have been modified from the GPU (valid data in buffer cache)
+    GpuDirty = 1 << 2, ///< Image contents have been modified from the GPU (valid data in buffer
+                       ///< cache)
     Dirty = MaybeCpuDirty | CpuDirty | GpuDirty,
     GpuModified = 1 << 3, ///< Contents have been modified from the GPU
     Registered = 1 << 6,  ///< True when the image is registered
-    Picked = 1 << 7,      ///< Temporary flag to mark the image as picked
 };
 DECLARE_ENUM_FLAG_OPERATORS(ImageFlagBits)
 
@@ -49,12 +50,14 @@ struct UniqueImage {
     UniqueImage(UniqueImage&& other)
         : allocator{std::exchange(other.allocator, VK_NULL_HANDLE)},
           allocation{std::exchange(other.allocation, VK_NULL_HANDLE)},
-          image{std::exchange(other.image, VK_NULL_HANDLE)}, image_ci{std::move(other.image_ci)} {}
+          image{std::exchange(other.image, VK_NULL_HANDLE)}, image_ci{std::move(other.image_ci)},
+          size_bytes{std::exchange(other.size_bytes, 0)} {}
     UniqueImage& operator=(UniqueImage&& other) {
         image = std::exchange(other.image, VK_NULL_HANDLE);
         allocator = std::exchange(other.allocator, VK_NULL_HANDLE);
         allocation = std::exchange(other.allocation, VK_NULL_HANDLE);
         image_ci = std::move(other.image_ci);
+        size_bytes = std::exchange(other.size_bytes, 0);
         return *this;
     }
 
@@ -76,38 +79,39 @@ public:
     VmaAllocation allocation{};
     vk::Image image{};
     vk::ImageCreateInfo image_ci{};
+    vk::DeviceSize size_bytes{};
 };
 
-class BlitHelper;
-
-struct Image {
-    Image(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler, BlitHelper& blit_helper,
-          Common::SlotVector<ImageView>& slot_image_views, const ImageInfo& info);
+struct Image : public Common::LRUNode<> {
+    explicit Image(const Vulkan::Instance& instance, Vulkan::Runtime& runtime,
+                   Common::SlotVector<ImageView>& slot_image_views, const ImageInfo& info);
     ~Image();
 
     Image(const Image&) = delete;
     Image& operator=(const Image&) = delete;
 
-    Image(Image&&) = default;
-    Image& operator=(Image&&) = default;
+    Image(Image&&) = delete;
+    Image& operator=(Image&&) = delete;
 
-    bool Overlaps(VAddr overlap_cpu_addr, size_t overlap_size) const noexcept {
-        const VAddr overlap_end = overlap_cpu_addr + overlap_size;
-        const auto image_addr = info.guest_address;
-        const auto image_end = info.guest_address + info.guest_size;
-        return image_addr < overlap_end && overlap_cpu_addr < image_end;
+    bool Overlaps(VAddr addr, size_t size) const noexcept {
+        return info.guest_address < (addr + size) && addr < (info.guest_address + info.guest_size);
     }
 
     vk::Image GetImage() const {
         return backing->image.image;
     }
 
-    bool IsTracked() {
-        return track_addr != 0 && track_addr_end != 0;
+    bool IsUntracked() {
+        return track_addr == 0 || track_addr_end == 0;
     }
 
-    bool SafeToDownload() const {
-        return True(flags & ImageFlagBits::GpuModified) && False(flags & (ImageFlagBits::Dirty));
+    bool HasGpuValidData() const {
+        return True(flags & ImageFlagBits::GpuModified) && False(flags & ImageFlagBits::Dirty);
+    }
+
+    bool CanBeDownloaded() {
+        return HasGpuValidData() && info.num_samples == 1 && !info.props.has_stencil &&
+               IsVulkanFormatCompatible(info.pixel_format, backing->image.image_ci.format);
     }
 
     void AssociateDepth(ImageId depth_image_id, u64 depth_image_uid) {
@@ -120,33 +124,23 @@ struct Image {
         depth_uid = {};
     }
 
+    vk::DeviceSize SizeBytes() const {
+        return std::accumulate(
+            backing_images.begin(), backing_images.end(), vk::DeviceSize(0),
+            [](vk::DeviceSize sum, const BackingImage& bi) { return sum + bi.image.size_bytes; });
+    }
+
     ImageView& FindView(const ImageViewInfo& view_info, bool ensure_guest_samples = true);
 
-    using Barriers = boost::container::small_vector<vk::ImageMemoryBarrier2, 32>;
-    Barriers GetBarriers(vk::ImageLayout dst_layout, vk::AccessFlags2 dst_mask,
-                         vk::PipelineStageFlags2 dst_stage,
-                         std::optional<SubresourceRange> subres_range);
-    void Transit(vk::ImageLayout dst_layout, vk::AccessFlags2 dst_mask,
-                 std::optional<SubresourceRange> range, vk::CommandBuffer cmdbuf = {});
-    void Upload(std::span<const vk::BufferImageCopy> upload_copies, vk::Buffer buffer, u64 offset);
-    void Download(std::span<const vk::BufferImageCopy> download_copies, vk::Buffer buffer,
-                  u64 offset, u64 download_size);
-
-    void CopyImage(Image& src_image);
-    void CopyImageWithBuffer(Image& src_image, vk::Buffer buffer, u64 offset);
-    void CopyMip(Image& src_image, u32 mip, u32 slice);
-
-    void Resolve(Image& src_image, const VideoCore::SubresourceRange& mrt0_range,
-                 const VideoCore::SubresourceRange& mrt1_range);
-    void Clear(const vk::ClearValue& clear_value, const VideoCore::SubresourceRange& range);
-
-    void SetBackingSamples(u32 num_samples, bool copy_backing = true);
+    using Barriers = SmallVector<vk::ImageMemoryBarrier2, 32>;
+    void GetBarriers(Barriers& out_barriers, vk::ImageLayout dst_layout, vk::AccessFlags2 dst_mask,
+                     vk::PipelineStageFlags2 dst_stage,
+                     std::optional<SubresourceRange> subres_range = {});
 
 public:
-    const Vulkan::Instance* instance;
-    Vulkan::Scheduler* scheduler;
-    BlitHelper* blit_helper;
+    Vulkan::Runtime* runtime;
     Common::SlotVector<ImageView>* slot_image_views;
+    std::mutex mutex;
     ImageInfo info;
     vk::ImageAspectFlags aspect_mask = vk::ImageAspectFlagBits::eColor;
     vk::SampleCountFlags supported_samples = vk::SampleCountFlagBits::e1;
@@ -156,7 +150,6 @@ public:
     ImageId depth_id{};
     u64 depth_uid{};
 
-    // Resource state tracking
     vk::ImageUsageFlags usage_flags;
     vk::FormatFeatureFlags2 format_features;
     struct State {
@@ -168,17 +161,20 @@ public:
         UniqueImage image;
         State state;
         std::vector<State> subresource_states;
-        boost::container::small_vector<ImageViewInfo, 4> image_view_infos;
-        boost::container::small_vector<ImageViewId, 4> image_view_ids;
+        SmallVector<ImageViewInfo, 2> image_view_infos;
+        SmallVector<ImageViewId, 2> image_view_ids;
         u32 num_samples;
     };
-    std::deque<BackingImage> backing_images;
+    SmallVector<BackingImage, 2> backing_images;
     BackingImage* backing{};
-    boost::container::static_vector<u64, 16> mip_hashes{};
+    u64* memory_usage_counter{};
     u64 image_uid{};
     u64 lru_id{};
     u64 tick_accessed_last{};
-    u64 hash{};
+    u64 cpu_hash{};
+    u64 gpu_hash{};
+    u64 head_hash{};
+    u64 tail_hash{};
 
     struct {
         u32 texture : 1;

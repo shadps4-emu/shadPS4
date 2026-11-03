@@ -10,7 +10,7 @@
 #include "common/singleton.h"
 #include "core/emulator_settings.h"
 #include "core/libraries/libs.h"
-#include "core/libraries/np/np_handler.h"
+#include "core/libraries/np/np_handler/np_handler.h"
 #include "core/libraries/np/np_manager.h"
 #include "core/libraries/system/userservice.h"
 #include "core/libraries/system/userservice_error.h"
@@ -1070,13 +1070,21 @@ int PS4_SYSV_ABI sceUserServiceGetTraditionalChineseInputType() {
 }
 
 s32 PS4_SYSV_ABI sceUserServiceGetUserColor(int user_id, OrbisUserServiceUserColor* color) {
-    // TODO fix me better
     LOG_DEBUG(Lib_UserService, "called user_id = {}", user_id);
     if (color == nullptr) {
         LOG_ERROR(Lib_UserService, "color is null");
         return ORBIS_USER_SERVICE_ERROR_INVALID_ARGUMENT;
     }
-    *color = (OrbisUserServiceUserColor)UserManagement.GetUserByID(user_id)->user_color;
+    const auto* user = UserManagement.GetUserByID(user_id);
+    if (user == nullptr) {
+        LOG_ERROR(Lib_UserService, "No user found for user_id = {}", user_id);
+        return ORBIS_USER_SERVICE_ERROR_NOT_LOGGED_IN;
+    }
+    s32 color_idx = static_cast<s32>(user->user_color) - 1;
+    if (color_idx < 0 || color_idx > 3) {
+        color_idx = std::clamp(user->player_index - 1, 0, 3);
+    }
+    *color = static_cast<OrbisUserServiceUserColor>(color_idx);
     return ORBIS_OK;
 }
 

@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <fmt/format.h>
 #include "common/alignment.h"
 #include "common/arch.h"
 #include "common/assert.h"
@@ -178,10 +179,15 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
         }
     };
 
-#if defined(ARCH_X86_64) && defined(_WIN32)
-    // Windows static guest red-zone protection
-    const bool use_static_windows_guest_red_zone_protection =
-        WindowsGuestRedZoneProtection::IsStaticPatchingEnabled();
+#ifdef ARCH_X86_64
+    // Static patching rewrites the functions of the executable segments ahead of time. Initially
+    // useful because Windows uses it for guest red-zone protection, and macOS to apply its CPU
+    // patches, but now used on all OSes to patch 4-byte instructions
+#if defined(_WIN32)
+    const bool use_static_patching = WindowsGuestRedZoneProtection::IsStaticPatchingEnabled();
+#else
+    constexpr bool use_static_patching = true;
+#endif
     std::vector<std::pair<VAddr, u64>> executable_segments;
     std::vector<uintptr_t> function_starts;
 #endif
@@ -209,12 +215,9 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
 #ifdef ARCH_X86_64
             if (elf_pheader[i].p_flags & PF_EXEC) {
                 PrePatchInstructions(segment_addr, segment_file_size);
-#ifdef _WIN32
-                // Windows static guest red-zone protection
-                if (use_static_windows_guest_red_zone_protection) {
+                if (use_static_patching) {
                     executable_segments.emplace_back(segment_addr, segment_file_size);
                 }
-#endif
             }
 #endif
             break;
@@ -250,6 +253,88 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
         case PT_SCE_PROCPARAM:
             proc_param_virtual_addr = elf_pheader[i].p_vaddr + base_virtual_addr;
             break;
+        case PT_SCE_MODULE_PARAM:
+            module_param_virtual_addr = elf_pheader[i].p_vaddr + base_virtual_addr;
+            break;
+        case PT_INTERP: {
+            if (elf_pheader[i].p_filesz != 0) {
+                interpreter_path.resize(elf_pheader[i].p_filesz);
+                if (!elf.TryLoadSegment(std::bit_cast<VAddr>(interpreter_path.data()),
+                                        elf_pheader[i].p_offset, elf_pheader[i].p_filesz)) {
+                    LOG_WARNING(Core_Linker, "Unable to read {} segment of module {}", header_type,
+                                name);
+                    interpreter_path.clear();
+                    break;
+                }
+                while (!interpreter_path.empty() && interpreter_path.back() == '\0') {
+                    interpreter_path.pop_back();
+                }
+                LOG_INFO(Core_Linker, "Module interpreter: '{}'", interpreter_path);
+            }
+            break;
+        }
+        case PT_SCE_COMMENT: {
+            if (elf_pheader[i].p_filesz != 0) {
+                comment.resize(elf_pheader[i].p_filesz);
+                if (!elf.TryLoadSegment(std::bit_cast<VAddr>(comment.data()),
+                                        elf_pheader[i].p_offset, elf_pheader[i].p_filesz)) {
+                    LOG_WARNING(Core_Linker, "Unable to read {} segment of module {}", header_type,
+                                name);
+                    comment.clear();
+                    break;
+                }
+                if (comment.starts_with("PATH") && comment.size() > 12) {
+                    comment = comment.substr(12);
+                    comment = comment.substr(0, comment.find('\0'));
+                } else {
+                    for (char& c : comment) {
+                        if (c == '\0') {
+                            c = ' ';
+                        }
+                    }
+                    while (!comment.empty() && (comment.back() == ' ' || comment.back() == '\0')) {
+                        comment.pop_back();
+                    }
+                }
+                LOG_INFO(Core_Linker, "Module comment: '{}'", comment);
+            }
+            break;
+        }
+        case PT_SCE_LIBVERSION: {
+            if (elf_pheader[i].p_filesz != 0) {
+                std::vector<u8> libver_data(elf_pheader[i].p_filesz);
+                if (!elf.TryLoadSegment(std::bit_cast<VAddr>(libver_data.data()),
+                                        elf_pheader[i].p_offset, elf_pheader[i].p_filesz)) {
+                    LOG_WARNING(Core_Linker, "Unable to read {} segment of module {}", header_type,
+                                name);
+                    break;
+                }
+                if (!libver_data.empty()) {
+                    const u8 rec_len = libver_data[0];
+                    if (rec_len > 4 && 1u + rec_len <= libver_data.size()) {
+                        const std::string_view rec(
+                            reinterpret_cast<const char*>(libver_data.data() + 1), rec_len);
+                        const auto colon = rec.find(':');
+                        if (colon != std::string_view::npos && colon + 5 <= rec_len) {
+                            const u8* ver_bytes =
+                                reinterpret_cast<const u8*>(rec.data() + colon + 1);
+                            const u32 sdk_ver = (u32(ver_bytes[0]) << 24) |
+                                                (u32(ver_bytes[1]) << 16) |
+                                                (u32(ver_bytes[2]) << 8) | u32(ver_bytes[3]);
+                            LOG_INFO(Core_Linker, "SCE SDK version: {:x}.{:02x} [{:#010x}]",
+                                     ver_bytes[0], ver_bytes[1], sdk_ver);
+                        }
+                    }
+                }
+            }
+            break;
+        }
+        case PT_GNU_STACK:
+        case PT_GNU_RELRO:
+        case PT_NOTE:
+        case PT_PHDR:
+            // Non-loadable metadata/flags segments; nothing to map
+            break;
         case PT_GNU_EH_FRAME: {
             eh_frame_hdr_addr = elf_pheader[i].p_vaddr;
             eh_frame_hdr_size = elf_pheader[i].p_memsz;
@@ -257,9 +342,8 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
             const VAddr eh_hdr_end = eh_hdr_start + eh_frame_hdr_size;
             Dwarf::EHHeaderInfo hdr_info;
             if (Dwarf::DecodeEHHdr(eh_hdr_start, eh_hdr_end, hdr_info)) {
-#if defined(ARCH_X86_64) && defined(_WIN32)
-                // Windows static guest red-zone protection
-                if (use_static_windows_guest_red_zone_protection &&
+#ifdef ARCH_X86_64
+                if (use_static_patching &&
                     !Dwarf::DecodeEHHdrTable(hdr_info, eh_hdr_end, function_starts)) {
                     LOG_ERROR(Core_Linker, "Failed to decode EH frame search table for {}", name);
                 }
@@ -278,24 +362,42 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
         }
     }
 
-#if defined(ARCH_X86_64) && defined(_WIN32)
-    // Windows static guest red-zone protection
-    if (use_static_windows_guest_red_zone_protection) {
-        u64 analyzed_function_count{};
-        u64 stack_dependent_instruction_count{};
-        u64 control_flow_instruction_count{};
-        u64 unrelocatable_instruction_count{};
-        u64 unsupported_cpu_patch_instruction_count{};
+    const VAddr entry_addr = base_virtual_addr + elf.GetElfEntry();
+    LOG_INFO(Core_Linker, "program entry addr ..........: {:#018x}", entry_addr);
+
+    if (MemoryPatcher::g_eboot_address == 0) {
+        // TODO: Come up with a more reliable way to detect the main executable.
+        std::string lower_name = name;
+        std::ranges::transform(lower_name, lower_name.begin(),
+                               [](unsigned char c) { return std::tolower(c); });
+        if (lower_name == "eboot.bin" || lower_name.ends_with(".elf")) {
+            MemoryPatcher::g_eboot_address = base_virtual_addr;
+            MemoryPatcher::g_eboot_image_size = base_size;
+            MemoryPatcher::g_eboot_name = name;
+            MemoryPatcher::OnGameLoaded();
+        }
+    }
+
+#ifdef ARCH_X86_64
+    // The game's memory patches are applied first, so that the code decoded here is the code
+    // that executes.
+    if (use_static_patching) {
+        const bool red_zone_protection = WindowsGuestRedZoneProtection::IsStaticPatchingEnabled();
+        RedZonePatchResult total{};
         for (const auto& [segment_addr, segment_size] : executable_segments) {
-            // Windows static guest red-zone protection
-            const auto result =
-                PatchRedZoneMemoryInstructions(segment_addr, segment_size, function_starts);
-            analyzed_function_count += result.function_count;
-            stack_dependent_instruction_count += result.stack_dependent_memory_instruction_count;
-            control_flow_instruction_count += result.control_flow_memory_instruction_count;
-            unrelocatable_instruction_count += result.unrelocatable_memory_instruction_count;
-            unsupported_cpu_patch_instruction_count +=
-                result.unsupported_cpu_patch_instruction_count;
+            total +=
+                red_zone_protection
+                    ? PatchRedZoneMemoryInstructions(segment_addr, segment_size, function_starts)
+                    : PatchCpuInstructionsStatically(segment_addr, segment_size, function_starts);
+        }
+        if (total.function_count == 0) {
+            if (!executable_segments.empty()) {
+                LOG_WARNING(Core_Linker,
+                            "Static patching could not find function boundaries for {}; it was "
+                            "not applied",
+                            name);
+            }
+        } else if (red_zone_protection) {
             LOG_DEBUG(
                 Core_Linker,
                 "Windows guest red-zone static patching for {}: {} functions, {} instructions, "
@@ -303,45 +405,42 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
                 "({} short, {} stack-dependent, {} control-flow, {} unrelocatable), "
                 "{}/{} short CPU patches applied ({} unsupported), {} indirect red-zone "
                 "functions",
-                name, result.function_count, result.instruction_count,
-                result.red_zone_function_count, result.patched_memory_instruction_count,
-                result.memory_instruction_count, result.short_memory_instruction_count,
-                result.stack_dependent_memory_instruction_count,
-                result.control_flow_memory_instruction_count,
-                result.unrelocatable_memory_instruction_count,
-                result.patched_cpu_patch_instruction_count, result.cpu_patch_instruction_count,
-                result.unsupported_cpu_patch_instruction_count,
-                result.indirect_red_zone_function_count);
-        }
-        if (!executable_segments.empty() && analyzed_function_count == 0) {
-            LOG_WARNING(Core_Linker,
-                        "Windows guest red-zone static patching could not find function "
-                        "boundaries for {}; protection was not applied",
-                        name);
-        } else if (stack_dependent_instruction_count != 0 || control_flow_instruction_count != 0 ||
-                   unrelocatable_instruction_count != 0 ||
-                   unsupported_cpu_patch_instruction_count != 0) {
-            LOG_WARNING(
-                Core_Linker,
-                "Windows guest red-zone static patching for {} is partial: {} stack-dependent, "
-                "{} control-flow, and {} unrelocatable memory instructions were not protected; "
-                "{} CPU patch instructions were unsupported",
-                name, stack_dependent_instruction_count, control_flow_instruction_count,
-                unrelocatable_instruction_count, unsupported_cpu_patch_instruction_count);
+                name, total.function_count, total.instruction_count, total.red_zone_function_count,
+                total.patched_memory_instruction_count, total.memory_instruction_count,
+                total.short_memory_instruction_count,
+                total.stack_dependent_memory_instruction_count,
+                total.control_flow_memory_instruction_count,
+                total.unrelocatable_memory_instruction_count,
+                total.patched_cpu_patch_instruction_count, total.cpu_patch_instruction_count,
+                total.unsupported_cpu_patch_instruction_count,
+                total.indirect_red_zone_function_count);
+            if (total.stack_dependent_memory_instruction_count != 0 ||
+                total.control_flow_memory_instruction_count != 0 ||
+                total.unrelocatable_memory_instruction_count != 0 ||
+                total.unsupported_cpu_patch_instruction_count != 0) {
+                LOG_WARNING(
+                    Core_Linker,
+                    "Windows guest red-zone static patching for {} is partial: {} "
+                    "stack-dependent, {} control-flow, and {} unrelocatable memory instructions "
+                    "were not protected; {} CPU patch instructions were unsupported",
+                    name, total.stack_dependent_memory_instruction_count,
+                    total.control_flow_memory_instruction_count,
+                    total.unrelocatable_memory_instruction_count,
+                    total.unsupported_cpu_patch_instruction_count);
+            }
+        } else {
+            LOG_INFO(Core_Linker,
+                     "Static CPU patching for {}: {} functions, {} instructions patched in place, "
+                     "{}/{} short instructions relocated ({} left to the exception handler); "
+                     "outside functions: {} patched in place, {} left to the exception handler",
+                     name, total.function_count, total.inplace_cpu_patch_instruction_count,
+                     total.patched_cpu_patch_instruction_count, total.cpu_patch_instruction_count,
+                     total.unsupported_cpu_patch_instruction_count,
+                     total.uncovered_inplace_cpu_patch_instruction_count,
+                     total.uncovered_unsupported_cpu_patch_instruction_count);
         }
     }
 #endif
-
-    const VAddr entry_addr = base_virtual_addr + elf.GetElfEntry();
-    LOG_INFO(Core_Linker, "program entry addr ..........: {:#018x}", entry_addr);
-
-    if (MemoryPatcher::g_eboot_address == 0) {
-        if (name == "eboot.bin") {
-            MemoryPatcher::g_eboot_address = base_virtual_addr;
-            MemoryPatcher::g_eboot_image_size = base_size;
-            MemoryPatcher::OnGameLoaded();
-        }
-    }
 }
 
 void Module::LoadDynamicInfo() {
@@ -605,7 +704,7 @@ const ModuleInfo* Module::FindModule(std::string_view id) {
         }
         i++;
     }
-    return nullptr;
+    return id.empty() ? &export_modules[0] : nullptr;
 }
 
 const LibraryInfo* Module::FindLibrary(std::string_view id) {
@@ -623,14 +722,25 @@ const LibraryInfo* Module::FindLibrary(std::string_view id) {
         }
         i++;
     }
-    return nullptr;
+    return id.empty() ? &export_libs[0] : nullptr;
 }
 
 void* Module::FindByName(std::string_view name) {
     const auto nid_str = StringToNid(name);
     const auto symbols = export_sym.GetSymbols();
+    const auto it = std::ranges::find_if(symbols, [&](const Loader::SymbolRecord& record) {
+        return record.symbol.name == nid_str || record.symbol.nidName == name;
+    });
+    if (it != symbols.end()) {
+        return reinterpret_cast<void*>(it->virtual_address);
+    }
+    return nullptr;
+}
+
+void* Module::FindByNid(std::string_view nid) {
+    const auto symbols = export_sym.GetSymbols();
     const auto it = std::ranges::find_if(
-        symbols, [&](const Loader::SymbolRecord& record) { return record.name.contains(nid_str); });
+        symbols, [&](const Loader::SymbolRecord& record) { return record.symbol.name == nid; });
     if (it != symbols.end()) {
         return reinterpret_cast<void*>(it->virtual_address);
     }
