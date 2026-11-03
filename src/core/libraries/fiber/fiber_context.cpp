@@ -30,7 +30,7 @@ _sceFiberSetJmp:
     movq %r15, 0x68(%rdi)
 
     fnstcw  0x70(%rdi)
-    stmxcsr 0x72(%rdi)
+    stmxcsr 0x74(%rdi)
 
     xor %eax, %eax
     ret
@@ -39,7 +39,7 @@ _sceFiberSetJmp:
 _sceFiberLongJmp:
     # MXCSR = (MXCSR & 0x3f) ^ (ctx->mxcsr & ~0x3f)
     stmxcsr -0x4(%rsp)
-    movl 0x72(%rdi), %eax
+    movl 0x74(%rdi), %eax
     andl $0xffffffc0, %eax
     movl -0x4(%rsp), %ecx
     andl $0x3f, %ecx
