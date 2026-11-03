@@ -9,6 +9,7 @@
 
 namespace Shader {
 struct Profile;
+struct Pools;
 void InjectClipDistanceAttributes(IR::Program& program, RuntimeInfo& runtime_info);
 } // namespace Shader
 
@@ -19,7 +20,7 @@ void SsaRepairPass(IR::Program& program);
 void PhiSimplificationPass(IR::Program& program);
 void InverseBallotEliminationPass(IR::Program& program);
 void LowerWave64BallotPass(IR::Program& program, const RuntimeInfo& runtime_info,
-                           const Profile& profile);
+                           const Profile& profile, Pools& pools);
 void LowerHardwareIntrinsics(IR::Program& program);
 void LowerPhisToRegsPass(IR::Program& program);
 void DeadCodeEliminationPass(IR::Program& program);
