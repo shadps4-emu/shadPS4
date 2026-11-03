@@ -250,11 +250,37 @@ static constexpr const BinaryInfo& SearchBinaryInfo(const u32* code) {
 static constexpr Shader::ShaderParams GetParams(const auto& sh) {
     const auto* code = sh.template Address<u32*>();
     const auto& bininfo = SearchBinaryInfo(code);
-    return {
+    Shader::ShaderParams params = {
         .user_data = sh.user_data,
         .code = std::span{code, bininfo.length / sizeof(u32)},
         .hash = bininfo.shader_hash,
     };
+    const auto code_address = reinterpret_cast<uintptr_t>(code);
+    const auto info_address = reinterpret_cast<uintptr_t>(&bininfo);
+    const size_t slots_size = bininfo.num_input_usage_slots * sizeof(Shader::ShaderInputUsageSlot);
+    const size_t footer_prefix = bininfo.chunk_usage_base_offset_in_dw * sizeof(u32) + slots_size;
+    if (info_address < code_address || footer_prefix > info_address - code_address) {
+        return params;
+    }
+    const auto slots_address = info_address - footer_prefix;
+    if (bininfo.length > slots_address - code_address) {
+        return params;
+    }
+    if (bininfo.is_srt) {
+        const auto slots =
+            std::span{reinterpret_cast<const Shader::ShaderInputUsageSlot*>(slots_address),
+                      bininfo.num_input_usage_slots};
+        for (const auto& slot : slots) {
+            if (slot.UsageType() == Shader::ShaderInputUsageType::ImmShaderResourceTable) {
+                const auto* start = reinterpret_cast<const u8*>(code) + bininfo.length;
+                const auto* end = reinterpret_cast<const u8*>(slots_address);
+                params.srt_metadata.assign(start, end);
+                params.srt_user_data_base = slot.start_register;
+                break;
+            }
+        }
+    }
+    return params;
 }
 
 } // namespace AmdGpu
