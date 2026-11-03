@@ -14,7 +14,8 @@ namespace Libraries::Np {
 
 s32 NpHandler::RecordScore(s32 user_id, s32 service_label, u32 boardId, s32 pcId, s64 score,
                            const char* comment, size_t commentLen, const u8* gameInfoData,
-                           size_t gameInfoSize, std::shared_ptr<NpScore::ScoreRequestCtx> req) {
+                           size_t gameInfoSize, u64 compareDate,
+                           std::shared_ptr<NpScore::ScoreRequestCtx> req) {
     // Look up the user's shadNet session.
     std::shared_ptr<ShadNet::ShadNetClient> client;
     {
@@ -42,6 +43,7 @@ s32 NpHandler::RecordScore(s32 user_id, s32 service_label, u32 boardId, s32 pcId
     if (gameInfoData && gameInfoSize > 0) {
         proto.set_data(std::string(reinterpret_cast<const char*>(gameInfoData), gameInfoSize));
     }
+    proto.set_comparedate(compareDate);
 
     const std::string proto_bytes = proto.SerializeAsString();
     const std::string com_id = GetNpCommId(service_label);
@@ -601,7 +603,8 @@ s32 NpHandler::GetRankingByAccountId(s32 user_id, s32 service_label, u32 boardId
 }
 
 s32 NpHandler::GetFriendsRanking(s32 user_id, s32 service_label, u32 boardId, bool includeSelf,
-                                 u32 arrayNum, NpScore::OrbisNpScoreRankData* rankArray,
+                                 u32 startSerialRank, u32 arrayNum,
+                                 NpScore::OrbisNpScoreRankData* rankArray,
                                  NpScore::OrbisNpScoreComment* commentArray,
                                  NpScore::OrbisNpScoreGameInfo* infoArray,
                                  Libraries::Rtc::OrbisRtcTick* lastSortDate, u32* totalRecord,
@@ -624,6 +627,7 @@ s32 NpHandler::GetFriendsRanking(s32 user_id, s32 service_label, u32 boardId, bo
     shadnet::GetScoreFriendsRequest proto;
     proto.set_boardid(boardId);
     proto.set_includeself(includeSelf);
+    proto.set_startrank(startSerialRank);
     proto.set_max(arrayNum);
     proto.set_withcomment(commentArray != nullptr);
     proto.set_withgameinfo(infoArray != nullptr);
@@ -670,7 +674,8 @@ s32 NpHandler::GetFriendsRanking(s32 user_id, s32 service_label, u32 boardId, bo
 }
 
 s32 NpHandler::GetFriendsRankingA(s32 user_id, s32 service_label, u32 boardId, bool includeSelf,
-                                  u32 arrayNum, NpScore::OrbisNpScoreRankDataA* rankArray,
+                                  u32 startSerialRank, u32 arrayNum,
+                                  NpScore::OrbisNpScoreRankDataA* rankArray,
                                   NpScore::OrbisNpScoreComment* commentArray,
                                   NpScore::OrbisNpScoreGameInfo* infoArray,
                                   Libraries::Rtc::OrbisRtcTick* lastSortDate, u32* totalRecord,
@@ -693,6 +698,7 @@ s32 NpHandler::GetFriendsRankingA(s32 user_id, s32 service_label, u32 boardId, b
     shadnet::GetScoreFriendsRequest proto;
     proto.set_boardid(boardId);
     proto.set_includeself(includeSelf);
+    proto.set_startrank(startSerialRank);
     proto.set_max(arrayNum);
     proto.set_withcomment(commentArray != nullptr);
     proto.set_withgameinfo(infoArray != nullptr);
@@ -761,8 +767,8 @@ static u32 FillPlainRankArrayFromProto(const shadnet::GetScoreResponse& resp, u6
                  out_i, i, npid, npid.size(), r.rank(), r.score());
         out.pcId = r.pcid();
         out.serialRank = r.rank();
-        out.rank = r.rank();
-        out.highestRank = r.rank();
+        out.rank = r.sharedrank() != 0 ? r.sharedrank() : r.rank();
+        out.highestRank = out.rank;
         out.hasGameData = r.hasgamedata() ? 1 : 0;
         out.scoreValue = r.score();
         out.recordDate.tick = r.recorddate();
@@ -807,8 +813,8 @@ static u32 FillPlainRankArrayAFromProto(const shadnet::GetScoreResponse& resp, u
                  out_i, i, npid, npid.size(), r.rank(), r.score(), r.accountid());
         out.pcId = r.pcid();
         out.serialRank = r.rank();
-        out.rank = r.rank();
-        out.highestRank = r.rank();
+        out.rank = r.sharedrank() != 0 ? r.sharedrank() : r.rank();
+        out.highestRank = out.rank;
         out.hasGameData = r.hasgamedata() ? 1 : 0;
         out.scoreValue = r.score();
         out.recordDate.tick = r.recorddate();
@@ -858,8 +864,8 @@ static u32 FillPlayerRankArrayAFromProto(const shadnet::GetScoreResponse& resp, 
         out.rankData.onlineId.term = 0;
         out.rankData.pcId = r.pcid();
         out.rankData.serialRank = r.rank();
-        out.rankData.rank = r.rank();
-        out.rankData.highestRank = r.rank();
+        out.rankData.rank = r.sharedrank() != 0 ? r.sharedrank() : r.rank();
+        out.rankData.highestRank = out.rankData.rank;
         out.rankData.hasGameData = r.hasgamedata() ? 1 : 0;
         out.rankData.scoreValue = r.score();
         out.rankData.recordDate.tick = r.recorddate();
@@ -911,8 +917,8 @@ static u32 FillRankArrayFromProto(const shadnet::GetScoreResponse& resp,
         out.rankData.npId.handle.term = 0;
         out.rankData.pcId = r.pcid();
         out.rankData.serialRank = r.rank();
-        out.rankData.rank = r.rank();
-        out.rankData.highestRank = r.rank();
+        out.rankData.rank = r.sharedrank() != 0 ? r.sharedrank() : r.rank();
+        out.rankData.highestRank = out.rankData.rank;
         out.rankData.hasGameData = r.hasgamedata() ? 1 : 0;
         out.rankData.scoreValue = r.score();
         out.rankData.recordDate.tick = r.recorddate();
@@ -953,6 +959,8 @@ void NpHandler::OnScoreReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id,
     // Server-side errors take precedence over success-path parsing.
     if (error != ShadNet::ErrorType::NoError) {
         s32 orbis_err = ORBIS_NP_COMMUNITY_ERROR_BAD_RESPONSE;
+        const bool is_get_data = cmd == ShadNet::CommandType::GetScoreData ||
+                                 cmd == ShadNet::CommandType::GetScoreGameDataByAccId;
         switch (error) {
         case ShadNet::ErrorType::ScoreNotBest:
             orbis_err = ORBIS_NP_COMMUNITY_SERVER_ERROR_NOT_BEST_SCORE;
@@ -960,8 +968,24 @@ void NpHandler::OnScoreReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id,
         case ShadNet::ErrorType::ScoreInvalid:
             orbis_err = ORBIS_NP_COMMUNITY_SERVER_ERROR_INVALID_SCORE;
             break;
+        case ShadNet::ErrorType::ScoreHasData:
+            orbis_err = ORBIS_NP_COMMUNITY_SERVER_ERROR_GAME_DATA_ALREADY_EXISTS;
+            break;
+        case ShadNet::ErrorType::TooLarge:
+            orbis_err = ORBIS_NP_COMMUNITY_SERVER_ERROR_TOO_LARGE_DATA;
+            break;
+        case ShadNet::ErrorType::CondFail:
+            // RecordScore: the stored score is newer than compareDate.
+            orbis_err = ORBIS_NP_COMMUNITY_SERVER_ERROR_CONDITIONS_NOT_SATISFIED;
+            break;
         case ShadNet::ErrorType::NotFound:
-            orbis_err = ORBIS_NP_COMMUNITY_SERVER_ERROR_RANKING_BOARD_MASTER_NOT_FOUND;
+            if (is_get_data) {
+                orbis_err = ORBIS_NP_COMMUNITY_SERVER_ERROR_RANKING_GAME_DATA_MASTER_NOT_FOUND;
+            } else if (cmd == ShadNet::CommandType::RecordScoreData) {
+                orbis_err = ORBIS_NP_COMMUNITY_SERVER_ERROR_RANKING_STORE_NOT_FOUND;
+            } else {
+                orbis_err = ORBIS_NP_COMMUNITY_SERVER_ERROR_RANKING_BOARD_MASTER_NOT_FOUND;
+            }
             break;
         case ShadNet::ErrorType::Unauthorized:
             orbis_err = ORBIS_NP_COMMUNITY_SERVER_ERROR_FORBIDDEN;
@@ -1025,15 +1049,20 @@ void NpHandler::OnScoreReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id,
         if (pending.totalSizeOut != nullptr) {
             *pending.totalSizeOut = stored_size;
         }
-        const u64 start = std::min<u64>(req->gameDataRecvOffset, stored_size);
         u64 copy_n = 0;
         if (pending.dataOut != nullptr && pending.recvSize > 0) {
-            copy_n = std::min<u64>(static_cast<u64>(stored_size) - start, pending.recvSize);
-            std::memcpy(pending.dataOut, body.data() + 4 + start, static_cast<size_t>(copy_n));
+            copy_n = std::min<u64>(static_cast<u64>(stored_size), pending.recvSize);
+            std::memcpy(pending.dataOut, body.data() + 4, static_cast<size_t>(copy_n));
         }
-        req->gameDataRecvOffset = (copy_n < pending.recvSize) ? 0 : start + copy_n;
-        LOG_INFO(NpHandler, "{} user_id={} pkt_id={} storedSize={} offset={} recvSize={} got={}",
-                 cmd_name, user_id, pkt_id, stored_size, start, pending.recvSize, copy_n);
+        if (copy_n < pending.recvSize) {
+            req->gameDataRecvOffset = 0;
+            req->gameDataRecvCache.clear();
+        } else {
+            req->gameDataRecvOffset = copy_n;
+            req->gameDataRecvCache.assign(body.begin() + 4, body.begin() + 4 + stored_size);
+        }
+        LOG_INFO(NpHandler, "{} user_id={} pkt_id={} storedSize={} recvSize={} got={}", cmd_name,
+                 user_id, pkt_id, stored_size, pending.recvSize, copy_n);
         req->SetResult(static_cast<s32>(copy_n));
         break;
     }
