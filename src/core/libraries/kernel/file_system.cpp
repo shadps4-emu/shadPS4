@@ -246,6 +246,7 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
     const std::string& path = *sanitized_path;
     u32 handle = h->CreateHandle();
     auto* file = h->GetFile(handle);
+    file->m_flags = flags;
 
     if (path.starts_with("/dev/")) {
         for (const auto& [prefix, factory] : available_device) {
@@ -290,6 +291,7 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
             }
             // Create a file if it doesn't exist
             Common::FS::IOFile out(file->m_host_name, Common::FS::FileAccessMode::Create);
+            mnt->InvalidateCache(file->m_guest_name);
         }
     } else if (!exists) {
         // If we're not creating a file, and it doesn't exist, return ENOENT
@@ -418,10 +420,12 @@ s32 PS4_SYSV_ABI close(s32 fd) {
         return Libraries::Net::KernelClose(fd);
     }
     ReleaseFlockState(file);
-    if (file->type == Core::FileSys::FileType::Regular) {
-        file->handle.reset();
+    if (file->ref_count <= 1) {
+        if (file->type == Core::FileSys::FileType::Regular) {
+            file->handle.reset();
+        }
+        file->is_opened = false;
     }
-    file->is_opened = false;
     LOG_INFO(Kernel_Fs, "Closing {}", file->m_guest_name);
     // FIXME: Lock file mutex before deleting it?
     h->DeleteHandle(fd);
@@ -439,6 +443,143 @@ s32 PS4_SYSV_ABI sceKernelClose(s32 fd) {
         return ErrnoToSceKernelError(*__Error());
     }
     return result;
+}
+
+s32 PS4_SYSV_ABI posix_fcntl(s32 fd, s32 cmd, s64 arg) {
+    LOG_TRACE(Kernel_Fs, "fd = {}, cmd = {}, arg = {:#x}", fd, cmd, arg);
+
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    auto* file = h->GetFile(fd);
+    if (file == nullptr) {
+        *__Error() = POSIX_EBADF;
+        return -1;
+    }
+
+    switch (cmd) {
+    case ORBIS_KERNEL_F_DUPFD:
+    case ORBIS_KERNEL_F_DUPFD_CLOEXEC: {
+        if (arg < 0 || arg >= 1024) {
+            *__Error() = POSIX_EINVAL;
+            return -1;
+        }
+        const bool cloexec = (cmd == ORBIS_KERNEL_F_DUPFD_CLOEXEC);
+        s32 new_fd = h->DuplicateHandleFrom(fd, static_cast<s32>(arg), cloexec);
+        if (new_fd < 0) {
+            *__Error() = POSIX_EMFILE;
+            return -1;
+        }
+        if (file->type == Core::FileSys::FileType::Socket) {
+            Libraries::Net::KernelDuplicate(fd, new_fd);
+        }
+        return new_fd;
+    }
+    case ORBIS_KERNEL_F_DUP2FD:
+    case ORBIS_KERNEL_F_DUP2FD_CLOEXEC: {
+        if (arg < 0 || arg >= 1024) {
+            *__Error() = POSIX_EBADF;
+            return -1;
+        }
+        if (fd == arg) {
+            return fd;
+        }
+        if (h->GetFile(static_cast<s32>(arg)) != nullptr) {
+            posix_close(static_cast<s32>(arg));
+        }
+        const bool cloexec = (cmd == ORBIS_KERNEL_F_DUP2FD_CLOEXEC);
+        s32 new_fd = h->DuplicateHandleTo(fd, static_cast<s32>(arg), cloexec);
+        if (new_fd < 0) {
+            *__Error() = POSIX_EMFILE;
+            return -1;
+        }
+        if (file->type == Core::FileSys::FileType::Socket) {
+            Libraries::Net::KernelDuplicate(fd, new_fd);
+        }
+        return new_fd;
+    }
+    case ORBIS_KERNEL_F_GETFD: {
+        return h->GetFdFlags(fd);
+    }
+    case ORBIS_KERNEL_F_SETFD: {
+        h->SetFdFlags(fd, static_cast<s32>(arg));
+        return 0;
+    }
+    case ORBIS_KERNEL_F_GETFL: {
+        if (file->type == Core::FileSys::FileType::Socket) {
+            return Libraries::Net::KernelFcntl(fd, cmd, arg);
+        }
+        return file->m_flags.load();
+    }
+    case ORBIS_KERNEL_F_SETFL: {
+        if (file->type == Core::FileSys::FileType::Socket) {
+            return Libraries::Net::KernelFcntl(fd, cmd, arg);
+        }
+        constexpr s32 settable =
+            ORBIS_KERNEL_O_NONBLOCK | ORBIS_KERNEL_O_APPEND | ORBIS_KERNEL_O_DIRECT;
+        s32 current = file->m_flags.load();
+        s32 new_flags = (current & ~settable) | (static_cast<s32>(arg) & settable);
+        file->m_flags.store(new_flags);
+        return 0;
+    }
+    case ORBIS_KERNEL_F_GETOWN: {
+        return 1;
+    }
+    case ORBIS_KERNEL_F_SETOWN: {
+        return 0;
+    }
+    case ORBIS_KERNEL_F_OGETLK:
+    case ORBIS_KERNEL_F_GETLK: {
+        if (arg != 0) {
+            auto* fl = reinterpret_cast<OrbisKernelFlock*>(arg);
+            fl->l_type = ORBIS_KERNEL_F_UNLCK;
+        }
+        return 0;
+    }
+    case ORBIS_KERNEL_F_OSETLK:
+    case ORBIS_KERNEL_F_OSETLKW:
+    case ORBIS_KERNEL_F_SETLK:
+    case ORBIS_KERNEL_F_SETLKW: {
+        return 0;
+    }
+    case ORBIS_KERNEL_F_READAHEAD:
+    case ORBIS_KERNEL_F_RDAHEAD: {
+        return 0;
+    }
+    default:
+        LOG_WARNING(Kernel_Fs, "Unsupported fcntl cmd = {} on fd = {}", cmd, fd);
+        *__Error() = POSIX_EINVAL;
+        return -1;
+    }
+}
+
+s32 PS4_SYSV_ABI sceKernelFcntl(s32 fd, s32 cmd, s64 arg) {
+    s32 result = posix_fcntl(fd, cmd, arg);
+    if (result < 0) {
+        LOG_ERROR(Kernel_Fs, "fd = {}, cmd = {}, error = {}", fd, cmd, *__Error());
+        return ErrnoToSceKernelError(*__Error());
+    }
+    return result;
+}
+
+s32 PS4_SYSV_ABI posix_dup(s32 old_fd) {
+    LOG_TRACE(Kernel_Fs, "old_fd = {}", old_fd);
+    return posix_fcntl(old_fd, ORBIS_KERNEL_F_DUPFD, 0);
+}
+
+s32 PS4_SYSV_ABI posix_dup2(s32 old_fd, s32 new_fd) {
+    LOG_TRACE(Kernel_Fs, "old_fd = {}, new_fd = {}", old_fd, new_fd);
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    if (h->GetFile(old_fd) == nullptr) {
+        *__Error() = POSIX_EBADF;
+        return -1;
+    }
+    if (new_fd < 0 || new_fd >= 1024) {
+        *__Error() = POSIX_EBADF;
+        return -1;
+    }
+    if (old_fd == new_fd) {
+        return new_fd;
+    }
+    return posix_fcntl(old_fd, ORBIS_KERNEL_F_DUP2FD, new_fd);
 }
 
 s64 PS4_SYSV_ABI write(s32 fd, const void* buf, u64 nbytes) {
@@ -826,6 +967,7 @@ s32 PS4_SYSV_ABI posix_mkdir(const char* path, u16 mode) {
         return -1;
     }
 
+    mnt->InvalidateCache(sanitized_path);
     return ORBIS_OK;
 }
 
@@ -892,6 +1034,7 @@ s32 PS4_SYSV_ABI posix_rmdir(const char* path) {
         *__Error() = (ec.value() == EACCES || ec.value() == EPERM) ? POSIX_EACCES : POSIX_EIO;
         return -1;
     }
+    mnt->InvalidateCache(sanitized_path);
     return ORBIS_OK;
 }
 
@@ -1557,12 +1700,30 @@ s32 PS4_SYSV_ABI posix_rename(const char* from, const char* to) {
         *__Error() = POSIX_EROFS;
         return -1;
     }
+    std::string dst_guest(to);
+    while (dst_guest.length() > 1 && dst_guest.back() == '/') {
+        dst_guest.pop_back();
+    }
+    const auto dst_parent = fs::path(dst_guest).parent_path().generic_string();
+    if (!mnt->IsDirectory(dst_parent)) {
+        *__Error() = mnt->Exists(dst_parent) ? POSIX_ENOTDIR : POSIX_ENOENT;
+        return -1;
+    }
     if (src_path == dst_path ||
         (fs::exists(dst_path, ec) && fs::equivalent(src_path, dst_path, ec))) {
         return ORBIS_OK;
     }
     const bool src_is_dir = fs::is_directory(src_path, ec);
     const bool dst_is_dir = fs::is_directory(dst_path, ec);
+
+    if (src_is_dir) {
+        // A directory can't be moved into itself.
+        const auto rel = dst_path.lexically_relative(src_path);
+        if (!rel.empty() && *rel.begin() != "..") {
+            *__Error() = POSIX_EINVAL;
+            return -1;
+        }
+    }
 
     if (fs::exists(dst_path, ec)) {
         if (src_is_dir && !dst_is_dir) {
@@ -1620,6 +1781,9 @@ s32 PS4_SYSV_ABI posix_rename(const char* from, const char* to) {
         file->m_host_name = dst_path;
         file->m_guest_name = to;
     }
+
+    mnt->InvalidateCache(from);
+    mnt->InvalidateCache(to);
 
     return ORBIS_OK;
 }
@@ -2150,6 +2314,8 @@ s32 PS4_SYSV_ABI posix_unlink(const char* path) {
         host->Unlink();
     }
 
+    mnt->InvalidateCache(path);
+
     LOG_INFO(Kernel_Fs, "Unlinked {}", path);
     return ORBIS_OK;
 }
@@ -2380,6 +2546,16 @@ void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("AUXVxWeJU-A", "libkernel", 1, "libkernel", sceKernelUnlink);
     LIB_FUNCTION("T8fER+tIGgk", "libScePosix", 1, "libkernel", posix_select);
     LIB_FUNCTION("T8fER+tIGgk", "libkernel", 1, "libkernel", posix_select);
+    LIB_FUNCTION("8nY19bKoiZk", "libkernel", 1, "libkernel", posix_fcntl);
+    LIB_FUNCTION("8nY19bKoiZk", "libScePosix", 1, "libkernel", posix_fcntl);
+    LIB_FUNCTION("t0fXUzq61Z4", "libkernel", 1, "libkernel", posix_fcntl);
+    LIB_FUNCTION("t0fXUzq61Z4", "libScePosix", 1, "libkernel", posix_fcntl);
+    LIB_FUNCTION("SoZkxZkCHaw", "libkernel", 1, "libkernel", sceKernelFcntl);
+    LIB_FUNCTION("iiQjzvfWDq0", "libkernel", 1, "libkernel", posix_dup);
+    LIB_FUNCTION("iiQjzvfWDq0", "libScePosix", 1, "libkernel", posix_dup);
+    LIB_FUNCTION("wdUufa9g-D8", "libkernel", 1, "libkernel", posix_dup2);
+    LIB_FUNCTION("wdUufa9g-D8", "libScePosix", 1, "libkernel", posix_dup2);
+    LIB_FUNCTION("W8f1adVl+48", "libkernel", 1, "libkernel", posix_dup2);
 }
 
 } // namespace Libraries::Kernel

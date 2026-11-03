@@ -218,6 +218,7 @@ public:
 
     virtual std::filesystem::path RootPath() const = 0;
     virtual std::optional<std::vector<u8>> ReadFile(std::string_view rel_path) const = 0;
+    virtual void InvalidateCache(std::string_view rel_path = "") {}
 };
 
 // Equal identities get the same guest inode for the lifetime of the process.
