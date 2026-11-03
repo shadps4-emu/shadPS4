@@ -51,6 +51,8 @@ s32 PS4_SYSV_ABI sceJpegDecParseHeader(const OrbisJpegDecParseParam* param,
     u32 width = 0;
     u32 height = 0;
     u16 num_components = 3;
+    u8 component_id[4] = {1, 2, 3, 0};
+    u8 sampling_factor[4] = {0x22, 0x11, 0x11, 0};
     u32 pos = 2;
     while (pos + 4 < size) {
         if (ptr[pos] != 0xFF) {
@@ -67,6 +69,12 @@ s32 PS4_SYSV_ABI sceJpegDecParseHeader(const OrbisJpegDecParseParam* param,
                 height = (static_cast<u32>(ptr[pos + 5]) << 8) | ptr[pos + 6];
                 width = (static_cast<u32>(ptr[pos + 7]) << 8) | ptr[pos + 8];
                 num_components = ptr[pos + 9];
+                for (u16 c = 0; c < num_components && c < 4; ++c) {
+                    if (pos + 10 + c * 3 + 1 < size) {
+                        component_id[c] = ptr[pos + 10 + c * 3];
+                        sampling_factor[c] = ptr[pos + 10 + c * 3 + 1];
+                    }
+                }
             }
             break;
         }
@@ -78,19 +86,40 @@ s32 PS4_SYSV_ABI sceJpegDecParseHeader(const OrbisJpegDecParseParam* param,
         return ORBIS_JPEG_DEC_ERROR_DECODE_ERROR;
     }
 
+    OrbisJpegDecColorSpace color_space = OrbisJpegDecColorSpace::Unknown;
+    if (num_components == 1) {
+        color_space = OrbisJpegDecColorSpace::Grayscale;
+    } else if (num_components == 3) {
+        color_space = OrbisJpegDecColorSpace::Ycc;
+    }
+
+    u32 required_decode_mode = 0;
+    if (color_space == OrbisJpegDecColorSpace::Grayscale) {
+        required_decode_mode = 1;
+    } else if (color_space == OrbisJpegDecColorSpace::Ycc) {
+        u8 max_h = 1;
+        for (u16 c = 0; c < num_components && c < 4; ++c) {
+            max_h = std::max(max_h, static_cast<u8>(sampling_factor[c] >> 4));
+        }
+        const u32 scale = (max_h > 0) ? (96 / (max_h * 8)) : 12;
+        u32 total_density = 0;
+        for (u16 c = 0; c < 3 && c < num_components; ++c) {
+            const u8 h = sampling_factor[c] >> 4;
+            const u8 v = sampling_factor[c] & 0xF;
+            total_density += static_cast<u32>(h) * v;
+        }
+        required_decode_mode = (total_density * scale < 0x25) ? 1 : 2;
+    }
+
     std::memset(image_info, 0, sizeof(OrbisJpegDecImageInfo));
     image_info->image_width = width;
     image_info->image_height = height;
-    image_info->color_space =
-        (num_components == 1) ? OrbisJpegDecColorSpace::Grayscale : OrbisJpegDecColorSpace::Ycc;
+    image_info->color_space = color_space;
     image_info->num_components = num_components;
-    image_info->component_id[0] = 1;
-    image_info->component_id[1] = 2;
-    image_info->component_id[2] = 3;
-    image_info->sampling_factor[0] = 0x22;
-    image_info->sampling_factor[1] = 0x11;
-    image_info->sampling_factor[2] = 0x11;
+    std::memcpy(image_info->component_id, component_id, sizeof(component_id));
+    std::memcpy(image_info->sampling_factor, sampling_factor, sizeof(sampling_factor));
     image_info->decode_mode = std::to_underlying(param->decode_mode);
+    image_info->required_decode_mode = required_decode_mode;
     image_info->output_width = (width + ratio - 1) / ratio;
     image_info->output_height = (height + ratio - 1) / ratio;
     return ORBIS_OK;
@@ -300,11 +329,12 @@ s32 PS4_SYSV_ABI sceJpegDecDecode(OrbisJpegDecHandle handle, const OrbisJpegDecD
         image_info->sampling_factor[1] = 0x11;
         image_info->sampling_factor[2] = 0x11;
         image_info->decode_mode = std::to_underlying(param->decode_mode);
+        image_info->required_decode_mode = 1;
         image_info->output_width = out_w;
         image_info->output_height = out_h;
     }
 
-    return ORBIS_OK;
+    return static_cast<s32>((out_w << 16) | (out_h & 0xFFFF));
 }
 
 s32 PS4_SYSV_ABI sceJpegDecDecodeWithInputControl(OrbisJpegDecHandle handle,
