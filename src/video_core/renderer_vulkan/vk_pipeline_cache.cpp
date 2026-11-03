@@ -176,6 +176,7 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(HwStage stage, SwStag
                 ? regs.aa_config.NumSamples()
                 : 1;
         info.hw.fs.z_export_format = regs.z_export_format;
+        info.hw.fs.color_shader_mask = regs.color_shader_mask;
         u8 stencil_ref_export_enable = regs.depth_shader_control.stencil_op_val_export_enable |
                                        regs.depth_shader_control.stencil_test_val_export_enable;
         info.hw.fs.mrtz_mask = regs.depth_shader_control.z_export_enable |
@@ -435,7 +436,8 @@ bool PipelineCache::RefreshGraphicsKey() {
         color_buffer.data_format = col_buf.GetDataFmt();
         color_buffer.num_format = col_buf.GetNumberFmt();
         color_buffer.num_conversion = col_buf.GetNumberConversion();
-        color_buffer.export_format = regs.color_export_format.GetFormat(cb);
+        color_buffer.export_format =
+            regs.color_export_format.GetFormat(regs.color_shader_mask.GetExport(cb));
         color_buffer.swizzle = col_buf.Swizzle();
 
         const auto& bc = regs.blend_control[cb];
@@ -529,7 +531,20 @@ bool PipelineCache::RefreshGraphicsStages() {
     bind_stage(HwStage::Fragment, SwStage::Fragment);
 
     const auto* fs_info = infos[static_cast<u32>(SwStage::Fragment)];
-    key.mrt_mask = fs_info ? fs_info->mrt_mask : 0u;
+    key.mrt_mask = 0;
+    if (fs_info && runtime_infos[u32(SwStage::Fragment)].hw.fs.dual_source_blending) {
+        key.mrt_mask = (fs_info->mrt_mask & 0x3) != 0;
+    } else if (fs_info) {
+        for (u32 export_id = 0; export_id < AmdGpu::NUM_COLOR_BUFFERS; ++export_id) {
+            if ((fs_info->mrt_mask & (1u << export_id)) == 0) {
+                continue;
+            }
+            const auto target = regs.color_shader_mask.GetTarget(export_id);
+            if (target < AmdGpu::NUM_COLOR_BUFFERS) {
+                key.mrt_mask |= 1u << target;
+            }
+        }
+    }
     key.num_color_attachments = std::bit_width(key.mrt_mask);
 
     switch (regs.stage_enable.raw) {
