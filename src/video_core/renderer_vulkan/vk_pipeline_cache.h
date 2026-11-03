@@ -105,6 +105,8 @@ private:
     bool RefreshGraphicsKey();
     bool RefreshGraphicsStages();
     bool RefreshComputeKey();
+    bool CheckSampledImageArrayLimits(std::span<const Shader::Info* const> stages,
+                                      u32 color_attachments) const;
 
     void DumpShader(std::span<const u32> code, u64 hash, Shader::HwStage stage, size_t perm_idx,
                     std::string_view ext);

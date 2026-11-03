@@ -130,6 +130,37 @@ struct ShaderParams {
         return pointer;
     }
 
+    std::optional<u32> ImageArraySize(u32 user_data_reg, u32 first_dword = 0) const {
+        const auto pointer = FindSrtPointer(user_data_reg);
+        if (!pointer || first_dword >= pointer->size_in_dwords) {
+            return std::nullopt;
+        }
+        u64 byte_offset{};
+        const u64 target = u64(first_dword) * sizeof(u32);
+        for (size_t pos = 0; pos < pointer->layout.size() && byte_offset <= target;) {
+            const u8 type = pointer->layout[pos];
+            if (byte_offset == target && (type & 0xf) == 0xf) {
+                u32 count{};
+                while (count < pointer->layout.size() - pos &&
+                       pointer->layout[pos + count] == type) {
+                    ++count;
+                }
+                if (count == 0 || count > (pointer->size_in_dwords - first_dword) / 8) {
+                    return std::nullopt;
+                }
+                return count;
+            }
+            const auto element = ReadSrtElement(pointer->layout.subspan(pos));
+            if (!element ||
+                byte_offset + element->size_in_bytes > u64(pointer->size_in_dwords) * sizeof(u32)) {
+                return std::nullopt;
+            }
+            byte_offset += element->size_in_bytes;
+            pos += element->metadata_bytes;
+        }
+        return std::nullopt;
+    }
+
     VAddr Base() const noexcept {
         return reinterpret_cast<VAddr>(code.data());
     }
