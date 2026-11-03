@@ -99,6 +99,7 @@ public:
     }
 
     std::optional<std::vector<u8>> ReadFile(std::string_view rel_path) const override;
+    void InvalidateCache(std::string_view rel_path = "") override;
 
 private:
     std::filesystem::path Resolve(std::string_view rel_path) const;

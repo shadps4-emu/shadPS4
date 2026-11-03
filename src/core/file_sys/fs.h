@@ -96,10 +96,14 @@ public:
     /// Normalizes and validates a guest path (resolves dot and dot-dot components).
     static std::optional<std::string> SanitizeGuestPath(std::string_view path);
 
+    /// Invalidates path and case caches for the given guest path or all caches if empty.
+    void InvalidateCache(std::string_view guest_path = "");
     const MntPair* GetMountFromHostPath(const std::string& host_path) {
+        const auto host_norm = std::filesystem::path(host_path).generic_string();
         std::scoped_lock lock{m_mutex};
         const auto it = std::ranges::find_if(m_mnt_pairs, [&](const MntPair& mount) {
-            return host_path.starts_with(std::string{fmt::UTF(mount.host_path.u8string()).data});
+            const auto mnt_host = mount.host_path.generic_string();
+            return host_norm == mnt_host || host_norm.starts_with(mnt_host + "/");
         });
         return it == m_mnt_pairs.end() ? nullptr : &*it;
     }
@@ -117,10 +121,7 @@ public:
             // against only part of the mount path.
             return guest_path == mount.mount || guest_path.starts_with(mount.mount + "/");
         });
-        if (it == m_mnt_pairs.end()) {
-            return nullptr;
-        }
-        return &*it;
+        return it == m_mnt_pairs.end() ? nullptr : &*it;
     }
 
 private:
