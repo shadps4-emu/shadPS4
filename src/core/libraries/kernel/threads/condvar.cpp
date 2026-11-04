@@ -114,7 +114,7 @@ int PthreadCond::Wait(PthreadMutexT* mutex, const OrbisKernelTimespec* abstime, 
     }
 
     Pthread* curthread = g_curthread;
-    ASSERT_MSG(curthread->wchan == nullptr, "Thread was already on queue.");
+    ASSERT_MSG(curthread->Wchan() == nullptr, "Thread was already on queue.");
     PthreadTestCancel();
     SleepqLock(this);
 
@@ -146,7 +146,7 @@ int PthreadCond::Wait(PthreadMutexT* mutex, const OrbisKernelTimespec* abstime, 
     int error = 0;
     bool first_sleep = true;
     for (;;) {
-        curthread->cancel_point = true;
+        curthread->CancelPoint() = true;
         curthread->ClearWake();
         const bool cancel_pending = curthread->ShouldCancel();
         SleepqUnlock(this);
@@ -171,7 +171,7 @@ int PthreadCond::Wait(PthreadMutexT* mutex, const OrbisKernelTimespec* abstime, 
             }
         }
         SleepqLock(this);
-        if (curthread->wchan == nullptr) {
+        if (curthread->Wchan() == nullptr) {
             error = 0;
             break;
         } else if (curthread->ShouldCancel()) {
@@ -184,7 +184,7 @@ int PthreadCond::Wait(PthreadMutexT* mutex, const OrbisKernelTimespec* abstime, 
             SleepqUnlock(this);
             curthread->mutex_obj = nullptr;
             mp->CvLock(recurse);
-            curthread->cancel_point = false;
+            curthread->CancelPoint() = false;
             PthreadTestCancel();
             return 0;
         } else if (error == POSIX_ETIMEDOUT) {
@@ -200,7 +200,7 @@ int PthreadCond::Wait(PthreadMutexT* mutex, const OrbisKernelTimespec* abstime, 
     SleepqUnlock(this);
     curthread->mutex_obj = nullptr;
     const int error2 = mp->CvLock(recurse);
-    curthread->cancel_point = false;
+    curthread->CancelPoint() = false;
     PthreadCancelInterrupt();
     if (error == 0) {
         error = error2;
@@ -241,7 +241,7 @@ int PthreadCond::Signal(Pthread* thread) {
         if (ret != ORBIS_OK) {
             return ret;
         }
-        thread->lock->unlock();
+        thread->GetLock().unlock();
     }
 
     SleepqLock(this);
@@ -274,12 +274,12 @@ int PthreadCond::Signal(Pthread* thread) {
     PthreadMutex* mp = td->mutex_obj;
     has_user_waiters = SleepqRemove(sq, td);
 
-    WakeSemaphore* wake_address = &td->wake_sema;
+    WakeSemaphore* wake_address = &td->GetHostContext()->wake_sema;
     if (mp != nullptr && curthread != nullptr && mp->m_owner.load() == curthread) {
         if (curthread->nwaiter_defer >= Pthread::MaxDeferWaiters) {
             curthread->WakeAll();
         }
-        curthread->defer_waiters[curthread->nwaiter_defer++] = &td->wake_sema;
+        curthread->defer_waiters[curthread->nwaiter_defer++] = &td->GetHostContext()->wake_sema;
         mp->m_flags |= PthreadMutexFlags::Deferred;
         wake_address = nullptr;
     }
@@ -311,7 +311,7 @@ int PthreadCond::Broadcast() {
             if (curthread->nwaiter_defer >= Pthread::MaxDeferWaiters) {
                 curthread->WakeAll();
             }
-            curthread->defer_waiters[curthread->nwaiter_defer++] = &td->wake_sema;
+            curthread->defer_waiters[curthread->nwaiter_defer++] = &td->GetHostContext()->wake_sema;
             mp->m_flags |= PthreadMutexFlags::Deferred;
         } else {
             if (ba2->count >= Pthread::MaxDeferWaiters) {
@@ -320,7 +320,7 @@ int PthreadCond::Broadcast() {
                 }
                 ba2->count = 0;
             }
-            ba2->immediate_wakes[ba2->count++] = &td->wake_sema;
+            ba2->immediate_wakes[ba2->count++] = &td->GetHostContext()->wake_sema;
         }
     };
 

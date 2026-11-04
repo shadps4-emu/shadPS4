@@ -224,7 +224,7 @@ bool AccurateSleep(const std::chrono::nanoseconds duration, std::chrono::nanosec
 // Sets the debugger-visible name of the current thread.
 void SetCurrentThreadName(const char* name) {
     if (Libraries::Kernel::g_curthread) {
-        Libraries::Kernel::g_curthread->name = name;
+        Libraries::Kernel::g_curthread->SetName(name);
     }
     SetThreadDescription(GetCurrentThread(), UTF8ToUTF16W(name).data());
 }
@@ -239,7 +239,7 @@ void SetThreadName(void* thread, const char* name) {
 #if !defined(_WIN32) || defined(_MSC_VER)
 void SetCurrentThreadName(const char* name) {
     if (Libraries::Kernel::g_curthread) {
-        Libraries::Kernel::g_curthread->name = name;
+        Libraries::Kernel::g_curthread->SetName(name);
     }
 #ifdef __APPLE__
     pthread_setname_np(name);
@@ -268,7 +268,7 @@ void SetThreadName(void* thread, const char* name) {
 #if defined(_WIN32)
 void SetCurrentThreadName(const char* name) {
     if (Libraries::Kernel::g_curthread) {
-        Libraries::Kernel::g_curthread->name = name;
+        Libraries::Kernel::g_curthread->SetName(name);
     }
     // Do Nothing on MinGW
 }
@@ -300,12 +300,12 @@ void AccurateTimer::End() {
 
 std::string GetCurrentThreadName() {
     using namespace Libraries::Kernel;
-    if (g_curthread && !g_curthread->name.empty()) {
+    if (g_curthread && !g_curthread->GetName().empty()) {
         if (g_curthread->tcb->tcb_fiber) {
-            return fmt::format("{}@@{}", g_curthread->name,
+            return fmt::format("{}@@{}", g_curthread->GetName(),
                                g_curthread->tcb->tcb_fiber->current_fiber->name);
         }
-        return g_curthread->name;
+        return g_curthread->GetName();
     }
 #ifdef _WIN32
     PWSTR name{};
