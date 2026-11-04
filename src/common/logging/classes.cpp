@@ -187,6 +187,8 @@ std::string_view NameOf(Class log_class) {
         return "Lib.Hmd";
     case Class::Lib_HmdSetupDialog:
         return "Lib.HmdSetupDialog";
+    case Class::Lib_VrServiceDialog:
+        return "Lib.VrServiceDialog";
     case Class::Lib_SigninDialog:
         return "Lib.SigninDialog";
     case Class::Lib_Camera:
