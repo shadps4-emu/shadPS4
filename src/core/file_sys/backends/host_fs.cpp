@@ -262,4 +262,21 @@ std::optional<std::vector<u8>> HostFsBackend::ReadFile(std::string_view rel_path
     return data;
 }
 
+void HostFsBackend::InvalidateCache(std::string_view rel_path) {
+    std::scoped_lock lk{m_case_cache_mutex};
+    if (rel_path.empty()) {
+        m_case_cache.clear();
+        return;
+    }
+    const std::string prefix = Common::ToLower(std::string(rel_path));
+    const std::string prefix_slash = prefix + '/';
+    for (auto it = m_case_cache.begin(); it != m_case_cache.end();) {
+        if (it->first == prefix || it->first.starts_with(prefix_slash)) {
+            it = m_case_cache.erase(it);
+        } else {
+            ++it;
+        }
+    }
+}
+
 } // namespace Core::FileSys
