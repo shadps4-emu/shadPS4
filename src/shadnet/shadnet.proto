@@ -128,6 +128,7 @@ message RecordScoreRequest {
     int64  score    = 3;
     string comment  = 4;
     bytes  data     = 5;   // optional inline game-info blob
+    uint64 compareDate = 6;
 }
 
 message RecordScoreGameDataRequest {
@@ -168,6 +169,7 @@ message GetScoreFriendsRequest {
     uint32 max          = 3;
     bool   withComment  = 4;
     bool   withGameInfo = 5;
+    uint32 startRank    = 6;
 }
 
 message ScoreAccountIdPcId {
@@ -198,6 +200,7 @@ message ScoreRankData {
     bool   hasGameData = 5;
     uint64 recordDate  = 6;
     int64  accountId   = 7;
+    uint32 sharedRank  = 8;
 }
 
 message ScoreInfo {

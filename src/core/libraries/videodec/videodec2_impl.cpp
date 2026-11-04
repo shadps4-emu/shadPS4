@@ -28,13 +28,18 @@ void VdecDecoder::ReleaseSwsContext(SwsContext* context) {
 
 VdecDecoder::VdecDecoder(const OrbisVideodec2DecoderConfigInfo& config_info,
                          const OrbisVideodec2DecoderMemoryInfo& memory_info)
-    : m_codec_context(nullptr, &ReleaseAVCodecContext), m_sws_context(nullptr, &ReleaseSwsContext) {
-    const AVCodecID codec_id = config_info.codec_type == OrbisVideodec2CodecType::Avc
-                                   ? AV_CODEC_ID_H264
-                                   : AV_CODEC_ID_HEVC;
+    : m_codec_context(nullptr, &ReleaseAVCodecContext), m_sws_context(nullptr, &ReleaseSwsContext),
+      m_config_info(config_info) {
+    const AVCodecID codec_id = config_info.codec_type == OrbisVideodec2CodecType::Hevc
+                                   ? AV_CODEC_ID_HEVC
+                                   : AV_CODEC_ID_H264;
     const AVCodec* codec = avcodec_find_decoder(codec_id);
+    ASSERT(codec);
+
     m_codec_context = AVCodecContextPtr(avcodec_alloc_context3(codec), &ReleaseAVCodecContext);
     ASSERT(m_codec_context);
+    m_codec_context->width = config_info.max_frame_width;
+    m_codec_context->height = config_info.max_frame_height;
     m_codec_context->flags |= AV_CODEC_FLAG_COPY_OPAQUE;
 
     int res = avcodec_open2(m_codec_context.get(), codec, nullptr);
@@ -122,9 +127,9 @@ s32 VdecDecoder::Decode(const OrbisVideodec2InputData& input_data,
         frame = std::move(nv12_frame);
     }
 
-    const bool is_avc = m_codec_context->codec_id == AV_CODEC_ID_H264;
+    const bool is_hevc = m_config_info.codec_type == OrbisVideodec2CodecType::Hevc;
     const u64 info_size =
-        is_avc ? sizeof(OrbisVideodec2AvcPictureInfo) : sizeof(OrbisVideodec2HevcPictureInfo);
+        is_hevc ? sizeof(OrbisVideodec2HevcPictureInfo) : sizeof(OrbisVideodec2AvcPictureInfo);
     Videodec::CopyNV12Data((u8*)frame_buffer.frame_buffer,
                            frame_buffer.frame_buffer_size - info_size, *frame);
     frame_buffer.is_accepted = true;
@@ -136,7 +141,7 @@ s32 VdecDecoder::Decode(const OrbisVideodec2InputData& input_data,
     output_info.is_valid = true;
     output_info.is_error_frame = false;
     output_info.picture_count = 1; // TODO: 2 pictures for interlaced video
-    output_info.codec_type = is_avc ? OrbisVideodec2CodecType::Avc : OrbisVideodec2CodecType::Hevc;
+    output_info.codec_type = m_config_info.codec_type;
     output_info.frame_width = width;
     output_info.frame_pitch = pitch;
     output_info.frame_height = height;
@@ -149,11 +154,11 @@ s32 VdecDecoder::Decode(const OrbisVideodec2InputData& input_data,
         output_info.frame_pitch_in_bytes = pitch;
     }
 
-    if (is_avc) {
-        auto& picture_info = *(OrbisVideodec2AvcPictureInfo*)((u8*)output_info.frame_buffer +
-                                                              output_info.frame_buffer_size);
-
+    if (is_hevc) {
+        auto& picture_info = *(OrbisVideodec2HevcPictureInfo*)((u8*)output_info.frame_buffer +
+                                                               output_info.frame_buffer_size);
         picture_info = {};
+        picture_info.this_size = sizeof(OrbisVideodec2HevcPictureInfo);
         picture_info.is_valid = true;
 
         picture_info.pts_data = frame->pts;
@@ -165,9 +170,10 @@ s32 VdecDecoder::Decode(const OrbisVideodec2InputData& input_data,
         picture_info.frame_crop_right_offset = pitch - frame->width;
         picture_info.frame_crop_bottom_offset = height - frame->height;
     } else {
-        auto& picture_info = *(OrbisVideodec2HevcPictureInfo*)((u8*)output_info.frame_buffer +
-                                                               output_info.frame_buffer_size);
+        auto& picture_info = *(OrbisVideodec2AvcPictureInfo*)((u8*)output_info.frame_buffer +
+                                                              output_info.frame_buffer_size);
         picture_info = {};
+        picture_info.this_size = sizeof(OrbisVideodec2AvcPictureInfo);
         picture_info.is_valid = true;
 
         picture_info.pts_data = frame->pts;
@@ -207,9 +213,9 @@ s32 VdecDecoder::Flush(OrbisVideodec2FrameBuffer& frame_buffer,
         frame = std::move(nv12_frame);
     }
 
-    const bool is_avc = m_codec_context->codec_id == AV_CODEC_ID_H264;
+    const bool is_hevc = m_config_info.codec_type == OrbisVideodec2CodecType::Hevc;
     const u64 info_size =
-        is_avc ? sizeof(OrbisVideodec2AvcPictureInfo) : sizeof(OrbisVideodec2HevcPictureInfo);
+        is_hevc ? sizeof(OrbisVideodec2HevcPictureInfo) : sizeof(OrbisVideodec2AvcPictureInfo);
     Videodec::CopyNV12Data((u8*)frame_buffer.frame_buffer,
                            frame_buffer.frame_buffer_size - info_size, *frame);
     frame_buffer.is_accepted = true;
@@ -221,7 +227,7 @@ s32 VdecDecoder::Flush(OrbisVideodec2FrameBuffer& frame_buffer,
     output_info.is_valid = true;
     output_info.is_error_frame = false;
     output_info.picture_count = 1; // TODO: 2 pictures for interlaced video
-    output_info.codec_type = is_avc ? OrbisVideodec2CodecType::Avc : OrbisVideodec2CodecType::Hevc;
+    output_info.codec_type = m_config_info.codec_type;
     output_info.frame_width = width;
     output_info.frame_pitch = pitch;
     output_info.frame_height = height;
@@ -234,11 +240,11 @@ s32 VdecDecoder::Flush(OrbisVideodec2FrameBuffer& frame_buffer,
         output_info.frame_pitch_in_bytes = pitch;
     }
 
-    if (m_codec_context->codec_id == AV_CODEC_ID_H264) {
-        auto& picture_info = *(OrbisVideodec2AvcPictureInfo*)((u8*)output_info.frame_buffer +
-                                                              output_info.frame_buffer_size);
-
+    if (is_hevc) {
+        auto& picture_info = *(OrbisVideodec2HevcPictureInfo*)((u8*)output_info.frame_buffer +
+                                                               output_info.frame_buffer_size);
         picture_info = {};
+        picture_info.this_size = sizeof(OrbisVideodec2HevcPictureInfo);
         picture_info.is_valid = true;
 
         picture_info.pts_data = frame->pts;
@@ -250,9 +256,10 @@ s32 VdecDecoder::Flush(OrbisVideodec2FrameBuffer& frame_buffer,
         picture_info.frame_crop_right_offset = pitch - frame->width;
         picture_info.frame_crop_bottom_offset = height - frame->height;
     } else {
-        auto& picture_info = *(OrbisVideodec2HevcPictureInfo*)((u8*)output_info.frame_buffer +
-                                                               output_info.frame_buffer_size);
+        auto& picture_info = *(OrbisVideodec2AvcPictureInfo*)((u8*)output_info.frame_buffer +
+                                                              output_info.frame_buffer_size);
         picture_info = {};
+        picture_info.this_size = sizeof(OrbisVideodec2AvcPictureInfo);
         picture_info.is_valid = true;
 
         picture_info.pts_data = frame->pts;

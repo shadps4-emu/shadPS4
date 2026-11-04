@@ -4,8 +4,8 @@
 #pragma once
 
 #include <filesystem>
-#include <span>
 #include <string>
+#include <unordered_map>
 #include <vector>
 #include "common/endian.h"
 
@@ -16,10 +16,12 @@ constexpr u8 RIDX_VERSION = 0x1;
 
 constexpr u16 RIF_CONTENT_TYPE_PS4AL = 0x1C00;
 
+constexpr u32 RIF_SECRET_ENTITLEMENT_KEY_OFFSET = 0x70;
+
 struct RIFData {
     u32_be magic;
     u16_le version;
-    u8 unk1[0x2];
+    u16_le license_flags;
     u64_le np_account_id;
     u64_le start_timestamp;
     u64_le end_timestamp;
@@ -29,7 +31,7 @@ struct RIFData {
     u16_le content_type;
     u16_le sku_flag;
     u64_le extra_flags;
-    u8 unk2[0x1E0];
+    u8 reserved_meta[0x1E0];
     u8 disk_key_hash[0x20];
     u8 secret_encryption_iv[0x10];
     u8 encrypted_secret[0x90];
@@ -49,7 +51,7 @@ struct RIDXHeader {
     u32_le entry_count;
     u8 version;
     char service_id[0x13];
-    u8 unk1[0x4];
+    u8 reserved[0x4];
 };
 static_assert(sizeof(RIDXHeader) == 0x20);
 
@@ -57,12 +59,21 @@ struct RIDXEntry {
     char entitlement_label[0x10];
     u64_le rif_offset;
     u64_le rif_size;
-    u8 entitlement_control;
-    u8 unk1;
+    u8 entitlement_flags;
+    u8 license_type;
     u8 rif_digest[0x8];
-    u8 unk2[0x6];
+    u8 reserved[0x6];
 };
 static_assert(sizeof(RIDXEntry) == 0x30);
+
+struct RIFEntitlementKey {
+    u8 data[0x10]{};
+
+    explicit RIFEntitlementKey(const RIFData& rif_data) {
+        std::memcpy(data, &rif_data.encrypted_secret[RIF_SECRET_ENTITLEMENT_KEY_OFFSET],
+                    sizeof(data));
+    }
+};
 
 class RIF {
 public:
@@ -81,11 +92,11 @@ public:
         return service_id;
     }
 
-    const std::vector<std::string>& GetLicenseOnlyEntitlements() {
+    const std::unordered_map<std::string, RIFEntitlementKey>& GetLicenseOnlyEntitlements() {
         return license_only_entitlements;
     }
 
 private:
     std::string service_id;
-    std::vector<std::string> license_only_entitlements;
+    std::unordered_map<std::string, RIFEntitlementKey> license_only_entitlements;
 };

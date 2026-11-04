@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -24,6 +24,12 @@ struct OrbisModuleInfoForUnwind {
 };
 
 s32 PS4_SYSV_ABI sceKernelIsNeoMode();
+
+s32 PS4_SYSV_ABI sceKernelHasNeoMode();
+
+s32 PS4_SYSV_ABI sceKernelIsAuthenticNeo();
+
+s32 PS4_SYSV_ABI sceKernelSwitchToNeoMode(u32 flags);
 
 s32 PS4_SYSV_ABI sceKernelGetCompiledSdkVersion(s32* ver);
 

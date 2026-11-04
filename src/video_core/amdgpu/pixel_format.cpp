@@ -105,7 +105,7 @@ std::string_view NameOf(NumberFormat fmt) {
     case NumberFormat::Ubint:
         return "Ubint";
     case NumberFormat::Ubscaled:
-        return "Unscaled";
+        return "Ubscaled";
     default:
         UNREACHABLE();
     }

@@ -20,6 +20,8 @@
 #include "video_core/texture_cache/image_view.h"
 #include "video_core/texture_cache/texture_cache.h"
 
+#include <vulkan/vulkan_format_traits.hpp>
+
 namespace Vulkan {
 
 static Shader::PushData MakeUserData(const AmdGpu::Regs& regs) {
@@ -41,7 +43,8 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_, Runtime
       liverpool{liverpool_}, memory{Core::Memory::Instance()},
       pipeline_cache{instance, scheduler, liverpool, buffer_cache.GetSparsePageShift()},
       host_markers_enabled{EmulatorSettings.IsVkHostMarkersEnabled()},
-      guest_markers_enabled{EmulatorSettings.IsVkGuestMarkersEnabled()} {
+      guest_markers_enabled{EmulatorSettings.IsVkGuestMarkersEnabled()},
+      submit_draw_interval{EmulatorSettings.GetSubmitDrawInterval()} {
     if (!EmulatorSettings.IsNullGPU()) {
         liverpool->BindRasterizer(this);
     }
@@ -184,6 +187,7 @@ void Rasterizer::EliminateFastClear() {
 void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
     RENDERER_TRACE;
 
+    FlushPeriodically();
     scheduler.PopPendingOperations();
 
     if (!FilterDraw()) {
@@ -239,6 +243,7 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
                               u16 instance_sgpr_offset) {
     RENDERER_TRACE;
 
+    FlushPeriodically();
     scheduler.PopPendingOperations();
 
     if (!FilterDraw()) {
@@ -319,6 +324,7 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
 void Rasterizer::DispatchDirect() {
     RENDERER_TRACE;
 
+    FlushPeriodically();
     scheduler.PopPendingOperations();
 
     const auto& cs_program = liverpool->GetCsRegs();
@@ -354,6 +360,7 @@ void Rasterizer::DispatchDirect() {
 void Rasterizer::DispatchIndirect(VAddr address, u32 offset, u32 size) {
     RENDERER_TRACE;
 
+    FlushPeriodically();
     scheduler.PopPendingOperations();
 
     const auto& cs_program = liverpool->GetCsRegs();
@@ -383,6 +390,19 @@ void Rasterizer::DispatchIndirect(VAddr address, u32 offset, u32 size) {
     DebugState.IncDispatch();
 
     ResetBindings(true);
+}
+
+void Rasterizer::FlushPeriodically() {
+    if (submit_draw_interval == 0) {
+        return;
+    }
+    if (const u64 tick = scheduler.CurrentTick(); tick != last_submit_tick) {
+        last_submit_tick = tick;
+        draws_since_submit = 0;
+    }
+    if (++draws_since_submit >= submit_draw_interval) {
+        scheduler.Flush();
+    }
 }
 
 u64 Rasterizer::Flush() {
@@ -729,10 +749,11 @@ bool Rasterizer::IsComputeImageClear(const Pipeline* pipeline) {
         return false;
     }
 
-    // Image clear must be valid
+    // Image clear must be valid and number of component must match
     VideoCore::Image& image1 = texture_cache.GetImage(image1_id);
     if (image1.info.guest_size != buf1.GetSize() || image1.info.num_bits != buf1_bpp ||
-        image1.info.props.is_depth) {
+        image1.info.props.is_depth ||
+        AmdGpu::NumComponents(buf1.GetDataFmt()) != vk::componentCount(image1.info.pixel_format)) {
         return false;
     }
 
@@ -1030,12 +1051,14 @@ RenderState Rasterizer::BeginRendering(const GraphicsPipeline* pipeline) {
     state.height = instance.GetMaxFramebufferHeight();
     state.num_layers = std::numeric_limits<u16>::max();
     state.num_color_attachments = std::bit_width(key.mrt_mask);
+    bool has_attachment = false;
     for (auto cb = 0u; cb < state.num_color_attachments; ++cb) {
         auto& [image_id, desc] = cb_descs[cb];
         if (!image_id) {
             state.color_attachments[cb] = {};
             continue;
         }
+        has_attachment = true;
         auto* image = &texture_cache.GetImage(image_id);
         if (image->binding.needs_rebind) {
             image_id = bound_images.emplace_back(texture_cache.FindImage(desc));
@@ -1091,6 +1114,7 @@ RenderState Rasterizer::BeginRendering(const GraphicsPipeline* pipeline) {
     }
 
     if (auto image_id = db_desc.image_id; image_id) {
+        has_attachment = true;
         auto& desc = db_desc.desc;
         const auto htile_address = regs.depth_htile_data_base.GetAddress();
         const auto& image_view = texture_cache.FindDepthTarget(image_id, desc);
@@ -1149,8 +1173,15 @@ RenderState Rasterizer::BeginRendering(const GraphicsPipeline* pipeline) {
         state.depth_stencil_attachment = {};
     }
 
-    if (state.num_layers == std::numeric_limits<u16>::max()) {
+    // Without attachments the area stays at the max framebuffer size. Draws cannot pass the
+    // scissors, so bound it by them.
+    if (!has_attachment) {
         state.num_layers = 1;
+        const AmdGpu::Scissor scissor = regs.GetCombinedScissor();
+        if (scissor.bottom_right_x > 0 && scissor.bottom_right_y > 0) {
+            state.width = std::min<u32>(state.width, scissor.bottom_right_x);
+            state.height = std::min<u32>(state.height, scissor.bottom_right_y);
+        }
     }
 
     return state;
@@ -1332,31 +1363,7 @@ void Rasterizer::UpdateDynamicState(const GraphicsPipeline* pipeline, const bool
 void Rasterizer::UpdateViewportScissorState() const {
     const auto& regs = liverpool->regs;
 
-    const auto combined_scissor_value_tl = [](s16 scr, s16 win, s16 gen, s16 win_offset) {
-        return std::max({scr, s16(win + win_offset), s16(gen + win_offset)});
-    };
-    const auto combined_scissor_value_br = [](s16 scr, s16 win, s16 gen, s16 win_offset) {
-        return std::min({scr, s16(win + win_offset), s16(gen + win_offset)});
-    };
-    const bool enable_offset = !regs.window_scissor.window_offset_disable;
-
-    AmdGpu::Scissor scsr{};
-    scsr.top_left_x = combined_scissor_value_tl(
-        regs.screen_scissor.top_left_x, s16(regs.window_scissor.top_left_x),
-        s16(regs.generic_scissor.top_left_x),
-        enable_offset ? regs.window_offset.window_x_offset : 0);
-    scsr.top_left_y = combined_scissor_value_tl(
-        regs.screen_scissor.top_left_y, s16(regs.window_scissor.top_left_y),
-        s16(regs.generic_scissor.top_left_y),
-        enable_offset ? regs.window_offset.window_y_offset : 0);
-    scsr.bottom_right_x = combined_scissor_value_br(
-        regs.screen_scissor.bottom_right_x, regs.window_scissor.bottom_right_x,
-        regs.generic_scissor.bottom_right_x,
-        enable_offset ? regs.window_offset.window_x_offset : 0);
-    scsr.bottom_right_y = combined_scissor_value_br(
-        regs.screen_scissor.bottom_right_y, regs.window_scissor.bottom_right_y,
-        regs.generic_scissor.bottom_right_y,
-        enable_offset ? regs.window_offset.window_y_offset : 0);
+    const AmdGpu::Scissor scsr = regs.GetCombinedScissor();
 
     boost::container::static_vector<vk::Viewport, AmdGpu::NUM_VIEWPORTS> viewports;
     boost::container::static_vector<vk::Rect2D, AmdGpu::NUM_VIEWPORTS> scissors;
@@ -1426,10 +1433,10 @@ void Rasterizer::UpdateViewportScissorState() const {
                 std::max(vp_scsr.top_left_x, s16(regs.viewport_scissors[i].top_left_x));
             vp_scsr.top_left_y =
                 std::max(vp_scsr.top_left_y, s16(regs.viewport_scissors[i].top_left_y));
-            vp_scsr.bottom_right_x = std::min(AmdGpu::Scissor::Clamp(vp_scsr.bottom_right_x),
-                                              regs.viewport_scissors[i].bottom_right_x);
-            vp_scsr.bottom_right_y = std::min(AmdGpu::Scissor::Clamp(vp_scsr.bottom_right_y),
-                                              regs.viewport_scissors[i].bottom_right_y);
+            vp_scsr.bottom_right_x =
+                std::min(vp_scsr.bottom_right_x, s16(regs.viewport_scissors[i].bottom_right_x));
+            vp_scsr.bottom_right_y =
+                std::min(vp_scsr.bottom_right_y, s16(regs.viewport_scissors[i].bottom_right_y));
         }
         scissors.push_back({
             .offset = {vp_scsr.top_left_x, vp_scsr.top_left_y},

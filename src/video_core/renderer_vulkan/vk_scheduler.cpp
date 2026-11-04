@@ -132,12 +132,16 @@ void Scheduler::Wait(u64 tick) {
 }
 
 void Scheduler::PopPendingOperations() {
+    if (pending_ops_empty.load(std::memory_order_relaxed)) {
+        return;
+    }
     std::unique_lock lk(pending_ops_mutex);
     work_semaphore.Refresh();
     while (!pending_ops.empty() && work_semaphore.IsFree(pending_ops.front().gpu_tick)) {
         pending_ops.front().callback();
         pending_ops.pop();
     }
+    pending_ops_empty.store(pending_ops.empty(), std::memory_order_relaxed);
 }
 
 void Scheduler::BeginSession() {

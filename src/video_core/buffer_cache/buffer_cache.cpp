@@ -79,7 +79,7 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
         .flags =
             vk::BufferCreateFlagBits::eSparseBinding | vk::BufferCreateFlagBits::eSparseResidency,
         .size = ARENA_PAGE_SIZE,
-        .usage = ARENA_USAGE,
+        .usage = SupportedUsage(instance, ARENA_USAGE),
         .sharingMode = vk::SharingMode::eExclusive,
     };
     const vk::DeviceBufferMemoryRequirements req_info = {
@@ -146,7 +146,10 @@ void BufferCache::ReadMemory(VAddr device_addr, u64 size, bool is_write, bool as
             std::max<VAddr>(Common::AlignDown(device_addr, WindowSize), arena->cpu_addr);
         const VAddr window_end = std::min<VAddr>(
             std::max<VAddr>(window_start + WindowSize, device_addr + size), arena_end);
-        DownloadMemory(arena, window_start, window_end - window_start, is_write, async);
+        DownloadMemory(arena, window_start, window_end - window_start, async);
+        if (is_write) {
+            memory_tracker->MarkRegionAsCpuModified(device_addr, size);
+        }
     };
     if (assume_locks) {
         flush_request();
@@ -155,8 +158,7 @@ void BufferCache::ReadMemory(VAddr device_addr, u64 size, bool is_write, bool as
     }
 }
 
-void BufferCache::DownloadMemory(const Buffer* arena, VAddr device_addr, u64 size, bool is_write,
-                                 bool async) {
+void BufferCache::DownloadMemory(const Buffer* arena, VAddr device_addr, u64 size, bool async) {
     boost::container::small_vector<vk::BufferCopy, 1> copies;
     u64 total_size_bytes = 0;
     const VAddr arena_base = arena->cpu_addr;
@@ -187,7 +189,7 @@ void BufferCache::DownloadMemory(const Buffer* arena, VAddr device_addr, u64 siz
     }
     runtime.CopyBuffer(arena, download.buffer, copies);
 
-    const auto write_data = [this, arena_base, device_addr, size, download, is_write, async,
+    const auto write_data = [this, arena_base, device_addr, size, download, async,
                              copies = std::move(copies)] {
         download.Invalidate();
         for (const auto& copy : copies) {
@@ -196,9 +198,6 @@ void BufferCache::DownloadMemory(const Buffer* arena, VAddr device_addr, u64 siz
                                     copy.size);
         }
         memory_tracker->UnmarkRegionAsGpuModified(device_addr, size, false);
-        if (is_write) {
-            memory_tracker->MarkRegionAsCpuModified(device_addr, size);
-        }
 
         if (async) {
             staging_pool.FreeDeferred(download);
@@ -394,11 +393,12 @@ void BufferCache::EnsureResident(const Buffer* arena, u64 first_block, u64 last_
         return;
     }
 
+    const bool has_bda = instance.IsBufferDeviceAddressSupported();
     const vk::MemoryAllocateFlagsInfo alloc_flags = {
         .flags = vk::MemoryAllocateFlagBits::eDeviceAddress,
     };
     const vk::MemoryAllocateInfo alloc_info = {
-        .pNext = &alloc_flags,
+        .pNext = has_bda ? &alloc_flags : nullptr,
         .allocationSize = resident_blocks << block_shift,
         .memoryTypeIndex = arena_memory_type_index,
     };
@@ -430,6 +430,9 @@ void BufferCache::EnsureResident(const Buffer* arena, u64 first_block, u64 last_
         });
         memory_offset += bind.size;
 
+        if (!has_bda) {
+            continue;
+        }
         for (u32 block = 0; block < bind.size; block += block_size) {
             *(bda_addrs++) = arena->BufferDeviceAddress() + bind.resourceOffset + block;
         }
@@ -438,8 +441,10 @@ void BufferCache::EnsureResident(const Buffer* arena, u64 first_block, u64 last_
         offset += copy_size;
     }
 
-    staging.Flush();
-    runtime.CopyBuffer(staging.buffer, bda_pagetable_buffer.get(), copies);
+    if (has_bda) {
+        staging.Flush();
+        runtime.CopyBuffer(staging.buffer, bda_pagetable_buffer.get(), copies);
+    }
 }
 
 bool BufferCache::SynchronizeMemory(const Buffer* arena, VAddr device_addr, u32 size,

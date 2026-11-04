@@ -1,8 +1,9 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "shareplay.h"
 
+#include <cstring>
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
@@ -15,14 +16,22 @@ int PS4_SYSV_ABI sceSharePlayCrashDaemon() {
 }
 
 int PS4_SYSV_ABI sceSharePlayGetCurrentConnectionInfo(OrbisSharePlayConnectionInfo* pInfo) {
-    memset(pInfo, 0, sizeof(*pInfo));
+    if (!pInfo) {
+        return ORBIS_SHARE_PLAY_ERROR_INVALID_ARGUMENT;
+    }
+    std::memset(pInfo, 0, sizeof(*pInfo));
     pInfo->status = ORBIS_SHARE_PLAY_CONNECTION_STATUS_DORMANT;
     LOG_DEBUG(Lib_SharePlay, "(STUBBED) called");
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceSharePlayGetCurrentConnectionInfoA() {
-    LOG_ERROR(Lib_SharePlay, "(STUBBED) called");
+int PS4_SYSV_ABI sceSharePlayGetCurrentConnectionInfoA(OrbisSharePlayConnectionInfoA* pInfo) {
+    if (!pInfo) {
+        return ORBIS_SHARE_PLAY_ERROR_INVALID_ARGUMENT;
+    }
+    std::memset(pInfo, 0, sizeof(*pInfo));
+    pInfo->status = ORBIS_SHARE_PLAY_CONNECTION_STATUS_DORMANT;
+    LOG_DEBUG(Lib_SharePlay, "(STUBBED) called");
     return ORBIS_OK;
 }
 

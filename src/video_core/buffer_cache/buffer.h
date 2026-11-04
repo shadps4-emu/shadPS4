@@ -44,6 +44,9 @@ constexpr vk::BufferUsageFlags ReadFlags =
 constexpr vk::BufferUsageFlags AllFlags =
     ReadFlags | vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eStorageBuffer;
 
+/// Removes the shader device address usage when buffer device address is not available.
+vk::BufferUsageFlags SupportedUsage(const Vulkan::Instance& instance, vk::BufferUsageFlags usage);
+
 struct UniqueBuffer {
     explicit UniqueBuffer(vk::Device device, VmaAllocator allocator);
     ~UniqueBuffer();

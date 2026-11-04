@@ -370,6 +370,9 @@ private:
     void UntrackImageHead(ImageId image_id);
     void UntrackImageTail(ImageId image_id);
 
+    /// Marks the image CPU dirty if the guest wrote to its untracked head or tail page.
+    void MarkDirtyIfEdgesModified(Image& image);
+
     void MarkAsMaybeDirty(ImageId image_id, Image& image);
 
     void RegisterMeta(VAddr address, MetaDataInfo info);
