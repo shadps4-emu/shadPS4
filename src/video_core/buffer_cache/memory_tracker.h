@@ -19,8 +19,7 @@ public:
     static constexpr u64 MANAGER_POOL_SIZE = 32;
 
 public:
-    explicit MemoryTracker(PageManager& tracker_)
-        : tracker{&tracker_}, readbacks_mode{EmulatorSettings.GetReadbacksMode()} {}
+    explicit MemoryTracker(PageManager& tracker_) : tracker{&tracker_} {}
     ~MemoryTracker() = default;
 
     /// Returns true if a region has been modified from the GPU
@@ -71,12 +70,10 @@ public:
     /// Removes all protection from a page and ensures GPU data has been flushed if requested
     void InvalidateRegion(VAddr cpu_addr, u64 size, auto&& on_flush) noexcept {
         bool should_flush = false;
-        IteratePages(cpu_addr, size, [&](RegionManager* manager, u64 offset, u64 size) {
+        IteratePages(cpu_addr, size, [&should_flush](RegionManager* manager, u64 offset, u64 size) {
             const auto bounds = manager->GetBounds(offset, size);
             manager->Lock(bounds);
-            const bool modified = manager->template IsRegionModified<Type::GPU>(offset, size) &&
-                                  (readbacks_mode != GpuReadbacksMode::Disabled ||
-                                   manager->IsReadbackRequested(offset, size));
+            const bool modified = manager->template IsRegionModified<Type::GPU>(offset, size);
             if (!modified) {
                 manager->template ChangeRegionState<StateOp::Set, StateOp::None, false>(offset,
                                                                                         size);
@@ -167,7 +164,6 @@ private:
     }
 
     PageManager* tracker;
-    const u32 readbacks_mode;
     std::deque<std::array<RegionManager, MANAGER_POOL_SIZE>> manager_pool;
     std::vector<RegionManager*> free_managers;
     std::array<RegionManager*, NUM_HIGH_PAGES> top_tier{};

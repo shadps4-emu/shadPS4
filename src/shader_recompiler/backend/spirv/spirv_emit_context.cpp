@@ -733,7 +733,8 @@ void EmitContext::DefineOutputs() {
                 continue;
             }
             const u32 num_components = info.stores.NumComponents(mrt);
-            const AmdGpu::NumberFormat num_format{runtime_info.hw.fs.color_buffers[i].num_format};
+            const u32 color_buffer_idx = runtime_info.hw.fs.dual_source_blending ? 0 : i;
+            const auto num_format = runtime_info.hw.fs.color_buffers[color_buffer_idx].num_format;
             const Id type{GetAttributeType(*this, num_format)[num_components]};
             Id id;
             if (runtime_info.hw.fs.dual_source_blending) {
