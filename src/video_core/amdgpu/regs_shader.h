@@ -287,7 +287,9 @@ static Shader::ShaderParams GetParams(const auto& sh) {
     };
     ReadShaderResourceTable(params, bininfo, std::bit_cast<VAddr>(&bininfo),
                             [](VAddr address, u8* dest, u64 size) {
-                                std::memcpy(dest, std::bit_cast<const void*>(address), size);
+                                if (size != 0) {
+                                    std::memcpy(dest, std::bit_cast<const void*>(address), size);
+                                }
                             });
     return params;
 }
