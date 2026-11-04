@@ -17,7 +17,7 @@ static void AddFlatbuf(Info& info) {
     }
 }
 
-void Visit(Info& info, const IR::Inst& inst) {
+void Visit(Info& info, const IR::Inst& inst, Profile const& profile) {
     switch (inst.GetOpcode()) {
     case IR::Opcode::GetAttribute:
     case IR::Opcode::GetAttributeU1:
@@ -173,6 +173,8 @@ void Visit(Info& info, const IR::Inst& inst) {
     case IR::Opcode::SharedAtomicFMax32:
     case IR::Opcode::SharedAtomicFMin32:
         info.uses_shared_atomic_float_min_max = true;
+        info.shared_types |=
+            profile.supports_shared_fp32_atomic_min_max ? IR::Type::F32 : IR::Type::U32;
         break;
     case IR::Opcode::BufferAtomicIAdd64:
     case IR::Opcode::BufferAtomicSMax64:
@@ -217,7 +219,7 @@ void CollectShaderInfoPass(IR::Program& program, const Profile& profile) {
     Info& info = program.info;
     for (IR::Block* const block : program.post_order_blocks) {
         for (IR::Inst& inst : block->Instructions()) {
-            Visit(info, inst);
+            Visit(info, inst, profile);
         }
     }
 
