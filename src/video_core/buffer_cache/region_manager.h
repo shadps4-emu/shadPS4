@@ -195,14 +195,6 @@ public:
         }
     }
 
-    bool IsReadbackRequested(u64 offset, u64 size) const {
-        bool requested{};
-        IterateWords(GetBounds(offset, size), [&](u64 index, u64 mask) {
-            requested |= (readback_requests[index] & mask) != 0;
-        });
-        return requested;
-    }
-
     template <Type type>
     bool IsRegionModified(u64 offset, u64 size) noexcept {
         const auto& state = GetRegionBits<type>();
