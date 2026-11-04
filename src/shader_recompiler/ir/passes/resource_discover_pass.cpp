@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <limits>
 #include <unordered_map>
 #include "common/assert.h"
 #include "shader_recompiler/ir/ir_emitter.h"
@@ -399,7 +400,7 @@ struct ArrayOffset {
 
 static ArrayOffset DescribeArrayOffset(IR::Value value) {
     auto* inst = value.TryInst();
-    if (!inst || inst->Arg(0).IsEmpty()) {
+    if (!inst) {
         return {value};
     }
     if (inst->GetOpcode() == IR::Opcode::IAdd32 && inst->Arg(1).IsImmediate()) {
@@ -444,7 +445,10 @@ static void DiscoverImageArrays(IR::Program& program, ResourceDiscoveryList& res
     for (auto& resource : resources) {
         const auto& sharp = resource.sharps[0];
         if (!IsImageInstruction(*resource.user) || sharp.num_dwords != 8 ||
-            sharp.post_op != SharpFetchPostOp::None) {
+            sharp.post_op != SharpFetchPostOp::None ||
+            resource.user->GetOpcode() == IR::Opcode::ImageWrite ||
+            IsImageAtomicInstruction(*resource.user) ||
+            resource.user->Flags<IR::TextureInstInfo>().is_r128) {
             continue;
         }
         auto* first = sharp.dwords[0].TryInst();
@@ -467,8 +471,7 @@ static void DiscoverImageArrays(IR::Program& program, ResourceDiscoveryList& res
         }
         const auto offset = DescribeArrayOffset(first->Arg(1));
         const auto count = program.info.params->ImageArraySize(reg, offset.offset);
-        if (!count || *count > profile.max_sampled_image_descriptors ||
-            *count > (std::numeric_limits<u16>::max() - NUM_USER_DATA_REGS) / 8) {
+        if (!count) {
             continue;
         }
         bool contiguous = offset.scale == 8;
@@ -488,6 +491,11 @@ static void DiscoverImageArrays(IR::Program& program, ResourceDiscoveryList& res
         if (!contiguous) {
             continue;
         }
+        ASSERT_MSG(profile.supports_sampled_image_array_non_uniform_indexing,
+                   "Device does not support nonuniform sampled image indexing");
+        ASSERT_MSG(*count <= profile.max_sampled_image_descriptors &&
+                       *count <= (std::numeric_limits<u16>::max() - NUM_USER_DATA_REGS) / 8,
+                   "Sampled image array exceeds the descriptor or SRT limit: {}", *count);
         IR::IREmitter ir{*resource.user->GetParent(),
                          IR::Block::InstructionList::s_iterator_to(*resource.user)};
         auto& table = tables[u64(reg) << 32 | offset.offset];
@@ -517,9 +525,7 @@ ResourceDiscoveryList ResourceDiscoverPass(IR::Program& program, const Profile& 
             }
         }
     }
-    if (profile.supports_sampled_image_array_non_uniform_indexing) {
-        DiscoverImageArrays(program, sharp_usages, profile);
-    }
+    DiscoverImageArrays(program, sharp_usages, profile);
     return sharp_usages;
 }
 

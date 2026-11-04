@@ -317,7 +317,8 @@ void LowerWave64BallotPass(IR::Program& program, const RuntimeInfo& runtime_info
         return;
     }
 
-    if (num_threads == 64) {
+    const bool split_wave64 = num_threads == 64 && profile.subgroup_size == 32;
+    if (split_wave64) {
         ReconvergeWave64(program, pools);
     }
 

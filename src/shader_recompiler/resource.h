@@ -139,7 +139,16 @@ struct ImageResource {
 
     constexpr AmdGpu::Image GetSharp(const auto& info, u32 index = 0) const noexcept {
         AmdGpu::Image image{};
-        if (!Fetch(info.flattened_ud_buf.data() + index * 8, &image)) {
+        const auto* flatbuf = info.flattened_ud_buf.data();
+        if (descriptor_count != 0) {
+            const size_t offset = size_t(index) * 8;
+            if (index >= descriptor_count ||
+                sharp_fetch.offsets[0] + offset + 8 > info.flattened_ud_buf.size()) {
+                return AmdGpu::Image::Null(is_depth);
+            }
+            flatbuf += offset;
+        }
+        if (!Fetch(flatbuf, &image)) {
             return AmdGpu::Image::Null(is_depth);
         }
         if (post_op == SharpFetchPostOp::ConvertCubeTo2DArray) {

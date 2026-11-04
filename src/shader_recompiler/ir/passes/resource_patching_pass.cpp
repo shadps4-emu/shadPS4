@@ -242,7 +242,7 @@ void PatchImageSharp(const ResourceDiscovery& resource, Info& info, Descriptors&
     const bool needs_mip_storage_fallback =
         inst_info.has_lod && is_written && !profile.supports_image_load_store_lod;
     auto source = resource.sharps[0];
-    const bool dynamic_array = resource.image_array && !is_written && !inst_info.is_r128;
+    const bool dynamic_array = bool(resource.image_array);
     if (dynamic_array) {
         std::copy_n(resource.image_array->begin(), 8, source.dwords.begin());
     }
@@ -256,6 +256,15 @@ void PatchImageSharp(const ResourceDiscovery& resource, Info& info, Descriptors&
         .is_r128 = bool(inst_info.is_r128),
         .post_op = resource.sharps[0].post_op,
     };
+
+    if (dynamic_array) {
+        ASSERT(image_res.sharp_fetch.summary == SharpFetch<AmdGpu::Image>::Summary::SingleLoad);
+        const u32 base = image_res.sharp_fetch.offsets[0];
+        ASSERT(base + resource.image_array->size() <= info.flattened_ud_buf.size());
+        for (u32 i = 0; i < resource.image_array->size(); ++i) {
+            ASSERT(SharpLocationFromSource((*resource.image_array)[i].Inst()) == base + i);
+        }
+    }
 
     auto image = image_res.GetSharp(info);
     ASSERT(image.GetType() != AmdGpu::ImageType::Invalid);
@@ -329,20 +338,6 @@ void PatchImageSharp(const ResourceDiscovery& resource, Info& info, Descriptors&
     u32 image_binding = descriptors.Add(image_res);
 
     IR::IREmitter ir{*inst.GetParent(), IR::Block::InstructionList::s_iterator_to(inst)};
-
-    if (dynamic_array) {
-        ASSERT(image_res.sharp_fetch.summary == SharpFetch<AmdGpu::Image>::Summary::SingleLoad);
-        const u32 base = image_res.sharp_fetch.offsets[0];
-        for (const auto value : resource.sharps[0].dwords) {
-            auto* read = value.TryInst();
-            if (read && read->GetOpcode() == IR::Opcode::ReadConst && read->Flags<u32>() == 0) {
-                IR::IREmitter reader{*read->GetParent(),
-                                     IR::Block::InstructionList::s_iterator_to(*read)};
-                read->ReplaceUsesWith(
-                    reader.ReadConstArray(reader.Imm32(base), IR::U32{read->Arg(1)}));
-            }
-        }
-    }
 
     if (inst.GetOpcode() == IR::Opcode::ImageSampleRaw) {
         auto& lod_prod = resource.sharps[1].post_op_data.lod_prod;
