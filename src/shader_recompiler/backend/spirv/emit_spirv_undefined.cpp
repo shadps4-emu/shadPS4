@@ -38,8 +38,12 @@ Id EmitUndefF32(EmitContext& ctx) {
     return ctx.OpUndef(ctx.F32[1]);
 }
 
-Id EmitUndefU64(EmitContext&) {
-    UNREACHABLE_MSG("SPIR-V Instruction");
+Id EmitUndefF32x2(EmitContext& ctx) {
+    return ctx.OpUndef(ctx.F32[2]);
+}
+
+Id EmitUndefU64(EmitContext& ctx) {
+    return ctx.OpUndef(ctx.U64);
 }
 
 } // namespace Shader::Backend::SPIRV

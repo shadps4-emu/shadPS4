@@ -38,9 +38,11 @@
 #include "core/file_sys/fs.h"
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/net/net_discovery.h"
 #include "core/libraries/np/np_handler/np_handler.h"
 #include "core/libraries/np/np_trophy.h"
 #include "core/libraries/save_data/save_backup.h"
+#include "core/libraries/usbd/usbstorage.h"
 #include "core/linker.h"
 #include "core/memory.h"
 #include "core/user_settings.h"
@@ -86,6 +88,11 @@ Emulator::~Emulator() {}
 
 void Emulator::Shutdown() {
     static bool exit_done = false;
+    static thread_local bool in_shutdown = false;
+    if (in_shutdown) {
+        return;
+    }
+    in_shutdown = true;
     std::scoped_lock l{exit_mutex};
     if (exit_done) {
         return;
@@ -97,7 +104,10 @@ void Emulator::Shutdown() {
     if (play_time_thread.joinable()) {
         play_time_thread.join();
     }
-    UpdatePlayTime(Common::Singleton<Common::ElfInfo>::Instance()->GameSerial());
+    const auto* elf_info = Common::Singleton<Common::ElfInfo>::Instance();
+    if (elf_info->initialized) {
+        UpdatePlayTime(elf_info->GameSerial());
+    }
     if (controllers) {
         controllers->ResetLightbarColors();
         // need to give SDL time to do this before the runtime exits
@@ -497,6 +507,8 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     LOG_INFO(Config, "GPU userfaultfdTracking: {}", EmulatorSettings.IsUserfaultfdTracking());
 #endif
     LOG_INFO(Config, "GPU inlineFetchShader: {}", EmulatorSettings.IsInlineFetchShader());
+    LOG_INFO(Config, "GPU fastShaderMath: {}", EmulatorSettings.IsFastShaderMath());
+    LOG_INFO(Config, "GPU submitDrawInterval: {}", EmulatorSettings.GetSubmitDrawInterval());
     LOG_INFO(Config, "Vulkan gpuId: {}", EmulatorSettings.GetGpuId());
     LOG_INFO(Config, "Vulkan vkValidation: {}", EmulatorSettings.IsVkValidationEnabled());
     LOG_INFO(Config, "Vulkan vkValidationCore: {}", EmulatorSettings.IsVkValidationCoreEnabled());
@@ -612,12 +624,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
 
     // Mounting temp folders
     const auto& mount_temp_dir = Common::FS::GetUserPath(Common::FS::PathType::TempDataDir) / id;
-    if (std::filesystem::exists(mount_temp_dir)) {
-        // Temp folder should be cleared on each boot.
-        std::filesystem::remove_all(mount_temp_dir);
-    }
     std::filesystem::create_directory(mount_temp_dir);
-    mnt->Mount(mount_temp_dir, "/temp0");
     mnt->Mount(mount_temp_dir, "/temp");
 
     const auto& mount_download_dir =
@@ -626,6 +633,11 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         std::filesystem::create_directory(mount_download_dir);
     }
     mnt->Mount(mount_download_dir, "/download0");
+
+    const auto mount_usb_dir = Libraries::UsbStorage::GetUsbMountPath();
+    std::error_code ec_usb;
+    std::filesystem::create_directories(mount_usb_dir, ec_usb);
+    mnt->Mount(mount_usb_dir, "/mnt/usb0");
 
     const auto& mount_captures_dir = Common::FS::GetUserPath(Common::FS::PathType::CapturesDir);
     if (!std::filesystem::exists(mount_captures_dir)) {
@@ -692,6 +704,10 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         rpc->setStatusPlaying(game_info.title, id);
     }
 #endif
+
+    if (EmulatorSettings.IsConnectedToNetwork() && EmulatorSettings.IsDeviceDiscoveryEnabled()) {
+        Libraries::Net::DiscoveryResponder::Instance().Start();
+    }
 
     if (!id.empty()) {
         start_time = std::chrono::steady_clock::now();

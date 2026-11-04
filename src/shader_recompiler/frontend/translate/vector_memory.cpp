@@ -7,6 +7,10 @@ namespace Shader::Gcn {
 
 void Translator::EmitVectorMemory(const GcnInst& inst) {
     switch (inst.opcode) {
+    case Opcode::BUFFER_WBINVL1_SC:
+    case Opcode::BUFFER_WBINVL1:
+        ir.DeviceMemoryBarrier();
+        return;
         // MUBUF / MTBUF
 
         // Buffer load operations
@@ -627,7 +631,8 @@ IR::Value EmitImageSample(IR::IREmitter& ir, const GcnInst& inst, const IR::Scal
         info.gather_comp.Assign(std::bit_width(mimg.dmask) - 1);
         info.is_gather.Assign(true);
     } else {
-        info.has_derivatives.Assign(flags.test(MimgModifier::Derivative));
+        info.has_derivatives.Assign(flags.test(MimgModifier::Derivative) ||
+                                    flags.test(MimgModifier::CoarseDerivative));
     }
 
     // Load all dwords of T# and S#. We will use them as the handle that will guide

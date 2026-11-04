@@ -123,6 +123,24 @@ sceVideodec2QueryDecoderMemoryInfo(const OrbisVideodec2DecoderConfigInfo* decode
         LOG_ERROR(Lib_Vdec2, "Invalid struct size");
         return ORBIS_VIDEODEC2_ERROR_STRUCT_SIZE;
     }
+    if (decoder_cfg_info->codec_type != OrbisVideodec2CodecType::Avc &&
+        decoder_cfg_info->codec_type != OrbisVideodec2CodecType::Hevc) {
+        LOG_ERROR(Lib_Vdec2, "Invalid codec type: {}",
+                  static_cast<u32>(decoder_cfg_info->codec_type));
+        return ORBIS_VIDEODEC2_ERROR_CODEC_TYPE;
+    }
+    if (decoder_cfg_info->decode_pipeline_depth == 0 ||
+        decoder_cfg_info->decode_pipeline_depth > 8) {
+        LOG_ERROR(Lib_Vdec2, "Invalid decode pipeline depth: {}",
+                  decoder_cfg_info->decode_pipeline_depth);
+        return ORBIS_VIDEODEC2_ERROR_PIPELINE_DEPTH;
+    }
+    if (decoder_cfg_info->cpu_thread_priority != -1 &&
+        (static_cast<u32>(decoder_cfg_info->cpu_thread_priority - 0x100) >= 0x200)) {
+        LOG_ERROR(Lib_Vdec2, "Invalid cpu thread priority: {}",
+                  decoder_cfg_info->cpu_thread_priority);
+        return ORBIS_VIDEODEC2_ERROR_THREAD_PRIORITY;
+    }
 
     s32 width = 0;
     s32 height = 0;
@@ -163,6 +181,12 @@ s32 PS4_SYSV_ABI sceVideodec2CreateDecoder(const OrbisVideodec2DecoderConfigInfo
         decoder_mem_info->this_size != sizeof(OrbisVideodec2DecoderMemoryInfo)) {
         LOG_ERROR(Lib_Vdec2, "Invalid struct size");
         return ORBIS_VIDEODEC2_ERROR_STRUCT_SIZE;
+    }
+    if (decoder_cfg_info->codec_type != OrbisVideodec2CodecType::Avc &&
+        decoder_cfg_info->codec_type != OrbisVideodec2CodecType::Hevc) {
+        LOG_ERROR(Lib_Vdec2, "Invalid codec type: {}",
+                  static_cast<u32>(decoder_cfg_info->codec_type));
+        return ORBIS_VIDEODEC2_ERROR_CODEC_TYPE;
     }
 
     *decoder = new VdecDecoder(*decoder_cfg_info, *decoder_mem_info);
@@ -281,6 +305,39 @@ s32 PS4_SYSV_ABI sceVideodec2GetHevcPictureInfo(const OrbisVideodec2OutputInfo* 
     return sceVideodec2GetPictureInfo(output_info, picture_info, nullptr);
 }
 
+s32 PS4_SYSV_ABI sceVideodec2MapDirectMemory(OrbisVideodec2Decoder decoder,
+                                             const OrbisVideodec2DirectMemoryInfo* mem_info) {
+    LOG_INFO(Lib_Vdec2, "called, decoder={:p}, mem_info={:p}", static_cast<void*>(decoder),
+             static_cast<const void*>(mem_info));
+    if (!decoder) {
+        return ORBIS_VIDEODEC2_ERROR_DECODER_INSTANCE;
+    }
+    if (!mem_info) {
+        return ORBIS_VIDEODEC2_ERROR_ARGUMENT_POINTER;
+    }
+    if (mem_info->this_size != sizeof(OrbisVideodec2DirectMemoryInfo)) {
+        return ORBIS_VIDEODEC2_ERROR_STRUCT_SIZE;
+    }
+    if (!mem_info->memory_addr || mem_info->memory_size == 0) {
+        return ORBIS_VIDEODEC2_ERROR_MEMORY_SIZE;
+    }
+    return ORBIS_OK;
+}
+
+s32 PS4_SYSV_ABI
+sceVideodec2QueryHevcDecoderMemoryInfo(const OrbisVideodec2DecoderConfigInfo* decoder_cfg_info,
+                                       OrbisVideodec2DecoderMemoryInfo* decoder_mem_info) {
+    LOG_TRACE(Lib_Vdec2, "called");
+    return sceVideodec2QueryDecoderMemoryInfo(decoder_cfg_info, decoder_mem_info);
+}
+
+s32 PS4_SYSV_ABI sceVideodec2CreateHevcDecoder(
+    const OrbisVideodec2DecoderConfigInfo* decoder_cfg_info,
+    const OrbisVideodec2DecoderMemoryInfo* decoder_mem_info, OrbisVideodec2Decoder* decoder) {
+    LOG_TRACE(Lib_Vdec2, "called");
+    return sceVideodec2CreateDecoder(decoder_cfg_info, decoder_mem_info, decoder);
+}
+
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("RnDibcGCPKw", "libSceVideodec2", 1, "libSceVideodec2",
                  sceVideodec2QueryComputeMemoryInfo);
@@ -291,7 +348,11 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
 
     LIB_FUNCTION("qqMCwlULR+E", "libSceVideodec2", 1, "libSceVideodec2",
                  sceVideodec2QueryDecoderMemoryInfo);
+    LIB_FUNCTION("krChT8KBUDU", "libSceVideodec2", 1, "libSceVideodec2",
+                 sceVideodec2QueryHevcDecoderMemoryInfo);
     LIB_FUNCTION("CNNRoRYd8XI", "libSceVideodec2", 1, "libSceVideodec2", sceVideodec2CreateDecoder);
+    LIB_FUNCTION("pu4kxXkYz3E", "libSceVideodec2", 1, "libSceVideodec2",
+                 sceVideodec2CreateHevcDecoder);
     LIB_FUNCTION("jwImxXRGSKA", "libSceVideodec2", 1, "libSceVideodec2", sceVideodec2DeleteDecoder);
     LIB_FUNCTION("852F5+q6+iM", "libSceVideodec2", 1, "libSceVideodec2", sceVideodec2Decode);
     LIB_FUNCTION("l1hXwscLuCY", "libSceVideodec2", 1, "libSceVideodec2", sceVideodec2Flush);
@@ -302,6 +363,8 @@ void RegisterLib(Core::Loader::SymbolsResolver* sym) {
                  sceVideodec2GetAvcPictureInfo);
     LIB_FUNCTION("7M+1UFqWOAI", "libSceVideodec2", 1, "libSceVideodec2",
                  sceVideodec2GetHevcPictureInfo);
+    LIB_FUNCTION("hIIZXUsMeI8", "libSceVideodec2", 1, "libSceVideodec2",
+                 sceVideodec2MapDirectMemory);
 }
 
 } // namespace Libraries::Videodec2

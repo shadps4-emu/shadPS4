@@ -77,6 +77,7 @@ public:
     /// Returns true if the guest path resolves to a directory in any
     /// backend of the mount stack.
     bool IsDirectory(std::string_view guest_path);
+    bool Stat(std::string_view guest_path, FileStat& out);
 
     /// Opens the guest path through the mount's backend stack. Returns
     /// nullptr when the path does not exist or the caller requested
@@ -95,10 +96,14 @@ public:
     /// Normalizes and validates a guest path (resolves dot and dot-dot components).
     static std::optional<std::string> SanitizeGuestPath(std::string_view path);
 
+    /// Invalidates path and case caches for the given guest path or all caches if empty.
+    void InvalidateCache(std::string_view guest_path = "");
     const MntPair* GetMountFromHostPath(const std::string& host_path) {
+        const auto host_norm = std::filesystem::path(host_path).generic_string();
         std::scoped_lock lock{m_mutex};
         const auto it = std::ranges::find_if(m_mnt_pairs, [&](const MntPair& mount) {
-            return host_path.starts_with(std::string{fmt::UTF(mount.host_path.u8string()).data});
+            const auto mnt_host = mount.host_path.generic_string();
+            return host_norm == mnt_host || host_norm.starts_with(mnt_host + "/");
         });
         return it == m_mnt_pairs.end() ? nullptr : &*it;
     }
@@ -116,10 +121,7 @@ public:
             // against only part of the mount path.
             return guest_path == mount.mount || guest_path.starts_with(mount.mount + "/");
         });
-        if (it == m_mnt_pairs.end()) {
-            return nullptr;
-        }
-        return &*it;
+        return it == m_mnt_pairs.end() ? nullptr : &*it;
     }
 
 private:
@@ -140,6 +142,8 @@ enum class FileType {
 struct File {
     std::atomic_bool is_opened{};
     std::atomic<FileType> type{FileType::Regular};
+    std::atomic<u32> ref_count{1};
+    std::atomic<s32> m_flags{0};
     std::filesystem::path m_host_name;
     std::string m_guest_name;
     std::unique_ptr<IFile> handle;
@@ -175,6 +179,10 @@ struct File {
         return handle ? handle->Flush() : false;
     }
 
+    bool IsReadOnly() const {
+        return handle ? handle->IsReadOnly() : false;
+    }
+
     bool IsWriteOnly() const {
         return handle ? handle->IsWriteOnly() : false;
     }
@@ -191,6 +199,10 @@ public:
 
     int CreateHandle();
     void DeleteHandle(int d);
+    int DuplicateHandleFrom(int old_fd, int min_fd = 0, bool cloexec = false);
+    int DuplicateHandleTo(int old_fd, int target_fd, bool cloexec = false);
+    s32 GetFdFlags(int d);
+    void SetFdFlags(int d, s32 flags);
     File* GetFile(int d);
     File* GetSocket(int d);
     std::vector<int> GetSocketHandles();
@@ -202,6 +214,7 @@ public:
 
 private:
     std::vector<File*> m_files;
+    std::vector<s32> m_fd_flags;
     std::mutex m_mutex;
 };
 

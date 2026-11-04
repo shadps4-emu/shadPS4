@@ -133,6 +133,7 @@ Id EmitUndefU32x2(EmitContext& ctx);
 Id EmitUndefU32x3(EmitContext& ctx);
 Id EmitUndefU32x4(EmitContext& ctx);
 Id EmitUndefF32(EmitContext& ctx);
+Id EmitUndefF32x2(EmitContext& ctx);
 Id EmitUndefU64(EmitContext& ctx);
 Id EmitLoadSharedU16(EmitContext& ctx, Id offset);
 Id EmitLoadSharedU32(EmitContext& ctx, Id offset);

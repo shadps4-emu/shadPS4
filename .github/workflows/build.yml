@@ -19,21 +19,22 @@ on:
 
 concurrency:
   group: ci-${{ github.event_name }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'push' }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' || github.repository != 'shadps4-emu/shadPS4' || github.event_name != 'push' }}
+  queue: ${{ (github.ref != 'refs/heads/main' || github.repository != 'shadps4-emu/shadPS4' || github.event_name != 'push') && 'single' || 'max' }}
 
 env:
   BUILD_TYPE: Release
 
 jobs:
   reuse:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     continue-on-error: true
     steps:
     - uses: actions/checkout@v6
     - uses: fsfe/reuse-action@v6
 
   clang-format:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     continue-on-error: true
     steps:
     - uses: actions/checkout@v6
@@ -42,16 +43,16 @@ jobs:
     - name: Install
       run: |
         wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-        sudo add-apt-repository 'deb http://apt.llvm.org/noble/ llvm-toolchain-noble-19 main'
+        sudo add-apt-repository 'deb http://apt.llvm.org/noble/ llvm-toolchain-noble-23 main'
         sudo apt update
-        sudo apt install clang-format-19
+        sudo apt install clang-format-23
     - name: Build
       env:
         COMMIT_RANGE: ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}
       run: ./.github/workflows/scripts/clang-format.sh
 
   get-info:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     outputs:
       date: ${{ steps.vars.outputs.date }}
       shorthash: ${{ steps.vars.outputs.shorthash }}
@@ -152,17 +153,6 @@ jobs:
       with:
         submodules: recursive
 
-    - name: Cache CMake Configuration
-      uses: actions/cache@v5
-      env:
-          cache-name: ${{ runner.os }}-sdl-ninja-cache-cmake-configuration
-      with:
-          path: |
-            ${{github.workspace}}/build
-          key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
-          restore-keys: |
-            ${{ env.cache-name }}-
-
     - name: Cache CMake Build
       uses: hendrikmuhs/ccache-action@v1.2.21
       env:
@@ -203,17 +193,6 @@ jobs:
       run: |
         brew install cmake meson pkg-config llvm spirv-tools spirv-llvm-translator
         pip3 install --break-system-packages mako packaging pyyaml
-
-    - name: Cache CMake Configuration
-      uses: actions/cache@v5
-      env:
-          cache-name: ${{ runner.os }}-sdl-cache-cmake-configuration
-      with:
-          path: |
-            ${{github.workspace}}/build
-          key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
-          restore-keys: |
-            ${{ env.cache-name }}-
 
     - name: Cache CMake Build
       uses: hendrikmuhs/ccache-action@v1.2.21
@@ -262,17 +241,6 @@ jobs:
     - name: Install dependencies
       run: sudo apt-get update && sudo apt install -y libx11-dev libxext-dev libwayland-dev libdecor-0-dev libxkbcommon-dev libglfw3-dev libgles2-mesa-dev libfuse2 clang-19 mold build-essential libasound2-dev libpulse-dev libopenal-dev libudev-dev libxcursor-dev libxi-dev libxss-dev libxtst-dev
 
-    - name: Cache CMake Configuration
-      uses: actions/cache@v5
-      env:
-          cache-name: ${{ runner.os }}-sdl-cache-cmake-configuration
-      with:
-          path: |
-            ${{github.workspace}}/build
-          key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
-          restore-keys: |
-            ${{ env.cache-name }}-
-
     - name: Cache CMake Build
       uses: hendrikmuhs/ccache-action@v1.2.21
       env:
@@ -320,17 +288,6 @@ jobs:
 
     - name: Install dependencies
       run: sudo apt-get update && sudo apt install -y libx11-dev libxext-dev libwayland-dev libdecor-0-dev libxkbcommon-dev libglfw3-dev libgles2-mesa-dev libfuse2 gcc-14 mold build-essential libasound2-dev libpulse-dev libopenal-dev libudev-dev libxcursor-dev libxi-dev libxss-dev libxtst-dev
-
-    - name: Cache CMake Configuration
-      uses: actions/cache@v5
-      env:
-          cache-name: ${{ runner.os }}-sdl-gcc-cache-cmake-configuration
-      with:
-          path: |
-            ${{github.workspace}}/build
-          key: ${{ env.cache-name }}-${{ hashFiles('**/CMakeLists.txt', 'cmake/**') }}
-          restore-keys: |
-            ${{ env.cache-name }}-
 
     - name: Cache CMake Build
       uses: hendrikmuhs/ccache-action@v1.2.21
