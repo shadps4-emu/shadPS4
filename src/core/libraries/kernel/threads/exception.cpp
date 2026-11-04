@@ -361,7 +361,7 @@ s32 PS4_SYSV_ABI posix_sigaltstack(const OrbisKernelExceptionHandlerStack* ss,
     }
 
     if (old_ss) {
-        *old_ss = thread->sigaltstack;
+        *old_ss = thread->SigAltStack();
     }
 
     if (ss == nullptr) {
@@ -373,7 +373,7 @@ s32 PS4_SYSV_ABI posix_sigaltstack(const OrbisKernelExceptionHandlerStack* ss,
         return -1;
     }
 
-    if ((ss->ss_flags & POSIX_SS_ONSTACK) && !(thread->sigaltstack.ss_flags & POSIX_SS_ONSTACK)) {
+    if ((ss->ss_flags & POSIX_SS_ONSTACK) && !(thread->SigAltStack().ss_flags & POSIX_SS_ONSTACK)) {
         // SS_ONSTACK is normally reported by the kernel rather than something
         // userspace explicitly sets when installing a stack.
         SetPosixErrno(POSIX_EINVAL);
@@ -387,10 +387,10 @@ s32 PS4_SYSV_ABI posix_sigaltstack(const OrbisKernelExceptionHandlerStack* ss,
         return -1;
     }
 
-    thread->sigaltstack = *ss;
+    thread->SigAltStack() = *ss;
 
     if (!(ss->ss_flags & POSIX_SS_DISABLE)) {
-        thread->sigaltstack.ss_flags &= ~POSIX_SS_ONSTACK;
+        thread->SigAltStack().ss_flags &= ~POSIX_SS_ONSTACK;
     }
 
     return 0;
@@ -468,7 +468,8 @@ s32 PS4_SYSV_ABI posix_sigpending(Sigset* set) {
     posix_sigemptyset(set);
 
     for (s32 sig = 1; sig <= 128; sig++) {
-        if (g_curthread->pending_signal_counts[sig - 1].load(std::memory_order_acquire) != 0) {
+        if (g_curthread->GetHostContext()->pending_signal_counts[sig - 1].load(
+                std::memory_order_acquire) != 0) {
             posix_sigaddset(set, sig);
         }
     }
@@ -481,13 +482,13 @@ s32 PS4_SYSV_ABI posix_sigsuspend(const Sigset* sigmask) {
     auto& thr = g_curthread;
     thr->GetGuestSigmask(old_mask);
 
-    thr->sigsuspend_interrupted.store(false, std::memory_order_release);
+    thr->SigsuspendInterrupted().store(false, std::memory_order_release);
     thr->in_sigsuspend.store(true, std::memory_order_release);
 
     thr->SetGuestSigmask(*sigmask);
 
-    while (!thr->sigsuspend_interrupted.load(std::memory_order_acquire)) {
-        thr->signal_sema.acquire();
+    while (!thr->SigsuspendInterrupted().load(std::memory_order_acquire)) {
+        thr->SignalSema().acquire();
     }
 
     thr->in_sigsuspend.store(false, std::memory_order_release);
@@ -508,12 +509,12 @@ s32 PS4_SYSV_ABI posix_sigwait(const Sigset* set, s32* sig) {
         return POSIX_EINVAL;
     }
 
-    thread->sigwait_set = *set;
-    thread->in_sigwait.store(true, std::memory_order_release);
+    thread->SigwaitSet() = *set;
+    thread->InSigwait().store(true, std::memory_order_release);
 
     auto finish = [&] {
-        thread->in_sigwait.store(false, std::memory_order_release);
-        posix_sigemptyset(&thread->sigwait_set);
+        thread->InSigwait().store(false, std::memory_order_release);
+        posix_sigemptyset(&thread->SigwaitSet());
     };
 
     while (true) {
@@ -525,7 +526,7 @@ s32 PS4_SYSV_ABI posix_sigwait(const Sigset* set, s32* sig) {
             return ORBIS_OK;
         }
 
-        thread->signal_sema.acquire();
+        thread->SignalSema().acquire();
     }
 }
 
@@ -549,7 +550,7 @@ s32 PS4_SYSV_ABI posix_pthread_kill(PthreadT thread, s32 sig) {
     if (sig < 1 || sig > 128) {
         return POSIX_EINVAL;
     }
-    LOG_INFO(Lib_Kernel, "Raising signal {} on thread '{}'", sig, thread->name);
+    LOG_INFO(Lib_Kernel, "Raising signal {} on thread '{}'", sig, thread->GetName());
     thread->QueueSignal(sig);
 
     if (!thread->IsSignalBlocked(sig)) {
