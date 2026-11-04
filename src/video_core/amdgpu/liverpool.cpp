@@ -1103,6 +1103,10 @@ Liverpool::Task Liverpool::ProcessCompute(std::span<const u32> acb, u32 vqid) {
             break;
         }
         case PM4ItOpcode::AcquireMem: {
+            const auto* acquire_mem = reinterpret_cast<const PM4CmdAcquireMem*>(header);
+            if (rasterizer && (acquire_mem->tc_wb_action_ena || acquire_mem->tc_action_ena)) {
+                rasterizer->GetBufferCache().RequestReadback();
+            }
             break;
         }
         case PM4ItOpcode::Rewind: {

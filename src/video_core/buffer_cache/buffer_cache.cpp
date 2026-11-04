@@ -159,9 +159,6 @@ void BufferCache::ReadMemory(VAddr device_addr, u64 size, bool is_write, bool as
 }
 
 void BufferCache::RequestReadback() {
-    if (!std::exchange(readback_request_pending, false)) {
-        return;
-    }
     gpu_modified_ranges.ForEach(
         [&](VAddr start, VAddr end) { memory_tracker->RequestReadback(start, end - start); });
 }
@@ -243,7 +240,6 @@ std::pair<const Buffer*, u64> BufferCache::ObtainBuffer(VAddr device_addr, u32 s
     SynchronizeMemory(arena, device_addr, size, is_written, is_texel_buffer);
     if (is_written) {
         gpu_modified_ranges.Add(device_addr, size);
-        readback_request_pending = true;
     }
     return {arena, arena->Offset(device_addr)};
 }
@@ -275,7 +271,6 @@ void BufferCache::MarkRegionAsGpuModified(VAddr addr, size_t size) {
     texture_cache.MarkAsMaybeGpuDirty(addr, size);
     memory_tracker->MarkRegionAsGpuModified(addr, size);
     gpu_modified_ranges.Add(addr, size);
-    readback_request_pending = true;
 }
 
 void BufferCache::ReadEdgeImagePages(const Image& image) {

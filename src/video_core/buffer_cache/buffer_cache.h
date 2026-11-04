@@ -168,7 +168,6 @@ private:
     Buffer gds_buffer;
     std::unique_ptr<Buffer> null_index_buffer;
     RangeSet gpu_modified_ranges;
-    bool readback_request_pending{true};
 
     std::unique_ptr<FaultManager> fault_manager;
     std::unique_ptr<Buffer> bda_pagetable_buffer;

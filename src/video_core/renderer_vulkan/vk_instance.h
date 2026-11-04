@@ -374,9 +374,8 @@ public:
         return vk12_features.shaderSampledImageArrayNonUniformIndexing;
     }
 
-    u32 MaxSampledImageDescriptors() const {
-        return std::min(properties.limits.maxPerStageDescriptorSampledImages,
-                        properties.limits.maxDescriptorSetSampledImages);
+    const vk::PhysicalDeviceLimits& GetLimits() const {
+        return properties.limits;
     }
 
     /// Returns the maximum size of a single VkDeviceMemory

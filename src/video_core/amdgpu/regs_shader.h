@@ -275,25 +275,29 @@ static Shader::ShaderParams GetParams(const auto& sh, auto&& read_memory) {
         .code = std::span{code, bininfo.length / sizeof(u32)},
         .hash = bininfo.shader_hash,
     };
+    const VAddr code_address = std::bit_cast<VAddr>(code);
+    const size_t slots_size = bininfo.num_input_usage_slots * sizeof(Shader::ShaderInputUsageSlot);
+    const size_t footer_prefix = bininfo.chunk_usage_base_offset_in_dw * sizeof(u32) + slots_size;
+    if (info_address < code_address || footer_prefix > info_address - code_address) {
+        return params;
+    }
+    const VAddr slots_address = info_address - footer_prefix;
+    if (bininfo.length > slots_address - code_address) {
+        return params;
+    }
     if (bininfo.is_srt) {
-        const VAddr slots_address = info_address -
-                                    bininfo.chunk_usage_base_offset_in_dw * sizeof(u32) -
-                                    bininfo.num_input_usage_slots * sizeof(u32);
-        const VAddr start = std::bit_cast<VAddr>(code) + bininfo.length;
-        if (start < slots_address && slots_address < info_address) {
-            read_memory(start, info_address - start);
-            auto* memory = Core::Memory::Instance();
-            std::array<u8, 256 * sizeof(u32)> slots;
-            memory->CopySparseMemory(slots_address, slots.data(),
-                                     bininfo.num_input_usage_slots * sizeof(u32));
-            for (u32 i = 0; i < bininfo.num_input_usage_slots; ++i) {
-                if (slots[i * 4] == 0x0a) {
-                    params.srt_metadata.resize(slots_address - start);
-                    memory->CopySparseMemory(start, params.srt_metadata.data(),
-                                             params.srt_metadata.size());
-                    params.srt_user_data_base = slots[i * 4 + 2];
-                    break;
-                }
+        const VAddr start = code_address + bininfo.length;
+        read_memory(start, info_address - start);
+        auto* memory = Core::Memory::Instance();
+        std::array<Shader::ShaderInputUsageSlot, 256> slots;
+        memory->CopySparseMemory(slots_address, reinterpret_cast<u8*>(slots.data()), slots_size);
+        for (const auto& slot : std::span{slots}.first(bininfo.num_input_usage_slots)) {
+            if (slot.UsageType() == Shader::ShaderInputUsageType::ImmShaderResourceTable) {
+                params.srt_metadata.resize(slots_address - start);
+                memory->CopySparseMemory(start, params.srt_metadata.data(),
+                                         params.srt_metadata.size());
+                params.srt_user_data_base = slot.start_register;
+                break;
             }
         }
     }

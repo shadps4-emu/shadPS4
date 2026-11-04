@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <limits>
+#include <unordered_map>
 #include "common/assert.h"
 #include "shader_recompiler/ir/ir_emitter.h"
 #include "shader_recompiler/ir/passes/ir_passes.h"
@@ -398,7 +400,7 @@ struct ArrayOffset {
 
 static ArrayOffset DescribeArrayOffset(IR::Value value) {
     auto* inst = value.TryInst();
-    if (!inst || inst->Arg(0).IsEmpty()) {
+    if (!inst) {
         return {value};
     }
     if (inst->GetOpcode() == IR::Opcode::IAdd32 && inst->Arg(1).IsImmediate()) {
@@ -439,11 +441,14 @@ static void DiscoverImageArrays(IR::Program& program, ResourceDiscoveryList& res
     if (!program.info.params) {
         return;
     }
-    std::array<std::shared_ptr<std::vector<IR::Value>>, NUM_USER_DATA_REGS> tables;
+    std::unordered_map<u64, std::shared_ptr<std::vector<IR::Value>>> tables;
     for (auto& resource : resources) {
         const auto& sharp = resource.sharps[0];
         if (!IsImageInstruction(*resource.user) || sharp.num_dwords != 8 ||
-            sharp.post_op != SharpFetchPostOp::None) {
+            sharp.post_op != SharpFetchPostOp::None ||
+            resource.user->GetOpcode() == IR::Opcode::ImageWrite ||
+            IsImageAtomicInstruction(*resource.user) ||
+            resource.user->Flags<IR::TextureInstInfo>().is_r128) {
             continue;
         }
         auto* first = sharp.dwords[0].TryInst();
@@ -464,13 +469,12 @@ static void DiscoverImageArrays(IR::Program& program, ResourceDiscoveryList& res
         if (reg + 1 >= NUM_USER_DATA_REGS || u32(hi->Arg(0).ScalarReg()) != reg + 1) {
             continue;
         }
-        const auto count = program.info.params->ImageArraySize(reg);
-        if (!count || *count > profile.max_sampled_image_descriptors ||
-            *count > (std::numeric_limits<u16>::max() - NUM_USER_DATA_REGS) / 8) {
+        const auto offset = DescribeArrayOffset(first->Arg(1));
+        const auto count = program.info.params->ImageArraySize(reg, offset.offset);
+        if (!count) {
             continue;
         }
-        const auto offset = DescribeArrayOffset(first->Arg(1));
-        bool contiguous = offset.scale == 8 && offset.offset == 0;
+        bool contiguous = offset.scale == 8;
         for (u32 dw = 1; dw < 8 && contiguous; ++dw) {
             auto* read = sharp.dwords[dw].TryInst();
             if (!read || read->GetOpcode() != IR::Opcode::ReadConst) {
@@ -481,22 +485,29 @@ static void DiscoverImageArrays(IR::Program& program, ResourceDiscoveryList& res
             const auto next = DescribeArrayOffset(read->Arg(1));
             contiguous = base && base->GetOpcode() == IR::Opcode::CompositeConstructU32x2 &&
                          base->Arg(0) == address->Arg(0) && base->Arg(1) == address->Arg(1) &&
-                         next.base == offset.base && next.scale == 8 && next.offset == dw;
+                         next.base == offset.base && next.scale == 8 &&
+                         next.offset == offset.offset + dw;
         }
         if (!contiguous) {
             continue;
         }
+        ASSERT_MSG(profile.supports_sampled_image_array_non_uniform_indexing,
+                   "Device does not support nonuniform sampled image indexing");
+        ASSERT_MSG(*count <= profile.max_sampled_image_descriptors &&
+                       *count <= (std::numeric_limits<u16>::max() - NUM_USER_DATA_REGS) / 8,
+                   "Sampled image array exceeds the descriptor or SRT limit: {}", *count);
         IR::IREmitter ir{*resource.user->GetParent(),
                          IR::Block::InstructionList::s_iterator_to(*resource.user)};
-        if (!tables[reg]) {
-            auto& table = tables[reg] = std::make_shared<std::vector<IR::Value>>();
+        auto& table = tables[u64(reg) << 32 | offset.offset];
+        if (!table) {
+            table = std::make_shared<std::vector<IR::Value>>();
             table->reserve(*count * 8);
             for (u32 dw = 0; dw < *count * 8; ++dw) {
-                table->push_back(ir.ReadConst(first->Arg(0), ir.Imm32(dw)));
+                table->push_back(ir.ReadConst(first->Arg(0), ir.Imm32(offset.offset + dw)));
             }
         }
-        resource.image_array = tables[reg];
-        resource.image_array_index = ir.ShiftRightLogical(IR::U32{first->Arg(1)}, ir.Imm32(3));
+        resource.image_array = table;
+        resource.image_array_index = offset.base;
     }
 }
 
@@ -514,9 +525,7 @@ ResourceDiscoveryList ResourceDiscoverPass(IR::Program& program, const Profile& 
             }
         }
     }
-    if (profile.supports_sampled_image_array_non_uniform_indexing) {
-        DiscoverImageArrays(program, sharp_usages, profile);
-    }
+    DiscoverImageArrays(program, sharp_usages, profile);
     return sharp_usages;
 }
 

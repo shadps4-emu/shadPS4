@@ -949,7 +949,6 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
     // Second pass to re-bind images that were updated after binding
     for (u32 i = 0; i < num_images; ++i) {
         auto& [image_id, desc] = image_bindings[i];
-        bool is_storage = desc.type == VideoCore::TextureCache::BindingType::Storage;
         if (!image_id) {
             image_infos.emplace_back(VK_NULL_HANDLE, VK_NULL_HANDLE, vk::ImageLayout::eGeneral);
         } else {
@@ -961,6 +960,7 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
 
             bound_images.emplace_back(image_id);
 
+            const bool is_storage = desc.type == VideoCore::TextureCache::BindingType::Storage;
             auto& image = texture_cache.GetImage(image_id);
             auto& image_view = texture_cache.FindTexture(image_id, desc);
             const auto binding = image.binding;
