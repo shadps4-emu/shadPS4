@@ -3,7 +3,6 @@
 
 #include <ranges>
 
-#include "common/assert.h"
 #include "common/io_file.h"
 #include "common/logging/log.h"
 #include "core/file_format/rif.h"
@@ -20,14 +19,22 @@ bool RIF::Open(const std::filesystem::path& ridx_path, const std::filesystem::pa
     }
 
     const u64 ridxSize = ridx_file.GetSize();
-    ASSERT_MSG(ridxSize != 0, "RIDX file at {} is empty!", ridx_path.string());
+    if (ridxSize == 0) {
+        LOG_ERROR(Core, "RIDX file at {} is empty", ridx_path.string());
+        return false;
+    }
+
     std::vector<u8> ridx(ridxSize);
     ridx_file.Seek(0);
     ridx_file.Read(ridx);
     ridx_file.Close();
 
     const u64 rifaSize = rifa_file.GetSize();
-    ASSERT_MSG(rifaSize != 0, "RIFA file at {} is empty!", rifa_path.string());
+    if (rifaSize == 0) {
+        LOG_ERROR(Core, "RIFA file at {} is empty", rifa_path.string());
+        return false;
+    }
+
     std::vector<u8> rifa(rifaSize);
     rifa_file.Seek(0);
     rifa_file.Read(rifa);
