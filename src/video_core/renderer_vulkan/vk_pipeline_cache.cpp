@@ -646,7 +646,7 @@ bool PipelineCache::RefreshComputeKey() {
     const bool gpu_modified =
         buffer_cache.IsRangeGpuModified(cs_pgm.Address<VAddr>(), 2 * sizeof(u32));
     const auto cs_params = AmdGpu::GetParams(cs_pgm, [this, gpu_modified](VAddr address, u64 size) {
-        if (gpu_modified) {
+        if (gpu_modified || buffer_cache.IsRangeGpuModified(address, size)) {
             buffer_cache.ReadMemory(address, size, false, false, true);
         }
     });
