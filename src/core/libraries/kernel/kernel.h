@@ -38,7 +38,7 @@ struct OrbisWrapperImpl<f> {
 
 #define ORBIS(func) (Libraries::Kernel::OrbisWrapperImpl<func>::wrap)
 
-#define CURRENT_FIRMWARE_VERSION 0x14008001
+#define CURRENT_FIRMWARE_VERSION 0x14020001
 
 s32* PS4_SYSV_ABI __Error();
 
