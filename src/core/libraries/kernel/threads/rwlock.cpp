@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <chrono>
@@ -74,6 +74,16 @@ static int InitStatic(Pthread* thread, PthreadRwlockT* rwlock) {
 int PS4_SYSV_ABI posix_pthread_rwlock_init(PthreadRwlockT* rwlock, const PthreadRwlockAttrT* attr) {
     *rwlock = nullptr;
     return RwlockInit(rwlock, attr);
+}
+
+int PS4_SYSV_ABI posix_pthread_rwlock_setname_np(PthreadRwlockT* rwlock, const char* name) {
+    if (!name) {
+        return POSIX_EINVAL;
+    }
+    if (*rwlock) {
+        (*rwlock)->name = name;
+    }
+    return 0;
 }
 
 int PthreadRwlock::Rdlock(const OrbisKernelTimespec* abstime) {
@@ -311,6 +321,7 @@ void RegisterRwlock(Core::Loader::SymbolsResolver* sym) {
                  posix_pthread_rwlock_reltimedrdlock_np);
     LIB_FUNCTION("RRnSj8h8VR4", "libkernel", 1, "libkernel",
                  posix_pthread_rwlock_reltimedwrlock_np);
+    LIB_FUNCTION("Uwxgnsi3xeM", "libkernel", 1, "libkernel", posix_pthread_rwlock_setname_np);
 
     // Posix
     LIB_FUNCTION("1471ajPzxh0", "libScePosix", 1, "libkernel", posix_pthread_rwlock_destroy);
@@ -332,6 +343,7 @@ void RegisterRwlock(Core::Loader::SymbolsResolver* sym) {
                  posix_pthread_rwlock_reltimedrdlock_np);
     LIB_FUNCTION("RRnSj8h8VR4", "libScePosix", 1, "libkernel",
                  posix_pthread_rwlock_reltimedwrlock_np);
+    LIB_FUNCTION("Uwxgnsi3xeM", "libScePosix", 1, "libkernel", posix_pthread_rwlock_setname_np);
 
     // Orbis
     LIB_FUNCTION("i2ifZ3fS2fo", "libkernel", 1, "libkernel",

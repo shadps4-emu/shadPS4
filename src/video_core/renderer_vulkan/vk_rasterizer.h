@@ -124,9 +124,11 @@ private:
     bool BindResources(const Pipeline* pipeline);
 
     void BindVertexBuffers(const GraphicsPipeline* pipeline);
-    void BindIndexBuffer(u32 index_offset = 0);
+    void BindIndexBuffer(u32 index_offset = 0, bool is_indirect = false);
 
     void ResetBindings(bool is_compute);
+
+    void FlushPeriodically();
 
     bool IsComputeMetaClear(const Pipeline* pipeline);
     bool IsComputeImageCopy(const Pipeline* pipeline);
@@ -148,6 +150,9 @@ private:
     PipelineCache pipeline_cache;
     const bool host_markers_enabled;
     const bool guest_markers_enabled;
+    const u32 submit_draw_interval;
+    u64 last_submit_tick{};
+    u32 draws_since_submit{};
 
     struct ImageBinding {
         VideoCore::ImageId image_id;

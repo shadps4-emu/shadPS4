@@ -133,6 +133,7 @@ public:
     void S_FLBIT_I32_B64(const GcnInst& inst);
     void S_BITSET_B32(const GcnInst& inst, u32 bit_value);
     void S_BITSET_B64(const GcnInst& inst, u32 bit_value);
+    void S_GETREG_B32(const GcnInst& inst);
     void S_GETPC_B64(const GcnInst& inst);
     void S_SAVEEXEC_B64(NegateMode negate, bool is_or, const GcnInst& inst);
     void S_ABS_I32(const GcnInst& inst);
@@ -225,11 +226,15 @@ public:
     void V_RNDNE_F32(const GcnInst& inst);
     void V_FLOOR_F32(const GcnInst& inst);
     void V_EXP_F32(const GcnInst& inst);
+    void V_LOG_CLAMP_F32(const GcnInst& inst);
     void V_LOG_F32(const GcnInst& inst);
     void V_RCP_F32(const GcnInst& inst);
+    void V_RCP_CLAMP_F32(const GcnInst& inst);
     void V_RCP_LEGACY_F32(const GcnInst& inst);
     void V_RCP_F64(const GcnInst& inst);
+    void V_RSQ_LEGACY_F32(const GcnInst& inst);
     void V_RSQ_F32(const GcnInst& inst);
+    void V_RSQ_CLAMP_F32(const GcnInst& inst);
     void V_SQRT_F32(const GcnInst& inst);
     void V_SIN_F32(const GcnInst& inst);
     void V_COS_F32(const GcnInst& inst);

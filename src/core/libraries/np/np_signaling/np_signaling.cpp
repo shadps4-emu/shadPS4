@@ -12,7 +12,7 @@
 #include "core/libraries/net/net_util.h"
 #include "core/libraries/network/netctl.h"
 #include "core/libraries/np/np_common.h"
-#include "core/libraries/np/np_handler.h"
+#include "core/libraries/np/np_handler/np_handler.h"
 #include "core/libraries/np/np_manager.h"
 #include "core/libraries/np/np_signaling/np_signaling.h"
 #include "core/libraries/np/np_signaling/np_signaling_helpers.h"
@@ -324,6 +324,20 @@ s32 PS4_SYSV_ABI sceNpSignalingActivateConnection(OrbisNpSignalingContextId ctxI
 s32 PS4_SYSV_ABI sceNpSignalingActivateConnectionA(
     OrbisNpSignalingContextId ctxId, const OrbisNpSignalingAccountPlatformPair* peerAddr,
     OrbisNpSignalingConnectionId* outConnId) {
+    OrbisNpId peer_npid{};
+    if (peerAddr && peerAddr->accountId != 0 && peerAddr->platformType != 0 && outConnId &&
+        SignalingHandler::FindMatching2MemberNpId(peerAddr->accountId, &peer_npid)) {
+        s32 rc = SignalingHandler::ActivateSig1(ctxId, peer_npid, peer_npid.handle, outConnId);
+        if (rc == ORBIS_NP_SIGNALING_ERROR_OWN_NP_ID) {
+            rc = ORBIS_NP_SIGNALING_ERROR_OWN_PEER_ADDRESS;
+        }
+        LOG_INFO(Lib_NpSignaling,
+                 "ctxId={} accountId={:#x} platform={} peer='{}' rc={:#x} connId={}", ctxId,
+                 peerAddr->accountId, peerAddr->platformType, OnlineIdToString(peer_npid.handle),
+                 rc, rc == ORBIS_OK ? *outConnId : 0);
+        return rc;
+    }
+
     SignalingMutexGuard lock;
     if (!NpHandler::GetInstance().GetSignalingState().initialized) {
         return ORBIS_NP_SIGNALING_ERROR_NOT_INITIALIZED;

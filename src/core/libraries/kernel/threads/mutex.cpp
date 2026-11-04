@@ -102,6 +102,16 @@ s32 PS4_SYSV_ABI posix_pthread_mutex_init(PthreadMutexT* mutex,
     return MutexInit(mutex, mutex_attr ? *mutex_attr : nullptr, nullptr);
 }
 
+s32 PS4_SYSV_ABI posix_pthread_mutex_setname_np(PthreadMutexT* mutex, const char* name) {
+    if (!name) {
+        name = "SceNoNameMutex";
+    }
+    if (*mutex) {
+        (*mutex)->name = name;
+    }
+    return 0;
+}
+
 s32 PS4_SYSV_ABI scePthreadMutexInit(PthreadMutexT* mutex, const PthreadMutexAttrT* mutex_attr,
                                      const char* name) {
     return MutexInit(mutex, mutex_attr ? *mutex_attr : nullptr, name);
@@ -520,6 +530,11 @@ void RegisterMutex(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("EXv3ztGqtDM", "libkernel", 1, "libkernel", posix_pthread_mutexattr_setpshared);
     LIB_FUNCTION("mDmgMOGVUqg", "libkernel", 1, "libkernel", posix_pthread_mutexattr_settype);
     LIB_FUNCTION("HF7lK46xzjY", "libkernel", 1, "libkernel", posix_pthread_mutexattr_destroy);
+    LIB_FUNCTION("nTxZBp8YNGc", "libkernel", 1, "libkernel", posix_pthread_mutex_setname_np);
+    LIB_FUNCTION("nTxZBp8YNGc", "libkernel_psmkit", 1, "libkernel", posix_pthread_mutex_setname_np);
+    LIB_FUNCTION("nbQ0bXMRlhk", "libkernel", 1, "libkernel", posix_pthread_mutex_reltimedlock_np);
+    LIB_FUNCTION("nbQ0bXMRlhk", "libkernel_psmkit", 1, "libkernel",
+                 posix_pthread_mutex_reltimedlock_np);
 
     // Orbis
     LIB_FUNCTION("cmo1RIYva9o", "libkernel", 1, "libkernel", ORBIS(scePthreadMutexInit));

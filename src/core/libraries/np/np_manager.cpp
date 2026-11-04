@@ -15,11 +15,11 @@
 #include "core/libraries/kernel/process.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/np/np_error.h"
+#include "core/libraries/np/np_handler/np_handler.h"
 #include "core/libraries/np/np_manager.h"
 #include "core/tls.h"
 #include "core/user_manager.h"
 #include "core/user_settings.h"
-#include "np_handler.h"
 
 namespace Libraries::Np::NpManager {
 

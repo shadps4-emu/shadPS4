@@ -219,6 +219,7 @@ void PatchBufferSharp(const ResourceDiscovery& resource, Info& info, Descriptors
                         inst.GetOpcode() == IR::Opcode::StoreBufferFormatF32,
         .post_op = resource.sharps[0].post_op,
         .post_op_dw1_mask = resource.sharps[0].post_op_data.dw1_mask,
+        .post_op_dw2_shift = resource.sharps[0].post_op_data.dw2_shift,
     });
 
     // Replace handle with binding index in buffer resource list.

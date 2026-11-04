@@ -37,7 +37,7 @@ enum class PM4ItOpcode : u32 {
     WriteData = 0x37,
     DrawIndexIndirectMulti = 0x38,
     MemSemaphore = 0x39,
-    WaitRegMem = 0x3c,
+    WaitRegMem = 0x3C,
     IndirectBuffer = 0x3F,
     CondIndirectBuffer = 0x3F,
     CopyData = 0x40,
@@ -72,7 +72,8 @@ enum class PM4ItOpcode : u32 {
     WaitOnCeCounter = 0x86,
     WaitOnDeCounterDiff = 0x88,
     GetLodStats = 0x8E,
-    DrawIndexIndirectCountMulti = 0x9d,
+    DrawIndirectCountMulti = 0x9C,
+    DrawIndexIndirectCountMulti = 0x9D,
 };
 
 } // namespace AmdGpu

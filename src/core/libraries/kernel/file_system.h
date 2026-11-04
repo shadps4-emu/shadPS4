@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -53,6 +53,7 @@ struct OrbisKernelDirent {
 constexpr int ORBIS_KERNEL_O_RDONLY = 0x0000;
 constexpr int ORBIS_KERNEL_O_WRONLY = 0x0001;
 constexpr int ORBIS_KERNEL_O_RDWR = 0x0002;
+constexpr int ORBIS_KERNEL_O_ACCMODE = 0x0003;
 
 constexpr int ORBIS_KERNEL_O_NONBLOCK = 0x0004;
 constexpr int ORBIS_KERNEL_O_APPEND = 0x0008;
@@ -65,13 +66,82 @@ constexpr int ORBIS_KERNEL_O_DSYNC = 0x1000;
 constexpr int ORBIS_KERNEL_O_DIRECT = 0x00010000;
 constexpr int ORBIS_KERNEL_O_DIRECTORY = 0x00020000;
 
+// flags for flock
+constexpr int ORBIS_KERNEL_LOCK_SH = 0x01;
+constexpr int ORBIS_KERNEL_LOCK_EX = 0x02;
+constexpr int ORBIS_KERNEL_LOCK_NB = 0x04;
+constexpr int ORBIS_KERNEL_LOCK_UN = 0x08;
+
+// flags for access
+constexpr int ORBIS_KERNEL_F_OK = 0;
+constexpr int ORBIS_KERNEL_X_OK = 1;
+constexpr int ORBIS_KERNEL_W_OK = 2;
+constexpr int ORBIS_KERNEL_R_OK = 4;
+
+// commands for fcntl
+constexpr int ORBIS_KERNEL_F_DUPFD = 0;
+constexpr int ORBIS_KERNEL_F_GETFD = 1;
+constexpr int ORBIS_KERNEL_F_SETFD = 2;
+constexpr int ORBIS_KERNEL_F_GETFL = 3;
+constexpr int ORBIS_KERNEL_F_SETFL = 4;
+constexpr int ORBIS_KERNEL_F_GETOWN = 5;
+constexpr int ORBIS_KERNEL_F_SETOWN = 6;
+constexpr int ORBIS_KERNEL_F_OGETLK = 7;
+constexpr int ORBIS_KERNEL_F_OSETLK = 8;
+constexpr int ORBIS_KERNEL_F_OSETLKW = 9;
+constexpr int ORBIS_KERNEL_F_DUP2FD = 10;
+constexpr int ORBIS_KERNEL_F_GETLK = 11;
+constexpr int ORBIS_KERNEL_F_SETLK = 12;
+constexpr int ORBIS_KERNEL_F_SETLKW = 13;
+constexpr int ORBIS_KERNEL_F_READAHEAD = 15;
+constexpr int ORBIS_KERNEL_F_RDAHEAD = 16;
+constexpr int ORBIS_KERNEL_F_DUPFD_CLOEXEC = 17;
+constexpr int ORBIS_KERNEL_F_DUP2FD_CLOEXEC = 18;
+
+// flags for fcntl F_GETFD / F_SETFD
+constexpr int ORBIS_KERNEL_FD_CLOEXEC = 1;
+
+// lock types for fcntl
+constexpr s16 ORBIS_KERNEL_F_RDLCK = 1;
+constexpr s16 ORBIS_KERNEL_F_UNLCK = 2;
+constexpr s16 ORBIS_KERNEL_F_WRLCK = 3;
+
+struct OrbisKernelFlock {
+    s64 l_start;
+    s64 l_len;
+    s32 l_pid;
+    s16 l_type;
+    s16 l_whence;
+    s32 l_sysid;
+};
+
 s32 PS4_SYSV_ABI posix_open(const char* path, s32 flags, u16 mode);
 s32 PS4_SYSV_ABI posix_close(s32 fd);
+s32 PS4_SYSV_ABI posix_fcntl(s32 fd, s32 cmd, s64 arg);
+s32 PS4_SYSV_ABI sceKernelFcntl(s32 fd, s32 cmd, s64 arg);
+s32 PS4_SYSV_ABI posix_dup(s32 old_fd);
+s32 PS4_SYSV_ABI posix_dup2(s32 old_fd, s32 new_fd);
 s64 PS4_SYSV_ABI posix_lseek(s32 fd, s64 offset, s32 whence);
 s64 PS4_SYSV_ABI sceKernelWrite(s32 fd, const void* buf, u64 nbytes);
 s64 PS4_SYSV_ABI sceKernelRead(s32 fd, void* buf, u64 nbytes);
 s64 PS4_SYSV_ABI sceKernelPread(s32 fd, void* buf, u64 nbytes, s64 offset);
 s64 PS4_SYSV_ABI sceKernelPwrite(s32 fd, void* buf, u64 nbytes, s64 offset);
+s32 PS4_SYSV_ABI posix_truncate(const char* path, s64 length);
+s32 PS4_SYSV_ABI sceKernelTruncate(const char* path, s64 length);
+s32 PS4_SYSV_ABI posix_chmod(const char* path, u32 mode);
+s32 PS4_SYSV_ABI sceKernelChmod(const char* path, u32 mode);
+s32 PS4_SYSV_ABI posix_fchmod(s32 fd, u32 mode);
+s32 PS4_SYSV_ABI sceKernelFchmod(s32 fd, u32 mode);
+s32 PS4_SYSV_ABI posix_utimes(const char* path, const OrbisKernelTimeval* times);
+s32 PS4_SYSV_ABI sceKernelUtimes(const char* path, const OrbisKernelTimeval* times);
+s32 PS4_SYSV_ABI posix_futimes(s32 fd, const OrbisKernelTimeval* times);
+s32 PS4_SYSV_ABI sceKernelFutimes(s32 fd, const OrbisKernelTimeval* times);
+s32 PS4_SYSV_ABI posix_fdatasync(s32 fd);
+s32 PS4_SYSV_ABI sceKernelFdatasync(s32 fd);
+s32 PS4_SYSV_ABI posix_flock(s32 fd, s32 operation);
+s32 PS4_SYSV_ABI sceKernelFlock(s32 fd, s32 operation);
+void PS4_SYSV_ABI posix_sync();
+void PS4_SYSV_ABI sceKernelSync();
 void RegisterFileSystem(Core::Loader::SymbolsResolver* sym);
 
 } // namespace Libraries::Kernel

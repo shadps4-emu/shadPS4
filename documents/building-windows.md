@@ -48,11 +48,11 @@ If your default IDE is VSCode, we have a fully functional example for that as we
 ### Requirements
 
 * [**Git for Windows**](https://git-scm.com/download/win)
-* [**LLVM 19.1.1**](https://github.com/llvm/llvm-project/releases/download/llvmorg-19.1.1/LLVM-19.1.1-win64.exe)
+* [**LLVM 23**](https://github.com/llvm/llvm-project/releases/download/llvmorg-23.1.4/LLVM-23.1.4-win64.exe)
 * [**CMake 4.2.3 or newer**](https://github.com/Kitware/CMake/releases/download/v4.2.3/cmake-4.2.3-windows-x86_64.msi)
 * [**Ninja 1.13.2 or newer**](https://github.com/ninja-build/ninja/releases/download/v1.13.2/ninja-win.zip)
 
-**The main reason we use clang19 is because that version is used in CI for formatting.**
+**The main reason we use clang 23 is because that version is used in CI for formatting.**
 
 ### Installs
 
@@ -75,7 +75,7 @@ ninja --version
 # 1.13.2
 
 clang --version
-# clang version 19.1.1
+# clang version 23.1.4
 ```
 
 ### Install Visual Studio Build Tools

@@ -28,7 +28,7 @@ enum class FloatClassFunc : u32 {
     Infinity = PositiveInfinity | NegativeInfinity,
     Negative = NegativeInfinity | NegativeNormal | NegativeDenorm | NegativeZero,
     Finite = NegativeNormal | NegativeDenorm | NegativeZero | PositiveNormal | PositiveDenorm |
-             PositiveZero,
+        PositiveZero,
 };
 DECLARE_ENUM_FLAG_OPERATORS(FloatClassFunc)
 

@@ -41,7 +41,7 @@ static bool IsCompositeExtract(IR::Opcode opcode) {
 }
 
 static bool IsDisallowedOp(IR::Opcode op) {
-    return op == IR::Opcode::InverseBallot;
+    return op == IR::Opcode::InverseBallot || op == IR::Opcode::GetUserData;
 }
 
 using InstList = boost::container::small_vector<IR::Inst*, 4>;
@@ -352,11 +352,10 @@ static void DeduplicateSccs(std::vector<PhiScc>& sccs) {
 
     std::vector<SccGroup*> worklist;
     worklist.reserve(scc_groups.size());
-    for (auto it = scc_groups.begin(); it != scc_groups.end(); ++it) {
-        auto& group = it->second;
-        if (group.sccs.size() > 1) {
+    for (const auto& scc : sccs) {
+        auto& group = scc_groups.at(scc.hash);
+        if (group.sccs.size() > 1 && !std::exchange(group.queued, true)) {
             worklist.push_back(&group);
-            group.queued = true;
         }
     }
 

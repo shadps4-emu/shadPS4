@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <fstream>
@@ -230,7 +230,6 @@ std::optional<fs::path> FindGameByID(const fs::path& dir, const std::string& gam
     }
 
     if (is_different_game_root) {
-        LOG_DEBUG(Loader, "is_different_game_root");
         return std::nullopt;
     } else {
         if (auto found = boot_path_for(dir / game_id)) {

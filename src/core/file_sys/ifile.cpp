@@ -2,8 +2,11 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <fstream>
+#include <mutex>
 #include <system_error>
+#include <unordered_map>
 
+#include "common/hash.h"
 #include "common/logging/log.h"
 #include "common/path_util.h"
 #include "core/file_sys/backends/host_fs.h"
@@ -12,6 +15,39 @@
 #include "core/file_sys/ifile.h"
 
 namespace Core::FileSys {
+
+namespace {
+
+struct FileIdentityHash {
+    size_t operator()(const FileIdentity& id) const noexcept {
+        u64 seed = static_cast<u64>(id.kind);
+        seed = HashCombine(seed, id.host.device);
+        seed = HashCombine(seed, id.host.file_hi);
+        seed = HashCombine(seed, id.host.file_lo);
+        seed = HashCombine(seed, static_cast<u64>(id.node));
+        return static_cast<size_t>(seed);
+    }
+};
+
+} // namespace
+
+std::optional<u32> GetGuestInode(const FileIdentity& identity) {
+    static std::mutex mutex;
+    static std::unordered_map<FileIdentity, u32, FileIdentityHash> inodes;
+    static u32 next_inode = 1;
+
+    std::scoped_lock lk{mutex};
+    if (const auto it = inodes.find(identity); it != inodes.end()) {
+        return it->second;
+    }
+    if (next_inode == 0) {
+        LOG_ERROR(Kernel_Fs, "Out of guest inode numbers");
+        return std::nullopt;
+    }
+    const u32 inode = next_inode++;
+    inodes.emplace(identity, inode);
+    return inode;
+}
 
 bool IsZArchiveFile(const std::filesystem::path& path) {
     std::error_code ec;

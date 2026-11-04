@@ -111,13 +111,14 @@ public:
 class InputEvent {
 public:
     InputID input;
-    bool active;
+    u8 active : 1;
+    u8 analog_source : 1;
     s8 axis_value;
 
     InputEvent(InputID i = InputID(), bool a = false, s8 v = 0)
-        : input(i), active(a), axis_value(v) {}
+        : input(i), active(a), axis_value(v), analog_source(false) {}
     InputEvent(InputType d, u32 i, bool a = false, s8 v = 0)
-        : input(d, i), active(a), axis_value(v) {}
+        : input(d, i), active(a), axis_value(v), analog_source(false) {}
 };
 
 // i strongly suggest you collapse these maps
@@ -458,6 +459,7 @@ public:
     s16 old_param;
     s16* new_param;
     bool old_button_state, new_button_state, state_changed, positive_axis;
+    bool analog_source = false;
 
     ControllerOutput(const u32 b, u32 a = SDL_GAMEPAD_AXIS_INVALID, bool p = true) {
         button = b;

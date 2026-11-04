@@ -16,6 +16,7 @@ namespace Shader::Optimization {
 
 union PostOpData {
     u32 dw1_mask;
+    u32 dw2_shift;
     IR::Value lod_prod{};
 };
 

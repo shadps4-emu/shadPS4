@@ -54,6 +54,7 @@ public:
 private:
     std::filesystem::path m_path;
     Common::FS::IOFile m_file;
+    u32 m_inode{0};
     bool m_read_only;
 };
 
@@ -79,6 +80,7 @@ public:
 
     bool Exists(std::string_view rel_path) override;
     bool IsDirectory(std::string_view rel_path) override;
+    bool Stat(std::string_view rel_path, FileStat& out) override;
 
     std::unique_ptr<IFile> Open(std::string_view rel_path,
                                 Common::FS::FileAccessMode mode) override;
@@ -97,6 +99,7 @@ public:
     }
 
     std::optional<std::vector<u8>> ReadFile(std::string_view rel_path) const override;
+    void InvalidateCache(std::string_view rel_path = "") override;
 
 private:
     std::filesystem::path Resolve(std::string_view rel_path) const;

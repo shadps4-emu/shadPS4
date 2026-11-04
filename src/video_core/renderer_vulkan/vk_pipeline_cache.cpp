@@ -245,6 +245,7 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(HwStage stage, SwStag
         info.sw.vs.step_rate_1 = regs.vgt_instance_step_rate_1;
         info.sw.vs.vertex_sgpr_offset = draw_indirect_params.vertex_sgpr_offset;
         info.sw.vs.instance_sgpr_offset = draw_indirect_params.instance_sgpr_offset;
+        info.sw.vs.is_indirect = draw_indirect_params.is_indirect;
         info.sw.vs.tess_emulated_primitive =
             regs.primitive_type == AmdGpu::PrimitiveType::RectList ||
             regs.primitive_type == AmdGpu::PrimitiveType::QuadList;
@@ -326,6 +327,8 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
         .needs_unorm_fixup = instance.GetDriverID() == vk::DriverId::eMesaKosmickrisp,
         .needs_clip_distance_emulation = instance.GetDriverID() == vk::DriverId::eNvidiaProprietary,
         .supports_shader_stencil_export = instance_.IsShaderStencilExportSupported(),
+        .fast_shader_math = EmulatorSettings.IsFastShaderMath(),
+        .support_bda = instance_.IsBufferDeviceAddressSupported(),
     };
     WarmUp();
 
