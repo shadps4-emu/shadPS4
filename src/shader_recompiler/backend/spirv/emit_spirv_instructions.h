@@ -490,6 +490,7 @@ Id EmitInverseBallot(EmitContext& ctx, Id mask);
 Id EmitGroupAny(EmitContext& ctx, Id bit);
 Id EmitDataAppend(EmitContext& ctx, Id gds_dw_offset, Id exec);
 Id EmitDataConsume(EmitContext& ctx, Id gds_dw_offset, Id exec);
+Id EmitDataOrderedCount(EmitContext& ctx, Id gds_dw_offset, Id exec);
 
 void EmitEmitVertex(EmitContext& ctx);
 void EmitEmitPrimitive(EmitContext& ctx);

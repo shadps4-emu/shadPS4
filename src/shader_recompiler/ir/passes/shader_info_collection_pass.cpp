@@ -185,6 +185,7 @@ void Visit(Info& info, const IR::Inst& inst, Profile const& profile) {
         break;
     case IR::Opcode::DataAppend:
     case IR::Opcode::DataConsume:
+    case IR::Opcode::DataOrderedCount:
     case IR::Opcode::Ballot:
     case IR::Opcode::InverseBallot:
     case IR::Opcode::BallotFindLsb:
