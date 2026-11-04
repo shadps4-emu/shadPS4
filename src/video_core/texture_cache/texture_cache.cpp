@@ -635,20 +635,13 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
     }
 
     // Try to resolve overlaps (if any)
-    int view_mip{-1};
-    int view_slice{-1};
     if (!image_id) {
         for (const auto& cache_id : image_ids) {
-            view_mip = -1;
-            view_slice = -1;
-
             const auto& merged_info = image_id ? slot_images[image_id].info : info;
-            auto [overlap_image_id, overlap_view_mip, overlap_view_slice] =
-                ResolveOverlap(merged_info, desc.type, cache_id, image_id);
+            const auto overlap_image_id =
+                std::get<0>(ResolveOverlap(merged_info, desc.type, cache_id, image_id));
             if (overlap_image_id) {
                 image_id = overlap_image_id;
-                view_mip = overlap_view_mip;
-                view_slice = overlap_view_slice;
             }
         }
     }
@@ -675,19 +668,15 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
     image.tick_accessed_last = scheduler.CurrentTick();
     TouchImage(image);
 
-    if (auto mip = info.MipOf(image.info); mip >= 0) {
-        if (auto slice = info.SliceOf(image.info, mip); slice >= 0) {
-            view_mip = mip;
-            view_slice = slice;
+    if (const auto mip = info.MipOf(image.info); mip >= 0) {
+        if (const auto slice = info.SliceOf(image.info, mip); slice >= 0) {
+            if (mip > 0) {
+                desc.view_info.range.base.level = mip;
+            }
+            if (slice > 0) {
+                desc.view_info.range.base.layer = slice;
+            }
         }
-    }
-
-    // If the image requested is a subresource of the image from cache record its location.
-    if (view_mip > 0) {
-        desc.view_info.range.base.level = view_mip;
-    }
-    if (view_slice > 0) {
-        desc.view_info.range.base.layer = view_slice;
     }
 
     return image_id;

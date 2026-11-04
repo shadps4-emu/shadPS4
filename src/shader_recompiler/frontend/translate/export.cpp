@@ -51,15 +51,14 @@ void Translator::ExportRenderTarget(const GcnInst& inst) {
     const auto& exp = inst.control.exp;
     const u32 export_idx = exp.target - static_cast<u32>(IR::Attribute::RenderTarget0);
     info.mrt_mask |= 1u << export_idx;
-    u32 color_buffer_idx = runtime_info.hw.fs.color_shader_mask.GetTarget(export_idx);
-    IR::Attribute mrt =
-        IR::Attribute(static_cast<u32>(IR::Attribute::RenderTarget0) + color_buffer_idx);
-    if (runtime_info.hw.fs.dual_source_blending && export_idx <= 1) {
-        color_buffer_idx = 0;
-        mrt = IR::Attribute(exp.target);
-    } else if (color_buffer_idx == AmdGpu::NUM_COLOR_BUFFERS) {
+    const bool dual_source = runtime_info.hw.fs.dual_source_blending;
+    const u32 color_buffer_idx =
+        dual_source ? 0 : runtime_info.hw.fs.color_shader_mask.GetTarget(export_idx);
+    if ((dual_source && export_idx > 1) || color_buffer_idx == AmdGpu::NUM_COLOR_BUFFERS) {
         return;
     }
+    const IR::Attribute mrt{IR::Attribute::RenderTarget0 +
+                            (dual_source ? export_idx : color_buffer_idx)};
 
     const auto color_buffer = runtime_info.hw.fs.color_buffers[color_buffer_idx];
     if (color_buffer.export_format == AmdGpu::ShaderExportFormat::Zero || exp.en == 0) {

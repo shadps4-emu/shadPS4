@@ -15,7 +15,7 @@ enum class ShaderInputUsageType : u8 {
 };
 
 /**
- * SDK-compatible Gnm::InputUsageSlot. The shader binary footer stores this table immediately
+ * The shader binary footer stores the input usage slots immediately
  * before the chunk usage masks referenced by BinaryInfo::chunk_usage_base_offset_in_dw.
  */
 struct alignas(4) ShaderInputUsageSlot {
