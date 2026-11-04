@@ -173,6 +173,19 @@ public:
         return NetResult::Ok(id);
     }
 
+    bool Duplicate(s32 old_id, s32 new_id) {
+        std::scoped_lock lock{mutex_};
+        const auto it = objects_.find(old_id);
+        if (it == objects_.end()) {
+            return false;
+        }
+        if (it->second.counted) {
+            counted_++;
+        }
+        objects_[new_id] = {it->second.object, it->second.counted};
+        return true;
+    }
+
     template <typename T>
     std::shared_ptr<T> Get(s32 id) const {
         std::scoped_lock lock{mutex_};
@@ -534,6 +547,13 @@ NetResult CloseObject(s32 id) {
         break; // released by its owner
     }
     return NetResult::Fail(Error::BadF);
+}
+
+NetResult DuplicateObject(s32 old_id, s32 new_id) {
+    if (!g_objects.Duplicate(old_id, new_id)) {
+        return NetResult::Fail(Error::BadF);
+    }
+    return NetResult::Ok(new_id);
 }
 
 NetResult ReserveExternalId() {

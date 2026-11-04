@@ -21,6 +21,7 @@
 #include "core/libraries/gnmdriver/gnmdriver.h"
 #include "core/libraries/hmd/hmd.h"
 #include "core/libraries/hmd/hmd_setup_dialog.h"
+#include "core/libraries/hmd/vrservicedialog.h"
 #include "core/libraries/ime/error_dialog.h"
 #include "core/libraries/ime/ime.h"
 #include "core/libraries/ime/ime_dialog.h"
@@ -194,6 +195,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
             {"libSceCompanionUtil.sprx", Libraries::CompanionUtil::RegisterLib},
             {"libSceVoice.sprx", Libraries::Voice::RegisterLib},
             {"libSceVrTracker.sprx", Libraries::VrTracker::RegisterLib},
+            {"libSceVrTrackerDialog.sprx", Libraries::VrServiceDialog::RegisterLib},
             {"libSceContentExport.sprx", Libraries::ContentExport::RegisterLib},
             {"libSceVideoRecording.sprx", Libraries::VideoRecording::RegisterLib},
             {"libSceInvitationDialog.sprx", Libraries::InvitationDialog::RegisterLib},
