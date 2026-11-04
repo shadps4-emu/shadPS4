@@ -266,6 +266,34 @@ static std::pair<BinaryInfo, VAddr> SearchBinaryInfo(VAddr address, auto&& read_
     UNREACHABLE_MSG("Shader binary info not found.");
 }
 
+static void ReadShaderResourceTable(Shader::ShaderParams& params, const BinaryInfo& bininfo,
+                                    VAddr info_address, auto&& read_memory) {
+    if (!bininfo.is_srt) {
+        return;
+    }
+    const VAddr code_address = params.Base();
+    const size_t slots_size = bininfo.num_input_usage_slots * sizeof(Shader::ShaderInputUsageSlot);
+    const size_t footer_prefix = bininfo.chunk_usage_base_offset_in_dw * sizeof(u32) + slots_size;
+    if (info_address < code_address || footer_prefix > info_address - code_address) {
+        return;
+    }
+    const VAddr slots_address = info_address - footer_prefix;
+    if (bininfo.length > slots_address - code_address) {
+        return;
+    }
+    std::array<Shader::ShaderInputUsageSlot, 256> slots;
+    read_memory(slots_address, reinterpret_cast<u8*>(slots.data()), slots_size);
+    for (const auto& slot : std::span{slots}.first(bininfo.num_input_usage_slots)) {
+        if (slot.UsageType() == Shader::ShaderInputUsageType::ImmShaderResourceTable) {
+            params.srt_metadata.resize(slots_address - code_address - bininfo.length);
+            read_memory(code_address + bininfo.length, params.srt_metadata.data(),
+                        params.srt_metadata.size());
+            params.srt_user_data_base = slot.start_register;
+            break;
+        }
+    }
+}
+
 static Shader::ShaderParams GetParams(const auto& sh, auto&& read_memory) {
     const auto* code = sh.template Address<u32*>();
     const auto [bininfo, info_address] = SearchBinaryInfo(std::bit_cast<VAddr>(code), read_memory);
@@ -275,32 +303,10 @@ static Shader::ShaderParams GetParams(const auto& sh, auto&& read_memory) {
         .code = std::span{code, bininfo.length / sizeof(u32)},
         .hash = bininfo.shader_hash,
     };
-    const VAddr code_address = std::bit_cast<VAddr>(code);
-    const size_t slots_size = bininfo.num_input_usage_slots * sizeof(Shader::ShaderInputUsageSlot);
-    const size_t footer_prefix = bininfo.chunk_usage_base_offset_in_dw * sizeof(u32) + slots_size;
-    if (info_address < code_address || footer_prefix > info_address - code_address) {
-        return params;
-    }
-    const VAddr slots_address = info_address - footer_prefix;
-    if (bininfo.length > slots_address - code_address) {
-        return params;
-    }
-    if (bininfo.is_srt) {
-        const VAddr start = code_address + bininfo.length;
-        read_memory(start, info_address - start);
-        auto* memory = Core::Memory::Instance();
-        std::array<Shader::ShaderInputUsageSlot, 256> slots;
-        memory->CopySparseMemory(slots_address, reinterpret_cast<u8*>(slots.data()), slots_size);
-        for (const auto& slot : std::span{slots}.first(bininfo.num_input_usage_slots)) {
-            if (slot.UsageType() == Shader::ShaderInputUsageType::ImmShaderResourceTable) {
-                params.srt_metadata.resize(slots_address - start);
-                memory->CopySparseMemory(start, params.srt_metadata.data(),
-                                         params.srt_metadata.size());
-                params.srt_user_data_base = slot.start_register;
-                break;
-            }
-        }
-    }
+    ReadShaderResourceTable(params, bininfo, info_address, [&](VAddr address, u8* dest, u64 size) {
+        read_memory(address, size);
+        Core::Memory::Instance()->CopySparseMemory(address, dest, size);
+    });
     return params;
 }
 
