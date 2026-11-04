@@ -80,6 +80,8 @@ void Translator::EmitDataShare(const GcnInst& inst) {
         return DS_CONSUME(inst);
     case Opcode::DS_APPEND:
         return DS_APPEND(inst);
+    case Opcode::DS_ORDERED_COUNT:
+        return DS_ORDERED_COUNT(inst);
     case Opcode::DS_WRITE_B16:
         return DS_WRITE(16, false, false, false, inst);
     case Opcode::DS_WRITE_B64:
@@ -372,6 +374,15 @@ void Translator::DS_CONSUME(const GcnInst& inst) {
     const IR::U32 base = ir.BitFieldExtract(ir.GetM0(), ir.Imm32(16), ir.Imm32(16));
     const IR::U32 gds_offset = ir.IAdd(base, ir.Imm32(inst_offset));
     const IR::U32 prev = ir.DataConsume(ir.ShiftRightLogical(gds_offset, ir.Imm32(2u)));
+    SetDst(inst.dst[0], prev);
+}
+
+void Translator::DS_ORDERED_COUNT(const GcnInst& inst) {
+    const IR::U32 vaddr = GetSrc(inst.src[0]);
+    const u32 offset0 = u32(inst.control.ds.offset0);
+    const IR::U32 base = ir.BitFieldExtract(ir.GetM0(), ir.Imm32(16), ir.Imm32(16));
+    const IR::U32 gds_offset = ir.IAdd(base, ir.IAdd(vaddr, ir.Imm32(offset0)));
+    const IR::U32 prev = ir.DataOrderedCount(ir.ShiftRightLogical(gds_offset, ir.Imm32(2u)));
     SetDst(inst.dst[0], prev);
 }
 

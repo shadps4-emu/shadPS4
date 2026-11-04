@@ -686,6 +686,10 @@ U32 IREmitter::DataConsume(const U32& gds_dw_offset) {
     return Inst<U32>(Opcode::DataConsume, gds_dw_offset, GetExec());
 }
 
+U32 IREmitter::DataOrderedCount(const U32& gds_dw_offset) {
+    return Inst<U32>(Opcode::DataOrderedCount, gds_dw_offset, GetExec());
+}
+
 U32 IREmitter::LaneId() {
     return Inst<U32>(Opcode::LaneId);
 }

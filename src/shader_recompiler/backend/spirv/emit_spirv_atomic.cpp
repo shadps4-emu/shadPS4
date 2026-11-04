@@ -529,4 +529,8 @@ Id EmitDataConsume(EmitContext& ctx, Id gds_dw_offset, Id exec) {
     UNREACHABLE_MSG("SPIR-V Instruction");
 }
 
+Id EmitDataOrderedCount(EmitContext& ctx, Id gds_dw_offset, Id exec) {
+    UNREACHABLE_MSG("SPIR-V Instruction");
+}
+
 } // namespace Shader::Backend::SPIRV
