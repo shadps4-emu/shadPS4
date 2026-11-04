@@ -6,11 +6,13 @@
 #include <shared_mutex>
 #include <stop_token>
 #include <thread>
-#include <core/emulator_settings.h>
+#include <fmt/format.h>
 #include <magic_enum/magic_enum.hpp>
+
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "common/thread.h"
+#include "core/emulator_settings.h"
 #include "core/libraries/audio/audioout.h"
 #include "core/libraries/audio/audioout_backend.h"
 #include "core/libraries/audio/audioout_error.h"
@@ -107,15 +109,17 @@ static int GetPortRange(OrbisAudioOutPort type) {
 }
 
 static int GetPortId(s32 handle) {
-    int port_id = handle & 0xFF;
+    const int port_id = handle & 0xFF;
 
     if (port_id >= ORBIS_AUDIO_OUT_NUM_PORTS) {
-        LOG_ERROR(Lib_AudioOut, "Invalid port");
+        LOG_DEBUG(Lib_AudioOut, "Invalid handle {:#x}: port index {} out of range (max {})", handle,
+                  port_id, ORBIS_AUDIO_OUT_NUM_PORTS - 1);
         return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
     }
 
     if ((handle & 0x3F000000) != 0x20000000) {
-        LOG_ERROR(Lib_AudioOut, "Invalid port");
+        LOG_DEBUG(Lib_AudioOut, "Invalid handle {:#x}: bad magic {:#x}, expected {:#x}", handle,
+                  handle & 0x3F000000, 0x20000000);
         return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT;
     }
 
@@ -355,6 +359,8 @@ s32 PS4_SYSV_ABI sceAudioOutOpen(UserService::OrbisUserServiceUserId user_id,
 
     // Create handle
     s32 handle = (_type << 16) | port_id | 0x20000000;
+    LOG_INFO(Lib_AudioOut, "opened port_type={}({}) -> port_id={}, handle={:#x}",
+             magic_enum::enum_name(port_type), _type, port_id, handle);
     return handle;
 }
 
@@ -368,7 +374,7 @@ s32 PS4_SYSV_ABI sceAudioOutClose(s32 handle) {
 
     int port_id = GetPortId(handle);
     if (port_id < 0) {
-        LOG_ERROR(Lib_AudioOut, "Invalid port id");
+        LOG_ERROR(Lib_AudioOut, "Invalid port id for handle {:#x}", handle);
         return port_id;
     }
 
@@ -428,7 +434,7 @@ s32 PS4_SYSV_ABI sceAudioOutGetLastOutputTime(s32 handle, u64* output_time) {
 
     int port_id = GetPortId(handle);
     if (port_id < 0) {
-        LOG_ERROR(Lib_AudioOut, "Invalid port id");
+        LOG_DEBUG(Lib_AudioOut, "Invalid port id for handle {:#x}", handle);
         return port_id;
     }
 
@@ -462,7 +468,7 @@ s32 PS4_SYSV_ABI sceAudioOutGetPortState(s32 handle, OrbisAudioOutPortState* sta
 
     int port_id = GetPortId(handle);
     if (port_id < 0) {
-        LOG_ERROR(Lib_AudioOut, "Invalid port id");
+        LOG_DEBUG(Lib_AudioOut, "Invalid port id for handle {:#x}", handle);
         return port_id;
     }
 
@@ -535,7 +541,7 @@ s32 PS4_SYSV_ABI sceAudioOutOutput(s32 handle, void* ptr) {
 
     int port_id = GetPortId(handle);
     if (port_id < 0) {
-        LOG_ERROR(Lib_AudioOut, "invalid port id");
+        LOG_ERROR(Lib_AudioOut, "invalid port id for handle {:#x}", handle);
         return port_id;
     }
 

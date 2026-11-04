@@ -20,7 +20,7 @@ constexpr s32 ORBIS_NP_MANAGER_REQUEST_LIMIT = 0x20;
 constexpr s32 ORBIS_NP_MANAGER_REQUEST_ID_OFFSET = 0x20000000;
 
 enum class OrbisNpState : u32 {
-    Unknown = 0,
+    NotSignedUp = 0,
     SignedOut = 1,
     SignedIn = 2,
 };
@@ -111,6 +111,8 @@ void NotifyNpStateFromUserServiceEvent(Libraries::UserService::OrbisUserServiceE
 
 s32 PS4_SYSV_ABI sceNpGetNpId(Libraries::UserService::OrbisUserServiceUserId user_id,
                               OrbisNpId* np_id);
+s32 PS4_SYSV_ABI sceNpGetAccountIdA(Libraries::UserService::OrbisUserServiceUserId user_id,
+                                    u64* account_id);
 s32 PS4_SYSV_ABI sceNpGetOnlineId(Libraries::UserService::OrbisUserServiceUserId user_id,
                                   OrbisNpOnlineId* online_id);
 s32 PS4_SYSV_ABI sceNpCheckNpAvailabilityA(s32 req_id,

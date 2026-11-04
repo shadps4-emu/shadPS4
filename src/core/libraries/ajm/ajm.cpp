@@ -125,7 +125,7 @@ int PS4_SYSV_ABI sceAjmDecAt9ParseConfigData() {
 
 int PS4_SYSV_ABI sceAjmDecMp3ParseFrame(const u8* buf, u32 stream_size, int parse_ofl,
                                         AjmDecMp3ParseFrame* frame) {
-    return AjmMp3Decoder::ParseMp3Header(buf, stream_size, parse_ofl, frame);
+    return AjmMp3Decoder::ParseMp3Frame(buf, stream_size, parse_ofl, frame);
 }
 
 int PS4_SYSV_ABI sceAjmFinalize() {

@@ -212,6 +212,17 @@ static void LowerBufferFormatInst(IR::Block& block, IR::Inst& inst, Info& info) 
         .num_components = AmdGpu::NumComponents(data_format),
     };
 
+    if (data_format == AmdGpu::DataFormat::FormatInvalid) {
+        LOG_WARNING(Render_Recompiler, "Skipping lowering for null buffer sharp");
+        if (IsBufferFormatLoad(inst)) {
+            inst.ReplaceUsesWithAndRemove(
+                ir.CompositeConstruct(ir.Imm32(0.f), ir.Imm32(0.f), ir.Imm32(0.f), ir.Imm32(0.f)));
+        } else {
+            inst.Invalidate();
+        }
+        return;
+    }
+
     if (IsBufferFormatLoad(inst)) {
         const auto interpreted =
             LoadBufferFormat(ir, inst.Arg(0), IR::U32{inst.Arg(1)}, flags, format_info);

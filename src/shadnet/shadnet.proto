@@ -89,6 +89,27 @@ message NotifyFriendStatus {
     uint64 timestamp = 3;  // nanoseconds since Unix epoch
 }
 
+// Notification 18: the server refused a service to this player.
+//   service: 1 = Matching2 (matchmaking)
+//   reason:  1 = server full (in_use / limit are set), 2 = account not allowed,
+//            3 = service disabled on this server
+message NotifyServiceUnavailable {
+    uint32 service = 1;
+    uint32 reason  = 2;
+    uint32 in_use  = 3;
+    uint32 limit   = 4;
+}
+
+// Notification 19: the server is signing this client out, then disconnects.
+//   reason:  1 = client version not accepted (clientversions.cfg)
+//   message: text for the player, from the rule that matched
+//   version: the version the server checked ("" = none reported)
+message NotifyClientRejected {
+    uint32 reason  = 1;
+    string message = 2;
+    string version = 3;
+}
+
 // Score: board configuration
 
 message BoardInfo {
@@ -107,6 +128,7 @@ message RecordScoreRequest {
     int64  score    = 3;
     string comment  = 4;
     bytes  data     = 5;   // optional inline game-info blob
+    uint64 compareDate = 6;
 }
 
 message RecordScoreGameDataRequest {
@@ -147,6 +169,7 @@ message GetScoreFriendsRequest {
     uint32 max          = 3;
     bool   withComment  = 4;
     bool   withGameInfo = 5;
+    uint32 startRank    = 6;
 }
 
 message ScoreAccountIdPcId {
@@ -177,6 +200,7 @@ message ScoreRankData {
     bool   hasGameData = 5;
     uint64 recordDate  = 6;
     int64  accountId   = 7;
+    uint32 sharedRank  = 8;
 }
 
 message ScoreInfo {
@@ -374,6 +398,16 @@ message SetRoomDataInternalRequest {
     uint64 passwd_slot_mask = 7;
 }
 
+message SetRoomMemberDataInternalRequest {
+    uint32 req_id      = 1;
+    uint64 room_id     = 2;
+    uint32 member_id   = 3;
+    uint32 team_id     = 4;
+    uint32 flag_filter = 5;
+    uint32 flag_attr   = 6;
+    repeated MatchingBinAttr bin_attrs = 7;
+}
+
 message SetRoomDataExternalRequest {
     uint32 req_id  = 1;
     uint64 room_id = 2;
@@ -510,6 +544,7 @@ message RequestSignalingInfosReply {
 
 message LeaveRoomReply            { uint64 room_id = 1; }
 message SetRoomDataInternalReply  { uint64 room_id = 1; }
+message SetRoomMemberDataInternalReply { uint64 room_id = 1; }
 message SetRoomDataExternalReply  { uint64 room_id = 1; }
 message KickoutRoomMemberReply    { uint64 room_id = 1; }
 
@@ -528,6 +563,28 @@ message GetTokenReply {
     string token = 1;
     uint64 user_id = 2;
     string npid = 3;
+}
+
+// Resolve an arbitrary online ID to its account ID
+message LookupOnlineIdRequest {
+    string npid = 1; // online ID to resolve
+}
+
+message LookupOnlineIdReply {
+    uint64 account_id = 1;
+    string npid        = 2; // canonical online ID as registered on the server
+}
+
+// Single-use authorization code issued to the signed-in account for a game's backend, which
+// exchanges it at POST /2.0/oauth/token.
+message GetAuthorizationCodeRequest {
+    string client_id = 1;
+    string scope     = 2;
+}
+
+message GetAuthorizationCodeReply {
+    string code       = 1;
+    uint32 expires_in = 2; // seconds
 }
 
 // Notification payloads
@@ -722,6 +779,27 @@ message TusGetMultiUserVariableRequest {
     repeated string ownerNpIds      = 4;   // base npid-array path (server resolves each)
 }
 
+// Title Small Storage (TSS)
+
+message TssGetDataRequest {
+    int32  slotId              = 1;
+    bool   hasOffset           = 2;
+    uint64 offset              = 3;
+    bool   hasLastByte         = 4;
+    uint64 lastByte            = 5;
+    bool   hasIfParam          = 6;
+    int32  ifType              = 7;  // 0 = IF_MODIFIED_SINCE, 1 = IF_RANGE
+    uint64 ifLastModified      = 8;  // seconds since epoch
+}
+
+message TssGetDataResponse {
+    
+    int32  statusCodeType = 1; // OrbisNpTssStatusCodeType: 0 = OK, 1 = PARTIAL, 2 = NOT_MODIFIED.
+    uint64 lastModified   = 2; // seconds since epoch, 0 when the file is absent
+    uint64 contentLength  = 3; // size the client should expect for this status
+    bytes  data           = 4; // the (possibly ranged) payload
+}
+
 // Trophies
 
 message TrophyEntry {
@@ -745,5 +823,5 @@ message SyncTrophiesReply {
 }
 
 message SetClientVersionRequest {
-    string version = 1;
+    string version = 1; 
 }

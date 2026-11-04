@@ -40,7 +40,6 @@ public:
 
 private:
     UserManager m_userManager;
-    bool m_loaded{false};
     static std::shared_ptr<UserSettingsImpl> s_instance;
     static std::mutex s_mutex;
 };

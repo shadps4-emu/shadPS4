@@ -63,6 +63,9 @@ void RemoveTexture(ImTextureID descriptor_set);
 
 bool Init(InitInfo info);
 void Shutdown();
+// Records the font atlas texture requests of this frame; call outside a render pass, before the
+// RenderDrawData() that samples them.
+void UpdateTextures(ImDrawData& draw_data, vk::CommandBuffer command_buffer);
 void RenderDrawData(ImDrawData& draw_data, vk::CommandBuffer command_buffer,
                     vk::Pipeline pipeline = VK_NULL_HANDLE);
 

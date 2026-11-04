@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <fmt/core.h>
+#include <fmt/format.h>
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "core/file_sys/backends/host_fs.h"
@@ -479,14 +479,20 @@ std::string Elf::ElfPHeaderStr(u16 no) {
 }
 
 void Elf::LoadSegment(u64 virtual_addr, u64 file_offset, u64 size) {
+    if (!TryLoadSegment(virtual_addr, file_offset, size)) {
+        UNREACHABLE();
+    }
+}
+
+bool Elf::TryLoadSegment(u64 virtual_addr, u64 file_offset, u64 size) {
     if (!is_self) {
         // It's elf file
         if (!m_f.Seek(file_offset, SeekOrigin::SetOrigin)) {
             LOG_CRITICAL(Loader, "Failed to seek to ELF header");
-            return;
+            return false;
         }
         m_f.ReadRaw<u8>(reinterpret_cast<u8*>(virtual_addr), size);
-        return;
+        return true;
     }
 
     for (uint16_t i = 0; i < m_self.segment_count; i++) {
@@ -500,14 +506,14 @@ void Elf::LoadSegment(u64 virtual_addr, u64 file_offset, u64 size) {
                 auto offset = file_offset - phdr.p_offset;
                 if (!m_f.Seek(offset + seg.file_offset, SeekOrigin::SetOrigin)) {
                     LOG_CRITICAL(Loader, "Failed to seek to segment");
-                    return;
+                    return false;
                 }
                 m_f.ReadRaw<u8>(reinterpret_cast<u8*>(virtual_addr), size);
-                return;
+                return true;
             }
         }
     }
-    UNREACHABLE();
+    return false;
 }
 
 bool Elf::IsSharedLib() {

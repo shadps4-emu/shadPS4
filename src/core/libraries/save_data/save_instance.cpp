@@ -206,7 +206,7 @@ void SaveInstance::Umount() {
     param_sfo = PSF();
 
     fs::remove(corrupt_file_path);
-    g_mnt->Unmount(save_path, mount_point);
+    g_mnt->Unmount(mount_point);
 }
 
 void SaveInstance::CreateFiles() {

@@ -10,6 +10,7 @@
 #include <map>
 #include <mutex>
 #include <string>
+#include <thread>
 #include <unordered_map>
 #include <vector>
 
@@ -20,9 +21,6 @@
 #include "core/libraries/np/np_types.h"
 
 namespace Libraries::Np::NpSignaling {
-
-extern NpCommon::OrbisNpCalloutContext g_callout_ctx;
-extern bool g_callout_ctx_active;
 
 constexpr s64 kActivateCooldownUs = 6'000'000;
 constexpr s64 kActivateBudgetMaxUs = 600'000'000;
@@ -133,9 +131,8 @@ enum class ConnState : s32 {
     Established = 10,
 };
 
-struct ConnectionInfo {
-    OrbisNpSignalingConnectionId conn_id = 0;
-    OrbisNpSignalingContextId ctx_id = 0;
+struct PeerTransport {
+    s32 transport_id = 0;
 
     u32 addr = 0;
     u16 port = 0;
@@ -143,40 +140,41 @@ struct ConnectionInfo {
     u32 local_addr = 0;
     u16 local_port = 0;
 
-    s32 status = ORBIS_NP_SIGNALING_CONN_STATUS_INACTIVE;
-
     OrbisNpId npid{};
     OrbisNpOnlineId online_id{};
+    OrbisNpOnlineId local_online_id{};
 
-    s32 activation_mode = 0;
+    s32 status = ORBIS_NP_SIGNALING_CONN_STATUS_INACTIVE;
+    ConnState state = ConnState::Inactive;
+
+    bool peer_activated = false;
+    bool peer_established = false;
+    bool transport_established_fired = false;
+    bool is_initiator = false;
 
     static constexpr u32 kProbeSampleCount = 6;
     s32 probe_rtt_samples[kProbeSampleCount] = {-1, -1, -1, -1, -1, -1};
     u32 probe_sample_write_index = 0;
 
     s64 last_echo_ping_us = 0;
-
     s64 last_peer_rx_us = 0;
+    s64 last_handshake_send_us = 0;
+};
 
-    ConnState state = ConnState::Inactive;
-    bool established_fired = false;
-    bool established_event_fired = false;
-    bool peer_activated = false;
+struct ConnectionInfo {
+    OrbisNpSignalingConnectionId conn_id = 0;
+    OrbisNpSignalingContextId ctx_id = 0;
+    s32 transport_id = 0;
+    s32 status = ORBIS_NP_SIGNALING_CONN_STATUS_INACTIVE;
+
+    OrbisNpId npid{};
+    OrbisNpOnlineId online_id{};
+    bool sig1_established_event_fired = false;
     bool locally_activated = false;
+    bool peer_activated = false;
     bool peer_activated_fired = false;
-    bool peer_established = false;
     bool mutual_fired = false;
     bool dead_fired = false;
-    bool is_initiator = false;
-    s64 last_handshake_send_us = 0;
-
-    NpCommon::OrbisNpCalloutEntry timeout_callout{};
-    bool timeout_callout_armed = false;
-    NpCommon::OrbisNpCalloutEntry step_callout{};
-    bool step_callout_armed = false;
-    bool deactivate_lingering = false;
-
-    u32 echo_derived_value = 0;
 };
 
 struct NpSignalingContext {
@@ -246,38 +244,65 @@ struct PeerNetInfoResult {
     u32 nat_route_kind = 0;
 };
 
-extern std::unordered_map<s32, NpSignalingContext> g_contexts;
-extern std::unordered_map<s32, ConnectionInfo> g_connections;
-extern std::unordered_map<CtxNpIdKey, s32, CtxNpIdKeyHash> g_npid_to_conn;
-extern std::unordered_map<s32, PeerNetInfoResult> g_peer_netinfo_results;
 struct PendingActivation {
     OrbisNpSignalingConnectionId conn_id = 0;
     std::string peer_online_id;
     bool start_handshake = true;
 };
-extern std::vector<PendingActivation> g_pending_activations;
-extern u32 g_peer_netinfo_next_id;
-extern u32 g_peak_connection_count;
-extern u32 g_last_assigned_context_id;
-extern u32 g_connection_id_seed;
-extern bool g_initialized;
 
-extern Libraries::Kernel::PthreadMutexT g_mutex_storage;
+struct NpSignalingState {
+    std::unordered_map<s32, NpSignalingContext> contexts;
+    std::unordered_map<s32, ConnectionInfo> connections;
+    std::unordered_map<s32, PeerTransport> peer_transports;
+    std::unordered_map<CtxNpIdKey, s32, CtxNpIdKeyHash> npid_to_conn;
+    std::unordered_map<s32, PeerNetInfoResult> peer_netinfo_results;
+    std::vector<PendingActivation> pending_activations;
+
+    u32 peer_netinfo_next_id = 1;
+    u32 peak_connection_count = 0;
+    u32 last_assigned_context_id = 0;
+    u32 connection_id_seed = 0;
+    u32 transport_id_seed = 0;
+    bool initialized = false;
+
+    std::recursive_mutex mutex;
+
+    std::multimap<std::chrono::steady_clock::time_point, QueuedDispatch> dispatch_queue;
+    std::mutex dispatch_mutex;
+    std::condition_variable dispatch_cv;
+    Libraries::Kernel::PthreadT dispatch_thread = nullptr;
+    bool dispatch_stop = false;
+
+    std::atomic<bool> runtime_stop{false};
+    std::mutex runtime_thread_mutex;
+    std::thread runtime_thread;
+    std::mutex activation_mutex;
+    std::condition_variable activation_cv;
+    std::thread activation_thread;
+    u32 context_refs = 0;
+
+    void ResetSig1Data() {
+        contexts.clear();
+        connections.clear();
+        npid_to_conn.clear();
+        peer_netinfo_results.clear();
+        pending_activations.clear();
+        peer_netinfo_next_id = 1;
+        peak_connection_count = 0;
+        last_assigned_context_id = 0;
+        connection_id_seed = 0;
+    }
+};
 
 struct SignalingMutexGuard {
     SignalingMutexGuard();
-    ~SignalingMutexGuard();
+    ~SignalingMutexGuard() = default;
     SignalingMutexGuard(const SignalingMutexGuard&) = delete;
     SignalingMutexGuard& operator=(const SignalingMutexGuard&) = delete;
+
+private:
+    std::unique_lock<std::recursive_mutex> lock;
 };
-
-void InitSignalingMutex();
-void DestroySignalingMutex();
-
-extern std::multimap<std::chrono::steady_clock::time_point, QueuedDispatch> g_dispatch_queue;
-extern std::mutex g_dispatch_mutex;
-extern std::condition_variable g_dispatch_cv;
-extern bool g_dispatch_stop;
 
 long long NowMs();
 s64 NowUs();
@@ -315,43 +340,11 @@ bool TakePeerNetInfoResultLocked(OrbisNpSignalingContextId ctx_id, s32 req_or_co
                                  PeerNetInfoResult* out);
 bool DropPeerNetInfoResultLocked(OrbisNpSignalingContextId ctx_id, s32 req_or_conn_id);
 
-void RecordRttSampleLocked(OrbisNpSignalingConnectionId conn_id, s32 rtt_us);
-void SendEchoPings();
-
 void DispatchConnectionEvent(OrbisNpSignalingConnectionId conn_id, s32 event_type, s32 event_data);
 
 void DispatchPeerActivatedEvent(OrbisNpSignalingConnectionId conn_id);
 
-void CloseConnectionAndDispatchDead(OrbisNpSignalingConnectionId conn_id, s32 error_code);
-
-void EstablishConnection(OrbisNpSignalingConnectionId conn_id, bool peer_activated_hint);
-
-void DeactivateConnectionFaithful(OrbisNpSignalingConnectionId conn_id);
-
-void TerminateConnectionFaithful(OrbisNpSignalingConnectionId conn_id);
-
-void StartHandshakeInitiator(OrbisNpSignalingConnectionId conn_id);
-
-void QueueActivationLocked(OrbisNpSignalingConnectionId conn_id, std::string_view peer_online_id,
-                           bool start_handshake = true);
-void ProcessPendingActivations();
-
-void HandleHandshakePacket(u32 from_addr, u16 from_port, const SignalingHandshake& pkt);
-
-void ArmConnectTimeoutLocked(OrbisNpSignalingConnectionId conn_id);
-void ClearLingerAndTimeoutLocked(OrbisNpSignalingConnectionId conn_id);
-
-void SendActivationRequestLocked(const ConnectionInfo& ci);
-
-void SendControlCloseLocked(const ConnectionInfo& ci, ControlReason reason);
-
-void HandleControlPacket(u32 from_addr, u16 from_port, const SignalingControl& pkt);
-
 const char* SignalingEventName(u32 event_type);
 bool ConsumeActivationBudgetLocked(NpSignalingContext& ctx);
-void SendStunPing(OrbisNpSignalingContextId ctx_id);
-void ClearActiveDeadlines();
-void ClearConnectionDeadlineForPeer(std::string_view npid);
-void SetRoomLeft();
 
 } // namespace Libraries::Np::NpSignaling

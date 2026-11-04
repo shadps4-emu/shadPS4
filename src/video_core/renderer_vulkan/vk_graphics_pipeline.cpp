@@ -32,10 +32,13 @@ GraphicsPipeline::GraphicsPipeline(
     const Shader::Profile& profile, const GraphicsPipelineKey& key_,
     vk::PipelineCache pipeline_cache, std::span<const Shader::Info*, MaxShaderStages> infos,
     std::span<const Shader::RuntimeInfo, MaxShaderStages> runtime_infos,
-    std::optional<const Shader::Gcn::FetchShaderData> fetch_shader_,
-    std::span<const vk::ShaderModule> modules, SerializationSupport& sdata, bool preloading)
-    : Pipeline{instance, scheduler, desc_heap, profile, pipeline_cache}, key{key_},
-      fetch_shader{std::move(fetch_shader_)} {
+    const Shader::Gcn::FetchShaderData* fetch_shader_, std::span<const vk::ShaderModule> modules,
+    SerializationSupport& sdata, bool preloading)
+    : Pipeline{instance, scheduler, desc_heap, profile, pipeline_cache}, key{key_} {
+    if (fetch_shader_) {
+        fetch_shader = *fetch_shader_;
+    }
+
     const vk::Device device = instance.GetDevice();
     std::ranges::copy(infos, stages.begin());
     BuildDescSetLayout(preloading);
@@ -63,7 +66,7 @@ GraphicsPipeline::GraphicsPipeline(
     if (!preloading) {
         VertexInputs<AmdGpu::Buffer> guest_buffers;
         if (!instance.IsVertexInputDynamicState()) {
-            const auto& vs_info = runtime_infos[u32(Shader::LogicalStage::Vertex)].vs_info;
+            const auto& vs_info = runtime_infos[u32(Shader::SwStage::Vertex)].sw.vs;
             GetVertexInputs(sdata.vertex_attributes, sdata.vertex_bindings, sdata.divisors,
                             guest_buffers, vs_info.step_rate_0, vs_info.step_rate_1);
         }
@@ -119,7 +122,7 @@ GraphicsPipeline::GraphicsPipeline(
     }
 
     if (!preloading) {
-        const auto& fs_info = runtime_infos[u32(Shader::LogicalStage::Fragment)].fs_info;
+        const auto& fs_info = runtime_infos[u32(Shader::SwStage::Fragment)].hw.fs;
         sdata.multisampling = {
             .rasterizationSamples = LiverpoolToVK::NumSamples(
                 key.num_samples, instance.GetColorSampleCounts() & instance.GetDepthSampleCounts()),
@@ -168,7 +171,7 @@ GraphicsPipeline::GraphicsPipeline(
 
     boost::container::static_vector<vk::PipelineShaderStageCreateInfo, MaxShaderStages>
         shader_stages;
-    auto stage = u32(Shader::LogicalStage::Vertex);
+    auto stage = u32(Shader::SwStage::Vertex);
     if (infos[stage]) {
         shader_stages.emplace_back(vk::PipelineShaderStageCreateInfo{
             .stage = vk::ShaderStageFlagBits::eVertex,
@@ -176,7 +179,7 @@ GraphicsPipeline::GraphicsPipeline(
             .pName = "main",
         });
     }
-    stage = u32(Shader::LogicalStage::Geometry);
+    stage = u32(Shader::SwStage::Geometry);
     if (infos[stage]) {
         shader_stages.emplace_back(vk::PipelineShaderStageCreateInfo{
             .stage = vk::ShaderStageFlagBits::eGeometry,
@@ -184,7 +187,7 @@ GraphicsPipeline::GraphicsPipeline(
             .pName = "main",
         });
     }
-    stage = u32(Shader::LogicalStage::TessellationControl);
+    stage = u32(Shader::SwStage::TessellationControl);
     if (infos[stage]) {
         shader_stages.emplace_back(vk::PipelineShaderStageCreateInfo{
             .stage = vk::ShaderStageFlagBits::eTessellationControl,
@@ -194,7 +197,7 @@ GraphicsPipeline::GraphicsPipeline(
     } else if (is_rect_list || is_quad_list) {
         const auto type = is_quad_list ? AuxShaderType::QuadListTCS : AuxShaderType::RectListTCS;
         if (!preloading) {
-            const auto& fs_info = runtime_infos[u32(Shader::LogicalStage::Fragment)].fs_info;
+            const auto& fs_info = runtime_infos[u32(Shader::SwStage::Fragment)].hw.fs;
             sdata.tcs = Shader::Backend::SPIRV::EmitAuxilaryTessShader(type, fs_info);
         }
         shader_stages.emplace_back(vk::PipelineShaderStageCreateInfo{
@@ -203,7 +206,7 @@ GraphicsPipeline::GraphicsPipeline(
             .pName = "main",
         });
     }
-    stage = u32(Shader::LogicalStage::TessellationEval);
+    stage = u32(Shader::SwStage::TessellationEval);
     if (infos[stage]) {
         shader_stages.emplace_back(vk::PipelineShaderStageCreateInfo{
             .stage = vk::ShaderStageFlagBits::eTessellationEvaluation,
@@ -212,7 +215,7 @@ GraphicsPipeline::GraphicsPipeline(
         });
     } else if (is_rect_list || is_quad_list) {
         if (!preloading) {
-            const auto& fs_info = runtime_infos[u32(Shader::LogicalStage::Fragment)].fs_info;
+            const auto& fs_info = runtime_infos[u32(Shader::SwStage::Fragment)].hw.fs;
             sdata.tes = Shader::Backend::SPIRV::EmitAuxilaryTessShader(
                 AuxShaderType::PassthroughTES, fs_info);
         }
@@ -222,26 +225,31 @@ GraphicsPipeline::GraphicsPipeline(
             .pName = "main",
         });
     }
-    stage = u32(Shader::LogicalStage::Fragment);
+    stage = u32(Shader::SwStage::Fragment);
     if (infos[stage]) {
         shader_stages.emplace_back(vk::PipelineShaderStageCreateInfo{
             .stage = vk::ShaderStageFlagBits::eFragment,
             .module = modules[stage],
             .pName = "main",
         });
-    } else if (runtime_infos[u32(Shader::LogicalStage::Fragment)].fs_info.clip_distance_emulation) {
+    } else if (runtime_infos[u32(Shader::SwStage::Fragment)].hw.fs.clip_distance_emulation) {
         if (!preloading) {
-            const auto vs_runtime_info =
-                runtime_infos[static_cast<u32>(Shader::LogicalStage::Vertex)].vs_info;
+            const auto& vs = runtime_infos[static_cast<u32>(Shader::SwStage::Vertex)].hw.vs;
 
-            sdata.fragment =
-                Shader::Backend::SPIRV::EmitDiscardFragmentShader(vs_runtime_info.outputs);
+            sdata.fragment = Shader::Backend::SPIRV::EmitDiscardFragmentShader(vs.outputs);
         }
         shader_stages.emplace_back(vk::PipelineShaderStageCreateInfo{
             .stage = vk::ShaderStageFlagBits::eFragment,
             .module = CompileSPV(sdata.fragment, instance.GetDevice()),
             .pName = "main",
         });
+    }
+
+    const vk::PipelineShaderStageRequiredSubgroupSizeCreateInfo subgroup_size_ci = {
+        .requiredSubgroupSize = 64,
+    };
+    for (auto& stage : shader_stages) {
+        stage.pNext = instance.IsSubgroupSize64Supported() ? &subgroup_size_ci : nullptr;
     }
 
     const auto depth_format =
@@ -303,18 +311,6 @@ GraphicsPipeline::GraphicsPipeline(
         const auto alpha_blend =
             control.separate_alpha_blend ? LiverpoolToVK::BlendOp(control.alpha_func) : color_blend;
 
-        const auto color_scaled_min_max =
-            (color_blend == vk::BlendOp::eMin || color_blend == vk::BlendOp::eMax) &&
-            (src_color != vk::BlendFactor::eOne || dst_color != vk::BlendFactor::eOne);
-        const auto alpha_scaled_min_max =
-            (alpha_blend == vk::BlendOp::eMin || alpha_blend == vk::BlendOp::eMax) &&
-            (src_alpha != vk::BlendFactor::eOne || dst_alpha != vk::BlendFactor::eOne);
-        if (color_scaled_min_max || alpha_scaled_min_max) {
-            LOG_WARNING(
-                Render_Vulkan,
-                "Unimplemented use of min/max blend op with blend factor not equal to one.");
-        }
-
         attachments[i] = vk::PipelineColorBlendAttachmentState{
             .blendEnable = control.enable,
             .srcColorBlendFactor = src_color,
@@ -329,6 +325,16 @@ GraphicsPipeline::GraphicsPipeline(
                           vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA
                     : key.write_masks[i],
         };
+
+        // The shader squares its color output for this attachment (see PsColorBuffer), so the
+        // factors must not scale the operands again.
+        if (key.color_buffers[i].blend_self_scale) {
+            LOG_WARNING(
+                Render_Vulkan,
+                "Emulating scaled min/max blend with squared shader output on attachment {}", i);
+            attachments[i].srcColorBlendFactor = vk::BlendFactor::eOne;
+            attachments[i].dstColorBlendFactor = vk::BlendFactor::eOne;
+        }
 
         // On GCN GPU there is an additional mask which allows to control color components exported
         // from a pixel shader. A situation possible, when the game may mask out the alpha channel,
@@ -351,6 +357,30 @@ GraphicsPipeline::GraphicsPipeline(
             attachments[i].dstColorBlendFactor = dst_color == vk::BlendFactor::eSrcAlpha
                                                      ? vk::BlendFactor::eOne
                                                      : vk::BlendFactor::eZero; // 1-A
+        }
+
+        auto& attachment = attachments[i];
+        LiverpoolToVK::NormalizeMinMaxBlend(attachment.colorBlendOp, attachment.srcColorBlendFactor,
+                                            attachment.dstColorBlendFactor,
+                                            key.color_buffers[i].num_format);
+        LiverpoolToVK::NormalizeMinMaxBlend(attachment.alphaBlendOp, attachment.srcAlphaBlendFactor,
+                                            attachment.dstAlphaBlendFactor,
+                                            key.color_buffers[i].num_format);
+
+        const auto color_scaled_min_max =
+            (attachment.colorBlendOp == vk::BlendOp::eMin ||
+             attachment.colorBlendOp == vk::BlendOp::eMax) &&
+            (attachment.srcColorBlendFactor != vk::BlendFactor::eOne ||
+             attachment.dstColorBlendFactor != vk::BlendFactor::eOne);
+        const auto alpha_scaled_min_max =
+            (attachment.alphaBlendOp == vk::BlendOp::eMin ||
+             attachment.alphaBlendOp == vk::BlendOp::eMax) &&
+            (attachment.srcAlphaBlendFactor != vk::BlendFactor::eOne ||
+             attachment.dstAlphaBlendFactor != vk::BlendFactor::eOne);
+        if (control.enable && (color_scaled_min_max || alpha_scaled_min_max)) {
+            LOG_WARNING(
+                Render_Vulkan,
+                "Unimplemented use of min/max blend op with blend factor not equal to one.");
         }
     }
 
@@ -400,21 +430,22 @@ void GraphicsPipeline::GetVertexInputs(
     VertexInputs<vk::VertexInputBindingDivisorDescriptionEXT>& divisors,
     VertexInputs<AmdGpu::Buffer>& guest_buffers, u32 step_rate_0, u32 step_rate_1) const {
     using InstanceIdType = Shader::Gcn::VertexAttribute::InstanceIdType;
-    if (!fetch_shader || fetch_shader->attributes.empty()) {
+    if (fetch_shader.Empty() || fetch_shader.attributes.empty()) {
         return;
     }
-    const auto& vs_info = GetStage(Shader::LogicalStage::Vertex);
-    for (const auto& attrib : fetch_shader->attributes) {
+    const auto& vs_info = GetStage(Shader::SwStage::Vertex);
+    for (u32 semantic = 0; semantic < fetch_shader.attributes.size(); ++semantic) {
+        const auto& attrib = fetch_shader.attributes[semantic];
         const auto step_rate = attrib.GetStepRate();
         const auto buffer = attrib.GetSharp(vs_info);
         attributes.push_back(Attribute{
-            .location = attrib.semantic,
-            .binding = attrib.semantic,
+            .location = semantic,
+            .binding = semantic,
             .format = LiverpoolToVK::SurfaceFormat(buffer.GetDataFmt(), buffer.GetNumberFmt()),
             .offset = 0,
         });
         bindings.push_back(Binding{
-            .binding = attrib.semantic,
+            .binding = semantic,
             .stride = buffer.GetStride(),
             .inputRate = step_rate == InstanceIdType::None ? vk::VertexInputRate::eVertex
                                                            : vk::VertexInputRate::eInstance,
@@ -426,7 +457,7 @@ void GraphicsPipeline::GetVertexInputs(
             bindings.back().divisor = divisor;
         } else if (step_rate != InstanceIdType::None) {
             divisors.push_back(vk::VertexInputBindingDivisorDescriptionEXT{
-                .binding = attrib.semantic,
+                .binding = semantic,
                 .divisor = divisor,
             });
         }
@@ -454,7 +485,7 @@ void GraphicsPipeline::BuildDescSetLayout(bool preloading) {
         if (!stage) {
             continue;
         }
-        const auto stage_bit = LogicalStageToStageBit[u32(stage->l_stage)];
+        const auto stage_bit = LogicalStageToStageBit[u32(stage->sw_stage)];
         for (const auto& buffer : stage->buffers) {
             const auto sharp =
                 preloading ? AmdGpu::Buffer{}

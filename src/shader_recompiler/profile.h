@@ -13,6 +13,7 @@ struct Profile {
     u32 max_shared_memory_size{};
     u32 supported_spirv{0x00010000};
     u32 subgroup_size{};
+    u32 sparse_page_shift{};
     bool support_int8{};
     bool support_int16{};
     bool support_int64{};
@@ -42,6 +43,7 @@ struct Profile {
     bool supports_workgroup_explicit_memory_layout{};
     bool supports_amd_shader_explicit_vertex_parameter{};
     bool supports_fragment_shader_barycentric{};
+    bool supports_shader_subgroup_clock{};
     bool has_broken_spirv_clamp{};
     bool lower_left_origin_mode{};
     bool needs_manual_interpolation{};
@@ -50,6 +52,8 @@ struct Profile {
     bool needs_unorm_fixup{};
     bool needs_clip_distance_emulation{};
     bool supports_shader_stencil_export{};
+    bool fast_shader_math{};
+    bool support_bda{};
 
     bool operator==(const Profile&) const = default;
 };

@@ -155,6 +155,9 @@ void GameController::SetTouchpadState(int touch_index, bool touch_down, float x,
 void GameController::ConnectController(SDL_Gamepad* pad) {
     std::lock_guard lock{m_state_mutex};
     m_sdl_gamepad = pad;
+    if (override_colour) {
+        SetLightBarRGB({});
+    }
     m_states_queue.Clear();
     if (!m_state.connected) {
         ++m_state.connected_count;
@@ -214,6 +217,10 @@ void GameController::PushStateLocked(u64 timestamp) {
 
 void GameController::SetLightBarRGB(u8 const r, u8 const g, u8 const b) {
     if (override_colour.has_value()) {
+        if (m_sdl_gamepad) {
+            SDL_SetGamepadLED(m_sdl_gamepad, override_colour->r, override_colour->g,
+                              override_colour->b);
+        }
         return;
     }
     colour = {r, g, b};

@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
 #include "video_core/renderer_vulkan/vk_shader_util.h"
@@ -10,24 +11,13 @@
 #include "video_core/host_shaders/color_to_ms_depth_frag.h"
 #include "video_core/host_shaders/fs_tri_vert.h"
 #include "video_core/host_shaders/ms_image_blit_frag.h"
+#include "video_core/host_shaders/ms_image_blit_msaa_frag.h"
 
 namespace VideoCore {
 
-static vk::SampleCountFlagBits ToSampleCount(u32 num_samples) {
-    switch (num_samples) {
-    case 1:
-        return vk::SampleCountFlagBits::e1;
-    case 2:
-        return vk::SampleCountFlagBits::e2;
-    case 4:
-        return vk::SampleCountFlagBits::e4;
-    case 8:
-        return vk::SampleCountFlagBits::e8;
-    case 16:
-        return vk::SampleCountFlagBits::e16;
-    default:
-        UNREACHABLE_MSG("Unknown samples count = {}", num_samples);
-    }
+static vk::SampleCountFlagBits ToSampleCount(u32 num_samples,
+                                             vk::SampleCountFlags supported_flags) {
+    return Vulkan::LiverpoolToVK::NumSamples(num_samples, supported_flags);
 }
 
 BlitHelper::BlitHelper(const Vulkan::Instance& instance_, Vulkan::Scheduler& scheduler_)
@@ -116,7 +106,9 @@ void BlitHelper::ReinterpretColorAsMsDepth(u32 width, u32 height, u32 num_sample
     cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eGraphics, *single_texture_pl_layout, 0U,
                                 texture_write);
 
-    const MsPipelineKey key{num_samples, dst_pixel_format, false};
+    const u32 supported_samples = static_cast<u32>(
+        Vulkan::LiverpoolToVK::NumSamples(num_samples, instance.GetDepthSampleCounts()));
+    const MsPipelineKey key{supported_samples, dst_pixel_format, false};
     auto it = std::ranges::find(color_to_ms_depth_pl, key, &MsPipeline::first);
     if (it == color_to_ms_depth_pl.end()) {
         CreateColorToMSDepthPipeline(key);
@@ -217,7 +209,9 @@ void BlitHelper::CopyBetweenMsImages(u32 width, u32 height, u32 num_samples,
     cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eGraphics, *single_texture_pl_layout, 0U,
                                 texture_write);
 
-    const MsPipelineKey key{num_samples, pixel_format, src_msaa};
+    const u32 supported_samples = static_cast<u32>(
+        Vulkan::LiverpoolToVK::NumSamples(num_samples, instance.GetColorSampleCounts()));
+    const MsPipelineKey key{supported_samples, pixel_format, src_msaa};
     auto it = std::ranges::find(ms_image_copy_pl, key, &MsPipeline::first);
     if (it == ms_image_copy_pl.end()) {
         CreateMsCopyPipeline(key);
@@ -249,14 +243,10 @@ void BlitHelper::CopyBetweenMsImages(u32 width, u32 height, u32 num_samples,
 
 void BlitHelper::CreateShaders() {
     const auto device = instance.GetDevice();
-    fs_tri_vertex =
-        Vulkan::Compile(HostShaders::FS_TRI_VERT, vk::ShaderStageFlagBits::eVertex, device);
-    color_to_ms_depth_frag = Vulkan::Compile(HostShaders::COLOR_TO_MS_DEPTH_FRAG,
-                                             vk::ShaderStageFlagBits::eFragment, device);
-    src_msaa_copy_frag = Vulkan::Compile(HostShaders::MS_IMAGE_BLIT_FRAG,
-                                         vk::ShaderStageFlagBits::eFragment, device, {"SRC_MSAA"});
-    src_non_msaa_copy_frag = Vulkan::Compile(HostShaders::MS_IMAGE_BLIT_FRAG,
-                                             vk::ShaderStageFlagBits::eFragment, device);
+    fs_tri_vertex = Vulkan::CompileSPV(FS_TRI_VERT, device);
+    color_to_ms_depth_frag = Vulkan::CompileSPV(COLOR_TO_MS_DEPTH_FRAG, device);
+    src_msaa_copy_frag = Vulkan::CompileSPV(MS_IMAGE_BLIT_MSAA_FRAG, device);
+    src_non_msaa_copy_frag = Vulkan::CompileSPV(MS_IMAGE_BLIT_FRAG, device);
 }
 
 void BlitHelper::CreatePipelineLayouts() {
@@ -294,7 +284,7 @@ void BlitHelper::CreateColorToMSDepthPipeline(const MsPipelineKey& key) {
         .topology = vk::PrimitiveTopology::eTriangleList,
     };
     const vk::PipelineMultisampleStateCreateInfo multisampling = {
-        .rasterizationSamples = ToSampleCount(key.num_samples),
+        .rasterizationSamples = ToSampleCount(key.num_samples, instance.GetDepthSampleCounts()),
     };
     const vk::PipelineDepthStencilStateCreateInfo depth_state = {
         .depthTestEnable = true,
@@ -349,6 +339,12 @@ void BlitHelper::CreateColorToMSDepthPipeline(const MsPipelineKey& key) {
 
     auto [pipeline_result, pipeline] =
         instance.GetDevice().createGraphicsPipelineUnique(VK_NULL_HANDLE, pipeline_info);
+    if (pipeline_result != vk::Result::eSuccess) {
+        LOG_CRITICAL(Render_Vulkan,
+                     "Failed to create Color to MS Depth pipeline (samples={}, format={}): {}",
+                     key.num_samples, vk::to_string(key.attachment_format),
+                     vk::to_string(pipeline_result));
+    }
     ASSERT_MSG(pipeline_result == vk::Result::eSuccess, "Failed to create graphics pipeline: {}",
                vk::to_string(pipeline_result));
     Vulkan::SetObjectName(instance.GetDevice(), *pipeline, "Color to MS Depth {}", key.num_samples);
@@ -361,7 +357,7 @@ void BlitHelper::CreateMsCopyPipeline(const MsPipelineKey& key) {
         .topology = vk::PrimitiveTopology::eTriangleList,
     };
     const vk::PipelineMultisampleStateCreateInfo multisampling = {
-        .rasterizationSamples = ToSampleCount(key.num_samples),
+        .rasterizationSamples = ToSampleCount(key.num_samples, instance.GetColorSampleCounts()),
     };
     const vk::PipelineDepthStencilStateCreateInfo depth_state = {
         .depthTestEnable = false,
@@ -427,6 +423,12 @@ void BlitHelper::CreateMsCopyPipeline(const MsPipelineKey& key) {
 
     auto [pipeline_result, pipeline] =
         instance.GetDevice().createGraphicsPipelineUnique(VK_NULL_HANDLE, pipeline_info);
+    if (pipeline_result != vk::Result::eSuccess) {
+        LOG_CRITICAL(Render_Vulkan,
+                     "Failed to create MS copy pipeline (samples={}, format={}, src_msaa={}): {}",
+                     key.num_samples, vk::to_string(key.attachment_format), key.src_msaa,
+                     vk::to_string(pipeline_result));
+    }
     ASSERT_MSG(pipeline_result == vk::Result::eSuccess, "Failed to create graphics pipeline: {}",
                vk::to_string(pipeline_result));
     Vulkan::SetObjectName(instance.GetDevice(), *pipeline, "Non MS Image to MS Image {}",

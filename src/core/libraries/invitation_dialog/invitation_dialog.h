@@ -117,12 +117,18 @@ struct OrbisNpSessionInvitationEventParam {
     OrbisNpInvitationId invitationId;
     OrbisNpSessionInvitationEventFlag flag;
     char padding[4];
-    Libraries::Np::OrbisNpOnlineId onlineId;
+    Libraries::Np::OrbisNpOnlineId onlineId;               // accepting (local) user
+    Libraries::UserService::OrbisUserServiceUserId userId; // accepting (local) user
+    Libraries::Np::OrbisNpOnlineId referralOnlineId;       // inviter
+    Libraries::Np::OrbisNpAccountId referralAccountId;     // inviter
 };
-static_assert(sizeof(OrbisNpSessionInvitationEventParam) == 0x8c,
-              "SESSION_INVITATION param must be 140 bytes");
 static_assert(offsetof(OrbisNpSessionInvitationEventParam, flag) == 112);
 static_assert(offsetof(OrbisNpSessionInvitationEventParam, onlineId) == 120);
+static_assert(offsetof(OrbisNpSessionInvitationEventParam, userId) == 140);
+static_assert(offsetof(OrbisNpSessionInvitationEventParam, referralOnlineId) == 144);
+static_assert(offsetof(OrbisNpSessionInvitationEventParam, referralAccountId) == 168);
+static_assert(sizeof(OrbisNpSessionInvitationEventParam) == 176,
+              "SESSION_INVITATION param must be 176 bytes");
 
 union OrbisInvitationDialogDataParam {
     struct {

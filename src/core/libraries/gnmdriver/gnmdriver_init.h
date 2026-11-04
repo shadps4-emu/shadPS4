@@ -458,9 +458,9 @@ constexpr std::array CtxInitSequence400{
     0xc0016900u, 0x2deu, 0x1e9u,
     0xc0036900u, 0x295u, 0x100u, 0x100u, 4u,
     0xc0016900u, 0x2aau, 0xffu,
-    0xc09e1000u,
+    0xc09e1000u, 0u,
 };
-static_assert(CtxInitSequence400.size() == 0x61);
+static_assert(CtxInitSequence400.size() == 0x62);
 
 constexpr std::array CtxInitSequence400Neo{
     0xc0012800u, 0x80000000u, 0x80000000u,
@@ -496,9 +496,9 @@ constexpr std::array CtxInitSequence400Neo{
     0xc0026900u, 0xebu, 0xff00ff00u, 0xff00u,
     0xc0036900u, 0x295u, 0x100u, 0x100u, 4u,
     0xc0017900u, 0x40000258u, 0x6d007fu,
-    0xc09a1000u,
+    0xc09a1000u, 0u,
 };
-static_assert(CtxInitSequence400Neo.size() == 0x65);
+static_assert(CtxInitSequence400Neo.size() == 0x66);
 
 constexpr std::array CtxInitSequence400NeoCompat{
     0xc0012800u, 0x80000000u, 0x80000000u,
@@ -534,9 +534,9 @@ constexpr std::array CtxInitSequence400NeoCompat{
     0xc0026900u, 0xebu, 0xff00ff00u, 0xff00u,
     0xc0036900u, 0x295u, 0x100u, 0x100u, 4u,
     0xc0016900u, 0x100002aau, 0xd00ffu,
-    0xc09a1000u,
+    0xc09a1000u, 0u,
 };
-static_assert(CtxInitSequence400Neo.size() == 0x65);
+static_assert(CtxInitSequence400Neo.size() == 0x66);
 // clang-format on
 
 } // namespace Libraries::GnmDriver

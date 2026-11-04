@@ -143,7 +143,7 @@ int PS4_SYSV_ABI scePadGetControllerInformation(s32 handle, OrbisPadControllerIn
     std::memset(pInfo, 0, sizeof(OrbisPadControllerInformation));
     pInfo->touchPadInfo.pixelDensity = 1;
     pInfo->touchPadInfo.resolution.x = 1920;
-    pInfo->touchPadInfo.resolution.y = 950;
+    pInfo->touchPadInfo.resolution.y = 942; // DualShock 4; touch y is sent as 0..941
     pInfo->stickInfo.deadZoneLeft = 1;
     pInfo->stickInfo.deadZoneRight = 1;
     pInfo->connectionType = ORBIS_PAD_CONNECTION_TYPE_LOCAL;
@@ -449,9 +449,10 @@ int PS4_SYSV_ABI scePadReadBlasterForTracker() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI scePadReadExt() {
-    LOG_ERROR(Lib_Pad, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI scePadReadExt(s32 handle, OrbisPadData* pData, s32 num) {
+    LOG_TRACE(Lib_Pad, "handle: {}, num: {}", handle, num);
+    // We don't currently support extensions, pass through.
+    return scePadRead(handle, pData, num);
 }
 
 int PS4_SYSV_ABI scePadReadForTracker() {
@@ -470,9 +471,10 @@ int PS4_SYSV_ABI scePadReadState(s32 handle, OrbisPadData* pData) {
     return result < 0 ? result : ORBIS_OK;
 }
 
-int PS4_SYSV_ABI scePadReadStateExt() {
-    LOG_ERROR(Lib_Pad, "(STUBBED) called");
-    return ORBIS_OK;
+int PS4_SYSV_ABI scePadReadStateExt(s32 handle, OrbisPadData* pData) {
+    LOG_TRACE(Lib_Pad, "handle: {}", handle);
+    // We don't currently support extensions, pass through.
+    return scePadReadState(handle, pData);
 }
 
 int PS4_SYSV_ABI scePadResetLightBar(s32 handle) {

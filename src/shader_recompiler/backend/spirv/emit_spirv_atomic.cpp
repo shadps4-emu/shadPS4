@@ -52,6 +52,24 @@ Id SharedAtomicU64IncDec(EmitContext& ctx, Id offset,
     return (ctx.*atomic_func)(ctx.U64, pointer, scope, semantics);
 }
 
+Id SharedAtomicU32CmpSwap(EmitContext& ctx, Id offset, Id value, Id cmp_value) {
+    const Id shift_id{ctx.ConstU32(2U)};
+    const Id index{ctx.OpShiftRightLogical(ctx.U32[1], offset, shift_id)};
+    const Id pointer{ctx.EmitSharedMemoryAccess(ctx.shared_u32, ctx.shared_memory_u32, index)};
+    const auto [scope, semantics]{AtomicArgs(ctx)};
+    return ctx.OpAtomicCompareExchange(ctx.U32[1], pointer, scope, semantics, semantics, value,
+                                       cmp_value);
+}
+
+Id SharedAtomicU64CmpSwap(EmitContext& ctx, Id offset, Id value, Id cmp_value) {
+    const Id shift_id{ctx.ConstU32(3U)};
+    const Id index{ctx.OpShiftRightLogical(ctx.U32[1], offset, shift_id)};
+    const Id pointer{ctx.EmitSharedMemoryAccess(ctx.shared_u64, ctx.shared_memory_u64, index)};
+    const auto [scope, semantics]{AtomicArgs(ctx)};
+    return ctx.OpAtomicCompareExchange(ctx.U64, pointer, scope, semantics, semantics, value,
+                                       cmp_value);
+}
+
 template <bool is_float = false>
 Id BufferAtomicU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id value,
                    Id (Sirit::Module::*atomic_func)(Id, Id, Id, Id, Id)) {
@@ -103,10 +121,30 @@ Id BufferAtomicU64(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id 
     return (ctx.*atomic_func)(ctx.U64, ptr, scope, semantics, value);
 }
 
+Id FixImageAtomicCoords(EmitContext& ctx, Id coords, AmdGpu::ImageType image_type) {
+    switch (image_type) {
+    case AmdGpu::ImageType::Color1D: {
+        // Lowered to 2D with height 1
+        const auto x = coords;
+        return ctx.OpCompositeConstruct(ctx.U32[2], x, ctx.u32_zero_value);
+    }
+    case AmdGpu::ImageType::Color1DArray: {
+        // Lowered to 2D array with height 1
+        const auto x = ctx.OpCompositeExtract(ctx.U32[1], coords, 0U);
+        const auto slice = ctx.OpCompositeExtract(ctx.U32[1], coords, 1U);
+        return ctx.OpCompositeConstruct(ctx.U32[3], x, ctx.u32_zero_value, slice);
+    }
+    default:
+        return coords;
+    }
+}
+
 Id ImageAtomicU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value,
                   Id (Sirit::Module::*atomic_func)(Id, Id, Id, Id, Id)) {
     const auto& texture = ctx.images[handle & 0xFFFF];
-    const Id pointer{ctx.OpImageTexelPointer(ctx.image_u32, texture.id, coords, ctx.ConstU32(0U))};
+    const Id fixed_coords{FixImageAtomicCoords(ctx, coords, texture.view_type)};
+    const Id pointer{
+        ctx.OpImageTexelPointer(ctx.image_u32, texture.id, fixed_coords, ctx.ConstU32(0U))};
     const auto [scope, semantics]{AtomicArgs(ctx)};
     return (ctx.*atomic_func)(ctx.U32[1], pointer, scope, semantics, value);
 }
@@ -114,7 +152,9 @@ Id ImageAtomicU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id va
 Id ImageAtomicF32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value,
                   Id (Sirit::Module::*atomic_func)(Id, Id, Id, Id, Id)) {
     const auto& texture = ctx.images[handle & 0xFFFF];
-    const Id pointer{ctx.OpImageTexelPointer(ctx.image_f32, texture.id, coords, ctx.ConstU32(0U))};
+    const Id fixed_coords{FixImageAtomicCoords(ctx, coords, texture.view_type)};
+    const Id pointer{
+        ctx.OpImageTexelPointer(ctx.image_f32, texture.id, fixed_coords, ctx.ConstU32(0U))};
     const auto [scope, semantics]{AtomicArgs(ctx)};
     return (ctx.*atomic_func)(ctx.F32[1], pointer, scope, semantics, value);
 }
@@ -123,7 +163,9 @@ Id ImageAtomicU32CmpSwap(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords
                          Id cmp_value,
                          Id (Sirit::Module::*atomic_func)(Id, Id, Id, Id, Id, Id, Id)) {
     const auto& texture = ctx.images[handle & 0xFFFF];
-    const Id pointer{ctx.OpImageTexelPointer(ctx.image_u32, texture.id, coords, ctx.ConstU32(0U))};
+    const Id fixed_coords{FixImageAtomicCoords(ctx, coords, texture.view_type)};
+    const Id pointer{
+        ctx.OpImageTexelPointer(ctx.image_u32, texture.id, fixed_coords, ctx.ConstU32(0U))};
     const auto [scope, semantics]{AtomicArgs(ctx)};
     return (ctx.*atomic_func)(ctx.U32[1], pointer, scope, semantics, semantics, value, cmp_value);
 }
@@ -199,6 +241,14 @@ Id EmitSharedAtomicISub32(EmitContext& ctx, Id offset, Id value) {
 
 Id EmitSharedAtomicISub64(EmitContext& ctx, Id offset, Id value) {
     return SharedAtomicU64(ctx, offset, value, &Sirit::Module::OpAtomicISub);
+}
+
+Id EmitSharedAtomicCmpSwap32(EmitContext& ctx, Id offset, Id value, Id cmp_value) {
+    return SharedAtomicU32CmpSwap(ctx, offset, value, cmp_value);
+}
+
+Id EmitSharedAtomicCmpSwap64(EmitContext& ctx, Id offset, Id value, Id cmp_value) {
+    return SharedAtomicU64CmpSwap(ctx, offset, value, cmp_value);
 }
 
 Id EmitSharedAtomicInc32(EmitContext& ctx, Id offset) {
@@ -434,11 +484,11 @@ Id EmitImageAtomicCmpSwap32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coo
                                  &Sirit::Module::OpAtomicCompareExchange);
 }
 
-Id EmitDataAppend(EmitContext& ctx, u32 gds_addr, u32 binding) {
+Id EmitDataAppend(EmitContext& ctx, Id gds_dw_offset, Id exec) {
     UNREACHABLE_MSG("SPIR-V Instruction");
 }
 
-Id EmitDataConsume(EmitContext& ctx, u32 gds_addr, u32 binding) {
+Id EmitDataConsume(EmitContext& ctx, Id gds_dw_offset, Id exec) {
     UNREACHABLE_MSG("SPIR-V Instruction");
 }
 

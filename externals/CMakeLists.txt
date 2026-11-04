@@ -105,7 +105,7 @@ endif()
 # glslang
 if (NOT TARGET glslang::glslang)
     set(SKIP_GLSLANG_INSTALL ON CACHE BOOL "")
-    set(ENABLE_GLSLANG_BINARIES OFF CACHE BOOL "")
+    set(ENABLE_GLSLANG_BINARIES ON CACHE BOOL "" FORCE)
     set(ENABLE_SPVREMAPPER OFF CACHE BOOL "")
     set(ENABLE_CTEST OFF CACHE BOOL "")
     set(ENABLE_HLSL OFF CACHE BOOL "")
@@ -184,14 +184,14 @@ endif()
 
 # Dear ImGui
 add_library(Dear_ImGui
-        dear_imgui/imgui.cpp
-        dear_imgui/imgui_demo.cpp
-        dear_imgui/imgui_draw.cpp
-        dear_imgui/imgui_internal.h
-        dear_imgui/imgui_tables.cpp
-        dear_imgui/imgui_widgets.cpp
+        imgui/imgui.cpp
+        imgui/imgui_demo.cpp
+        imgui/imgui_draw.cpp
+        imgui/imgui_internal.h
+        imgui/imgui_tables.cpp
+        imgui/imgui_widgets.cpp
 )
-target_include_directories(Dear_ImGui INTERFACE dear_imgui/)
+target_include_directories(Dear_ImGui INTERFACE imgui/)
 
 # Tracy
 if (CMAKE_BUILD_TYPE STREQUAL "Release")
@@ -301,6 +301,10 @@ endif()
 add_library(minimp3 INTERFACE)
 target_include_directories(minimp3 INTERFACE minimp3)
 
+# dr_flac
+add_library(dr_flac INTERFACE)
+target_include_directories(dr_flac INTERFACE dr_flac)
+
 # ImGuiFileDialog
 add_library(ImGuiFileDialog ImGuiFileDialog/ImGuiFileDialog.cpp)
 target_compile_definitions(ImGuiFileDialog PRIVATE USE_STD_FILESYSTEM)
@@ -401,8 +405,7 @@ set(protobuf_MSVC_STATIC_RUNTIME OFF CACHE BOOL "" FORCE)
 endif()
 add_subdirectory(protobuf EXCLUDE_FROM_ALL)
 
-# ZArchive (.zar archive support)
-if (NOT TARGET ZArchive::zarchive)
+if (NOT TARGET zstd::libzstd)
     # zstd (dependency of ZArchive)
     set(ZSTD_BUILD_PROGRAMS OFF CACHE BOOL "" FORCE)
     set(ZSTD_BUILD_SHARED OFF CACHE BOOL "" FORCE)
@@ -411,7 +414,11 @@ if (NOT TARGET ZArchive::zarchive)
     set(ZSTD_LEGACY_SUPPORT OFF CACHE BOOL "" FORCE)
     set(ZSTD_MULTITHREAD_SUPPORT OFF CACHE BOOL "" FORCE)
     add_subdirectory(zstd/build/cmake)
+    add_library(zstd::libzstd ALIAS libzstd_static)
+endif()
 
+# ZArchive (.zar archive support)
+if (NOT TARGET ZArchive::zarchive)
     add_library(zarchive STATIC
         zarchive/src/zarchivereader.cpp
         zarchive/src/zarchivewriter.cpp
@@ -419,7 +426,7 @@ if (NOT TARGET ZArchive::zarchive)
     )
     target_include_directories(zarchive PUBLIC zarchive/include)
     target_include_directories(zarchive PRIVATE zstd/lib)
-    target_link_libraries(zarchive PRIVATE libzstd_static)
+    target_link_libraries(zarchive PRIVATE zstd::libzstd)
     target_compile_features(zarchive PRIVATE cxx_std_20)
     add_library(ZArchive::zarchive ALIAS zarchive)
 endif()

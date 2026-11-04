@@ -1,5 +1,7 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
+
+#include <chrono>
 
 #include "common/elf_info.h"
 #include "core/libraries/kernel/kernel.h"
@@ -74,6 +76,16 @@ int PS4_SYSV_ABI posix_pthread_rwlock_init(PthreadRwlockT* rwlock, const Pthread
     return RwlockInit(rwlock, attr);
 }
 
+int PS4_SYSV_ABI posix_pthread_rwlock_setname_np(PthreadRwlockT* rwlock, const char* name) {
+    if (!name) {
+        return POSIX_EINVAL;
+    }
+    if (*rwlock) {
+        (*rwlock)->name = name;
+    }
+    return 0;
+}
+
 int PthreadRwlock::Rdlock(const OrbisKernelTimespec* abstime) {
     Pthread* curthread = g_curthread;
 
@@ -142,6 +154,28 @@ int PS4_SYSV_ABI posix_pthread_rwlock_timedrdlock(PthreadRwlockT* rwlock,
     PthreadRwlockT prwlock{};
     CHECK_AND_INIT_RWLOCK
     return prwlock->Rdlock(abstime);
+}
+
+static OrbisKernelTimespec AbsTimeAfter(u32 usec) {
+    using namespace std::chrono;
+    const auto ns =
+        duration_cast<nanoseconds>((system_clock::now() + microseconds{usec}).time_since_epoch())
+            .count();
+    return OrbisKernelTimespec{ns / 1000000000, ns % 1000000000};
+}
+
+int PS4_SYSV_ABI posix_pthread_rwlock_reltimedrdlock_np(PthreadRwlockT* rwlock, u32 usec) {
+    PthreadRwlockT prwlock{};
+    CHECK_AND_INIT_RWLOCK
+    const auto abstime = AbsTimeAfter(usec);
+    return prwlock->Rdlock(&abstime);
+}
+
+int PS4_SYSV_ABI posix_pthread_rwlock_reltimedwrlock_np(PthreadRwlockT* rwlock, u32 usec) {
+    PthreadRwlockT prwlock{};
+    CHECK_AND_INIT_RWLOCK
+    const auto abstime = AbsTimeAfter(usec);
+    return prwlock->Wrlock(&abstime);
 }
 
 int PS4_SYSV_ABI posix_pthread_rwlock_tryrdlock(PthreadRwlockT* rwlock) {
@@ -283,6 +317,11 @@ void RegisterRwlock(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("xFebsA4YsFI", "libkernel", 1, "libkernel", posix_pthread_rwlockattr_init);
     LIB_FUNCTION("OuKg+kRDD7U", "libkernel", 1, "libkernel", posix_pthread_rwlockattr_setpshared);
     LIB_FUNCTION("8NuOHiTr1Vw", "libkernel", 1, "libkernel", posix_pthread_rwlockattr_settype_np);
+    LIB_FUNCTION("dYv-+If2GPk", "libkernel", 1, "libkernel",
+                 posix_pthread_rwlock_reltimedrdlock_np);
+    LIB_FUNCTION("RRnSj8h8VR4", "libkernel", 1, "libkernel",
+                 posix_pthread_rwlock_reltimedwrlock_np);
+    LIB_FUNCTION("Uwxgnsi3xeM", "libkernel", 1, "libkernel", posix_pthread_rwlock_setname_np);
 
     // Posix
     LIB_FUNCTION("1471ajPzxh0", "libScePosix", 1, "libkernel", posix_pthread_rwlock_destroy);
@@ -300,6 +339,11 @@ void RegisterRwlock(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("xFebsA4YsFI", "libScePosix", 1, "libkernel", posix_pthread_rwlockattr_init);
     LIB_FUNCTION("OuKg+kRDD7U", "libScePosix", 1, "libkernel", posix_pthread_rwlockattr_setpshared);
     LIB_FUNCTION("8NuOHiTr1Vw", "libScePosix", 1, "libkernel", posix_pthread_rwlockattr_settype_np);
+    LIB_FUNCTION("dYv-+If2GPk", "libScePosix", 1, "libkernel",
+                 posix_pthread_rwlock_reltimedrdlock_np);
+    LIB_FUNCTION("RRnSj8h8VR4", "libScePosix", 1, "libkernel",
+                 posix_pthread_rwlock_reltimedwrlock_np);
+    LIB_FUNCTION("Uwxgnsi3xeM", "libScePosix", 1, "libkernel", posix_pthread_rwlock_setname_np);
 
     // Orbis
     LIB_FUNCTION("i2ifZ3fS2fo", "libkernel", 1, "libkernel",
@@ -317,9 +361,9 @@ void RegisterRwlock(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("6ULAa0fq4jA", "libkernel", 1, "libkernel", ORBIS(posix_pthread_rwlock_init));
     LIB_FUNCTION("Ox9i0c7L5w0", "libkernel", 1, "libkernel", ORBIS(posix_pthread_rwlock_rdlock));
     LIB_FUNCTION("iPtZRWICjrM", "libkernel", 1, "libkernel",
-                 ORBIS(posix_pthread_rwlock_timedrdlock));
+                 ORBIS(posix_pthread_rwlock_reltimedrdlock_np));
     LIB_FUNCTION("adh--6nIqTk", "libkernel", 1, "libkernel",
-                 ORBIS(posix_pthread_rwlock_timedwrlock));
+                 ORBIS(posix_pthread_rwlock_reltimedwrlock_np));
     LIB_FUNCTION("XD3mDeybCnk", "libkernel", 1, "libkernel", ORBIS(posix_pthread_rwlock_tryrdlock));
     LIB_FUNCTION("bIHoZCTomsI", "libkernel", 1, "libkernel", ORBIS(posix_pthread_rwlock_trywrlock));
     LIB_FUNCTION("+L98PIbGttk", "libkernel", 1, "libkernel", ORBIS(posix_pthread_rwlock_unlock));
