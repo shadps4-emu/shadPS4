@@ -335,8 +335,7 @@ void LowerWave64BallotPass(IR::Program& program, const RuntimeInfo& runtime_info
             }
         };
         for (IR::Inst& inst : block->Instructions()) {
-            if (inst.GetOpcode() == IR::Opcode::ReadLane &&
-                (split_wave64 || inst.Arg(1).IsImmediate())) {
+            if (inst.GetOpcode() == IR::Opcode::ReadLane) {
                 push_worklist(inst);
             } else if (inst.GetOpcode() == IR::Opcode::Ballot) {
                 const auto is_unpack = [](const IR::Use& use) {
