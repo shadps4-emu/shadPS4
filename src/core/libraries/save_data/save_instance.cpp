@@ -198,10 +198,12 @@ void SaveInstance::Umount() {
         return;
     }
     mounted = false;
-    const bool ok = param_sfo.Encode(param_sfo_path);
-    if (!ok) {
-        throw fs::filesystem_error("Failed to write param.sfo", param_sfo_path,
-                                   std::make_error_code(std::errc::permission_denied));
+    if (!read_only) {
+        const bool ok = param_sfo.Encode(param_sfo_path);
+        if (!ok) {
+            throw fs::filesystem_error("Failed to write param.sfo", param_sfo_path,
+                                       std::make_error_code(std::errc::permission_denied));
+        }
     }
     param_sfo = PSF();
 
