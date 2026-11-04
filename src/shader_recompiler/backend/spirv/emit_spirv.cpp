@@ -145,6 +145,8 @@ Id TypeId(const EmitContext& ctx, IR::Type type) {
         return ctx.U32[4];
     case IR::Type::F32:
         return ctx.F32[1];
+    case IR::Type::F32x2:
+        return ctx.F32[2];
     case IR::Type::U64:
         return ctx.U64;
     default:
