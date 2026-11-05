@@ -677,28 +677,28 @@ s32 PS4_SYSV_ABI sceGameCustomDataDialogGetResultA(OrbisGameCustomDataDialogResu
 }
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym) {
-    LIB_FUNCTION("xtbb-2f703A", "libSceGameCustomDataDialog", 1, "libSceGameCustomDataDialog",
+    LIB_FUNCTION("xtbb-2f703A", "libSceGameCustomDataDialog", 1, "libGameCustomDataDialog",
                  sceGameCustomDataDialogInitialize);
-    LIB_FUNCTION("HwEtHFCpU5U", "libSceGameCustomDataDialog", 1, "libSceGameCustomDataDialog",
+    LIB_FUNCTION("HwEtHFCpU5U", "libSceGameCustomDataDialog", 1, "libGameCustomDataDialog",
                  sceGameCustomDataDialogTerminate);
-    LIB_FUNCTION("5TvttyRuU84", "libSceGameCustomDataDialog", 1, "libSceGameCustomDataDialog",
+    LIB_FUNCTION("5TvttyRuU84", "libSceGameCustomDataDialog", 1, "libGameCustomDataDialog",
                  sceGameCustomDataDialogOpen);
-    LIB_FUNCTION("QHFJB2F0p3k", "libSceGameCustomDataDialog", 1, "libSceGameCustomDataDialog",
+    LIB_FUNCTION("QHFJB2F0p3k", "libSceGameCustomDataDialog", 1, "libGameCustomDataDialog",
                  sceGameCustomDataDialogOpenA);
-    LIB_FUNCTION("3vyRmRU3CL8", "libSceGameCustomDataDialog", 1, "libSceGameCustomDataDialog",
+    LIB_FUNCTION("3vyRmRU3CL8", "libSceGameCustomDataDialog", 1, "libGameCustomDataDialog",
                  sceGameCustomDataDialogClose);
-    LIB_FUNCTION("PkdLsRA4ON0", "libSceGameCustomDataDialog", 1, "libSceGameCustomDataDialog",
+    LIB_FUNCTION("PkdLsRA4ON0", "libSceGameCustomDataDialog", 1, "libGameCustomDataDialog",
                  sceGameCustomDataDialogUpdateStatus);
-    LIB_FUNCTION("tcm8nRXZwNU", "libSceGameCustomDataDialog", 1, "libSceGameCustomDataDialog",
+    LIB_FUNCTION("tcm8nRXZwNU", "libSceGameCustomDataDialog", 1, "libGameCustomDataDialog",
                  sceGameCustomDataDialogGetStatus);
-    LIB_FUNCTION("sJptZwvs1is", "libSceGameCustomDataDialog", 1, "libSceGameCustomDataDialog",
+    LIB_FUNCTION("sJptZwvs1is", "libSceGameCustomDataDialog", 1, "libGameCustomDataDialog",
                  sceGameCustomDataDialogGetResult);
-    LIB_FUNCTION("TWi-wZVp5Pc", "libSceGameCustomDataDialog", 1, "libSceGameCustomDataDialog",
+    LIB_FUNCTION("TWi-wZVp5Pc", "libSceGameCustomDataDialog", 1, "libGameCustomDataDialog",
                  sceGameCustomDataDialogGetResultA);
     // Older games link the non-A entry points through the compat library.
-    LIB_FUNCTION("5TvttyRuU84", "libSceGameCustomDataDialogCompat", 1, "libSceGameCustomDataDialog",
+    LIB_FUNCTION("5TvttyRuU84", "libSceGameCustomDataDialogCompat", 1, "libGameCustomDataDialog",
                  sceGameCustomDataDialogOpen);
-    LIB_FUNCTION("sJptZwvs1is", "libSceGameCustomDataDialogCompat", 1, "libSceGameCustomDataDialog",
+    LIB_FUNCTION("sJptZwvs1is", "libSceGameCustomDataDialogCompat", 1, "libGameCustomDataDialog",
                  sceGameCustomDataDialogGetResult);
 }
 
