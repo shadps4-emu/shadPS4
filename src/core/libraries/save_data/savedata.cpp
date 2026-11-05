@@ -998,7 +998,7 @@ Error PS4_SYSV_ABI sceSaveDataGetEventResult(const OrbisSaveDataEventParam*,
 
     auto last_event = Backup::PopLastEvent();
     if (!last_event.has_value()) {
-        return Error::NOT_FOUND;
+        return Error::NO_EVENT;
     }
 
     event->type = last_event->origin;
