@@ -149,7 +149,9 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(HwStage stage, SwStag
         info.hw.gs.in_vertex_data_size = regs.vgt_esgs_ring_itemsize;
         info.hw.gs.out_vertex_data_size = regs.vgt_gs_vert_itemsize[0];
         info.hw.gs.mode = regs.vgt_gs_mode.mode;
-        const auto params_vc = AmdGpu::GetParams(regs.vs_program);
+        const auto params_vc = AmdGpu::GetParams(regs.vs_program, [this](VAddr address, u64 size) {
+            buffer_cache.ReadMemory(address, size, false, false, true);
+        });
         info.hw.gs.vs_copy = params_vc.code;
         info.hw.gs.vs_copy_hash = params_vc.hash;
         if (EmulatorSettings.IsDumpShaders()) {
