@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 //     opcode name,                                         return type,    arg1 type,      arg2 type,      arg3 type,      arg4 type,      arg4 type,      ...
@@ -49,6 +49,8 @@ OPCODE(SharedAtomicSMax32,                                  U32,            U32,
 OPCODE(SharedAtomicSMax64,                                  U64,            U32,            U64,                                                            )
 OPCODE(SharedAtomicUMax32,                                  U32,            U32,            U32,                                                            )
 OPCODE(SharedAtomicUMax64,                                  U64,            U32,            U64,                                                            )
+OPCODE(SharedAtomicFMax32,                                  F32,            U32,            F32,                                                            )
+OPCODE(SharedAtomicFMin32,                                  F32,            U32,            F32,                                                            )
 OPCODE(SharedAtomicInc32,                                   U32,            U32,                                                                            )
 OPCODE(SharedAtomicInc64,                                   U64,            U32,                                                                            )
 OPCODE(SharedAtomicDec32,                                   U32,            U32,                                                                            )
@@ -68,6 +70,8 @@ OPCODE(GetScalarRegister,                                   U32,            Scal
 OPCODE(SetScalarRegister,                                   Void,           ScalarReg,      U32,                                                            )
 OPCODE(GetVectorRegister,                                   U32,            VectorReg,                                                                      )
 OPCODE(SetVectorRegister,                                   Void,           VectorReg,      U32,                                                            )
+OPCODE(VMovRelS,                                            U32,            VectorReg,      U32,                                                            )
+OPCODE(VMovRelD,                                            Void,           VectorReg,      U32,            U32,                                            )
 OPCODE(GetVirtualRegister,                                  Opaque,         VirtualReg,                                                                     )
 OPCODE(SetVirtualRegister,                                  Void,           VirtualReg,     Opaque,                                                         )
 OPCODE(GetGotoVariable,                                     U1,             U32,                                                                            )
@@ -106,6 +110,7 @@ OPCODE(UndefU32x2,                                          U32x2,              
 OPCODE(UndefU32x3,                                          U32x3,                                                                                            )
 OPCODE(UndefU32x4,                                          U32x4,                                                                                            )
 OPCODE(UndefF32,                                            F32,                                                                                            )
+OPCODE(UndefF32x2,                                          F32x2,                                                                                          )
 OPCODE(UndefU64,                                            U64,                                                                                            )
 
 // Buffer operations
