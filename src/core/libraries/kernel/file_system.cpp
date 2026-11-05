@@ -357,9 +357,7 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
 
         // Map the guest open flags onto a single host access mode.
         Common::FS::FileAccessMode access_mode;
-        if (truncate) {
-            access_mode = Common::FS::FileAccessMode::ReadWrite;
-        } else if (read) {
+        if (read) {
             access_mode = Common::FS::FileAccessMode::Read;
         } else if (write) {
             access_mode =
@@ -419,8 +417,8 @@ s32 PS4_SYSV_ABI close(s32 fd) {
     if (file->type == Core::FileSys::FileType::Socket) {
         return Libraries::Net::KernelClose(fd);
     }
-    ReleaseFlockState(file);
     if (file->ref_count <= 1) {
+        ReleaseFlockState(file);
         if (file->type == Core::FileSys::FileType::Regular) {
             file->handle.reset();
         }
@@ -2307,9 +2305,11 @@ s32 PS4_SYSV_ABI posix_unlink(const char* path) {
 
     auto* file = h->GetFile(host_path);
     if (file == nullptr) {
-        // File to unlink hasn't been opened, manually open and unlink it.
-        Common::FS::IOFile file(host_path, Common::FS::FileAccessMode::ReadWrite);
-        file.Unlink();
+        std::error_code ec;
+        if (!fs::remove(host_path, ec) && ec) {
+            *__Error() = POSIX_ENOENT;
+            return -1;
+        }
     } else if (auto* host = file->GetHostFile()) {
         host->Unlink();
     }

@@ -314,4 +314,5 @@ static Shader::ShaderParams GetParams(const auto& sh) {
     return GetParams(sh, [](VAddr, u64) {});
 }
 
+
 } // namespace AmdGpu

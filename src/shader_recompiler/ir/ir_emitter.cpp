@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <array>
@@ -155,6 +155,17 @@ void IREmitter::SetVectorReg(IR::VectorReg reg, const U32F32& value) {
     ASSERT(reg < IR::VectorReg::Max);
     const U32 value_typed = value.Type() == Type::F32 ? BitCast<U32>(F32{value}) : U32{value};
     Inst(Opcode::SetVectorRegister, reg, value_typed);
+}
+
+U32 IREmitter::VMovRelS(IR::VectorReg reg, const U32& m0) {
+    ASSERT(reg < IR::VectorReg::Max);
+    return Inst<U32>(Opcode::VMovRelS, reg, m0);
+}
+
+void IREmitter::VMovRelD(IR::VectorReg reg, const U32& value, const U32& m0) {
+    ASSERT(reg < IR::VectorReg::Max);
+    const U32 value_typed = value.Type() == Type::F32 ? BitCast<U32>(F32{value}) : U32{value};
+    Inst(Opcode::VMovRelD, reg, value_typed, m0);
 }
 
 Value IREmitter::GetVirtualReg(IR::VirtualReg reg) {
@@ -343,6 +354,24 @@ U32U64 IREmitter::SharedAtomicIMax(const U32& address, const U32U64& data, bool 
     case Type::U64:
         return Inst<U64>(is_signed ? Opcode::SharedAtomicSMax64 : Opcode::SharedAtomicUMax64,
                          Flags{is_gds}, address, data);
+    default:
+        ThrowInvalidType(data.Type());
+    }
+}
+
+F32F64 IREmitter::SharedAtomicFMax(const U32& address, const F32F64& data, bool is_gds) {
+    switch (data.Type()) {
+    case Type::F32:
+        return Inst<F32>(Opcode::SharedAtomicFMax32, Flags{is_gds}, address, data);
+    default:
+        ThrowInvalidType(data.Type());
+    }
+}
+
+F32F64 IREmitter::SharedAtomicFMin(const U32& address, const F32F64& data, bool is_gds) {
+    switch (data.Type()) {
+    case Type::F32:
+        return Inst<F32>(Opcode::SharedAtomicFMin32, Flags{is_gds}, address, data);
     default:
         ThrowInvalidType(data.Type());
     }

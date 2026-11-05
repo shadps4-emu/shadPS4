@@ -506,6 +506,10 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/video_recording/video_recording.cpp
                 src/core/libraries/video_recording/video_recording.h
                 src/core/libraries/video_recording/video_recording_error.h
+                src/core/libraries/game_custom_data_dialog/game_custom_data_dialog.cpp
+                src/core/libraries/game_custom_data_dialog/game_custom_data_dialog.h
+                src/core/libraries/game_custom_data_dialog/game_custom_data_dialog_ui.cpp
+                src/core/libraries/game_custom_data_dialog/game_custom_data_dialog_ui.h
                 src/core/libraries/invitation_dialog/invitation_dialog.cpp
                 src/core/libraries/invitation_dialog/invitation_dialog.h
                 src/core/libraries/invitation_dialog/invitation_dialog_ui.cpp
@@ -667,6 +671,7 @@ set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/np_handler/np_handler_friends.cpp
             src/core/libraries/np/np_handler/np_handler_auth.cpp
             src/core/libraries/np/np_handler/np_handler_invitation.cpp
+            src/core/libraries/np/np_handler/np_handler_game_custom_data.cpp
             src/core/libraries/np/np_handler/np_handler_score.cpp
             src/core/libraries/np/np_handler/np_handler_trophy.cpp
             src/core/libraries/np/np_handler/np_handler_tus.cpp
@@ -723,6 +728,8 @@ set(VR_LIBS  src/core/libraries/hmd/hmd.cpp
              src/core/libraries/hmd/hmd.h
              src/core/libraries/hmd/hmd_setup_dialog.cpp
              src/core/libraries/hmd/hmd_setup_dialog.h
+             src/core/libraries/hmd/vrservicedialog.cpp
+             src/core/libraries/hmd/vrservicedialog.h
              src/core/libraries/vr_tracker/vr_tracker.cpp
              src/core/libraries/vr_tracker/vr_tracker.h
 )
@@ -1112,6 +1119,7 @@ set(SHADER_RECOMPILER src/shader_recompiler/profile.h
                       src/shader_recompiler/ir/passes/shared_memory_simplify_pass.cpp
                       src/shader_recompiler/ir/passes/shared_memory_to_storage_pass.cpp
                       src/shader_recompiler/ir/passes/lower_phis_to_regs_pass.cpp
+                      src/shader_recompiler/ir/passes/lower_movrel_pass.cpp
                       src/shader_recompiler/ir/passes/ssa_repair_pass.cpp
                       src/shader_recompiler/ir/passes/ssa_rewrite_pass.cpp
                       src/shader_recompiler/ir/abstract_syntax_list.cpp

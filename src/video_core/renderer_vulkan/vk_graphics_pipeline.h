@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -41,6 +41,7 @@ struct GraphicsPipelineKey {
     AmdGpu::ColorControl::LogicOp logic_op;
     u8 num_samples;
     u8 depth_samples;
+    vk::SampleMask sample_mask;
     std::array<u8, AmdGpu::NUM_COLOR_BUFFERS> color_samples;
     u32 mrt_mask;
     struct {
