@@ -419,8 +419,8 @@ s32 PS4_SYSV_ABI close(s32 fd) {
     if (file->type == Core::FileSys::FileType::Socket) {
         return Libraries::Net::KernelClose(fd);
     }
-    ReleaseFlockState(file);
     if (file->ref_count <= 1) {
+        ReleaseFlockState(file);
         if (file->type == Core::FileSys::FileType::Regular) {
             file->handle.reset();
         }
