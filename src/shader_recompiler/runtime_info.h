@@ -208,7 +208,7 @@ struct HwFragmentRuntimeInfo {
     u32 mrtz_mask : 4;
     u32 front_face_all_bits : 1;
     u32 dual_source_blending : 1;
-	u32 alpha_to_src1 : 0;
+	u32 alpha_to_src1 : 1;
     u32 clip_distance_emulation : 1;
     u32 depth_before_shader : 1;
     u32 : 12;
