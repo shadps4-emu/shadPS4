@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
 #include <ranges>
 
 #include "common/hash.h"
@@ -182,6 +183,16 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(HwStage stage, SwStag
                                (stencil_ref_export_enable << 1) |
                                (regs.depth_shader_control.mask_export_enable << 2) |
                                (regs.depth_shader_control.coverage_to_mask_enable << 3);
+        const u32 sample_bits = (1u << (1u << regs.aa_config.msaa_num_samples)) - 1u;
+        std::array<u16, 4> aa_mask;
+        for (u32 pixel = 0; pixel < 4; ++pixel) {
+            aa_mask[pixel] = regs.aa_mask.pixel[pixel] & sample_bits;
+        }
+        info.hw.fs.aa_mask_per_pixel =
+            !std::ranges::all_of(aa_mask, [&](u16 mask) { return mask == aa_mask[0]; });
+        if (info.hw.fs.aa_mask_per_pixel) {
+            info.hw.fs.aa_mask = aa_mask;
+        }
         const auto mrt0_export_format = regs.color_export_format.GetFormat(0);
         const bool mrt0_alpha = mrt0_export_format >= AmdGpu::ShaderExportFormat::AR_32 &&
                                 mrt0_export_format <= AmdGpu::ShaderExportFormat::ABGR_32;
@@ -443,6 +454,10 @@ bool PipelineCache::RefreshGraphicsKey() {
     key.logic_op = regs.color_control.rop3;
     key.depth_samples = db_enabled ? regs.depth_buffer.NumSamples() : 1;
     key.num_samples = key.depth_samples;
+    key.sample_mask = 0;
+    for (const u16 pixel_mask : regs.aa_mask.pixel) {
+        key.sample_mask |= pixel_mask;
+    }
     key.cb_shader_mask = regs.color_shader_mask;
 
     const bool skip_cb_binding =
