@@ -57,6 +57,9 @@ struct OrbisUserServiceEvent {
     OrbisUserServiceUserId userId;
 };
 
+using OrbisUserServiceEventCallback = PS4_SYSV_ABI void (*)(const OrbisUserServiceEvent* event,
+                                                            void* userdata);
+
 void AddUserServiceEvent(const OrbisUserServiceEvent e);
 
 int PS4_SYSV_ABI sceUserServiceInitializeForShellCore();
@@ -284,7 +287,8 @@ int PS4_SYSV_ABI sceUserServiceIsSharePlayClientUser();
 int PS4_SYSV_ABI sceUserServiceIsUserStorageAccountBound();
 int PS4_SYSV_ABI sceUserServiceLogin();
 int PS4_SYSV_ABI sceUserServiceLogout();
-int PS4_SYSV_ABI sceUserServiceRegisterEventCallback();
+int PS4_SYSV_ABI sceUserServiceRegisterEventCallback(OrbisUserServiceEventCallback callback,
+                                                     void* userdata);
 int PS4_SYSV_ABI sceUserServiceSetAccessibilityKeyremapData();
 int PS4_SYSV_ABI sceUserServiceSetAccessibilityKeyremapEnable();
 int PS4_SYSV_ABI sceUserServiceSetAccessibilityZoom();
@@ -477,7 +481,8 @@ int PS4_SYSV_ABI sceUserServiceSetVolumeForGenericUSB();
 int PS4_SYSV_ABI sceUserServiceSetVolumeForMorpheusSidetone();
 int PS4_SYSV_ABI sceUserServiceSetVolumeForSidetone();
 int PS4_SYSV_ABI sceUserServiceTerminate();
-int PS4_SYSV_ABI sceUserServiceUnregisterEventCallback();
+int PS4_SYSV_ABI sceUserServiceUnregisterEventCallback(OrbisUserServiceEventCallback callback,
+                                                       void* userdata = nullptr);
 int PS4_SYSV_ABI Func_8AC6DC4168D5FEA5();
 int PS4_SYSV_ABI Func_A6BDC9DFDAFD02B4();
 int PS4_SYSV_ABI Func_BB9491DFE6B4953C();
