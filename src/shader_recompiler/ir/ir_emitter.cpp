@@ -958,7 +958,8 @@ Value IREmitter::UnpackDouble2x32(const F64& value) {
     return Inst<Value>(Opcode::UnpackDouble2x32, value);
 }
 
-U32 IREmitter::Pack2x16(const AmdGpu::NumberFormat number_format, const Value& vector) {
+U32 IREmitter::Pack2x16(const AmdGpu::NumberFormat number_format, const Value& vector,
+                        bool round_to_zero) {
     switch (number_format) {
     case AmdGpu::NumberFormat::Unorm:
         return Inst<U32>(Opcode::PackUnorm2x16, vector);
@@ -969,7 +970,7 @@ U32 IREmitter::Pack2x16(const AmdGpu::NumberFormat number_format, const Value& v
     case AmdGpu::NumberFormat::Sint:
         return Inst<U32>(Opcode::PackSint2x16, vector);
     case AmdGpu::NumberFormat::Float:
-        return Inst<U32>(Opcode::PackHalf2x16, vector);
+        return Inst<U32>(Opcode::PackHalf2x16, Flags{round_to_zero}, vector);
     default:
         UNREACHABLE_MSG("Unsupported 2x16 number format: {}", number_format);
     }
