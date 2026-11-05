@@ -157,6 +157,10 @@ void MntPoints::Mount(const std::filesystem::path& host_folder, const std::strin
     stack.push_back(std::move(base));
 
     m_mnt_pairs.emplace_back(host_folder, guest_folder_sanitized, read_only, std::move(stack));
+    // Keep mounts sorted by prefix length in descending order for longest-prefix matching.
+    std::stable_sort(
+        m_mnt_pairs.begin(), m_mnt_pairs.end(),
+        [](const MntPair& a, const MntPair& b) { return a.mount.size() > b.mount.size(); });
     LOG_INFO(Kernel_Fs, "Mounted '{}' -> '{}'", guest_folder_sanitized, host_folder.string());
 }
 
@@ -669,18 +673,130 @@ int HandleTable::CreateHandle() {
     for (int index = 0; index < existingFilesNum; index++) {
         if (m_files.at(index) == nullptr) {
             m_files[index] = file;
+            if (static_cast<size_t>(index) < m_fd_flags.size()) {
+                m_fd_flags[index] = 0;
+            } else {
+                m_fd_flags.resize(index + 1, 0);
+            }
             return index;
         }
     }
 
     m_files.push_back(file);
+    m_fd_flags.push_back(0);
     return m_files.size() - 1;
 }
 
 void HandleTable::DeleteHandle(int d) {
+    File* to_delete = nullptr;
+    {
+        std::scoped_lock lock{m_mutex};
+        if (d < 0 || static_cast<size_t>(d) >= m_files.size()) {
+            return;
+        }
+        auto* file = m_files[d];
+        if (!file) {
+            return;
+        }
+        m_files[d] = nullptr;
+        if (static_cast<size_t>(d) < m_fd_flags.size()) {
+            m_fd_flags[d] = 0;
+        }
+        if (--file->ref_count == 0) {
+            to_delete = file;
+        }
+    }
+    delete to_delete;
+}
+
+int HandleTable::DuplicateHandleFrom(int old_fd, int min_fd, bool cloexec) {
     std::scoped_lock lock{m_mutex};
-    delete m_files.at(d);
-    m_files[d] = nullptr;
+    if (old_fd < 0 || static_cast<size_t>(old_fd) >= m_files.size()) {
+        return -1;
+    }
+    auto* file = m_files[old_fd];
+    if (!file) {
+        return -1;
+    }
+    if (min_fd < 0 || min_fd >= 1024) {
+        return -1;
+    }
+
+    const s32 flags = cloexec ? 1 : 0;
+
+    for (size_t index = min_fd; index < m_files.size(); ++index) {
+        if (m_files[index] == nullptr) {
+            m_files[index] = file;
+            file->ref_count++;
+            if (index < m_fd_flags.size()) {
+                m_fd_flags[index] = flags;
+            } else {
+                m_fd_flags.resize(index + 1, 0);
+                m_fd_flags[index] = flags;
+            }
+            return static_cast<int>(index);
+        }
+    }
+
+    if (static_cast<size_t>(min_fd) > m_files.size()) {
+        if (min_fd >= 1024) {
+            return -1;
+        }
+        m_files.resize(min_fd, nullptr);
+        m_fd_flags.resize(min_fd, 0);
+    }
+    if (m_files.size() >= 1024) {
+        return -1;
+    }
+    m_files.push_back(file);
+    m_fd_flags.push_back(flags);
+    file->ref_count++;
+    return static_cast<int>(m_files.size() - 1);
+}
+
+int HandleTable::DuplicateHandleTo(int old_fd, int target_fd, bool cloexec) {
+    std::scoped_lock lock{m_mutex};
+    if (old_fd < 0 || static_cast<size_t>(old_fd) >= m_files.size()) {
+        return -1;
+    }
+    auto* file = m_files[old_fd];
+    if (!file) {
+        return -1;
+    }
+    if (target_fd < 0 || target_fd >= 1024) {
+        return -1;
+    }
+    if (old_fd == target_fd) {
+        return target_fd;
+    }
+
+    if (static_cast<size_t>(target_fd) >= m_files.size()) {
+        m_files.resize(target_fd + 1, nullptr);
+        m_fd_flags.resize(target_fd + 1, 0);
+    }
+    m_files[target_fd] = file;
+    m_fd_flags[target_fd] = cloexec ? 1 : 0;
+    file->ref_count++;
+    return target_fd;
+}
+
+s32 HandleTable::GetFdFlags(int d) {
+    std::scoped_lock lock{m_mutex};
+    if (d < 0 || static_cast<size_t>(d) >= m_fd_flags.size()) {
+        return 0;
+    }
+    return m_fd_flags[d];
+}
+
+void HandleTable::SetFdFlags(int d, s32 flags) {
+    std::scoped_lock lock{m_mutex};
+    if (d < 0 || static_cast<size_t>(d) >= m_files.size() || m_files[d] == nullptr) {
+        return;
+    }
+    if (static_cast<size_t>(d) >= m_fd_flags.size()) {
+        m_fd_flags.resize(d + 1, 0);
+    }
+    m_fd_flags[d] = flags & 1;
 }
 
 File* HandleTable::GetFile(int d) {
