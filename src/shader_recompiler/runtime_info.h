@@ -208,7 +208,7 @@ struct HwFragmentRuntimeInfo {
     u32 mrtz_mask : 4;
     u32 front_face_all_bits : 1;
     u32 dual_source_blending : 1;
-	u32 alpha_to_src1 : 1;
+    u32 alpha_to_src1 : 1;
     u32 clip_distance_emulation : 1;
     u32 depth_before_shader : 1;
     u32 : 12;
@@ -220,7 +220,7 @@ struct HwFragmentRuntimeInfo {
                num_samples == other.num_samples && mrtz_mask == other.mrtz_mask &&
                front_face_all_bits == other.front_face_all_bits &&
                dual_source_blending == other.dual_source_blending &&
-			   alpha_to_src1 == other.alpha_to_src1 &&
+               alpha_to_src1 == other.alpha_to_src1 &&
                clip_distance_emulation == other.clip_distance_emulation &&
                depth_before_shader == other.depth_before_shader &&
                std::ranges::equal(inputs.begin(), inputs.begin() + num_inputs, other.inputs.begin(),
