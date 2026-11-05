@@ -45,6 +45,7 @@ enum class NetObjectKind { Socket, Epoll, External };
 
 std::optional<NetObjectKind> GetObjectKind(s32 id);
 NetResult CloseObject(s32 id);
+NetResult DuplicateObject(s32 old_id, s32 new_id);
 NetResult ReserveExternalId();
 NetResult SignalExternal(s32 id, bool hangup = false);
 NetResult ReleaseExternalId(s32 id);

@@ -163,11 +163,11 @@ void SaveInstance::SetupAndMount(bool read_only, bool copy_icon, bool ignore_cor
         exists = true;
     } else {
         std::optional<fs::filesystem_error> err;
-        if (!ignore_corrupt && fs::exists(corrupt_file_path)) {
-            err = fs::filesystem_error("Corrupted save data", corrupt_file_path,
-                                       std::make_error_code(std::errc::illegal_byte_sequence));
-        } else if (!param_sfo.Open(param_sfo_path)) {
+        if (!param_sfo.Open(param_sfo_path)) {
             err = fs::filesystem_error("Failed to read param.sfo", param_sfo_path,
+                                       std::make_error_code(std::errc::illegal_byte_sequence));
+        } else if (!ignore_corrupt && fs::exists(corrupt_file_path)) {
+            err = fs::filesystem_error("Corrupted save data", corrupt_file_path,
                                        std::make_error_code(std::errc::illegal_byte_sequence));
         }
         if (err.has_value()) {
@@ -198,10 +198,12 @@ void SaveInstance::Umount() {
         return;
     }
     mounted = false;
-    const bool ok = param_sfo.Encode(param_sfo_path);
-    if (!ok) {
-        throw fs::filesystem_error("Failed to write param.sfo", param_sfo_path,
-                                   std::make_error_code(std::errc::permission_denied));
+    if (!read_only) {
+        const bool ok = param_sfo.Encode(param_sfo_path);
+        if (!ok) {
+            throw fs::filesystem_error("Failed to write param.sfo", param_sfo_path,
+                                       std::make_error_code(std::errc::permission_denied));
+        }
     }
     param_sfo = PSF();
 
