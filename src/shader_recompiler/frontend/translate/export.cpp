@@ -265,7 +265,7 @@ void Translator::ExportDepth(const GcnInst& inst) {
 
 void Translator::EmitExport(const GcnInst& inst) {
     if (info.hw_stage == HwStage::Fragment && inst.control.exp.vm) {
-        ir.Discard(ir.LogicalNot(ir.GetExec()));
+        valid_mask_exported = true;
     }
 
     const IR::Attribute attrib{inst.control.exp.target};

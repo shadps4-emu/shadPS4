@@ -406,6 +406,7 @@ private:
     std::array<IR::Attribute, MaxInterpVgpr> vgpr_to_interp{};
     FetchShaderData fetch_data{};
     bool opcode_missing = false;
+    bool valid_mask_exported = false;
     u32 pc{};
 };
 
