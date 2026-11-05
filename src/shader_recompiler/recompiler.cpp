@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <unordered_map>
+
 #include "common/logging/classes.h"
 #include "shader_recompiler/frontend/control_flow_graph.h"
 #include "shader_recompiler/frontend/decode.h"
@@ -60,6 +62,82 @@ void EmitControlFlowGraph(IR::Program& program, Pools& pools, Gcn::CFG& cfg,
     program.post_order_blocks = Shader::IR::PostOrder(program.blocks.front());
 }
 
+IR::Program CloneProgram(const IR::Program& program, Pools& pools) {
+    IR::Program new_program{program.info};
+    new_program.ins_list = program.ins_list;
+    new_program.next_reg_index = program.next_reg_index;
+
+    std::unordered_map<const IR::Block*, IR::Block*> block_map;
+    new_program.blocks.reserve(program.blocks.size());
+    for (const auto* block : program.blocks) {
+        auto* new_block = pools.block_pool.Create(pools.inst_pool);
+        new_block->cfg_block = block->cfg_block;
+        new_block->SetDefinition(block->Definition<u32>());
+        new_block->po_index = block->po_index;
+        block_map[block] = new_block;
+        new_program.blocks.push_back(new_block);
+    }
+
+    for (const auto* block : program.blocks) {
+        auto* new_block = block_map[block];
+        new_block->imm_predecessors.reserve(block->imm_predecessors.size());
+        for (const auto* pred : block->imm_predecessors) {
+            new_block->imm_predecessors.push_back(block_map[pred]);
+        }
+        new_block->imm_successors.reserve(block->imm_successors.size());
+        for (const auto* succ : block->imm_successors) {
+            new_block->imm_successors.push_back(block_map[succ]);
+        }
+    }
+
+    new_program.post_order_blocks.reserve(program.post_order_blocks.size());
+    for (const auto* block : program.post_order_blocks) {
+        new_program.post_order_blocks.push_back(block_map[block]);
+    }
+
+    std::unordered_map<const IR::Inst*, IR::Inst*> inst_map;
+    for (const auto* block : program.blocks) {
+        auto* new_block = block_map[block];
+        for (const auto& inst : block->Instructions()) {
+            ASSERT_MSG(inst.GetOpcode() != IR::Opcode::Phi, "Cloning phi node");
+            auto* new_inst = pools.inst_pool.Create(inst.GetOpcode(), inst.Flags<u32>());
+            new_inst->SetFlags(inst.Flags<u64>());
+            new_inst->SetParent(new_block);
+            new_inst->SetDefinition(inst.Definition<u32>());
+            new_inst->SetRegTag(inst.GetRegTag());
+            inst_map[&inst] = new_inst;
+            new_block->Instructions().push_back(*new_inst);
+        }
+    }
+
+    for (const auto* block : program.blocks) {
+        auto* new_block = block_map[block];
+        for (const auto& inst : block->Instructions()) {
+            auto* new_inst = inst_map[&inst];
+            const size_t num_args = inst.NumArgs();
+            for (size_t i = 0; i < num_args; ++i) {
+                const auto& arg = inst.Arg(i);
+                if (const auto* arg_inst = arg.TryInst()) {
+                    auto it = inst_map.find(arg_inst);
+                    ASSERT_MSG(it != inst_map.end(), "Argument instruction not found in clone map");
+                    new_inst->SetArg(i, IR::Value{it->second});
+                } else {
+                    new_inst->SetArg(i, arg);
+                }
+            }
+        }
+        if (const auto* cond_inst = block->branch_cond.TryInst()) {
+            auto it = inst_map.find(cond_inst);
+            ASSERT_MSG(it != inst_map.end(), "Branch condition instruction not found in clone map");
+            new_block->branch_cond = IR::U1{IR::Value{it->second}};
+        } else {
+            new_block->branch_cond = block->branch_cond;
+        }
+    }
+
+    return new_program;
+}
+
 IR::Program TranslateProgram(const std::span<const u32>& code, Pools& pools, Info& info,
                              RuntimeInfo& runtime_info, const Profile& profile) {
     // Ensure first instruction is expected.
@@ -96,16 +174,7 @@ IR::Program TranslateProgram(const std::span<const u32>& code, Pools& pools, Inf
     }
     if (info.has_movrel) {
         Pools temp_pools;
-        Common::ObjectPool<Gcn::Block> temp_gcn_block_pool{64};
-        Gcn::CFG temp_cfg{temp_gcn_block_pool, program.ins_list};
-        IR::Program temp_program{info};
-        temp_program.ins_list = program.ins_list;
-        EmitControlFlowGraph(temp_program, temp_pools, temp_cfg, runtime_info, profile);
-        Shader::InjectClipDistanceAttributes(temp_program, runtime_info);
-
-        if (!profile.support_float64) {
-            Shader::Optimization::LowerFp64ToFp32(temp_program);
-        }
+        IR::Program temp_program = CloneProgram(program, temp_pools);
         Shader::Optimization::SsaRewritePass(temp_program);
         Shader::Optimization::ConstantPropagationPass(temp_program.post_order_blocks);
 
