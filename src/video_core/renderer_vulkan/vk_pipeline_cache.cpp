@@ -232,7 +232,7 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(HwStage stage, SwStag
         } else {
             info.hw.fs.dual_source_blending = false;
         }		
-		info.hw.fs.alpha_to_src1 = graphics_key.alpha_to_src1 != 0;
+        info.hw.fs.alpha_to_src1 = graphics_key.alpha_to_src1 != 0;
         info.hw.fs.dual_source_blending |= info.hw.fs.alpha_to_src1;
         const auto& ps_inputs = regs.ps_inputs;
         for (u32 i = 0; i < regs.num_interp; i++) {
@@ -523,7 +523,7 @@ bool PipelineCache::RefreshGraphicsKey() {
             bc.color_src_factor == AmdGpu::BlendControl::BlendFactor::SrcColor &&
             bc.color_dst_factor == AmdGpu::BlendControl::BlendFactor::DstColor;
     }
-	key.alpha_to_src1 = !skip_cb_binding && AlphaToSrc1(regs, key.color_buffers[0]);
+    key.alpha_to_src1 = !skip_cb_binding && AlphaToSrc1(regs, key.color_buffers[0]);
 
     // Compile and bind shader stages
     if (!RefreshGraphicsStages()) {

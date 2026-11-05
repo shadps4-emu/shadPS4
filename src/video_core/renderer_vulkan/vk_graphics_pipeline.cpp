@@ -361,9 +361,10 @@ GraphicsPipeline::GraphicsPipeline(
         }
         if (i == 0 && key.alpha_to_src1) {
             const auto to_src1 = [](vk::BlendFactor f) {
-                return f == vk::BlendFactor::eSrcAlpha           ? vk::BlendFactor::eSrc1Alpha
-                       : f == vk::BlendFactor::eOneMinusSrcAlpha ? vk::BlendFactor::eOneMinusSrc1Alpha
-                                                                 : f;
+                return f == vk::BlendFactor::eSrcAlpha ? vk::BlendFactor::eSrc1Alpha
+                       : f == vk::BlendFactor::eOneMinusSrcAlpha
+                           ? vk::BlendFactor::eOneMinusSrc1Alpha
+                           : f;
             };
             auto& a = attachments[0];
             a.srcColorBlendFactor = to_src1(a.srcColorBlendFactor);
