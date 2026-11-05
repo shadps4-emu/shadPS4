@@ -336,6 +336,7 @@ public:
     // DS
     template <typename T = IR::U32>
     void DS_OP(const GcnInst& inst, AtomicOp op, bool rtn);
+    void DS_OP_F32(const GcnInst& inst, AtomicOp op);
     void DS_WRITE(int bit_size, bool is_signed, bool is_pair, bool stride64, const GcnInst& inst);
     void DS_READ(int bit_size, bool is_signed, bool is_pair, bool stride64, const GcnInst& inst);
     void DS_SWIZZLE_B32(const GcnInst& inst);

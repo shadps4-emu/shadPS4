@@ -2307,9 +2307,11 @@ s32 PS4_SYSV_ABI posix_unlink(const char* path) {
 
     auto* file = h->GetFile(host_path);
     if (file == nullptr) {
-        // File to unlink hasn't been opened, manually open and unlink it.
-        Common::FS::IOFile file(host_path, Common::FS::FileAccessMode::ReadWrite);
-        file.Unlink();
+        std::error_code ec;
+        if (!fs::remove(host_path, ec) && ec) {
+            *__Error() = POSIX_ENOENT;
+            return -1;
+        }
     } else if (auto* host = file->GetHostFile()) {
         host->Unlink();
     }
