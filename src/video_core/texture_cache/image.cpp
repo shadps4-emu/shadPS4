@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <memory>
+#include "common/alignment.h"
 #include "common/assert.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
@@ -17,7 +18,6 @@ namespace VideoCore {
 using namespace Vulkan;
 
 Common::IncrementalIdProvider<u64> Image::global_image_uid{};
-Common::IncrementalIdProvider<u64> Image::global_contents_version{};
 
 static vk::ImageUsageFlags ImageUsageFlags(const Vulkan::Instance& instance,
                                            const ImageInfo& info) {
@@ -197,10 +197,7 @@ Image::Image(const Vulkan::Instance& instance, Vulkan::Runtime& runtime_,
         .initialLayout = vk::ImageLayout::eUndefined,
     };
 
-    backing = &backing_images.emplace_back();
-    backing->num_samples = info.num_samples;
-    backing->image = UniqueImage{instance.GetDevice(), instance.GetAllocator()};
-    backing->image.Create(image_ci);
+    backing = &AddBacking(image_ci, info.num_samples);
 
     Vulkan::SetObjectName(instance.GetDevice(), GetImage(),
                           "Image {}x{}x{} {} {} {:#x}:{:#x} L:{} M:{} S:{}", info.size.width,
@@ -211,27 +208,48 @@ Image::Image(const Vulkan::Instance& instance, Vulkan::Runtime& runtime_,
 
 Image::~Image() = default;
 
+Image::BackingImage& Image::AddBacking(const vk::ImageCreateInfo& create_info, u32 num_samples) {
+    const auto previous_size = memory_usage_counter ? Common::AlignUp(SizeBytes(), 1024) : 0;
+    const size_t backing_index = backing ? backing - backing_images.data() : 0;
+    auto& added_backing = backing_images.emplace_back();
+    backing = &backing_images[backing_index];
+
+    const auto& instance = runtime->GetInstance();
+    added_backing.num_samples = num_samples;
+    added_backing.image = UniqueImage{instance.GetDevice(), instance.GetAllocator()};
+    added_backing.image.Create(create_info);
+    if (memory_usage_counter) {
+        *memory_usage_counter += Common::AlignUp(SizeBytes(), 1024) - previous_size;
+    }
+    return added_backing;
+}
+
 ImageView& Image::FindView(const ImageViewInfo& view_info, bool ensure_guest_samples) {
     if (ensure_guest_samples && backing->num_samples > 1 != info.num_samples > 1) {
         runtime->SetBackingSamples(this, info.num_samples);
     }
-    const auto& view_infos = backing->image_view_infos;
+    return FindView(view_info, *backing);
+}
+
+ImageView& Image::FindView(const ImageViewInfo& view_info, BackingImage& view_backing) {
+    const auto& view_infos = view_backing.image_view_infos;
     const auto it = std::ranges::find(view_infos, view_info);
     if (it != view_infos.end()) {
-        const auto view_id = backing->image_view_ids[std::distance(view_infos.begin(), it)];
+        const auto view_id = view_backing.image_view_ids[std::distance(view_infos.begin(), it)];
         return (*slot_image_views)[view_id];
     }
-    const auto view_id = slot_image_views->Insert(runtime->GetInstance(), view_info, *this);
-    backing->image_view_infos.emplace_back(view_info);
-    backing->image_view_ids.emplace_back(view_id);
+    const auto view_id = slot_image_views->Insert(runtime->GetInstance(), view_info, *this,
+                                                  view_backing.image.image);
+    view_backing.image_view_infos.emplace_back(view_info);
+    view_backing.image_view_ids.emplace_back(view_id);
     return (*slot_image_views)[view_id];
 }
 
-void Image::GetBarriers(Barriers& barriers, vk::ImageLayout dst_layout, vk::AccessFlags2 dst_mask,
-                        vk::PipelineStageFlags2 dst_stage,
+void Image::GetBarriers(Barriers& barriers, BackingImage& image_backing, vk::ImageLayout dst_layout,
+                        vk::AccessFlags2 dst_mask, vk::PipelineStageFlags2 dst_stage,
                         std::optional<SubresourceRange> subres_range) {
-    auto& last_state = backing->state;
-    auto& subresource_states = backing->subresource_states;
+    auto& last_state = image_backing.state;
+    auto& subresource_states = image_backing.subresource_states;
 
     const bool needs_partial_transition =
         subres_range &&
@@ -277,7 +295,7 @@ void Image::GetBarriers(Barriers& barriers, vk::ImageLayout dst_layout, vk::Acce
                         .newLayout = dst_layout,
                         .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                         .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                        .image = GetImage(),
+                        .image = image_backing.image.image,
                         .subresourceRange{
                             .aspectMask = aspect_mask,
                             .baseMipLevel = mip,
@@ -313,7 +331,7 @@ void Image::GetBarriers(Barriers& barriers, vk::ImageLayout dst_layout, vk::Acce
             .newLayout = dst_layout,
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .image = GetImage(),
+            .image = image_backing.image.image,
             .subresourceRange{
                 .aspectMask = aspect_mask,
                 .baseMipLevel = 0,

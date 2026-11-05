@@ -57,22 +57,18 @@ struct ImageInfo {
 
     bool IsCompatible(const ImageInfo& info) const;
 
-    /// Whether this single-level color image is an origin-aligned crop of the same layout.
     bool IsSubrectOf(const ImageInfo& info) const {
-        // A Vulkan image view cannot restrict the dimensions of a mip. Keep a separate
-        // image for a cropped descriptor, but only copy texels when the guest layouts
-        // really agree. Array slices and mip chains need separate offset calculations.
-        return guest_address == info.guest_address && type == AmdGpu::ImageType::Color2D &&
+        return (size.width < info.size.width || size.height < info.size.height) &&
+               size.width <= info.size.width && size.height <= info.size.height &&
+               size.depth == 1 && info.size.depth == 1 && guest_address == info.guest_address &&
+               guest_size <= info.guest_size && type == AmdGpu::ImageType::Color2D &&
                type == info.type && resources.levels == 1 && resources.layers == 1 &&
                info.resources.levels == 1 && info.resources.layers == 1 && !props.is_depth &&
                !info.props.is_depth && !props.is_block && !info.props.is_block &&
                pixel_format == info.pixel_format && num_bits == info.num_bits &&
                num_samples == info.num_samples && pitch == info.pitch &&
                tile_mode == info.tile_mode && bank_swizzle == info.bank_swizzle &&
-               alt_tile == info.alt_tile && mips_layout[0].pitch == info.mips_layout[0].pitch &&
-               (size.width < info.size.width || size.height < info.size.height) &&
-               size.width <= info.size.width && size.height <= info.size.height &&
-               size.depth == 1 && info.size.depth == 1;
+               alt_tile == info.alt_tile && mips_layout[0].pitch == info.mips_layout[0].pitch;
     }
     void UpdateSize() noexcept;
 

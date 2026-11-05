@@ -346,26 +346,6 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
 
     // Equal address
     if (image_info.guest_address == cache_image.info.guest_address) {
-        // Vulkan image views cannot restrict the dimensions of a mip, so an
-        // origin-aligned crop needs its own image. Keep that image synchronized
-        // with a newer GPU-written backing instead of reloading stale guest memory.
-        if (image_info.IsSubrectOf(cache_image.info)) {
-            ImageId result_id = merged_image_id;
-            if (!result_id) {
-                result_id = slot_images.Insert(instance, runtime, slot_image_views, image_info);
-                RegisterImage(result_id);
-            }
-
-            // Reacquire both references after inserting the result image.
-            auto& source_image = slot_images[cache_image_id];
-            auto& result_image = slot_images[result_id];
-            if (source_image.contents_version > result_image.contents_version &&
-                source_image.HasGpuValidData()) {
-                runtime.CopySubrect(&source_image, &result_image);
-            }
-            return {result_id, -1, -1};
-        }
-
         const u32 lhs_block_size = image_info.num_bits * image_info.num_samples;
         const u32 rhs_block_size = cache_image.info.num_bits * cache_image.info.num_samples;
         if (image_info.BlockDim() != cache_image.info.BlockDim() ||
@@ -632,11 +612,15 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
 
     ImageId image_id{};
 
+    ImageId subrect_source{};
     // Check for a perfect match first
     for (const auto& cache_id : image_ids) {
         auto& cache_image = slot_images[cache_id];
         if (cache_image.info.guest_address != info.guest_address) {
             continue;
+        }
+        if (desc.IsSubrectTexture(cache_image.info) && cache_image.HasGpuValidData()) {
+            subrect_source = cache_id;
         }
         if (cache_image.info.guest_size != info.guest_size) {
             continue;
@@ -652,6 +636,10 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
             continue;
         }
         image_id = cache_id;
+    }
+
+    if (!image_id) {
+        image_id = subrect_source;
     }
 
     // Try to resolve overlaps (if any)
@@ -670,25 +658,6 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
                 view_mip = overlap_view_mip;
                 view_slice = overlap_view_slice;
             }
-        }
-    } else {
-        // A perfect match can still have a newer, larger backing at the same
-        // address. Revisit only this compatible crop relationship; all other
-        // overlaps were resolved when the image was created.
-        for (const auto& cache_id : image_ids) {
-            if (cache_id == image_id) {
-                continue;
-            }
-
-            const auto& merged_info = slot_images[image_id].info;
-            if (!merged_info.IsSubrectOf(slot_images[cache_id].info)) {
-                continue;
-            }
-
-            const auto [overlap_image_id, overlap_view_mip, overlap_view_slice] =
-                ResolveOverlap(merged_info, desc.type, cache_id, image_id);
-            ASSERT(overlap_image_id == image_id);
-            ASSERT(overlap_view_mip == -1 && overlap_view_slice == -1);
         }
     }
 
