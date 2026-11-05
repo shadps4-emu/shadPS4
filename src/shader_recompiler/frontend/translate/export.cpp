@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "shader_recompiler/frontend/translate/translate.h"
@@ -47,6 +47,73 @@ static u32 MaskFromExportFormat(u8 mask, AmdGpu::ShaderExportFormat export_forma
     }
 }
 
+IR::U32 Translator::AlphaToMaskLevel(const IR::F32& alpha) {
+    const u32 max_level = 8u << runtime_info.hw.fs.alpha_to_mask_num_samples;
+    const IR::U32 scaled{
+        ir.ConvertFToU(32, ir.FPMul(alpha, ir.Imm32(static_cast<f32>(max_level))))};
+    const IR::U1 positive{ir.FPGreaterThan(alpha, ir.Imm32(0.f))};
+    const IR::U1 full{ir.FPGreaterThanEqual(alpha, ir.Imm32(1.f))};
+    return IR::U32{ir.Select(positive, ir.Select(full, ir.Imm32(max_level), scaled), ir.Imm32(0u))};
+}
+
+IR::U32 Translator::AlphaToMaskLevel(const IR::U32& packed, AmdGpu::ShaderExportFormat format) {
+    const u32 max_level = 8u << runtime_info.hw.fs.alpha_to_mask_num_samples;
+    switch (format) {
+    case AmdGpu::ShaderExportFormat::ABGR_FP16:
+        return AlphaToMaskLevel(
+            IR::F32{ir.CompositeExtract(ir.Unpack2x16(AmdGpu::NumberFormat::Float, packed), 1)});
+    case AmdGpu::ShaderExportFormat::ABGR_UNORM16:
+    case AmdGpu::ShaderExportFormat::ABGR_UINT16: {
+        const IR::U32 alpha{ir.ShiftRightLogical(packed, ir.Imm32(16u))};
+        return ir.IDiv(ir.IMul(alpha, ir.Imm32(max_level)), ir.Imm32(65535u));
+    }
+    case AmdGpu::ShaderExportFormat::ABGR_SNORM16:
+    case AmdGpu::ShaderExportFormat::ABGR_SINT16: {
+        const IR::U32 alpha{ir.IMax(ir.BitFieldExtract(packed, ir.Imm32(16u), ir.Imm32(16u), true),
+                                    ir.Imm32(0u), true)};
+        return ir.IDiv(ir.IMul(alpha, ir.Imm32(max_level)), ir.Imm32(32767u));
+    }
+    default:
+        UNREACHABLE_MSG("Unsupported compressed export format {}", static_cast<u32>(format));
+    }
+}
+
+void Translator::ExportAlphaToMask(const IR::U32& level) {
+    const auto& fs = runtime_info.hw.fs;
+    const u32 log2_samples = fs.alpha_to_mask_num_samples;
+    const IR::U32 x{ir.ConvertFToU(32, ir.GetAttribute(IR::Attribute::FragCoord, 0))};
+    const IR::U32 y{ir.ConvertFToU(32, ir.GetAttribute(IR::Attribute::FragCoord, 1))};
+    const IR::U32 pixel{
+        ir.BitwiseOr(ir.BitwiseAnd(x, ir.Imm32(1u)),
+                     ir.ShiftLeftLogical(ir.BitwiseAnd(y, ir.Imm32(1u)), ir.Imm32(1u)))};
+    const IR::U32 offset{ir.BitFieldExtract(ir.Imm32(static_cast<u32>(fs.alpha_to_mask_offsets)),
+                                            ir.IMul(pixel, ir.Imm32(3u)), ir.Imm32(3u))};
+    const auto covered = [&](u32 log2_k) {
+        const IR::U32 level_k{ir.ShiftRightLogical(level, ir.Imm32(log2_samples - log2_k))};
+        return ir.UMin(ir.ShiftRightLogical(ir.IAdd(level_k, offset), ir.Imm32(3u)),
+                       ir.Imm32(1u << log2_k));
+    };
+    const auto low_bits = [&](const IR::U32& count) {
+        return IR::U32{ir.ISub(ir.ShiftLeftLogical(ir.Imm32(1u), count), ir.Imm32(1u))};
+    };
+    IR::U32 mask;
+    if (fs.alpha_to_mask_eqaa_disable) {
+        mask = low_bits(covered(log2_samples));
+    } else {
+        mask = ir.Imm32(0u);
+        IR::U32 covered_k = covered(log2_samples);
+        for (u32 log2_k = log2_samples; log2_k > 0; --log2_k) {
+            const IR::U32 covered_half = covered(log2_k - 1);
+            const IR::U32 bits = low_bits(IR::U32{ir.ISub(covered_k, covered_half)});
+            mask = ir.BitwiseOr(mask, ir.ShiftLeftLogical(bits, ir.Imm32(1u << (log2_k - 1))));
+            covered_k = covered_half;
+        }
+        mask = ir.BitwiseOr(mask, covered_k);
+    }
+    const IR::U32 sample_mask{ReplicateSampleMask(mask, log2_samples)};
+    ir.SetAttribute(IR::Attribute::SampleMask, ir.BitCast<IR::F32>(sample_mask));
+}
+
 void Translator::ExportRenderTarget(const GcnInst& inst) {
     const auto& exp = inst.control.exp;
     const IR::Attribute mrt{exp.target};
@@ -56,6 +123,18 @@ void Translator::ExportRenderTarget(const GcnInst& inst) {
     u32 color_buffer_idx = static_cast<u32>(mrt) - static_cast<u32>(IR::Attribute::RenderTarget0);
     if (runtime_info.hw.fs.dual_source_blending && mrt == IR::Attribute::RenderTarget1) {
         color_buffer_idx = 0;
+    }
+
+    if (mrt == IR::Attribute::RenderTarget0 && runtime_info.hw.fs.alpha_to_mask_enable) {
+        IR::U32 level = ir.Imm32(0u);
+        if (exp.compr ? (exp.en & 4) : (exp.en & 8)) {
+            level =
+                exp.compr
+                    ? AlphaToMaskLevel(ir.GetVectorReg(IR::VectorReg(inst.src[1].code)),
+                                       runtime_info.hw.fs.mrt0_export_format)
+                    : AlphaToMaskLevel(ir.GetVectorReg<IR::F32>(IR::VectorReg(inst.src[3].code)));
+        }
+        ExportAlphaToMask(level);
     }
 
     const auto color_buffer = runtime_info.hw.fs.color_buffers[color_buffer_idx];
@@ -118,6 +197,19 @@ void Translator::ExportRenderTarget(const GcnInst& inst) {
     }
 }
 
+IR::U32 Translator::ReplicateSampleMask(const IR::U32& mask, u32 log2_samples) {
+    const u32 log2_msaa_samples = runtime_info.hw.fs.msaa_num_samples;
+    if (log2_samples >= log2_msaa_samples) {
+        return mask;
+    }
+    const u32 num_samples = 1u << log2_samples;
+    u32 repeat = 0;
+    for (u32 sample = 0; sample < (1u << log2_msaa_samples); sample += num_samples) {
+        repeat |= 1u << sample;
+    }
+    return ir.IMul(ir.BitwiseAnd(mask, ir.Imm32((1u << num_samples) - 1)), ir.Imm32(repeat));
+}
+
 void Translator::ExportDepth(const GcnInst& inst) {
     const auto& exp = inst.control.exp;
     if (exp.en == 0) {
@@ -155,13 +247,19 @@ void Translator::ExportDepth(const GcnInst& inst) {
         }
     }
 
-    static constexpr std::array MrtzBuiltins = {IR::Attribute::Depth, IR::Attribute::StencilRef,
-                                                IR::Attribute::SampleMask, IR::Attribute::Null};
-    for (u32 i = 0; i < 4; ++i) {
-        if (components[i].IsEmpty()) {
-            continue;
-        }
-        ir.SetAttribute(MrtzBuiltins[i], components[i]);
+    if (!components[0].IsEmpty()) {
+        ir.SetAttribute(IR::Attribute::Depth, components[0]);
+    }
+    if (!components[1].IsEmpty()) {
+        ir.SetAttribute(IR::Attribute::StencilRef, components[1]);
+    }
+    if (!components[2].IsEmpty()) {
+        const IR::U32 mask{ReplicateSampleMask(ir.BitCast<IR::U32>(components[2]),
+                                               runtime_info.hw.fs.mask_export_num_samples)};
+        ir.SetAttribute(IR::Attribute::SampleMask, ir.BitCast<IR::F32>(mask));
+    }
+    if (!components[3].IsEmpty() && runtime_info.hw.fs.coverage_to_mask_enable) {
+        ExportAlphaToMask(AlphaToMaskLevel(components[3]));
     }
 }
 

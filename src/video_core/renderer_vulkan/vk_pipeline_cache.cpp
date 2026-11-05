@@ -182,6 +182,32 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(HwStage stage, SwStag
                                (stencil_ref_export_enable << 1) |
                                (regs.depth_shader_control.mask_export_enable << 2) |
                                (regs.depth_shader_control.coverage_to_mask_enable << 3);
+        const auto mrt0_export_format = regs.color_export_format.GetFormat(0);
+        const bool mrt0_alpha = mrt0_export_format >= AmdGpu::ShaderExportFormat::AR_32 &&
+                                mrt0_export_format <= AmdGpu::ShaderExportFormat::ABGR_32;
+        info.hw.fs.alpha_to_mask_enable =
+            regs.alpha_to_mask.enable && !regs.depth_shader_control.alpha_to_mask_disable &&
+            mrt0_alpha &&
+            (regs.color_shader_mask.GetMask(0) & AmdGpu::ColorBufferMask::ComponentA) != 0;
+        info.hw.fs.coverage_to_mask_enable = regs.depth_shader_control.coverage_to_mask_enable;
+        if (info.hw.fs.alpha_to_mask_enable || info.hw.fs.coverage_to_mask_enable ||
+            regs.depth_shader_control.mask_export_enable) {
+            info.hw.fs.msaa_num_samples = regs.aa_config.msaa_num_samples;
+        }
+        if (regs.depth_shader_control.mask_export_enable) {
+            info.hw.fs.mask_export_num_samples = regs.depth_eqaa.mask_export_num_samples;
+        }
+        if (info.hw.fs.alpha_to_mask_enable || info.hw.fs.coverage_to_mask_enable) {
+            info.hw.fs.alpha_to_mask_num_samples =
+                std::min<u32>(regs.depth_eqaa.alpha_to_mask_num_samples, 4);
+            info.hw.fs.alpha_to_mask_eqaa_disable = regs.depth_eqaa.alpha_to_mask_eqaa_disable;
+            u32 offsets = 0;
+            for (u32 pixel = 0; pixel < 4; ++pixel) {
+                offsets |= regs.alpha_to_mask.Offset(pixel) << (3 * pixel);
+            }
+            info.hw.fs.alpha_to_mask_offsets = offsets;
+            info.hw.fs.mrt0_export_format = mrt0_export_format;
+        }
         const auto& cb0_blend = regs.blend_control[0];
         if (cb0_blend.enable) {
             info.hw.fs.dual_source_blending =

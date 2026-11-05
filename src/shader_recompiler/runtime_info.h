@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -211,6 +211,15 @@ struct HwFragmentRuntimeInfo {
     u32 clip_distance_emulation : 1;
     u32 depth_before_shader : 1;
     u32 : 12;
+    u32 alpha_to_mask_enable : 1;
+    u32 coverage_to_mask_enable : 1;
+    u32 alpha_to_mask_eqaa_disable : 1;
+    u32 alpha_to_mask_num_samples : 3;
+    u32 msaa_num_samples : 3;
+    u32 alpha_to_mask_offsets : 12;
+    AmdGpu::ShaderExportFormat mrt0_export_format : 4;
+    u32 mask_export_num_samples : 3;
+    u32 : 4;
 
     bool operator==(const HwFragmentRuntimeInfo& other) const noexcept {
         return std::ranges::equal(color_buffers, other.color_buffers) &&
@@ -221,6 +230,14 @@ struct HwFragmentRuntimeInfo {
                dual_source_blending == other.dual_source_blending &&
                clip_distance_emulation == other.clip_distance_emulation &&
                depth_before_shader == other.depth_before_shader &&
+               alpha_to_mask_enable == other.alpha_to_mask_enable &&
+               coverage_to_mask_enable == other.coverage_to_mask_enable &&
+               alpha_to_mask_eqaa_disable == other.alpha_to_mask_eqaa_disable &&
+               alpha_to_mask_num_samples == other.alpha_to_mask_num_samples &&
+               msaa_num_samples == other.msaa_num_samples &&
+               alpha_to_mask_offsets == other.alpha_to_mask_offsets &&
+               mrt0_export_format == other.mrt0_export_format &&
+               mask_export_num_samples == other.mask_export_num_samples &&
                std::ranges::equal(inputs.begin(), inputs.begin() + num_inputs, other.inputs.begin(),
                                   other.inputs.begin() + num_inputs);
     }
