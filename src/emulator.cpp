@@ -508,6 +508,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
 #endif
     LOG_INFO(Config, "GPU inlineFetchShader: {}", EmulatorSettings.IsInlineFetchShader());
     LOG_INFO(Config, "GPU fastShaderMath: {}", EmulatorSettings.IsFastShaderMath());
+    LOG_INFO(Config, "GPU submitDrawInterval: {}", EmulatorSettings.GetSubmitDrawInterval());
     LOG_INFO(Config, "Vulkan gpuId: {}", EmulatorSettings.GetGpuId());
     LOG_INFO(Config, "Vulkan vkValidation: {}", EmulatorSettings.IsVkValidationEnabled());
     LOG_INFO(Config, "Vulkan vkValidationCore: {}", EmulatorSettings.IsVkValidationCoreEnabled());
@@ -687,38 +688,41 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     // Initialize kernel and library facilities.
     Libraries::InitHLELibs(&linker->GetHLESymbols());
 
-    // Load the module with the linker.
-    if (linker->LoadModule(guest_eboot_path) == -1) {
-        LOG_CRITICAL(Loader, "Failed to load game's eboot.bin: {}", guest_eboot_path);
-        std::quick_exit(0);
-    }
+    std::jthread init_thread{[&, this]() {
+        // Load the module with the linker.
+        if (linker->LoadModule(guest_eboot_path) == -1) {
+            LOG_CRITICAL(Loader, "Failed to load game's eboot.bin: {}", guest_eboot_path);
+            std::quick_exit(0);
+        }
 
 #ifdef ENABLE_DISCORD_RPC
-    // Discord RPC
-    if (EmulatorSettings.IsDiscordRPCEnabled()) {
-        auto* rpc = Common::Singleton<DiscordRPCHandler::RPC>::Instance();
-        if (rpc->getRPCEnabled() == false) {
-            rpc->init();
+        // Discord RPC
+        if (EmulatorSettings.IsDiscordRPCEnabled()) {
+            auto* rpc = Common::Singleton<DiscordRPCHandler::RPC>::Instance();
+            if (rpc->getRPCEnabled() == false) {
+                rpc->init();
+            }
+            rpc->setStatusPlaying(game_info.title, id);
         }
-        rpc->setStatusPlaying(game_info.title, id);
-    }
 #endif
 
-    if (EmulatorSettings.IsConnectedToNetwork() && EmulatorSettings.IsDeviceDiscoveryEnabled()) {
-        Libraries::Net::DiscoveryResponder::Instance().Start();
-    }
+        if (EmulatorSettings.IsConnectedToNetwork() &&
+            EmulatorSettings.IsDeviceDiscoveryEnabled()) {
+            Libraries::Net::DiscoveryResponder::Instance().Start();
+        }
 
-    if (!id.empty()) {
-        start_time = std::chrono::steady_clock::now();
+        if (!id.empty()) {
+            start_time = std::chrono::steady_clock::now();
 
-        play_time_thread = std::jthread([this, id](std::stop_token stop) {
-            while (Common::StoppableTimedWait(stop, std::chrono::seconds(60))) {
-                UpdatePlayTime(id);
-            }
-        });
-    }
+            play_time_thread = std::jthread([this, id](std::stop_token stop) {
+                while (Common::StoppableTimedWait(stop, std::chrono::seconds(60))) {
+                    UpdatePlayTime(id);
+                }
+            });
+        }
 
-    linker->Execute(args);
+        linker->Execute(args);
+    }};
 
     window->InitTimers();
     while (window->IsOpen()) {
