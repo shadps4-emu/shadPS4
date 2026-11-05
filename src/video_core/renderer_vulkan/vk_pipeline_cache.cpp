@@ -466,7 +466,8 @@ bool PipelineCache::RefreshGraphicsKey() {
     // First pass to fill render target information needed by shader recompiler
     for (s32 cb = 0; cb < AmdGpu::NUM_COLOR_BUFFERS && !skip_cb_binding; ++cb) {
         const auto& col_buf = regs.color_buffers[cb];
-        if (!col_buf || !regs.color_target_mask.GetMask(cb)) {
+        if (!col_buf ||
+            !(regs.color_target_mask.GetMask(cb) & regs.color_shader_mask.GetMask(cb))) {
             // No attachment bound or writing to it is disabled.
             continue;
         }
@@ -498,7 +499,8 @@ bool PipelineCache::RefreshGraphicsKey() {
     bool all_color_samples_same = true;
     for (s32 cb = 0; cb < key.num_color_attachments && !skip_cb_binding; ++cb) {
         const auto& col_buf = regs.color_buffers[cb];
-        const u32 target_mask = regs.color_target_mask.GetMask(cb);
+        const u32 target_mask =
+            regs.color_target_mask.GetMask(cb) & regs.color_shader_mask.GetMask(cb);
         if (!col_buf || !target_mask) {
             continue;
         }
