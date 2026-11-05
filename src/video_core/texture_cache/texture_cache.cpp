@@ -695,12 +695,20 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
 
 ImageId TextureCache::FindImageFromRange(VAddr address, size_t size, bool ensure_valid) {
     SmallVector<ImageId, 4> image_ids;
-    ForEachImageWithAddress(address, [&](ImageId image_id, Image& image) {
+    const auto add_image = [&](ImageId image_id, Image& image) {
+        if (address < image.info.guest_address ||
+            address - image.info.guest_address >= image.info.guest_size) {
+            return;
+        }
         if (ensure_valid && !image.HasGpuValidData()) {
             return;
         }
         image_ids.push_back(image_id);
-    });
+    };
+    ForEachImageWithAddress(address, add_image);
+    if (image_ids.empty()) {
+        ForEachImageInRegion(address, 1, add_image);
+    }
     if (image_ids.size() == 1) {
         // Sometimes image size might not exactly match with requested buffer size
         // If we only found 1 candidate image use it without too many questions.
