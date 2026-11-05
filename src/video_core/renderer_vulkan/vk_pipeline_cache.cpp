@@ -195,8 +195,6 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(HwStage stage, SwStag
         } else {
             info.hw.fs.dual_source_blending = false;
         }
-		info.hw.fs.alpha_to_src1 = sel.graphics_key.alpha_to_src1 != 0;
-        info.hw.fs.dual_source_blending |= info.hw.fs.alpha_to_src1;
         const auto& ps_inputs = regs.ps_inputs;
         for (u32 i = 0; i < regs.num_interp; i++) {
             info.hw.fs.inputs[i] = {
