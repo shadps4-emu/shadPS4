@@ -1,6 +1,13 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
+#include <cctype>
+#include <string_view>
+#include <utility>
+
+#include <fmt/format.h>
+
 #include "common/logging/log.h"
 #include "core/libraries/network/http.h"
 #include "core/libraries/network/http2.h"
@@ -280,10 +287,10 @@ PushEventPushContext* UserContext::GetPushContext(
     parent_ctx->Lock();
     s64 raw_id{};
     std::memcpy(&raw_id, push_ctx_id, sizeof(s64));
-    if (!push_contexts.contains(raw_id)) {
-        return nullptr;
+    PushEventPushContext* push_ctx = nullptr;
+    if (auto it = push_contexts.find(raw_id); it != push_contexts.end()) {
+        push_ctx = it->second;
     }
-    PushEventPushContext* push_ctx = push_contexts[raw_id];
     parent_ctx->Unlock();
     return push_ctx;
 }
@@ -481,12 +488,15 @@ s32 Request::CreateHttpRequest(s32 http_template_id, const char* url) {
         return http_request_id;
     }
     this->http_request_id = http_request_id;
-    s32 result = Libraries::Http2::sceHttp2AddRequestHeader(http_request_id, "Content-Type",
+    s32 result = ORBIS_OK;
+    if (!this->content_type.empty()) {
+        result = Libraries::Http2::sceHttp2AddRequestHeader(http_request_id, "Content-Type",
                                                             this->content_type.data(), 0);
-    if (result < 0) {
-        LOG_ERROR(Lib_NpWebApi2, "Failed to add Content-Type request header, error = {:#x}",
-                  result);
-        return result;
+        if (result < 0) {
+            LOG_ERROR(Lib_NpWebApi2, "Failed to add Content-Type request header, error = {:#x}",
+                      result);
+            return result;
+        }
     }
 
     UserContext* user_ctx = this->parent_ctx->GetUserContext(this->id >> 0x20);
@@ -625,6 +635,271 @@ s32 Request::Delete(s32* http_request) {
     }
     delete this;
     return ORBIS_OK;
+}
+
+namespace {
+
+std::string NormalizeDataType(std::string_view type) {
+    std::string out;
+    out.reserve(type.size());
+    for (const char c : type) {
+        if (std::isalnum(static_cast<unsigned char>(c))) {
+            out.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(c))));
+        }
+    }
+    return out;
+}
+
+// shadNet announces events as a '|' separated list of candidate data types. A registered type
+// matches a candidate exactly, or else when it ends with the candidate ignoring case and
+// separators.
+const PushEventFilter::Entry* FindMatchingEntry(const PushEventFilter& filter,
+                                                const std::string& event_type) {
+    if (event_type.find('|') == std::string::npos) {
+        return filter.FindEntry(event_type);
+    }
+    std::vector<std::string> candidates;
+    size_t start = 0;
+    while (start <= event_type.size()) {
+        const size_t end = event_type.find('|', start);
+        const size_t len = (end == std::string::npos ? event_type.size() : end) - start;
+        if (len > 0) {
+            candidates.emplace_back(event_type, start, len);
+        }
+        if (end == std::string::npos) {
+            break;
+        }
+        start = end + 1;
+    }
+    for (const std::string& candidate : candidates) {
+        if (const PushEventFilter::Entry* entry = filter.FindEntry(candidate)) {
+            return entry;
+        }
+    }
+    for (const std::string& candidate : candidates) {
+        const std::string wanted = NormalizeDataType(candidate);
+        if (wanted.empty()) {
+            continue;
+        }
+        for (const PushEventFilter::Entry& entry : filter.GetEntries()) {
+            const std::string registered = NormalizeDataType(entry.data_type);
+            if (registered.size() >= wanted.size() &&
+                registered.compare(registered.size() - wanted.size(), wanted.size(), wanted) == 0) {
+                return &entry;
+            }
+        }
+    }
+    return nullptr;
+}
+
+} // namespace
+
+void LibraryContext::DispatchPushEvent(const NpWebApi::PushEventInput& ev) {
+    std::vector<UserContext*> targets;
+    {
+        std::scoped_lock lk{this->lock};
+        for (auto& [user_ctx_id, user_ctx] : this->user_contexts) {
+            if (user_ctx->IsDeleted() || user_ctx->GetUserId() != ev.targetUserId) {
+                continue;
+            }
+            user_ctx->AddUser();
+            targets.push_back(user_ctx);
+        }
+    }
+    for (UserContext* user_ctx : targets) {
+        user_ctx->DispatchPushEvent(ev);
+        user_ctx->RemoveUser();
+    }
+}
+
+std::string UserContext::DescribePushCallbacks() {
+    std::string out;
+    this->Lock();
+    const auto describe = [&](s32 filter_id) {
+        PushEventFilter* filter = parent_ctx->GetPushEventFilter(filter_id);
+        if (!filter) {
+            return;
+        }
+        out += fmt::format("[svc='{}' label={:#x} types=", filter->GetServiceName(),
+                           static_cast<u32>(filter->GetServiceLabel()));
+        bool first = true;
+        for (const PushEventFilter::Entry& entry : filter->GetEntries()) {
+            if (!first) {
+                out += ',';
+            }
+            out += entry.data_type;
+            first = false;
+        }
+        out += "] ";
+    };
+    for (auto& [callback_id, callback] : this->push_event_callbacks) {
+        describe(callback->filter_id);
+    }
+    for (auto& [callback_id, callback] : this->push_context_callbacks) {
+        describe(callback->filter_id);
+    }
+    this->Unlock();
+    return out.empty() ? std::string{"none"} : out;
+}
+
+void UserContext::DispatchPushEvent(const NpWebApi::PushEventInput& ev) {
+    struct Target {
+        bool push_context_callback{};
+        s32 callback_id{};
+        std::string service_name{};
+        std::string matched_type{};
+        OrbisNpServiceLabel service_label{};
+        std::vector<std::string> wanted_keys{};
+    };
+    std::vector<Target> targets;
+    std::vector<std::string> push_ctx_uuids;
+
+    std::string event_push_ctx;
+    for (const auto& [key, value] : ev.extdData) {
+        if (key == "pushContextId") {
+            event_push_ctx = value;
+            break;
+        }
+    }
+
+    this->Lock();
+    const auto collect = [&](bool push_context_callback, s32 callback_id, s32 filter_id) {
+        PushEventFilter* filter = parent_ctx->GetPushEventFilter(filter_id);
+        if (!filter || !filter->MatchesService(ev.npServiceName)) {
+            return;
+        }
+        const PushEventFilter::Entry* entry = FindMatchingEntry(*filter, ev.dataType);
+        if (!entry) {
+            return;
+        }
+        targets.push_back(Target{push_context_callback, callback_id, filter->GetServiceName(),
+                                 entry->data_type, filter->GetServiceLabel(),
+                                 entry->extd_data_keys});
+    };
+    for (auto& [callback_id, callback] : this->push_event_callbacks) {
+        collect(false, callback_id, callback->filter_id);
+    }
+    for (auto& [callback_id, callback] : this->push_context_callbacks) {
+        collect(true, callback_id, callback->filter_id);
+    }
+    const bool wants_push_contexts = std::any_of(
+        targets.begin(), targets.end(), [](const Target& t) { return t.push_context_callback; });
+    if (wants_push_contexts) {
+        for (auto& [raw_id, push_ctx] : this->push_contexts) {
+            if (!push_ctx->IsStarted()) {
+                continue;
+            }
+            std::string uuid = push_ctx->GetUuid();
+            if (!event_push_ctx.empty() && uuid != event_push_ctx) {
+                continue;
+            }
+            push_ctx_uuids.push_back(std::move(uuid));
+        }
+    }
+    this->Unlock();
+
+    if (targets.empty()) {
+        LOG_INFO(Lib_NpWebApi2,
+                 "push event svc='{}' type='{}' has no matching filter, registered: {}",
+                 ev.npServiceName, ev.dataType, DescribePushCallbacks());
+        return;
+    }
+
+    OrbisNpPeerAddressA to_addr{};
+    to_addr.accountId = ev.toAccountId;
+    to_addr.platform = OrbisNpPlatformType::PS4;
+    OrbisNpPeerAddressA from_addr{};
+    from_addr.accountId = ev.fromAccountId;
+    from_addr.platform = OrbisNpPlatformType::PS4;
+    const OrbisNpPeerAddressA* to_addr_p = ev.toAccountId != 0 ? &to_addr : nullptr;
+    const OrbisNpPeerAddressA* from_addr_p = ev.fromAccountId != 0 ? &from_addr : nullptr;
+    const OrbisNpOnlineId* to_p = ev.hasTo ? &ev.toOnlineId : nullptr;
+    const OrbisNpOnlineId* from_p = ev.hasFrom ? &ev.fromOnlineId : nullptr;
+    const char* data_ptr = ev.data.empty() ? nullptr : ev.data.data();
+
+    for (const Target& target : targets) {
+        OrbisNpWebApi2PushEventDataType data_type{};
+        std::snprintf(data_type.val, sizeof(data_type.val), "%s", target.matched_type.c_str());
+
+        std::vector<std::pair<std::string, std::string>> picked;
+        for (const auto& [key, value] : ev.extdData) {
+            if (std::find(target.wanted_keys.begin(), target.wanted_keys.end(), key) !=
+                target.wanted_keys.end()) {
+                picked.emplace_back(key, value);
+            }
+        }
+        std::vector<OrbisNpWebApi2PushEventExtdData> extd;
+        extd.reserve(picked.size());
+        for (auto& [key, value] : picked) {
+            OrbisNpWebApi2PushEventExtdData entry{};
+            std::snprintf(entry.extd_data_key.val, sizeof(entry.extd_data_key.val), "%s",
+                          key.c_str());
+            entry.data = value.data();
+            entry.data_len = value.size();
+            extd.push_back(entry);
+        }
+        const OrbisNpWebApi2PushEventExtdData* extd_p = extd.empty() ? nullptr : extd.data();
+        const char* svc = target.service_name.empty() ? nullptr : target.service_name.c_str();
+
+        // Look the callback up again: an earlier callback may have unregistered it.
+        OrbisNpWebApi2PushEventCallback event_cb{};
+        void* event_user_arg{};
+        OrbisNpWebApi2PushEventPushContextCallback ctx_cb{};
+        void* ctx_user_arg{};
+        this->Lock();
+        if (target.push_context_callback) {
+            if (auto it = this->push_context_callbacks.find(target.callback_id);
+                it != this->push_context_callbacks.end()) {
+                it->second->is_busy = true;
+                ctx_cb = it->second->cb_func;
+                ctx_user_arg = it->second->user_arg;
+            }
+        } else {
+            if (auto it = this->push_event_callbacks.find(target.callback_id);
+                it != this->push_event_callbacks.end()) {
+                it->second->is_busy = true;
+                event_cb = it->second->cb_func;
+                event_user_arg = it->second->user_arg;
+            }
+        }
+        this->Unlock();
+
+        if (event_cb) {
+            LOG_INFO(Lib_NpWebApi2, "invoking push event cb ctx={:#x} cbId={} svc='{}' type='{}'",
+                     this->id, target.callback_id, ev.npServiceName, target.matched_type);
+            event_cb(this->id, target.callback_id, svc, target.service_label, to_addr_p, to_p,
+                     from_addr_p, from_p, &data_type, data_ptr, ev.data.size(), extd_p, extd.size(),
+                     event_user_arg);
+        } else if (ctx_cb) {
+            for (const std::string& uuid : push_ctx_uuids) {
+                OrbisNpWebApi2PushEventPushContextId push_ctx_id{};
+                std::memcpy(push_ctx_id.uuid, uuid.data(),
+                            std::min<size_t>(uuid.size(), sizeof(push_ctx_id.uuid) - 1));
+                LOG_INFO(Lib_NpWebApi2,
+                         "invoking push context cb ctx={:#x} cbId={} pushCtx={} svc='{}' "
+                         "type='{}'",
+                         this->id, target.callback_id, uuid, ev.npServiceName, target.matched_type);
+                ctx_cb(this->id, target.callback_id, &push_ctx_id,
+                       OrbisNpWebApi2PushEventPushContextCallbackType::Received, svc,
+                       target.service_label, to_addr_p, to_p, from_addr_p, from_p, &data_type,
+                       data_ptr, ev.data.size(), extd_p, extd.size(), ctx_user_arg);
+            }
+        }
+
+        this->Lock();
+        if (target.push_context_callback) {
+            if (auto it = this->push_context_callbacks.find(target.callback_id);
+                it != this->push_context_callbacks.end()) {
+                it->second->is_busy = false;
+            }
+        } else {
+            if (auto it = this->push_event_callbacks.find(target.callback_id);
+                it != this->push_event_callbacks.end()) {
+                it->second->is_busy = false;
+            }
+        }
+        this->Unlock();
+    }
 }
 
 }; // namespace Libraries::Np::NpWebApi2
