@@ -15,7 +15,7 @@
 namespace Libraries::Kernel {
 
 static constexpr u32 MUTEX_ADAPTIVE_SPINS = 2000;
-static std::mutex MutxStaticLock;
+static std::mutex MutexStaticLock, MutexPoolLock;
 
 #define THR_MUTEX_INITIALIZER ((PthreadMutex*)NULL)
 #define THR_ADAPTIVE_MUTEX_INITIALIZER ((PthreadMutex*)1)
@@ -46,6 +46,34 @@ static constexpr PthreadMutexAttr PthreadMutexattrAdaptiveDefault = {
 
 using CallocFun = void* (*)(size_t, size_t);
 
+static std::vector<PthreadMutex*> mutex_pool{};
+
+static PthreadMutex* GetNewMutex() {
+    std::scoped_lock lk{MutexPoolLock};
+    for (auto const& m : mutex_pool) {
+        if (m->destroyed) {
+            m->~PthreadMutex();
+            return new (m) PthreadMutex{};
+        }
+    }
+    mutex_pool.push_back(new (std::nothrow) PthreadMutex{});
+    return mutex_pool.back();
+}
+
+void CleanupDeletedMutexes() {
+    std::scoped_lock lk{MutexPoolLock};
+    std::vector<PthreadMutex*> new_mutex_pool{};
+    for (auto const& m : mutex_pool) {
+        if (m->destroyed) {
+            delete m;
+        } else {
+            new_mutex_pool.push_back(m);
+        }
+    }
+    LOG_INFO(Kernel_Pthread, "mutex pool {} -> {}", mutex_pool.size(), new_mutex_pool.size());
+    std::swap(mutex_pool, new_mutex_pool);
+}
+
 static s32 MutexInit(PthreadMutexT* mutex, const PthreadMutexAttr* mutex_attr, const char* name) {
     const PthreadMutexAttr* attr;
     if (mutex_attr == nullptr) {
@@ -59,7 +87,7 @@ static s32 MutexInit(PthreadMutexT* mutex, const PthreadMutexAttr* mutex_attr, c
             return POSIX_EINVAL;
         }
     }
-    auto* pmutex = new (std::nothrow) PthreadMutex{};
+    auto* pmutex = GetNewMutex();
     if (pmutex == nullptr) {
         return POSIX_ENOMEM;
     }
@@ -87,7 +115,7 @@ static s32 MutexInit(PthreadMutexT* mutex, const PthreadMutexAttr* mutex_attr, c
 }
 
 static s32 InitStatic(Pthread* thread, PthreadMutexT* mutex) {
-    std::scoped_lock lk{MutxStaticLock};
+    std::scoped_lock lk{MutexStaticLock};
 
     if (*mutex == THR_MUTEX_INITIALIZER) {
         return MutexInit(mutex, &PthreadMutexattrDefault, nullptr);
@@ -129,7 +157,7 @@ s32 PS4_SYSV_ABI posix_pthread_mutex_destroy(PthreadMutexT* mutex) {
         return POSIX_EBUSY;
     }
     *mutex = THR_MUTEX_DESTROYED;
-    delete m;
+    m->destroyed = true;
     return 0;
 }
 
@@ -329,7 +357,8 @@ s32 PS4_SYSV_ABI posix_pthread_mutex_getspinloops_np(PthreadMutexT* mutex, int* 
 }
 
 s32 PS4_SYSV_ABI posix_pthread_mutex_setspinloops_np(PthreadMutexT* mutex, s32 count) {
-    CHECK_AND_INIT_MUTEX(*mutex)->m_spinloops = count;
+    CHECK_AND_INIT_MUTEX;
+    (*mutex)->m_spinloops = count;
     return 0;
 }
 
@@ -340,7 +369,8 @@ s32 PS4_SYSV_ABI posix_pthread_mutex_getyieldloops_np(PthreadMutexT* mutex, int*
 }
 
 s32 PS4_SYSV_ABI posix_pthread_mutex_setyieldloops_np(PthreadMutexT* mutex, s32 count) {
-    CHECK_AND_INIT_MUTEX(*mutex)->m_yieldloops = count;
+    CHECK_AND_INIT_MUTEX;
+    (*mutex)->m_yieldloops = count;
     return 0;
 }
 
