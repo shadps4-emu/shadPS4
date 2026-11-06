@@ -214,8 +214,8 @@ public:
     [[nodiscard]] F64 PackDouble2x32(const Value& vector);
     [[nodiscard]] Value UnpackDouble2x32(const F64& value);
 
-    [[nodiscard]] U32 Pack2x16(AmdGpu::NumberFormat number_format, const Value& vector,
-                               bool round_to_zero = false);
+    [[nodiscard]] U32 Pack2x16(AmdGpu::NumberFormat number_format, const Value& vector);
+    [[nodiscard]] U32 PackHalf2x16RTZ(const Value& vector);
     [[nodiscard]] Value Unpack2x16(AmdGpu::NumberFormat number_format, const U32& value);
 
     [[nodiscard]] U32 Pack4x8(AmdGpu::NumberFormat number_format, const Value& vector);
