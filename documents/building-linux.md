@@ -113,7 +113,7 @@ cmake -S . -B build/ -DCMAKE_C_COMPILER=clang-23 -DCMAKE_CXX_COMPILER=clang++-23
 
 To change the build type (for debugging), add `-DCMAKE_BUILD_TYPE=Debug`.
 
-1. Use CMake to build the project:
+2. Use CMake to build the project:
 
 ```bash
 cmake --build ./build --parallel$(nproc)
