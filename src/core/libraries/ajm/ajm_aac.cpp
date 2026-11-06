@@ -62,18 +62,21 @@ static UINT g_freq[] = {
 };
 
 void AjmAacDecoder::Reset() {
+    if (!m_init_params) {
+        return;
+    }
     if (m_decoder) {
         aacDecoder_Close(m_decoder);
     }
 
-    m_decoder = aacDecoder_Open(TransportTypeFromConfigType(m_init_params.config_type), 1);
-    if (m_init_params.config_type == ConfigType::RAW) {
+    m_decoder = aacDecoder_Open(TransportTypeFromConfigType(m_init_params->config_type), 1);
+    if (m_init_params->config_type == ConfigType::RAW) {
         // Manually configure the decoder
         // Things may be incorrect due to limited documentation
         CSAudioSpecificConfig asc{};
         asc.m_aot = AOT_AAC_LC;
-        asc.m_samplingFrequency = g_freq[m_init_params.sampling_freq_type];
-        asc.m_samplingFrequencyIndex = m_init_params.sampling_freq_type;
+        asc.m_samplingFrequency = g_freq[m_init_params->sampling_freq_type];
+        asc.m_samplingFrequencyIndex = m_init_params->sampling_freq_type;
         asc.m_samplesPerFrame = 1024;
         asc.m_epConfig = -1;
         switch (m_channels) {
