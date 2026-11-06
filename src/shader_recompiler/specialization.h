@@ -25,6 +25,7 @@ struct BufferSpecialization {
     u32 stride : 14;
     u32 is_formatted : 1;
     u32 swizzle_enable : 1;
+    u32 add_tid_enable : 1;
     u32 data_format : 6;
     u32 num_format : 4;
     u32 index_stride : 2;
@@ -34,7 +35,7 @@ struct BufferSpecialization {
 
     bool operator==(const BufferSpecialization& other) const {
         return stride == other.stride && is_formatted == other.is_formatted &&
-               swizzle_enable == other.swizzle_enable &&
+               swizzle_enable == other.swizzle_enable && add_tid_enable == other.add_tid_enable &&
                (!is_formatted ||
                 (data_format == other.data_format && num_format == other.num_format &&
                  dst_select == other.dst_select && num_conversion == other.num_conversion)) &&
@@ -117,6 +118,7 @@ struct StageSpecialization {
                          spec.stride = sharp.GetStride();
                          spec.is_formatted = desc.is_formatted;
                          spec.swizzle_enable = sharp.swizzle_enable;
+                         spec.add_tid_enable = sharp.add_tid_enable;
                          if (spec.is_formatted) {
                              spec.data_format = static_cast<u32>(sharp.GetDataFmt());
                              spec.num_format = static_cast<u32>(sharp.GetNumberFmt());
