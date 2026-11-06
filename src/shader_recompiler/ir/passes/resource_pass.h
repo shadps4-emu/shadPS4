@@ -86,6 +86,7 @@ inline bool IsDataRingInstruction(const IR::Inst& inst) {
     switch (inst.GetOpcode()) {
     case IR::Opcode::DataAppend:
     case IR::Opcode::DataConsume:
+    case IR::Opcode::DataOrderedCount:
         return true;
     case IR::Opcode::LoadSharedU16:
     case IR::Opcode::LoadSharedU32:
