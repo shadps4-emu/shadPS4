@@ -5,6 +5,7 @@
 #include <cmath>
 #include <cstring>
 #include <mutex>
+#include <numbers>
 #include <unordered_set>
 #include <utility>
 
@@ -152,6 +153,22 @@ void GameController::SetTouchpadState(int touch_index, bool touch_down, float x,
     PushStateLocked(timestamp);
 }
 
+void GameController::SetMotionTilt(int direction, bool active) {
+    std::lock_guard lock{m_state_mutex};
+    (direction > 0 ? m_tilt_left : m_tilt_right) = active;
+    PushStateLocked();
+}
+
+void GameController::SetMotionShake(bool active) {
+    std::lock_guard lock{m_state_mutex};
+    const u64 timestamp = Libraries::Kernel::sceKernelGetProcessTime();
+    if (active && m_shake_start == 0) {
+        m_shake_start = timestamp;
+    }
+    m_shake_held = active;
+    PushStateLocked(timestamp);
+}
+
 void GameController::ConnectController(SDL_Gamepad* pad) {
     std::lock_guard lock{m_state_mutex};
     m_sdl_gamepad = pad;
@@ -183,6 +200,9 @@ void GameController::DisconnectController() {
     accel_buf[1] = 9.81f;
     m_next_touch_id = 1;
     m_touch_down_timestamp = 0;
+    m_tilt_left = m_tilt_right = m_shake_held = false;
+    m_shake_start = 0;
+    m_synthetic_roll = m_synthetic_pitch = 0.0f;
     m_state.connected = false;
     m_last_orientation_update = 0;
     PushStateLocked();
@@ -201,6 +221,60 @@ void GameController::UpdateOrientationLocked(u64 timestamp) {
     m_last_orientation_update = timestamp;
 }
 
+void GameController::ApplySyntheticMotionLocked(u64 timestamp) {
+    constexpr float pi = std::numbers::pi_v<float>;
+    constexpr float tilt_angle = pi / 2.0f; // turn the controller sideways
+    constexpr float tilt_speed = 7.85f;     // rad/s, a quarter turn in ~200 ms
+    constexpr float shake_frequency = 9.0f; // Hz
+    constexpr u64 shake_min_duration = 1'000'000;
+    constexpr float shake_amplitude = 2.5f;   // g, on top of gravity
+    constexpr float shake_wobble = 0.3f;      // rad of wrist pitch while shaking
+    constexpr float max_wobble_speed = 20.0f; // rad/s
+    constexpr float gravity = 9.81f;
+
+    float shake = 0.0f;
+    if (m_shake_start != 0) {
+        const u64 elapsed = timestamp > m_shake_start ? timestamp - m_shake_start : 0;
+        if (m_shake_held || elapsed < shake_min_duration) {
+            shake = std::sin(2.0f * pi * shake_frequency * static_cast<float>(elapsed) / 1e6f);
+        } else {
+            m_shake_start = 0;
+        }
+    }
+    const float target_roll = tilt_angle * (static_cast<int>(m_tilt_left) - m_tilt_right);
+    const float target_pitch = shake_wobble * shake;
+    if (m_shake_start == 0 && target_roll == 0.0f && m_synthetic_roll == 0.0f &&
+        m_synthetic_pitch == 0.0f) {
+        return; // inactive, keep the real (or mouse-emulated) sensor readings
+    }
+
+    // Move towards the target pose at a bounded speed and report the matching angular velocity,
+    // so the orientation integrated from it in UpdateOrientationLocked follows the same pose.
+    float dt = 0.0f;
+    if (m_last_orientation_update != 0 && timestamp > m_last_orientation_update) {
+        dt = static_cast<float>(timestamp - m_last_orientation_update) / 1e6f;
+    }
+    if (dt > 1.0f) {
+        dt = 0.0f; // CalculateOrientation skips such gaps too
+    }
+    const auto step = [dt](float& angle, float target, float max_speed) {
+        const float max_step = max_speed * dt;
+        const float delta = std::clamp(target - angle, -max_step, max_step);
+        angle = std::abs(target - angle) <= max_step ? target : angle + delta;
+        return dt > 0.0f ? delta / dt : 0.0f;
+    };
+    const float pitch_velocity = step(m_synthetic_pitch, target_pitch, max_wobble_speed);
+    const float roll_velocity = step(m_synthetic_roll, target_roll, tilt_speed);
+    m_state.angularVelocity = {pitch_velocity, 0.0f, roll_velocity};
+
+    // Gravity seen from the rolled and pitched controller, scaled by the shake.
+    const float g = gravity * (1.0f + shake_amplitude * shake);
+    const float cos_roll = std::cos(m_synthetic_roll);
+    m_state.acceleration = {g * std::sin(m_synthetic_roll),
+                            g * cos_roll * std::cos(m_synthetic_pitch),
+                            -g * cos_roll * std::sin(m_synthetic_pitch)};
+}
+
 void GameController::PushStateLocked(u64 timestamp) {
     if (timestamp == 0) {
         timestamp = Libraries::Kernel::sceKernelGetProcessTime();
@@ -208,6 +282,7 @@ void GameController::PushStateLocked(u64 timestamp) {
     m_state.UpdateAxisSmoothing(timestamp);
     m_state.OnGyro(gyro_buf);
     m_state.OnAccel(accel_buf);
+    ApplySyntheticMotionLocked(timestamp);
     UpdateOrientationLocked(timestamp);
     m_state.time = timestamp;
     m_state.touch_time_since_held_down =
