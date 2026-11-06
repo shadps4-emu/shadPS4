@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
@@ -89,8 +89,10 @@ bool Inst::MayHaveSideEffects() const noexcept {
     case Opcode::SharedAtomicISub32:
     case Opcode::SharedAtomicSMin32:
     case Opcode::SharedAtomicUMin32:
+    case Opcode::SharedAtomicFMin32:
     case Opcode::SharedAtomicSMax32:
     case Opcode::SharedAtomicUMax32:
+    case Opcode::SharedAtomicFMax32:
     case Opcode::SharedAtomicInc32:
     case Opcode::SharedAtomicDec32:
     case Opcode::SharedAtomicAnd32:

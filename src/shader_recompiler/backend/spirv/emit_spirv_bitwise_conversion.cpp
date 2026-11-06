@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "shader_recompiler/backend/spirv/emit_spirv_instructions.h"
@@ -70,6 +70,10 @@ Id EmitBitCastF16U16(EmitContext& ctx, Id value) {
 
 Id EmitBitCastF32U32(EmitContext& ctx, Id value) {
     return ctx.OpBitcast(ctx.F32[1], value);
+}
+
+Id EmitBitCastF64U64(EmitContext& ctx, Id value) {
+    return ctx.OpBitcast(ctx.F64[1], value);
 }
 
 Id EmitPackUint2x32(EmitContext& ctx, Id value) {
