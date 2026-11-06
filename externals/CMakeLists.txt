@@ -301,6 +301,10 @@ endif()
 add_library(minimp3 INTERFACE)
 target_include_directories(minimp3 INTERFACE minimp3)
 
+# dr_flac
+add_library(dr_flac INTERFACE)
+target_include_directories(dr_flac INTERFACE dr_flac)
+
 # ImGuiFileDialog
 add_library(ImGuiFileDialog ImGuiFileDialog/ImGuiFileDialog.cpp)
 target_compile_definitions(ImGuiFileDialog PRIVATE USE_STD_FILESYSTEM)

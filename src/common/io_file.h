@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <cstring>
 #include <filesystem>
+#include <optional>
 #include <span>
 #include <type_traits>
 
@@ -70,6 +71,28 @@ enum class SeekOrigin : u32 {
     End,             // Seeks from the end of the file.
 };
 
+struct FileIdentity {
+    u64 device{};
+    u64 file_hi{};
+    u64 file_lo{};
+
+    bool operator==(const FileIdentity&) const = default;
+};
+
+struct FileInfo {
+    FileIdentity identity{};
+    u64 size{};
+    s64 mtime_sec{};
+    s64 mtime_nsec{};
+    s64 atime_sec{};
+    s64 atime_nsec{};
+    s64 ctime_sec{};
+    s64 ctime_nsec{};
+    bool is_directory{};
+};
+
+[[nodiscard]] std::optional<FileInfo> GetFileInfo(const std::filesystem::path& path);
+
 class IOFile final {
 public:
     IOFile();
@@ -128,6 +151,7 @@ public:
 
     bool SetSize(u64 size) const;
     u64 GetSize() const;
+    [[nodiscard]] std::optional<FileInfo> GetInfo() const;
 
     bool Seek(s64 offset, SeekOrigin origin = SeekOrigin::SetOrigin) const;
     s64 Tell() const;

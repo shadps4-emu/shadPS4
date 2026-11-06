@@ -248,17 +248,6 @@ bool EmulatorSettingsImpl::Save(const std::string& serial) {
             SaveGroupGameSpecific(m_network, networkObj);
             j["Network"] = networkObj;
 
-            json existing = json::object();
-            if (std::ifstream existingIn{path}; existingIn.good()) {
-                try {
-                    existingIn >> existing;
-                } catch (...) {
-                    existing = json::object();
-                }
-            }
-            if (existing.contains("General") && existing["General"].is_object()) {
-                SyncLegacyNetworkKeys(existing["General"], generalObj, networkObj);
-            }
             j["General"] = generalObj;
 
             json logObj = json::object();
@@ -328,7 +317,9 @@ bool EmulatorSettingsImpl::Save(const std::string& serial) {
                     existing[section] = val;
             }
             if (existing["General"].is_object()) {
-                SyncLegacyNetworkKeys(existing["General"], existing["General"], j["Network"]);
+                for (const auto& item : m_network.GetOverrideableFields()) {
+                    existing["General"].erase(item.key);
+                }
             }
 
             std::ofstream out(path);
@@ -345,26 +336,17 @@ bool EmulatorSettingsImpl::Save(const std::string& serial) {
     }
 }
 
-void EmulatorSettingsImpl::ApplyLegacyNetworkKeys(const json& general) {
+void EmulatorSettingsImpl::MigrateNetworkKeys(const json& general, const json& network) {
     json current = m_network;
     bool found = false;
     for (const auto& item : m_network.GetOverrideableFields()) {
-        if (general.contains(item.key)) {
+        if (general.contains(item.key) && !network.contains(item.key)) {
             current[item.key] = general.at(item.key);
             found = true;
         }
     }
     if (found) {
         m_network = current.get<NetworkSettings>();
-    }
-}
-
-void EmulatorSettingsImpl::SyncLegacyNetworkKeys(const json& old_general, json& general,
-                                                 const json& network) {
-    for (const auto& [key, value] : network.items()) {
-        if (old_general.contains(key)) {
-            general[key] = value;
-        }
     }
 }
 
@@ -395,7 +377,7 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
                 mergeGroup(m_general, "General");
                 mergeGroup(m_network, "Network");
                 if (gj.contains("General") && gj["General"].is_object()) {
-                    ApplyLegacyNetworkKeys(gj["General"]);
+                    MigrateNetworkKeys(gj["General"], gj.value("Network", json::object()));
                 }
                 mergeGroup(m_log, "Log");
                 mergeGroup(m_debug, "Debug");
@@ -468,8 +450,16 @@ bool EmulatorSettingsImpl::Load(const std::string& serial) {
                 ApplyGroupOverrides(m_general, gj.at("General"), changed);
             if (gj.contains("Network"))
                 ApplyGroupOverrides(m_network, gj.at("Network"), changed);
-            if (gj.contains("General"))
-                ApplyGroupOverrides(m_network, gj.at("General"), changed);
+            if (gj.contains("General") && gj["General"].is_object()) {
+                json legacy = json::object();
+                const json network = gj.value("Network", json::object());
+                for (const auto& item : m_network.GetOverrideableFields()) {
+                    if (gj["General"].contains(item.key) && !network.contains(item.key)) {
+                        legacy[item.key] = gj["General"][item.key];
+                    }
+                }
+                ApplyGroupOverrides(m_network, legacy, changed);
+            }
             if (gj.contains("Log"))
                 ApplyGroupOverrides(m_log, gj.at("Log"), changed);
             if (gj.contains("Debug"))

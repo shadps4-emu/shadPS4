@@ -6,6 +6,7 @@
 #include "core/libraries/error_codes.h"
 
 // AppContent library
+constexpr int ORBIS_APP_CONTENT_ERROR_NOT_INITIALIZED = 0x80D90001;
 constexpr int ORBIS_APP_CONTENT_ERROR_PARAMETER = 0x80D90002;
 constexpr int ORBIS_APP_CONTENT_ERROR_BUSY = 0x80D90003;
 constexpr int ORBIS_APP_CONTENT_ERROR_DRM_NO_ENTITLEMENT = 0x80D90007;

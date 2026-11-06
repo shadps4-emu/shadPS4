@@ -17,7 +17,7 @@ static void AddFlatbuf(Info& info) {
     }
 }
 
-void Visit(Info& info, const IR::Inst& inst) {
+void Visit(Info& info, const IR::Inst& inst, Profile const& profile) {
     switch (inst.GetOpcode()) {
     case IR::Opcode::GetAttribute:
     case IR::Opcode::GetAttributeU1:
@@ -92,6 +92,44 @@ void Visit(Info& info, const IR::Inst& inst) {
         break;
     case IR::Opcode::PackDouble2x32:
     case IR::Opcode::UnpackDouble2x32:
+    case IR::Opcode::FPAbs64:
+    case IR::Opcode::FPAdd64:
+    case IR::Opcode::FPFma64:
+    case IR::Opcode::FPMax64:
+    case IR::Opcode::FPMin64:
+    case IR::Opcode::FPMul64:
+    case IR::Opcode::FPDiv64:
+    case IR::Opcode::FPNeg64:
+    case IR::Opcode::FPRecip64:
+    case IR::Opcode::FPRecipSqrt64:
+    case IR::Opcode::FPSaturate64:
+    case IR::Opcode::FPClamp64:
+    case IR::Opcode::FPRoundEven64:
+    case IR::Opcode::FPFloor64:
+    case IR::Opcode::FPCeil64:
+    case IR::Opcode::FPTrunc64:
+    case IR::Opcode::FPFract64:
+    case IR::Opcode::FPFrexpSig64:
+    case IR::Opcode::FPFrexpExp64:
+    case IR::Opcode::FPOrdEqual64:
+    case IR::Opcode::FPUnordEqual64:
+    case IR::Opcode::FPOrdNotEqual64:
+    case IR::Opcode::FPUnordNotEqual64:
+    case IR::Opcode::FPOrdLessThan64:
+    case IR::Opcode::FPUnordLessThan64:
+    case IR::Opcode::FPOrdGreaterThan64:
+    case IR::Opcode::FPUnordGreaterThan64:
+    case IR::Opcode::FPOrdLessThanEqual64:
+    case IR::Opcode::FPUnordLessThanEqual64:
+    case IR::Opcode::FPOrdGreaterThanEqual64:
+    case IR::Opcode::FPUnordGreaterThanEqual64:
+    case IR::Opcode::FPIsNan64:
+    case IR::Opcode::FPIsInf64:
+    case IR::Opcode::ConvertS32F64:
+    case IR::Opcode::ConvertF32F64:
+    case IR::Opcode::ConvertF64F32:
+    case IR::Opcode::ConvertF64S32:
+    case IR::Opcode::ConvertF64U32:
         info.uses_fp64 = true;
         break;
     case IR::Opcode::ImageWrite:
@@ -131,6 +169,12 @@ void Visit(Info& info, const IR::Inst& inst) {
     case IR::Opcode::BufferAtomicFMax32:
     case IR::Opcode::BufferAtomicFMin32:
         info.uses_buffer_atomic_float_min_max = true;
+        break;
+    case IR::Opcode::SharedAtomicFMax32:
+    case IR::Opcode::SharedAtomicFMin32:
+        info.uses_shared_atomic_float_min_max = true;
+        info.shared_types |=
+            profile.supports_shared_fp32_atomic_min_max ? IR::Type::F32 : IR::Type::U32;
         break;
     case IR::Opcode::BufferAtomicIAdd64:
     case IR::Opcode::BufferAtomicSMax64:
@@ -175,11 +219,11 @@ void CollectShaderInfoPass(IR::Program& program, const Profile& profile) {
     Info& info = program.info;
     for (IR::Block* const block : program.post_order_blocks) {
         for (IR::Inst& inst : block->Instructions()) {
-            Visit(info, inst);
+            Visit(info, inst, profile);
         }
     }
 
-    if (!EmulatorSettings.IsDirectMemoryAccessEnabled()) {
+    if (!EmulatorSettings.IsDirectMemoryAccessEnabled() || !profile.support_bda) {
         info.uses_dma = false;
         info.readconst_types = Info::ReadConstType::None;
     }

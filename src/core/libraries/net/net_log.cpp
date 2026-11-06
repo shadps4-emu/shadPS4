@@ -383,6 +383,12 @@ std::string OptionName(s32 level, s32 name) {
         case ORBIS_NET_SO_RCVBUF:
             option = "SO_RCVBUF";
             break;
+        case ORBIS_NET_SO_SNDLOWAT:
+            option = "SO_SNDLOWAT";
+            break;
+        case ORBIS_NET_SO_RCVLOWAT:
+            option = "SO_RCVLOWAT";
+            break;
         case ORBIS_NET_SO_ERROR:
             option = "SO_ERROR";
             break;

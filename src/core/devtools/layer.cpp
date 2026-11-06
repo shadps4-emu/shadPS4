@@ -31,7 +31,7 @@ using L = ::Core::Devtools::Layer;
 
 static bool show_simple_fps = false;
 static bool visibility_toggled = false;
-static float fps_anchor_width = FLT_MAX;
+static bool fps_pinned = false;
 static bool show_quit_window = false;
 
 static bool show_volume = false;
@@ -331,6 +331,7 @@ static void LoadSettings(const char* line) {
 void L::SetupSettings() {
     frame_graph.is_open = true;
     show_simple_fps = EmulatorSettings.IsShowFpsCounter();
+    visibility_toggled = show_simple_fps;
 
     using SettingLoader = void (*)(const char*);
 
@@ -423,15 +424,16 @@ void L::Draw() {
         if (Begin("Video Info", nullptr,
                   ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoDecoration |
                       ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDocking)) {
-            if (const float width = GetIO().DisplaySize.x; width != fps_anchor_width) {
-                visibility_toggled |= GetWindowPos().x + GetCurrentWindowRead()->SizeFull.x >=
-                                      fps_anchor_width - 1.0f;
-                fps_anchor_width = width;
-            }
-            // Set window position to top left if it was toggled on
             if (visibility_toggled) {
-                SetWindowPos("Video Info", {999999.0f, 0.0f}, ImGuiCond_Always);
+                fps_pinned = true;
                 visibility_toggled = false;
+            }
+            if (GetCurrentContext()->MovingWindow == GetCurrentWindowRead() &&
+                IsMouseDragging(ImGuiMouseButton_Left)) {
+                fps_pinned = false;
+            }
+            if (fps_pinned) {
+                SetWindowPos({GetIO().DisplaySize.x - GetCurrentWindowRead()->SizeFull.x, 0.0f});
             }
             if (BeginPopupContextWindow()) {
 #define M(label, value)                                                                            \

@@ -219,6 +219,7 @@ void PatchBufferSharp(const ResourceDiscovery& resource, Info& info, Descriptors
                         inst.GetOpcode() == IR::Opcode::StoreBufferFormatF32,
         .post_op = resource.sharps[0].post_op,
         .post_op_dw1_mask = resource.sharps[0].post_op_data.dw1_mask,
+        .post_op_dw2_shift = resource.sharps[0].post_op_data.dw2_shift,
     });
 
     // Replace handle with binding index in buffer resource list.
@@ -489,6 +490,14 @@ void PatchGlobalDataShareAccess(IR::Inst& inst, Info& info, Descriptors& descrip
         const bool is_signed = inst.GetOpcode() == IR::Opcode::SharedAtomicSMax32;
         inst.ReplaceUsesWith(
             ir.BufferAtomicIMax(handle, address_dwords, inst.Arg(1), is_signed, {}));
+        break;
+    }
+    case IR::Opcode::SharedAtomicFMin32: {
+        inst.ReplaceUsesWith(ir.BufferAtomicFMin(handle, address_dwords, inst.Arg(1), {}));
+        break;
+    }
+    case IR::Opcode::SharedAtomicFMax32: {
+        inst.ReplaceUsesWith(ir.BufferAtomicFMax(handle, address_dwords, inst.Arg(1), {}));
         break;
     }
     case IR::Opcode::SharedAtomicInc32:

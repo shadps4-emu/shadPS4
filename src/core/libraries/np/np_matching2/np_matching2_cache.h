@@ -21,6 +21,7 @@ struct PeerInfo {
     s32 status = 0;
     Libraries::Np::OrbisNpOnlineId online_id{};
     bool sent_established = false;
+    s64 active_since_us = 0;
     u32 ping_us = 0;
 };
 

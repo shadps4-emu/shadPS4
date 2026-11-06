@@ -10,6 +10,7 @@
 #include "core/libraries/disc_map/disc_map.h"
 #include "core/libraries/font/font.h"
 #include "core/libraries/font/fontft.h"
+#include "core/libraries/jpeg/jpegdec.h"
 #include "core/libraries/jpeg/jpegenc.h"
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/orbis_error.h"
@@ -219,7 +220,7 @@ s32 loadModuleInternal(s32 index, s32 argc, const void* argv, s32* res_out) {
              {"libSceAvPlayer.sprx", &Libraries::AvPlayer::RegisterLib},
              {"libSceAvPlayerStreaming.sprx", nullptr},
              {"libSceRtc.sprx", &Libraries::Rtc::RegisterLib},
-             {"libSceJpegDec.sprx", nullptr},
+             {"libSceJpegDec.sprx", &Libraries::JpegDec::RegisterLib},
              {"libSceJpegEnc.sprx", &Libraries::JpegEnc::RegisterLib},
              {"libScePngDec.sprx", &Libraries::PngDec::RegisterLib},
              {"libScePngEnc.sprx", &Libraries::PngEnc::RegisterLib},
@@ -240,6 +241,7 @@ s32 loadModuleInternal(s32 index, s32 argc, const void* argv, s32* res_out) {
              {"libSceFreeTypeOptOl.sprx", nullptr},
              {"libSceBeisobmf.sprx", nullptr},
              {"libSceBemp2sys.sprx", nullptr},
+             {"libSceVideoNativeExtEssential.sprx", nullptr},
              {"libSceRudp.sprx", &Libraries::Rudp::RegisterLib},
              {"libSceWkFontConfig.sprx", nullptr},
              {"libScePsmKitSystem.sprx", nullptr},

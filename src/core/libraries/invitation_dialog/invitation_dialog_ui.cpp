@@ -14,7 +14,7 @@
 #include "core/libraries/net/net.h"
 #include "core/libraries/network/http.h"
 #include "core/libraries/network/ssl.h"
-#include "core/libraries/np/np_handler.h"
+#include "core/libraries/np/np_handler/np_handler.h"
 #include "core/libraries/np/np_web_api/np_web_api.h"
 #include "core/libraries/system/commondialog.h"
 #include "imgui/imgui_std.h"

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "ajm_aac.h"
@@ -131,9 +131,8 @@ void AjmInstance::ExecuteJob(AjmJob& job) {
             const auto result = m_codec->ProcessData(in_buf, out_buf, m_gapless);
             if (result.is_reset) {
                 m_total_samples = 0;
-            } else {
-                m_total_samples += result.samples_written;
             }
+            m_total_samples += result.samples_written;
             frames_decoded += result.frames_decoded;
             if (result.result != 0) {
                 job.output.p_result->result |= result.result;

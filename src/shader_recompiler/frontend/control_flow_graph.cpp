@@ -323,6 +323,7 @@ void CFG::LinkBlocks() {
         // need to link with the next block.
         if (!end_inst.IsTerminateInstruction()) {
             auto* next_block = get_block(block.end);
+            block.cond = IR::Condition::True;
             block.branch_true = next_block;
             block.end_class = EndClass::Branch;
             next_block->num_predecessors++;

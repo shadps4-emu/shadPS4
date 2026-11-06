@@ -18,6 +18,7 @@
 #include <vector>
 
 #include "common/types.h"
+#include "core/libraries/np/np_auth/np_auth_ctx.h"
 #include "core/libraries/np/np_manager.h"
 #include "core/libraries/np/np_matching2/np_matching2_cache.h"
 #include "core/libraries/np/np_score/np_score.h"
@@ -36,6 +37,8 @@ namespace NpMatching2 {
 class ContextManager;
 struct NpMatching2State;
 } // namespace NpMatching2
+
+bool IsValidNpCommId(const std::string& id);
 
 class NpHandler {
 public:
@@ -110,6 +113,11 @@ public:
 
     // WebAPI bearer token
     std::string GetBearerToken(s32 user_id) const;
+
+    // Asks shadNet for a single-use authorization code for sceNpAuthGetAuthorizationCode.
+    s32 RequestAuthorizationCode(s32 user_id, const std::string& client_id,
+                                 const std::string& scope,
+                                 std::shared_ptr<NpAuth::AuthRequestCtx> ctx);
 
     // Sends a session invitation via the WebAPI (POST /v1/sessions/<id>/invitations). Each 'to'
     // entry is an online ID (npid) or a decimal account ID
@@ -195,9 +203,11 @@ public:
                       std::function<void(const std::vector<std::pair<s32, u64>>&)> on_merged);
 
     // Submit a RecordScore request to the shadNet server.
+    // compareDate: SceRtcTick ticks, 0 = no conflict check.
     s32 RecordScore(s32 user_id, s32 service_label, u32 boardId, s32 pcId, s64 score,
                     const char* comment, size_t commentLen, const u8* gameInfoData,
-                    size_t gameInfoSize, std::shared_ptr<NpScore::ScoreRequestCtx> req);
+                    size_t gameInfoSize, u64 compareDate,
+                    std::shared_ptr<NpScore::ScoreRequestCtx> req);
 
     s32 RecordGameData(s32 user_id, s32 service_label, u32 boardId, s32 pcId, s64 score,
                        const u8* data, size_t size, std::shared_ptr<NpScore::ScoreRequestCtx> req);
@@ -249,7 +259,8 @@ public:
 
     // Submit a GetFriendsRanking request to the shadNet server.
     s32 GetFriendsRanking(s32 user_id, s32 service_label, u32 boardId, bool includeSelf,
-                          u32 arrayNum, NpScore::OrbisNpScoreRankData* rankArray,
+                          u32 startSerialRank, u32 arrayNum,
+                          NpScore::OrbisNpScoreRankData* rankArray,
                           NpScore::OrbisNpScoreComment* commentArray,
                           NpScore::OrbisNpScoreGameInfo* infoArray,
                           Libraries::Rtc::OrbisRtcTick* lastSortDate, u32* totalRecord,
@@ -257,7 +268,8 @@ public:
 
     // A-variant of GetFriendsRanking
     s32 GetFriendsRankingA(s32 user_id, s32 service_label, u32 boardId, bool includeSelf,
-                           u32 arrayNum, NpScore::OrbisNpScoreRankDataA* rankArray,
+                           u32 startSerialRank, u32 arrayNum,
+                           NpScore::OrbisNpScoreRankDataA* rankArray,
                            NpScore::OrbisNpScoreComment* commentArray,
                            NpScore::OrbisNpScoreGameInfo* infoArray,
                            Libraries::Rtc::OrbisRtcTick* lastSortDate, u32* totalRecord,
@@ -391,7 +403,7 @@ private:
 
     // Disconnect and remove one user's client.
     void DisconnectUser(s32 user_id);
-    // Fail every pending score/TUS request submitted by this user so pollers
+    // Fail every pending score/TUS/auth request submitted by this user so pollers
     // and blocked WaitAsync callers wake up instead of hanging forever.
     void FailPendingRequests(s32 user_id, s32 error_code);
 
@@ -407,6 +419,11 @@ private:
     void OnFriendLost(s32 user_id, const ShadNet::NotifyFriendLost& n);
     void OnFriendStatus(s32 user_id, const ShadNet::NotifyFriendStatus& n);
     void OnWebApiPushEvent(s32 user_id, const ShadNet::NotifyWebApiPushEvent& n);
+    // The server refused a service (matchmaking full, not allowed, disabled): tell the player.
+    void OnServiceUnavailable(s32 user_id, const ShadNet::NotifyServiceUnavailable& n);
+    // The server signed this client out (e.g. version not accepted): tell the player and stay
+    // offline for this run instead of reconnecting into the same refusal.
+    void OnClientRejected(s32 user_id, const ShadNet::NotifyClientRejected& n);
     void OnLoginResult(s32 user_id, const ShadNet::LoginResult& res);
 
     // General async reply dispatch. Routes a reply to the owning subsystem by
@@ -497,6 +514,15 @@ private:
     };
     mutable std::mutex m_mutex_pending_tus;
     std::map<u64, PendingTusRequest> m_pending_tus;
+
+    struct PendingAuthRequest {
+        std::shared_ptr<NpAuth::AuthRequestCtx> req;
+        s32 user_id = -1;
+    };
+    mutable std::mutex m_mutex_pending_auth;
+    std::map<u64, PendingAuthRequest> m_pending_auth;
+    void OnAuthReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id, ShadNet::ErrorType error,
+                     const std::vector<u8>& body);
 
     // Worker thread
     std::atomic<bool> m_initialized{false};

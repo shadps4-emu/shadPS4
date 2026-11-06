@@ -10,7 +10,7 @@
 #include "common/singleton.h"
 #include "core/emulator_settings.h"
 #include "core/libraries/libs.h"
-#include "core/libraries/np/np_handler.h"
+#include "core/libraries/np/np_handler/np_handler.h"
 #include "core/libraries/np/np_manager.h"
 #include "core/libraries/system/userservice.h"
 #include "core/libraries/system/userservice_error.h"
@@ -118,9 +118,28 @@ int PS4_SYSV_ABI sceUserServiceGetDiscPlayerFlag() {
 
 std::queue<OrbisUserServiceEvent> user_service_event_queue = {};
 
+struct UserServiceEventCallbackEntry {
+    OrbisUserServiceEventCallback func{nullptr};
+    void* userdata{nullptr};
+};
+
+static std::mutex g_user_service_callbacks_mutex;
+static std::vector<UserServiceEventCallbackEntry> g_user_service_callbacks;
+
 void AddUserServiceEvent(const OrbisUserServiceEvent e) {
     LOG_DEBUG(Lib_UserService, "Event added to queue: {} {}", (u8)e.event, e.userId);
     user_service_event_queue.push(e);
+
+    std::vector<UserServiceEventCallbackEntry> callbacks;
+    {
+        std::scoped_lock lock{g_user_service_callbacks_mutex};
+        callbacks = g_user_service_callbacks;
+    }
+    for (const auto& cb : callbacks) {
+        if (cb.func != nullptr) {
+            cb.func(&e, cb.userdata);
+        }
+    }
 }
 
 s32 PS4_SYSV_ABI sceUserServiceGetEvent(OrbisUserServiceEvent* event) {
@@ -1070,13 +1089,21 @@ int PS4_SYSV_ABI sceUserServiceGetTraditionalChineseInputType() {
 }
 
 s32 PS4_SYSV_ABI sceUserServiceGetUserColor(int user_id, OrbisUserServiceUserColor* color) {
-    // TODO fix me better
     LOG_DEBUG(Lib_UserService, "called user_id = {}", user_id);
     if (color == nullptr) {
         LOG_ERROR(Lib_UserService, "color is null");
         return ORBIS_USER_SERVICE_ERROR_INVALID_ARGUMENT;
     }
-    *color = (OrbisUserServiceUserColor)UserManagement.GetUserByID(user_id)->user_color;
+    const auto* user = UserManagement.GetUserByID(user_id);
+    if (user == nullptr) {
+        LOG_ERROR(Lib_UserService, "No user found for user_id = {}", user_id);
+        return ORBIS_USER_SERVICE_ERROR_NOT_LOGGED_IN;
+    }
+    s32 color_idx = static_cast<s32>(user->user_color) - 1;
+    if (color_idx < 0 || color_idx > 3) {
+        color_idx = std::clamp(user->player_index - 1, 0, 3);
+    }
+    *color = static_cast<OrbisUserServiceUserColor>(color_idx);
     return ORBIS_OK;
 }
 
@@ -1225,8 +1252,25 @@ int PS4_SYSV_ABI sceUserServiceLogout() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceUserServiceRegisterEventCallback() {
-    LOG_ERROR(Lib_UserService, "(STUBBED) called");
+int PS4_SYSV_ABI sceUserServiceRegisterEventCallback(OrbisUserServiceEventCallback callback,
+                                                     void* userdata) {
+    if (callback == nullptr) {
+        LOG_WARNING(Lib_UserService, "called with NULL callback");
+        return ORBIS_OK;
+    }
+
+    {
+        std::scoped_lock lock{g_user_service_callbacks_mutex};
+        for (const auto& entry : g_user_service_callbacks) {
+            if (entry.func == callback && entry.userdata == userdata) {
+                return ORBIS_OK;
+            }
+        }
+        g_user_service_callbacks.push_back({callback, userdata});
+    }
+
+    LOG_INFO(Lib_UserService, "called callback={:p}, userdata={}",
+             reinterpret_cast<const void*>(callback), userdata);
     return ORBIS_OK;
 }
 
@@ -2190,8 +2234,22 @@ int PS4_SYSV_ABI sceUserServiceTerminate() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceUserServiceUnregisterEventCallback() {
-    LOG_ERROR(Lib_UserService, "(STUBBED) called");
+int PS4_SYSV_ABI sceUserServiceUnregisterEventCallback(OrbisUserServiceEventCallback callback,
+                                                       void* userdata) {
+    if (callback == nullptr) {
+        LOG_WARNING(Lib_UserService, "called with NULL callback");
+        return ORBIS_USER_SERVICE_ERROR_INVALID_ARGUMENT;
+    }
+
+    std::scoped_lock lock{g_user_service_callbacks_mutex};
+    auto it = std::remove_if(g_user_service_callbacks.begin(), g_user_service_callbacks.end(),
+                             [callback, userdata](const UserServiceEventCallbackEntry& entry) {
+                                 return entry.func == callback &&
+                                        (userdata == nullptr || entry.userdata == userdata);
+                             });
+    g_user_service_callbacks.erase(it, g_user_service_callbacks.end());
+    LOG_INFO(Lib_UserService, "called callback={:p}, userdata={}",
+             reinterpret_cast<const void*>(callback), userdata);
     return ORBIS_OK;
 }
 

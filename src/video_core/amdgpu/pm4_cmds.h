@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <atomic>
 #include <cstring>
 #include "common/assert.h"
 #include "common/bit_field.h"
@@ -258,6 +259,7 @@ struct PM4CmdStrmoutBufferUpdate {
     union {
         BitField<0, 1, u32> update_memory;
         BitField<1, 2, SourceSelect> source_select;
+        BitField<7, 1, u32> data_type;
         BitField<8, 2, u32> buffer_select;
         u32 control;
     };
@@ -276,13 +278,13 @@ struct PM4CmdStrmoutBufferUpdate {
     template <typename T = u64>
     T DstAddress() const {
         ASSERT(update_memory.Value() == 1);
-        return reinterpret_cast<T>(dst_address_lo.Value() | u64(dst_address_hi & 0xFFFF) << 32);
+        return std::bit_cast<T>((u64(dst_address_lo.Value()) << 2) | (u64(dst_address_hi) << 32));
     }
 
     template <typename T = u64>
     T SrcAddress() const {
         ASSERT(source_select.Value() == SourceSelect::SrcAddress);
-        return reinterpret_cast<T>(src_address_lo.Value() | u64(src_address_hi & 0xFFFF) << 32);
+        return std::bit_cast<T>((u64(src_address_lo.Value()) << 2) | (u64(src_address_hi) << 32));
     }
 };
 
@@ -651,7 +653,8 @@ struct PM4CmdRewind {
     };
 
     bool Valid() const {
-        return valid;
+        return (std::atomic_ref<u32>{const_cast<u32&>(raw)}.load(std::memory_order_acquire) >>
+                31) != 0;
     }
 };
 
@@ -1066,6 +1069,33 @@ struct PM4CmdDrawIndirect {
     u32 draw_initiator; ///< Draw Initiator Register
 };
 
+struct PM4CmdDrawIndirectCountMulti {
+    PM4Type3Header header; ///< header
+    u32 data_offset;       ///< Byte aligned offset where the required data structure starts
+    union {
+        u32 dw2;
+        BitField<0, 16, u32> base_vtx_loc; ///< Offset where the CP will write the
+                                           ///< BaseVertexLocation it fetched from memory
+    };
+    union {
+        u32 dw3;
+        BitField<0, 16, u32> start_inst_loc; ///< Offset where the CP will write the
+                                             ///< StartInstanceLocation it fetched from memory
+    };
+    union {
+        u32 dw4;
+        BitField<0, 16, u32> draw_index_loc; ///< register offset to write the Draw Index count
+        BitField<30, 1, u32>
+            count_indirect_enable; ///< Indicates the data structure count is in memory
+        BitField<31, 1, u32>
+            draw_index_enable; ///< Enables writing of Draw Index count to DRAW_INDEX_LOC
+    };
+    u32 count;          ///< Count of data structures to loop through before going to next packet
+    u64 count_addr;     ///< DWord aligned Address[31:2]; Valid if countIndirectEnable is set
+    u32 stride;         ///< Stride in memory from one data structure to the next
+    u32 draw_initiator; ///< Draw Initiator Register
+};
+
 struct PM4CmdDrawIndirectMulti {
     PM4Type3Header header; ///< header
     u32 data_offset;       ///< Byte aligned offset where the required data structure starts
@@ -1235,5 +1265,31 @@ struct PM4CmdCondExec {
                                                                           << 2);
     }
 };
+
+struct PM4CmdGetLodStats {
+    PM4Type3Header header;
+    union {
+        BitField<0, 16, u32> data_offset;
+        BitField<16, 16, u32> control_flags;
+        u32 control;
+    };
+    u32 addr_lo;
+    u32 addr_hi;
+
+    template <typename T = VAddr>
+    [[nodiscard]] T Address() const {
+        const u64 addr = (static_cast<u64>(addr_hi) << 32) | static_cast<u64>(addr_lo);
+        if constexpr (std::is_pointer_v<T>) {
+            return reinterpret_cast<T>(addr);
+        } else {
+            return static_cast<T>(addr);
+        }
+    }
+
+    [[nodiscard]] u32 DataOffset() const {
+        return data_offset.Value();
+    }
+};
+static_assert(sizeof(PM4CmdGetLodStats) == 0x10);
 
 } // namespace AmdGpu

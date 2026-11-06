@@ -12,6 +12,7 @@
 #include "common/small_vector.h"
 #include "common/types.h"
 #include "video_core/renderer_vulkan/vk_common.h"
+#include "video_core/texture_cache/host_compatibility.h"
 #include "video_core/texture_cache/image_info.h"
 #include "video_core/texture_cache/image_view.h"
 
@@ -29,7 +30,8 @@ enum ImageFlagBits : u32 {
     Empty = 0,
     MaybeCpuDirty = 1 << 0, ///< The page this image is in was touched before the image address
     CpuDirty = 1 << 1,      ///< Contents have been modified from the CPU
-    GpuDirty = 1 << 2, ///< Contents have been modified from the GPU (valid data in buffer cache)
+    GpuDirty = 1 << 2, ///< Image contents have been modified from the GPU (valid data in buffer
+                       ///< cache)
     Dirty = MaybeCpuDirty | CpuDirty | GpuDirty,
     GpuModified = 1 << 3, ///< Contents have been modified from the GPU
     Registered = 1 << 6,  ///< True when the image is registered
@@ -48,12 +50,14 @@ struct UniqueImage {
     UniqueImage(UniqueImage&& other)
         : allocator{std::exchange(other.allocator, VK_NULL_HANDLE)},
           allocation{std::exchange(other.allocation, VK_NULL_HANDLE)},
-          image{std::exchange(other.image, VK_NULL_HANDLE)}, image_ci{std::move(other.image_ci)} {}
+          image{std::exchange(other.image, VK_NULL_HANDLE)}, image_ci{std::move(other.image_ci)},
+          size_bytes{std::exchange(other.size_bytes, 0)} {}
     UniqueImage& operator=(UniqueImage&& other) {
         image = std::exchange(other.image, VK_NULL_HANDLE);
         allocator = std::exchange(other.allocator, VK_NULL_HANDLE);
         allocation = std::exchange(other.allocation, VK_NULL_HANDLE);
         image_ci = std::move(other.image_ci);
+        size_bytes = std::exchange(other.size_bytes, 0);
         return *this;
     }
 
@@ -101,8 +105,13 @@ struct Image : public Common::LRUNode<> {
         return track_addr == 0 || track_addr_end == 0;
     }
 
-    bool SafeToDownload() const {
+    bool HasGpuValidData() const {
         return True(flags & ImageFlagBits::GpuModified) && False(flags & ImageFlagBits::Dirty);
+    }
+
+    bool CanBeDownloaded() {
+        return HasGpuValidData() && info.num_samples == 1 && !info.props.has_stencil &&
+               IsVulkanFormatCompatible(info.pixel_format, backing->image.image_ci.format);
     }
 
     void AssociateDepth(ImageId depth_image_id, u64 depth_image_uid) {
@@ -113,6 +122,12 @@ struct Image : public Common::LRUNode<> {
     void DisassociateDepth() {
         depth_id = {};
         depth_uid = {};
+    }
+
+    vk::DeviceSize SizeBytes() const {
+        return std::accumulate(
+            backing_images.begin(), backing_images.end(), vk::DeviceSize(0),
+            [](vk::DeviceSize sum, const BackingImage& bi) { return sum + bi.image.size_bytes; });
     }
 
     ImageView& FindView(const ImageViewInfo& view_info, bool ensure_guest_samples = true);
@@ -152,10 +167,14 @@ public:
     };
     SmallVector<BackingImage, 2> backing_images;
     BackingImage* backing{};
+    u64* memory_usage_counter{};
     u64 image_uid{};
     u64 lru_id{};
     u64 tick_accessed_last{};
-    u64 hash{};
+    u64 cpu_hash{};
+    u64 gpu_hash{};
+    u64 head_hash{};
+    u64 tail_hash{};
 
     struct {
         u32 texture : 1;

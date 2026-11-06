@@ -573,6 +573,11 @@ private:
         if (forward_node->type == StatementType::Code) {
             return &*forward_node;
         }
+        if (forward_node->type == StatementType::Break ||
+            forward_node->type == StatementType::Return ||
+            forward_node->type == StatementType::Unreachable) {
+            return nullptr;
+        }
         ++forward_node;
     }
     return nullptr;
@@ -628,6 +633,9 @@ private:
                 // Labels can be ignored
                 break;
             case StatementType::Code: {
+                if (current_block && current_block != stmt.block->ir_block) {
+                    current_block->AddBranch(stmt.block->ir_block);
+                }
                 current_block = stmt.block->ir_block;
                 insert_point = current_block->end();
                 for (auto& node : syntax_list) {

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <mutex>
@@ -145,6 +145,8 @@ Id TypeId(const EmitContext& ctx, IR::Type type) {
         return ctx.U32[4];
     case IR::Type::F32:
         return ctx.F32[1];
+    case IR::Type::F32x2:
+        return ctx.F32[2];
     case IR::Type::U64:
         return ctx.U64;
     default:
@@ -291,7 +293,8 @@ void SetupCapabilities(const Info& info, const Profile& profile, const RuntimeIn
         ctx.AddCapability(spv::Capability::ImageQuery);
     }
     if ((info.uses_image_atomic_float_min_max && profile.supports_image_fp32_atomic_min_max) ||
-        (info.uses_buffer_atomic_float_min_max && profile.supports_buffer_fp32_atomic_min_max)) {
+        (info.uses_buffer_atomic_float_min_max && profile.supports_buffer_fp32_atomic_min_max) ||
+        (info.uses_shared_atomic_float_min_max && profile.supports_shared_fp32_atomic_min_max)) {
         ctx.AddExtension("SPV_EXT_shader_atomic_float_min_max");
         ctx.AddCapability(spv::Capability::AtomicFloat32MinMaxEXT);
     }
@@ -593,6 +596,9 @@ void SetupRoundingMode(EmitContext& ctx, const Profile& profile, const RuntimeIn
 
 void SetupInfNanPreserveMode(EmitContext& ctx, const Profile& profile,
                              const RuntimeInfo& runtime_info, Id main_func) {
+    if (profile.fast_shader_math) {
+        return;
+    }
     if (profile.support_fp16_signed_zero_inf_nan_preserve ||
         profile.support_fp32_signed_zero_inf_nan_preserve ||
         profile.support_fp64_signed_zero_inf_nan_preserve) {

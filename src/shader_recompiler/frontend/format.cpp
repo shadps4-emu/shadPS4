@@ -4032,11 +4032,11 @@ constexpr std::array<InstFormat, 114> InstructionFormatMUBUF = {{
     {},
     {},
     // 112 = BUFFER_WBINVL1_SC
-    {InstClass::VectorMemL1Cache, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::VectorMemL1Cache, InstCategory::VectorMemory, 0, 0, ScalarType::Any,
+     ScalarType::Any},
     // 113 = BUFFER_WBINVL1
-    {InstClass::VectorMemL1Cache, InstCategory::VectorMemory, 4, 1, ScalarType::Undefined,
-     ScalarType::Undefined},
+    {InstClass::VectorMemL1Cache, InstCategory::VectorMemory, 0, 0, ScalarType::Any,
+     ScalarType::Any},
 }};
 
 constexpr std::array<InstFormat, 8> InstructionFormatMTBUF = {{

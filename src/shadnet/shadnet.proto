@@ -89,6 +89,27 @@ message NotifyFriendStatus {
     uint64 timestamp = 3;  // nanoseconds since Unix epoch
 }
 
+// Notification 18: the server refused a service to this player.
+//   service: 1 = Matching2 (matchmaking)
+//   reason:  1 = server full (in_use / limit are set), 2 = account not allowed,
+//            3 = service disabled on this server
+message NotifyServiceUnavailable {
+    uint32 service = 1;
+    uint32 reason  = 2;
+    uint32 in_use  = 3;
+    uint32 limit   = 4;
+}
+
+// Notification 19: the server is signing this client out, then disconnects.
+//   reason:  1 = client version not accepted (clientversions.cfg)
+//   message: text for the player, from the rule that matched
+//   version: the version the server checked ("" = none reported)
+message NotifyClientRejected {
+    uint32 reason  = 1;
+    string message = 2;
+    string version = 3;
+}
+
 // Score: board configuration
 
 message BoardInfo {
@@ -107,6 +128,7 @@ message RecordScoreRequest {
     int64  score    = 3;
     string comment  = 4;
     bytes  data     = 5;   // optional inline game-info blob
+    uint64 compareDate = 6;
 }
 
 message RecordScoreGameDataRequest {
@@ -147,6 +169,7 @@ message GetScoreFriendsRequest {
     uint32 max          = 3;
     bool   withComment  = 4;
     bool   withGameInfo = 5;
+    uint32 startRank    = 6;
 }
 
 message ScoreAccountIdPcId {
@@ -177,6 +200,7 @@ message ScoreRankData {
     bool   hasGameData = 5;
     uint64 recordDate  = 6;
     int64  accountId   = 7;
+    uint32 sharedRank  = 8;
 }
 
 message ScoreInfo {
@@ -549,6 +573,18 @@ message LookupOnlineIdRequest {
 message LookupOnlineIdReply {
     uint64 account_id = 1;
     string npid        = 2; // canonical online ID as registered on the server
+}
+
+// Single-use authorization code issued to the signed-in account for a game's backend, which
+// exchanges it at POST /2.0/oauth/token.
+message GetAuthorizationCodeRequest {
+    string client_id = 1;
+    string scope     = 2;
+}
+
+message GetAuthorizationCodeReply {
+    string code       = 1;
+    uint32 expires_in = 2; // seconds
 }
 
 // Notification payloads

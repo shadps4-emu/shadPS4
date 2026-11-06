@@ -486,6 +486,9 @@ bool FillSockInfo(OrbisNetId id, OrbisNetSockInfo* out) {
             record.remote_port = in->sin_port;
             record.state = ORBIS_NET_SOCKINFO_STATE_ESTABLISHED;
         }
+        if (const auto r = Core::Net::SocketBytesReadable(id); r.error == Error::Ok) {
+            record.recv_queue_length = static_cast<s32>(r.value);
+        }
     }
     std::memcpy(out, &record, sizeof(record));
     return true;

@@ -38,7 +38,7 @@ struct OrbisWrapperImpl<f> {
 
 #define ORBIS(func) (Libraries::Kernel::OrbisWrapperImpl<func>::wrap)
 
-#define CURRENT_FIRMWARE_VERSION 0x14008001
+#define CURRENT_FIRMWARE_VERSION 0x14020001
 
 s32* PS4_SYSV_ABI __Error();
 
@@ -58,6 +58,7 @@ enum OrbisKernelProcessType : s32 {
 };
 
 s32 PS4_SYSV_ABI sceKernelGetProcessType(s32 pid);
+s32 PS4_SYSV_ABI sceKernelGetOpenPsId(void* psid);
 
 struct AuthInfoData {
     u64 paid;
