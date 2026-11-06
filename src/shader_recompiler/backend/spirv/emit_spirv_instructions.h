@@ -218,7 +218,7 @@ Id EmitPackUint2x16(EmitContext& ctx, Id value);
 Id EmitUnpackUint2x16(EmitContext& ctx, Id value);
 Id EmitPackSint2x16(EmitContext& ctx, Id value);
 Id EmitUnpackSint2x16(EmitContext& ctx, Id value);
-Id EmitPackHalf2x16(EmitContext& ctx, IR::Inst* inst, Id value);
+Id EmitPackHalf2x16(EmitContext& ctx, Id value);
 Id EmitUnpackHalf2x16(EmitContext& ctx, Id value);
 Id EmitPackUnorm4x8(EmitContext& ctx, Id value);
 Id EmitUnpackUnorm4x8(EmitContext& ctx, Id value);
