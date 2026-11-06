@@ -24,8 +24,9 @@ enum class OrbisJpegDecDecodeMode : u16 {
 };
 
 enum class OrbisJpegDecColorSpace : u16 {
-    Ycc = 0,
-    Grayscale = 1,
+    Unknown = 0,
+    Ycc = 1,
+    Grayscale = 2,
 };
 
 enum class OrbisJpegDecDownscaleRatio : u16 {
@@ -69,7 +70,7 @@ struct OrbisJpegDecImageInfo {
     u8 component_id[4];
     u8 sampling_factor[4];
     u32 decode_mode;
-    u32 total_samples;
+    u32 required_decode_mode;
     u32 output_width;
     u32 output_height;
 };
