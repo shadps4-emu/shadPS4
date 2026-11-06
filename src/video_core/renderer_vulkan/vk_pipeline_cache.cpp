@@ -231,7 +231,7 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(HwStage stage, SwStag
             }
         } else {
             info.hw.fs.dual_source_blending = false;
-        }		
+        }
         info.hw.fs.alpha_to_src1 = graphics_key.alpha_to_src1 != 0;
         info.hw.fs.dual_source_blending |= info.hw.fs.alpha_to_src1;
         const auto& ps_inputs = regs.ps_inputs;
