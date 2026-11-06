@@ -456,6 +456,7 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
 
     if (uses_dma) {
         buffer_cache.SynchronizeDmaBuffers();
+        runtime.BlockCopyHoisting();
     }
 
     return true;
