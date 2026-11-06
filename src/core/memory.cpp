@@ -627,7 +627,7 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
 
             // Perform an address space mapping for each physical area
             void* out_addr = impl.Map(current_addr, size_to_map, new_fmem_area.base, is_exec);
-            rasterizer->RegisterMemory(current_addr, size_to_map);
+            rasterizer->RegisterMemory(current_addr, size_to_map, is_exec);
 
             // Tracy memory tracking breaks from merging memory areas. Disabled for now.
             // TRACK_ALLOC(out_addr, size_to_map, "VMEM");
@@ -685,7 +685,7 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
         // Flexible address space mappings were performed while finding direct memory areas.
         if (type != VMAType::Flexible) {
             impl.Map(mapped_addr, size, phys_addr, is_exec);
-            rasterizer->RegisterMemory(mapped_addr, size);
+            rasterizer->RegisterMemory(mapped_addr, size, is_exec);
             // Tracy memory tracking breaks from merging memory areas. Disabled for now.
             // TRACK_ALLOC(mapped_addr, size, "VMEM");
         }
@@ -1113,6 +1113,8 @@ s64 MemoryManager::ProtectBytes(VAddr addr, VirtualMemoryArea& vma_base, u64 siz
     // Perform address-space memory protections if needed.
     if (new_prot != old_prot) {
         impl.Protect(addr, adjusted_size, perms);
+        rasterizer->ProtectMemory(addr, adjusted_size,
+                                  True(perms & Core::MemoryPermission::Execute));
     }
 
     return adjusted_size;
