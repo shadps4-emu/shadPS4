@@ -8,6 +8,7 @@
 #include "core/libraries/videoout/video_out.h"
 
 #include <condition_variable>
+#include <chrono>
 #include <mutex>
 #include <queue>
 
@@ -53,6 +54,15 @@ struct VideoOutPort {
     void WaitVoLabel(auto&& pred) {
         std::unique_lock lk{vo_mutex};
         vo_cv.wait(lk, pred);
+    }
+
+    /// Bounded version of WaitVoLabel, for a waiter that has other work to do (the GPU thread
+    /// must keep servicing its command queue while it waits, or the flip that writes the label
+    /// can never be issued).
+    template <typename Rep, typename Period>
+    void WaitVoLabelFor(auto&& pred, const std::chrono::duration<Rep, Period>& timeout) {
+        std::unique_lock lk{vo_mutex};
+        vo_cv.wait_for(lk, timeout, pred);
     }
 
     void SignalVoLabel() {
