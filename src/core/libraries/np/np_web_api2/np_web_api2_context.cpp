@@ -1,6 +1,11 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
+#include <cstdio>
+#include <cstring>
+#include <string_view>
+
 #include "common/logging/log.h"
 #include "core/libraries/network/http.h"
 #include "core/libraries/network/http2.h"
@@ -165,6 +170,14 @@ UserContext* LibraryContext::GetUserContextByUserId(
     return nullptr;
 }
 
+void LibraryContext::CollectPushEventDeliveries(const NpWebApi::PushEventInput& ev,
+                                                std::vector<PushEventDelivery>& deliveries) {
+    std::scoped_lock lk{this->lock};
+    for (auto& [user_ctx_id, user_ctx] : this->user_contexts) {
+        user_ctx->CollectPushEventDeliveries(ev, deliveries);
+    }
+}
+
 s32 PS4_SYSV_ABI internalPreSendCallback(s32 http_request_id, s32 ssl_id,
                                          Libraries::Http2::OrbisHttp2PreSendCallbackData* data,
                                          void* user_arg) {
@@ -281,6 +294,7 @@ PushEventPushContext* UserContext::GetPushContext(
     s64 raw_id{};
     std::memcpy(&raw_id, push_ctx_id, sizeof(s64));
     if (!push_contexts.contains(raw_id)) {
+        parent_ctx->Unlock();
         return nullptr;
     }
     PushEventPushContext* push_ctx = push_contexts[raw_id];
@@ -346,6 +360,89 @@ s32 UserContext::DeletePushContextCallback(s32 callback_id) {
     this->push_context_callbacks.erase(callback_id);
     this->Unlock();
     return ORBIS_OK;
+}
+
+void UserContext::CollectPushEventDeliveries(const NpWebApi::PushEventInput& ev,
+                                             std::vector<PushEventDelivery>& deliveries) {
+    this->Lock();
+    if (this->deleting || this->user_id != ev.targetUserId) {
+        this->Unlock();
+        return;
+    }
+
+    const auto add_delivery = [&](s32 callback_id, s32 filter_id,
+                                  void* user_arg) -> PushEventDelivery* {
+        PushEventFilter* filter = parent_ctx->GetPushEventFilter(filter_id);
+        if (!filter) {
+            return nullptr;
+        }
+        const OrbisNpWebApi2PushEventFilterParameter* param =
+            filter->GetMatchingParameter(ev.npServiceName, ev.dataType);
+        if (!param) {
+            return nullptr;
+        }
+
+        PushEventDelivery& delivery = deliveries.emplace_back();
+        delivery.user_ctx_id = this->id;
+        delivery.callback_id = callback_id;
+        delivery.user_arg = user_arg;
+        delivery.np_service_name = filter->GetServiceName();
+        delivery.np_service_label = filter->GetServiceLabel();
+        for (const auto& [key, value] : ev.extdData) {
+            const auto requested = std::find_if(
+                param->extd_data_key, param->extd_data_key + param->extd_data_key_num,
+                [&](const OrbisNpWebApi2PushEventExtdDataKey& data_key) {
+                    return key == std::string_view(data_key.val,
+                                                   strnlen(data_key.val, sizeof(data_key.val)));
+                });
+            if (requested == param->extd_data_key + param->extd_data_key_num) {
+                continue;
+            }
+            OrbisNpWebApi2PushEventExtdData& extd_data = delivery.extd_data.emplace_back();
+            std::snprintf(extd_data.extd_data_key.val, sizeof(extd_data.extd_data_key.val), "%s",
+                          key.c_str());
+            extd_data.data = const_cast<char*>(value.data());
+            extd_data.data_len = value.size();
+        }
+        return &delivery;
+    };
+
+    for (auto& [callback_id, callback] : this->push_event_callbacks) {
+        if (PushEventDelivery* delivery =
+                add_delivery(callback_id, callback->filter_id, callback->user_arg)) {
+            delivery->cb_func = callback->cb_func;
+        }
+    }
+
+    for (auto& [raw_id, push_ctx] : this->push_contexts) {
+        if (!push_ctx->IsStarted()) {
+            continue;
+        }
+        for (auto& [callback_id, callback] : this->push_context_callbacks) {
+            if (PushEventDelivery* delivery =
+                    add_delivery(callback_id, callback->filter_id, callback->user_arg)) {
+                delivery->push_ctx_cb_func = callback->cb_func;
+                std::memcpy(&delivery->push_ctx_id, push_ctx->GetId(),
+                            sizeof(delivery->push_ctx_id));
+            }
+        }
+    }
+    this->Unlock();
+}
+
+bool UserContext::CanDeliverPushEvent(const PushEventDelivery& delivery) {
+    this->Lock();
+    bool registered = false;
+    if (delivery.push_ctx_cb_func) {
+        s64 raw_id{};
+        std::memcpy(&raw_id, &delivery.push_ctx_id, sizeof(s64));
+        registered = this->push_context_callbacks.contains(delivery.callback_id) &&
+                     this->push_contexts.contains(raw_id);
+    } else {
+        registered = this->push_event_callbacks.contains(delivery.callback_id);
+    }
+    this->Unlock();
+    return registered;
 }
 
 s32 UserContext::CreateRequest(const char* api_group, const char* path, const char* method,
