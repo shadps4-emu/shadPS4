@@ -136,6 +136,7 @@ struct Info : InfoPersistent {
     bool stores_tess_level_outer{};
     bool stores_tess_level_inner{};
     bool translation_failed{};
+    bool has_movrel{};
 
     std::array<Interpolation, IR::NumParams> fs_interpolation{};
 
