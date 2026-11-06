@@ -426,6 +426,23 @@ private:
     const bool readback_linear_images;
     std::mutex download_images_mutex;
     absl::flat_hash_map<VAddr, MetaDataInfo> surface_metas;
+
+    struct FindImageKey {
+        VAddr guest_address;
+        u32 guest_size;
+        u32 width;
+        u32 height;
+        u32 depth;
+        vk::Format pixel_format;
+        AmdGpu::ImageType type;
+        u16 levels;
+        u16 layers;
+        bool exact_fmt;
+
+        bool operator==(const FindImageKey&) const = default;
+    };
+    absl::flat_hash_map<VAddr, boost::container::small_vector<std::pair<FindImageKey, ImageId>, 2>>
+        find_image_cache;
 };
 DECLARE_ENUM_FLAG_OPERATORS(TextureCache::DownloadMemoryFlags)
 
