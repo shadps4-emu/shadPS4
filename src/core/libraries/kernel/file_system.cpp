@@ -1478,7 +1478,7 @@ s32 PS4_SYSV_ABI posix_fchmod(s32 fd, u32 mode) {
 
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
     const auto* mount = mnt->GetMount(file->m_guest_name);
-    if ((file->handle && file->handle->IsReadOnly()) || (mount && mount->read_only)) {
+    if (mount && mount->read_only) {
         *__Error() = POSIX_EROFS;
         return -1;
     }
@@ -1614,7 +1614,7 @@ s32 PS4_SYSV_ABI posix_futimes(s32 fd, const OrbisKernelTimeval* times) {
 
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
     const auto* mount = mnt->GetMount(file->m_guest_name);
-    if ((file->handle && file->handle->IsReadOnly()) || (mount && mount->read_only)) {
+    if (mount && mount->read_only) {
         *__Error() = POSIX_EROFS;
         return -1;
     }
