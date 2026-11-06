@@ -38,6 +38,10 @@ Id EmitUndefF32(EmitContext& ctx) {
     return ctx.OpUndef(ctx.F32[1]);
 }
 
+Id EmitUndefF32x2(EmitContext& ctx) {
+    return ctx.OpUndef(ctx.F32[2]);
+}
+
 Id EmitUndefU64(EmitContext& ctx) {
     return ctx.OpUndef(ctx.U64);
 }

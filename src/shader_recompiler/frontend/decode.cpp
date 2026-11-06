@@ -459,8 +459,10 @@ void GcnDecodeContext::decodeSubDwordAddressing(InstEncoding encoding, GcnCodeSl
             m_instruction.src[1].input_modifier.abs = sdwa.src1_abs;
             m_instruction.src[1].input_modifier.sext = sdwa.src1_sext;
 
-            m_instruction.dst[0].field = sdwa.sd ? OperandField::ScalarGPR : OperandField::VccLo;
-            m_instruction.dst[0].code = sdwa.sdst;
+            if (sdwa.sd) {
+                m_instruction.dst[1].field = getOperandField(sdwa.sdst);
+                m_instruction.dst[1].code = sdwa.sdst;
+            }
 
         } else if (encoding == InstEncoding::VOP1 || encoding == InstEncoding::VOP2) {
             SdwaVop12 sdwa = *reinterpret_cast<SdwaVop12*>(&m_instruction.src[0].code);
