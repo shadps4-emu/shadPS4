@@ -122,6 +122,7 @@ s32 PS4_SYSV_ABI sceKernelFcntl(s32 fd, s32 cmd, s64 arg);
 s32 PS4_SYSV_ABI posix_dup(s32 old_fd);
 s32 PS4_SYSV_ABI posix_dup2(s32 old_fd, s32 new_fd);
 s64 PS4_SYSV_ABI posix_lseek(s32 fd, s64 offset, s32 whence);
+s32 PS4_SYSV_ABI posix_access(const char* path, s32 mode);
 s64 PS4_SYSV_ABI sceKernelWrite(s32 fd, const void* buf, u64 nbytes);
 s64 PS4_SYSV_ABI sceKernelRead(s32 fd, void* buf, u64 nbytes);
 s64 PS4_SYSV_ABI sceKernelPread(s32 fd, void* buf, u64 nbytes, s64 offset);
