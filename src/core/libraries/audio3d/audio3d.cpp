@@ -2,12 +2,15 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <chrono>
+#include <cstdlib>
 #include <vector>
 #include <fmt/format.h>
 #include <magic_enum/magic_enum.hpp>
 
 #include "common/assert.h"
 #include "common/logging/log.h"
+#include "common/thread.h"
 #include "core/libraries/audio/audioout.h"
 #include "core/libraries/audio/audioout_error.h"
 #include "core/libraries/audio3d/audio3d.h"
@@ -54,6 +57,29 @@ static AudioOutBufferInfo GetAudioOutBufferInfo(const AudioOut::OrbisAudioOutPar
         return {8, sizeof(float)};
     default:
         return {2, sizeof(s16)};
+    }
+}
+
+static void FeedPort(Port& port, std::stop_token stop) {
+    Common::SetCurrentThreadName("shadPS4:Audio3dFeeder");
+    while (true) {
+        AudioData frame;
+        s32 handle;
+        {
+            std::unique_lock lock{port.mutex};
+            if (!port.feed_cv.wait(
+                    lock, stop, [&] { return port.push_ready > 0 && !port.mixed_queue.empty(); })) {
+                return;
+            }
+            frame = port.mixed_queue.front();
+            port.mixed_queue.pop_front();
+            --port.push_ready;
+            handle = port.audio_out_handle;
+        }
+        port.feed_cv.notify_all();
+        // Returns once AudioOut took the previous frame
+        AudioOut::sceAudioOutOutput(handle, frame.sample_buffer);
+        std::free(frame.sample_buffer);
     }
 }
 
@@ -741,6 +767,8 @@ s32 PS4_SYSV_ABI sceAudio3dPortAdvance(const OrbisAudio3dPortId port_id) {
         return ORBIS_AUDIO3D_ERROR_NOT_SUPPORTED;
     }
 
+    // The feeder pops from the queue
+    std::scoped_lock lock{port.mutex};
     if (port.mixed_queue.size() >= port.parameters.queue_depth) {
         LOG_WARNING(Lib_Audio3d, "mixed queue full (depth={}), dropping advance",
                     port.parameters.queue_depth);
@@ -758,6 +786,10 @@ s32 PS4_SYSV_ABI sceAudio3dPortClose(const OrbisAudio3dPortId port_id) {
     }
 
     auto& port = state->ports[port_id];
+    if (port.feeder.joinable()) {
+        port.feeder.request_stop();
+        port.feeder.join();
+    }
     {
         std::scoped_lock lock{port.mutex};
 
@@ -866,6 +898,7 @@ s32 PS4_SYSV_ABI sceAudio3dPortFlush(const OrbisAudio3dPortId port_id) {
     }
 
     // Drain all queued mixed frames, blocking on each until consumed.
+    port.push_ready = 0;
     while (!port.mixed_queue.empty()) {
         AudioData frame = port.mixed_queue.front();
         port.mixed_queue.pop_front();
@@ -942,8 +975,17 @@ s32 PS4_SYSV_ABI sceAudio3dPortGetQueueLevel(const OrbisAudio3dPortId port_id, u
     }
 
     const auto& port = state->ports[port_id];
-    std::scoped_lock lock{port.mutex};
-    const size_t size = port.mixed_queue.size();
+    const auto queue_size = [&] {
+        std::scoped_lock lock{port.mutex};
+        return port.mixed_queue.size();
+    };
+    size_t size = queue_size();
+    if (size >= port.parameters.queue_depth) {
+        // Games poll this until there is room, sometimes holding a lock
+        // Wait a bit instead of letting them spin
+        Common::AccurateSleep(std::chrono::microseconds(250), nullptr, false);
+        size = queue_size();
+    }
 
     if (queue_level) {
         *queue_level = static_cast<u32>(size);
@@ -1147,66 +1189,18 @@ s32 PS4_SYSV_ABI sceAudio3dPortPush(const OrbisAudio3dPortId port_id,
             return port.audio_out_handle;
     }
 
-    auto submit_one_frame = [&](bool& submitted) -> s32 {
-        AudioData frame;
-        {
-            std::scoped_lock lock{port.mutex};
-
-            if (port.mixed_queue.empty()) {
-                submitted = false;
-                return ORBIS_OK;
-            }
-
-            frame = port.mixed_queue.front();
-            port.mixed_queue.pop_front();
-        }
-
-        const s32 ret = AudioOut::sceAudioOutOutput(port.audio_out_handle, frame.sample_buffer);
-
-        std::free(frame.sample_buffer);
-
-        if (ret < 0)
-            return ret;
-
-        submitted = true;
-        return ORBIS_OK;
-    };
-
-    {
-        std::scoped_lock lock{port.mutex};
-        if (port.mixed_queue.size() < depth) {
-            return ORBIS_OK;
-        }
+    // Pushed frames are played out by the feeder thread at the audio rate
+    std::unique_lock lock{port.mutex};
+    port.push_ready = port.mixed_queue.size();
+    if (!port.feeder.joinable()) {
+        port.feeder = std::jthread([&port](std::stop_token stop) { FeedPort(port, stop); });
     }
+    port.feed_cv.notify_all();
 
-    bool submitted = false;
-    s32 ret = submit_one_frame(submitted);
-    if (ret < 0)
-        return ret;
-
-    if (!submitted)
-        return ORBIS_OK;
-
-    if (blocking == OrbisAudio3dBlocking::ORBIS_AUDIO3D_BLOCKING_ASYNC) {
-        return ORBIS_OK;
+    // Async returns right away, sync waits for room in the queue
+    if (blocking == OrbisAudio3dBlocking::ORBIS_AUDIO3D_BLOCKING_SYNC) {
+        port.feed_cv.wait(lock, [&] { return port.mixed_queue.size() < depth; });
     }
-
-    while (true) {
-        {
-            std::scoped_lock lock{port.mutex};
-            if (port.mixed_queue.size() < depth)
-                break;
-        }
-
-        bool drained = false;
-        ret = submit_one_frame(drained);
-        if (ret < 0)
-            return ret;
-
-        if (!drained)
-            break;
-    }
-
     return ORBIS_OK;
 }
 s32 PS4_SYSV_ABI sceAudio3dPortQueryDebug() {
