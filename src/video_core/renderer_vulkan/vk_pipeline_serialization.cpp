@@ -262,6 +262,15 @@ bool PipelineCache::LoadPipelineStage(Serialization::Archive& ar, size_t stage) 
         return false;
     }
 
+    if (EmulatorSettings.IsPatchShaders()) {
+        if (auto patch =
+                GetShaderPatch(program->info.pgm_hash, program->info.hw_stage, perm_idx, "spv")) {
+            LOG_INFO(Loader, "Loaded patch for {} shader {:#x}", program->info.hw_stage,
+                     program->info.pgm_hash);
+            spv = std::move(*patch);
+        }
+    }
+
     // Permutation hash depends on shader variation index. To prevent collisions, we need insert it
     // at the exact position rather than append
 
