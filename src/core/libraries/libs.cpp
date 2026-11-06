@@ -17,10 +17,12 @@
 #include "core/libraries/content_export/content_export.h"
 #include "core/libraries/disc_map/disc_map.h"
 #include "core/libraries/fiber/fiber.h"
+#include "core/libraries/game_custom_data_dialog/game_custom_data_dialog.h"
 #include "core/libraries/game_live_streaming/gamelivestreaming.h"
 #include "core/libraries/gnmdriver/gnmdriver.h"
 #include "core/libraries/hmd/hmd.h"
 #include "core/libraries/hmd/hmd_setup_dialog.h"
+#include "core/libraries/hmd/vrservicedialog.h"
 #include "core/libraries/ime/error_dialog.h"
 #include "core/libraries/ime/ime.h"
 #include "core/libraries/ime/ime_dialog.h"
@@ -194,9 +196,11 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
             {"libSceCompanionUtil.sprx", Libraries::CompanionUtil::RegisterLib},
             {"libSceVoice.sprx", Libraries::Voice::RegisterLib},
             {"libSceVrTracker.sprx", Libraries::VrTracker::RegisterLib},
+            {"libSceVrTrackerDialog.sprx", Libraries::VrServiceDialog::RegisterLib},
             {"libSceContentExport.sprx", Libraries::ContentExport::RegisterLib},
             {"libSceVideoRecording.sprx", Libraries::VideoRecording::RegisterLib},
             {"libSceInvitationDialog.sprx", Libraries::InvitationDialog::RegisterLib},
+            {"libSceGameCustomDataDialog.sprx", Libraries::GameCustomDataDialog::RegisterLib},
             {"libSceNpUtility.sprx", Libraries::Np::NpUtility::RegisterLib},
 #ifdef ARCH_X86_64
             {"libSceFiber.sprx", Libraries::Fiber::RegisterLib},
