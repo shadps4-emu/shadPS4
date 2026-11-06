@@ -272,6 +272,7 @@ static bool is_first_check = true;
 void GameControllers::TryOpenSDLControllers() {
     using namespace Libraries::UserService;
     int controller_count;
+    s32 move_count = 0;
     SDL_JoystickID* new_joysticks = SDL_GetGamepads(&controller_count);
     LOG_INFO(Input, "{} controllers are currently connected", controller_count);
 
@@ -307,6 +308,40 @@ void GameControllers::TryOpenSDLControllers() {
 
         SDL_Gamepad* pad = SDL_OpenGamepad(id);
         if (!pad) {
+            continue;
+        }
+
+        SDL_GUID guid = SDL_GetJoystickGUID(SDL_GetJoystickFromID(new_joysticks[j]));
+        Uint16 vendor = 0, product = 0;
+        SDL_GetJoystickGUIDInfo(guid, &vendor, &product, nullptr, nullptr);
+        if (vendor == 0x054C &&    // Sony
+            (product == 0x03D5 ||  // PSMove ZCM1
+             product == 0x0C5E)) { // PSMove ZCM2
+            LOG_INFO(Input, "PS Move controller found at slot {}!", j);
+            if (is_first_check) { // ABSOLUTELY HORRIBLE HACK but I just want it hooked up
+                // quickly
+                auto c = move_controllers[move_count];
+                c->m_sdl_gamepad = pad;
+                auto u = UserManagement.GetDefaultUser();
+                c->user_id = u.user_id;
+                move_count++;
+                if (SDL_SetGamepadSensorEnabled(c->m_sdl_gamepad, SDL_SENSOR_GYRO, true)) {
+                    const float poll_rate =
+                        SDL_GetGamepadSensorDataRate(c->m_sdl_gamepad, SDL_SENSOR_GYRO);
+                    LOG_INFO(Input, "Gyro initialized, poll rate: {}", poll_rate);
+                } else {
+                    LOG_ERROR(Input, "Failed to initialize gyro controls for gamepad {}",
+                              c->user_id);
+                }
+                if (SDL_SetGamepadSensorEnabled(c->m_sdl_gamepad, SDL_SENSOR_ACCEL, true)) {
+                    const float poll_rate =
+                        SDL_GetGamepadSensorDataRate(c->m_sdl_gamepad, SDL_SENSOR_ACCEL);
+                    LOG_INFO(Input, "Accel initialized, poll rate: {}", poll_rate);
+                } else {
+                    LOG_ERROR(Input, "Failed to initialize accel controls for gamepad {}",
+                              c->user_id);
+                }
+            }
             continue;
         }
 
@@ -349,7 +384,7 @@ void GameControllers::TryOpenSDLControllers() {
     }
     if (is_first_check) [[unlikely]] {
         is_first_check = false;
-        if (controller_count == 0) {
+        if (controller_count - move_count == 0) {
             auto u = UserManagement.GetUserByPlayerIndex(1);
             controllers[0]->user_id = u->user_id;
             controllers[0]->ConnectController(nullptr);
@@ -366,7 +401,16 @@ u8 GameControllers::GetGamepadIndexFromJoystickId(SDL_JoystickID id) {
             return i;
         }
     }
-    // LOG_TRACE(Input, "Gamepad index: {}", index);
+    return -1;
+}
+
+u8 GameControllers::GetMoveIndexFromJoystickId(SDL_JoystickID id) {
+    auto g = SDL_GetGamepadFromID(id);
+    for (int i = 0; i < 4; i++) {
+        if (move_controllers[i]->m_sdl_gamepad == g) {
+            return i;
+        }
+    }
     return -1;
 }
 
