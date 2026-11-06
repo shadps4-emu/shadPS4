@@ -34,7 +34,7 @@ jobs:
     - uses: fsfe/reuse-action@v6
 
   clang-format:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     continue-on-error: true
     permissions:
       contents: read
@@ -44,8 +44,10 @@ jobs:
         fetch-depth: 0
     - name: Install
       run: |
-        wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
-        sudo add-apt-repository 'deb http://apt.llvm.org/noble/ llvm-toolchain-noble-23 main'
+        . /etc/os-release
+        sudo install -d -m 0755 /etc/apt/keyrings
+        wget -qO- https://apt.llvm.org/llvm-snapshot.gpg.key | sudo tee /etc/apt/keyrings/apt.llvm.org.asc > /dev/null
+        echo "deb [signed-by=/etc/apt/keyrings/apt.llvm.org.asc] https://apt.llvm.org/${VERSION_CODENAME}/ llvm-toolchain-${VERSION_CODENAME}-23 main" | sudo tee /etc/apt/sources.list.d/llvm-23.list
         sudo apt update
         sudo apt install clang-format-23
     - name: Build
