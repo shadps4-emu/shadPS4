@@ -85,12 +85,13 @@ Mspace* FindMspace(void* handle) {
 Mspace* FindMspaceByPointer(const void* ptr) {
     const auto addr = reinterpret_cast<uintptr_t>(ptr);
     auto it = g_mspaces.upper_bound(addr);
-    if (it == g_mspaces.begin()) {
-        return nullptr;
+    while (it != g_mspaces.begin()) {
+        --it;
+        if (addr < it->first + it->second->size) {
+            return it->second.get();
+        }
     }
-    --it;
-    const auto* mspace = it->second.get();
-    return addr < it->first + mspace->size ? it->second.get() : nullptr;
+    return nullptr;
 }
 
 void* AllocateBlock(Mspace& mspace, u64 size, u64 alignment) {
@@ -191,13 +192,14 @@ void* PS4_SYSV_ABI sceLibcMspaceCreate(const char* name, void* base, size_t size
     }
 
     const auto base_addr = reinterpret_cast<uintptr_t>(mspace->base);
-    const u64 first_offset = Common::AlignUp(base_addr, MspaceAlignment) - base_addr;
+    const u64 first_offset =
+        Common::AlignUp(base_addr + MspaceAlignment, MspaceAlignment) - base_addr;
     mspace->free_blocks.emplace(first_offset,
                                 Common::AlignDown(mspace->size - first_offset, MspaceAlignment));
 
     void* handle = mspace->base;
     std::scoped_lock lk{g_mspace_mutex};
-    g_mspaces.emplace(reinterpret_cast<uintptr_t>(handle), std::move(mspace));
+    g_mspaces.insert_or_assign(reinterpret_cast<uintptr_t>(handle), std::move(mspace));
     return handle;
 }
 
