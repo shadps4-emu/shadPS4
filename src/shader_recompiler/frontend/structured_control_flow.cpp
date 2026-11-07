@@ -410,6 +410,25 @@ private:
                 }
                 break;
             }
+            case EndClass::IndirectBranch: {
+                // The table index is clamped, so one target always matches; the last one becomes
+                // the fallthrough.
+                const auto& targets = block.jump_table.targets;
+                const auto& conds = block.ir_block->jump_table_conds;
+                ASSERT(conds.size() == targets.size());
+                for (size_t i = 0; i < targets.size(); i++) {
+                    IR::Inst* const cond_ref = conds[i].Inst();
+                    Statement* const cond = i + 1 == targets.size()
+                                                ? pool.Create(Identity{}, IR::Value{true},
+                                                              IR::Condition::True, &root_stmt)
+                                                : pool.Create(Identity{}, cond_ref->Arg(0),
+                                                              IR::Condition::True, &root_stmt);
+                    cond_ref->Invalidate();
+                    const Node label{local_labels.at(targets[i].second)};
+                    gotos.push_back(root.insert(ip, *pool.Create(Goto{}, cond, label, &root_stmt)));
+                }
+                break;
+            }
             case EndClass::Exit:
                 root.insert(ip, *pool.Create(Return{}, &root_stmt));
                 break;
