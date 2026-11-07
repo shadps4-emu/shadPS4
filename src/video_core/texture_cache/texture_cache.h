@@ -364,6 +364,7 @@ private:
 
     /// Track CPU reads and writes for image
     void TrackImage(ImageId image_id);
+    void TrackImage(Image& image);
 
     /// Stop tracking CPU reads and writes for image
     void UntrackImage(ImageId image_id);
