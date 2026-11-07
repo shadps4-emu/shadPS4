@@ -85,6 +85,7 @@
 #include "core/libraries/videodec/videodec.h"
 #include "core/libraries/videodec/videodec2.h"
 #include "core/libraries/videoout/video_out.h"
+#include "core/libraries/videoout/videocore_interface.h"
 #include "core/libraries/voice/voice.h"
 #include "core/libraries/vr_tracker/vr_tracker.h"
 #include "core/libraries/web_browser_dialog/webbrowserdialog.h"
@@ -175,6 +176,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
             {"libSceVideodec.sprx", Libraries::Videodec::RegisterLib},
             {"libSceVideodec2.sprx", Libraries::Videodec2::RegisterLib},
             {"libSceVdecCore.sprx", Libraries::VdecCore::RegisterLib},
+            {"libSceVideoCoreInterface.sprx", Libraries::VideoCoreInterface::RegisterLib},
             {"libSceVideoCoreServerInterface.sprx", Libraries::VideoCoreServer::RegisterLib},
             {"libSceIme.sprx", Libraries::Ime::RegisterLib},
             {"libSceGameLiveStreaming.sprx", Libraries::GameLiveStreaming::RegisterLib},
