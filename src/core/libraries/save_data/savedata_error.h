@@ -23,6 +23,5 @@ enum class Error : u32 {
     MEMORY_NOT_READY = 0x809F0012,
     BACKUP_BUSY = 0x809F0013,
     BUSY_FOR_SAVING = 0x809F0016,
-    NO_EVENT = 0x809F0018,
 };
 } // namespace Libraries::SaveData
