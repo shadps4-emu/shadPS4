@@ -1119,6 +1119,7 @@ set(SHADER_RECOMPILER src/shader_recompiler/profile.h
                       src/shader_recompiler/ir/passes/shared_memory_simplify_pass.cpp
                       src/shader_recompiler/ir/passes/shared_memory_to_storage_pass.cpp
                       src/shader_recompiler/ir/passes/lower_phis_to_regs_pass.cpp
+                      src/shader_recompiler/ir/passes/srt_ir.h
                       src/shader_recompiler/ir/passes/lower_movrel_pass.cpp
                       src/shader_recompiler/ir/passes/ssa_repair_pass.cpp
                       src/shader_recompiler/ir/passes/ssa_rewrite_pass.cpp
@@ -1151,6 +1152,7 @@ set(SHADER_RECOMPILER src/shader_recompiler/profile.h
                       src/shader_recompiler/ir/srt_gvn_table.h
                       src/shader_recompiler/ir/ssa.h
                       src/shader_recompiler/ir/reg.h
+                      src/shader_recompiler/ir/topological_sort.h
                       src/shader_recompiler/ir/type.cpp
                       src/shader_recompiler/ir/type.h
                       src/shader_recompiler/ir/value.cpp

@@ -100,7 +100,6 @@ static IR::Value GetRealValue(PhiMap& phi_map, IR::Inst* inst, u32 lane) {
 
 void ReadLaneEliminationPass(IR::Program& program) {
     PhiMap phi_map;
-    std::vector<IR::Inst*> worklist;
     for (IR::Block* const block : program.blocks) {
         for (IR::Inst& inst : block->Instructions()) {
             if (inst.GetOpcode() != IR::Opcode::ReadLane) {
@@ -119,63 +118,14 @@ void ReadLaneEliminationPass(IR::Program& program) {
                 replacement = prod->Arg(1);
             } else if (prod->GetOpcode() == IR::Opcode::Phi && IsPossibleToEliminate(prod, lane)) {
                 replacement = GetRealValue(phi_map, prod, lane);
-                for (const auto& [_, phi_value] : phi_map) {
-                    worklist.push_back(phi_value.Inst());
-                }
                 phi_map.clear();
             }
             if (replacement.IsEmpty()) {
                 continue;
             }
 
-            for (auto& [user, operand] : inst.Uses()) {
-                if (user->GetOpcode() == IR::Opcode::Phi) {
-                    worklist.push_back(user);
-                }
-            }
             inst.ReplaceUsesWith(replacement);
         }
-    }
-    // Attempt to resolve phis that have become trivial
-    while (!worklist.empty()) {
-        IR::Inst* phi = worklist.back();
-        worklist.pop_back();
-
-        if (phi->GetOpcode() == IR::Opcode::Void) {
-            continue;
-        }
-
-        IR::Value same;
-        bool non_trivial = false;
-        for (size_t i = 0; i < phi->NumArgs(); ++i) {
-            const IR::Value op{phi->Arg(i)};
-            if (op == same || op == IR::Value{phi}) {
-                // Unique value or self-reference
-                continue;
-            }
-            if (!same.IsEmpty()) {
-                // The phi merges at least two values: not trivial
-                non_trivial = true;
-                break;
-            }
-            same = op;
-        }
-        if (non_trivial) {
-            continue;
-        }
-
-        IR::Block* block = phi->GetParent();
-        ASSERT(!same.IsEmpty());
-
-        // Add phi users to worklist since they may have become trivial
-        for (const auto& [user, operand] : phi->Uses()) {
-            if (user->GetOpcode() == IR::Opcode::Phi && user != phi) {
-                worklist.push_back(user);
-            }
-        }
-        phi->ReplaceUsesWithAndRemove(same);
-        auto it = IR::Block::InstructionList::s_iterator_to(*phi);
-        block->Instructions().erase(it);
     }
 }
 
