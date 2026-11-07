@@ -1,7 +1,10 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
+
+#include <span>
+#include <vector>
 
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/passes/resource_pass.h"
@@ -15,6 +18,10 @@ void InjectClipDistanceAttributes(IR::Program& program, RuntimeInfo& runtime_inf
 namespace Shader::Optimization {
 
 void SsaRewritePass(IR::Program& program);
+[[nodiscard]] std::vector<u32> AnalyzeMovRelBounds(const IR::Program& program,
+                                                   const RuntimeInfo& runtime_info);
+void LowerMovRelPass(IR::Program& program, const RuntimeInfo& runtime_info,
+                     std::span<const u32> bounds = {});
 void SsaRepairPass(IR::Program& program);
 void PhiSimplificationPass(IR::Program& program);
 void InverseBallotEliminationPass(IR::Program& program);

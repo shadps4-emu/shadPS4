@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -56,6 +56,9 @@ public:
     void SetScalarReg(IR::ScalarReg reg, const U32F32& value);
     void SetVectorReg(IR::VectorReg reg, const U32F32& value);
 
+    [[nodiscard]] U32 VMovRelS(IR::VectorReg reg, const U32& m0);
+    void VMovRelD(IR::VectorReg reg, const U32& value, const U32& m0);
+
     [[nodiscard]] Value GetVirtualReg(IR::VirtualReg reg);
     void SetVirtualReg(IR::VirtualReg reg, const Value& value);
 
@@ -102,6 +105,8 @@ public:
                                           bool is_gds);
     [[nodiscard]] U32U64 SharedAtomicIMax(const U32& address, const U32U64& data, bool is_signed,
                                           bool is_gds);
+    [[nodiscard]] F32F64 SharedAtomicFMax(const U32& address, const F32F64& data, bool is_gds);
+    [[nodiscard]] F32F64 SharedAtomicFMin(const U32& address, const F32F64& data, bool is_gds);
     [[nodiscard]] U32U64 SharedAtomicAnd(const U32& address, const U32U64& data, bool is_gds);
     [[nodiscard]] U32U64 SharedAtomicOr(const U32& address, const U32U64& data, bool is_gds);
     [[nodiscard]] U32U64 SharedAtomicXor(const U32& address, const U32U64& data, bool is_gds);
