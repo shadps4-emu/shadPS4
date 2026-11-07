@@ -341,6 +341,7 @@ VideoCore::ImageView& Runtime::FindSubrectView(VideoCore::Image& image,
     auto& crop =
         it != image.backing_images.end() ? *it : image.AddBacking(create_info, info.num_samples);
     if (!crop.subrect_valid) {
+        scheduler.EndRendering();
         const auto source_state = image.backing->state;
         Transit(&image, vk::ImageLayout::eTransferSrcOptimal, vk::PipelineStageFlagBits2::eCopy,
                 vk::AccessFlagBits2::eTransferRead);
@@ -357,9 +358,8 @@ VideoCore::ImageView& Runtime::FindSubrectView(VideoCore::Image& image,
                                             crop.image, vk::ImageLayout::eTransferDstOptimal, copy);
 
         // A full-size view can already be bound in the same draw.
-        if (source_state.layout != vk::ImageLayout::eUndefined) {
-            image.GetBarriers(image_barriers, *image.backing, source_state.layout,
-                              source_state.access_mask, source_state.pl_stage);
+        if (image.binding.is_bound && source_state.layout != vk::ImageLayout::eUndefined) {
+            Transit(&image, source_state.layout, source_state.pl_stage, source_state.access_mask);
         }
         image.GetBarriers(image_barriers, crop, vk::ImageLayout::eShaderReadOnlyOptimal,
                           vk::AccessFlagBits2::eShaderRead,
