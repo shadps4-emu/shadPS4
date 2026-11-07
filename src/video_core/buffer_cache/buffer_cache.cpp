@@ -258,6 +258,10 @@ bool BufferCache::IsRegionGpuModified(VAddr addr, size_t size) {
     return memory_tracker->IsRegionGpuModified(addr, size);
 }
 
+bool BufferCache::IsRangeGpuModified(VAddr addr, size_t size) const {
+    return gpu_modified_ranges.Intersects(addr, size);
+}
+
 void BufferCache::MarkRegionAsGpuModified(VAddr addr, size_t size) {
     texture_cache.MarkAsMaybeGpuDirty(addr, size);
     memory_tracker->MarkRegionAsGpuModified(addr, size);
