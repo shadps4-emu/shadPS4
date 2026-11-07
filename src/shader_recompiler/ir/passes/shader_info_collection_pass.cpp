@@ -147,6 +147,16 @@ void Visit(Info& info, const IR::Inst& inst, Profile const& profile) {
     case IR::Opcode::WriteLane:
         info.uses_group_ballot = true;
         break;
+    case IR::Opcode::GroupIAdd32:
+    case IR::Opcode::GroupSMin32:
+    case IR::Opcode::GroupUMin32:
+    case IR::Opcode::GroupSMax32:
+    case IR::Opcode::GroupUMax32:
+    case IR::Opcode::GroupBitwiseAnd32:
+    case IR::Opcode::GroupBitwiseOr32:
+    case IR::Opcode::GroupBitwiseXor32:
+        info.uses_group_arithmetic = true;
+        break;
     case IR::Opcode::Discard:
     case IR::Opcode::DiscardCond:
         info.has_discard = true;

@@ -63,4 +63,44 @@ Id EmitGroupAny(EmitContext& ctx, Id bit) {
     return ctx.OpGroupNonUniformAny(ctx.U1[1], SubgroupScope(ctx), bit);
 }
 
+Id EmitGroupIAdd32(EmitContext& ctx, Id value) {
+    return ctx.OpGroupNonUniformIAdd(ctx.U32[1], SubgroupScope(ctx), spv::GroupOperation::Reduce,
+                                     value);
+}
+
+Id EmitGroupSMin32(EmitContext& ctx, Id value) {
+    return ctx.OpGroupNonUniformSMin(ctx.U32[1], SubgroupScope(ctx), spv::GroupOperation::Reduce,
+                                     value);
+}
+
+Id EmitGroupUMin32(EmitContext& ctx, Id value) {
+    return ctx.OpGroupNonUniformUMin(ctx.U32[1], SubgroupScope(ctx), spv::GroupOperation::Reduce,
+                                     value);
+}
+
+Id EmitGroupSMax32(EmitContext& ctx, Id value) {
+    return ctx.OpGroupNonUniformSMax(ctx.U32[1], SubgroupScope(ctx), spv::GroupOperation::Reduce,
+                                     value);
+}
+
+Id EmitGroupUMax32(EmitContext& ctx, Id value) {
+    return ctx.OpGroupNonUniformUMax(ctx.U32[1], SubgroupScope(ctx), spv::GroupOperation::Reduce,
+                                     value);
+}
+
+Id EmitGroupBitwiseAnd32(EmitContext& ctx, Id value) {
+    return ctx.OpGroupNonUniformBitwiseAnd(ctx.U32[1], SubgroupScope(ctx),
+                                           spv::GroupOperation::Reduce, value);
+}
+
+Id EmitGroupBitwiseOr32(EmitContext& ctx, Id value) {
+    return ctx.OpGroupNonUniformBitwiseOr(ctx.U32[1], SubgroupScope(ctx),
+                                          spv::GroupOperation::Reduce, value);
+}
+
+Id EmitGroupBitwiseXor32(EmitContext& ctx, Id value) {
+    return ctx.OpGroupNonUniformBitwiseXor(ctx.U32[1], SubgroupScope(ctx),
+                                           spv::GroupOperation::Reduce, value);
+}
+
 } // namespace Shader::Backend::SPIRV
