@@ -358,7 +358,20 @@ GraphicsPipeline::GraphicsPipeline(
                                                      ? vk::BlendFactor::eOne
                                                      : vk::BlendFactor::eZero; // 1-A
         }
-
+        if (i == 0 && key.alpha_to_src1) {
+            const auto to_src1 = [](vk::BlendFactor f) {
+                return f == vk::BlendFactor::eSrcAlpha ? vk::BlendFactor::eSrc1Alpha
+                       : f == vk::BlendFactor::eOneMinusSrcAlpha
+                           ? vk::BlendFactor::eOneMinusSrc1Alpha
+                           : f;
+            };
+            auto& a = attachments[0];
+            a.srcColorBlendFactor = to_src1(a.srcColorBlendFactor);
+            a.dstColorBlendFactor = to_src1(a.dstColorBlendFactor);
+            a.srcAlphaBlendFactor = a.srcColorBlendFactor;
+            a.dstAlphaBlendFactor = a.dstColorBlendFactor;
+            a.alphaBlendOp = a.colorBlendOp;
+        }
         auto& attachment = attachments[i];
         LiverpoolToVK::NormalizeMinMaxBlend(attachment.colorBlendOp, attachment.srcColorBlendFactor,
                                             attachment.dstColorBlendFactor,

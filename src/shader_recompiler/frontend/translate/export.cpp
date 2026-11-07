@@ -116,6 +116,17 @@ void Translator::ExportRenderTarget(const GcnInst& inst) {
         }
         ir.SetAttribute(mrt, converted, i);
     }
+    // A missing alpha blends as 1, like GCN. (comment not by AI)
+    if (runtime_info.hw.fs.alpha_to_src1 && mrt == IR::Attribute::RenderTarget0) {
+        const IR::F32 alpha =
+            components[3].IsEmpty()
+                ? ir.Imm32(1.0f)
+                : ApplyWriteNumberConversion(ir, components[3], color_buffer.num_conversion);
+        // Not in mrt_mask: the second source is not a color attachment.
+        for (u32 i = 0; i < 4; ++i) {
+            ir.SetAttribute(IR::Attribute::RenderTarget1, alpha, i);
+        }
+    }
 }
 
 void Translator::ExportDepth(const GcnInst& inst) {
