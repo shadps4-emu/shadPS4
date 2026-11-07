@@ -106,6 +106,7 @@ s32 PS4_SYSV_ABI sceVoiceUpdatePort(u32 port_id, const OrbisVoicePortParam* para
 s32 PS4_SYSV_ABI sceVoiceVADAdjustment(float param1, float param2);
 s32 PS4_SYSV_ABI sceVoiceVADSetVersion(s32 version);
 s32 PS4_SYSV_ABI sceVoiceWriteToIPort(u32 port_id, const void* data, u32* size, s16 unk);
+s32 PS4_SYSV_ABI sceVoiceUnknownWxrYyOK7Las(u32 port_id, void* data, u32 size, float* value);
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Voice
