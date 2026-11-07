@@ -311,8 +311,13 @@ void EmitSetAttribute(EmitContext& ctx, IR::Attribute attr, Id value, u32 elemen
         return op_store(ctx.output_viewport_index);
     case IR::Attribute::Depth:
         return op_store(ctx.frag_depth);
-    case IR::Attribute::SampleMask:
-        return op_store(ctx.OpAccessChain(ctx.output_u32, ctx.sample_mask, ctx.u32_zero_value));
+    case IR::Attribute::SampleMask: {
+        const Id pointer{ctx.OpAccessChain(ctx.output_u32, ctx.sample_mask, ctx.u32_zero_value)};
+        const Id current{ctx.OpLoad(ctx.U32[1], pointer)};
+        ctx.OpStore(pointer,
+                    ctx.OpBitwiseAnd(ctx.U32[1], current, ctx.OpBitcast(ctx.U32[1], value)));
+        return;
+    }
     case IR::Attribute::StencilRef:
         if (ctx.profile.supports_shader_stencil_export) {
             return op_store(ctx.stencil_ref);

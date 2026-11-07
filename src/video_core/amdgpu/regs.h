@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -102,7 +102,7 @@ union Regs {
         u32 draw_initiator;
         INSERT_PADDING_WORDS(3);
         DepthControl depth_control;
-        INSERT_PADDING_WORDS(1);
+        Eqaa depth_eqaa;
         ColorControl color_control;
         DepthShaderControl depth_shader_control;
         ClipperControl clipper_control;
@@ -143,14 +143,17 @@ union Regs {
         LsHsConfig ls_hs_config;
         u32 vgt_gs_vert_itemsize[4];
         TessellationConfig tess_config;
-        INSERT_PADDING_WORDS(3);
+        AlphaToMask alpha_to_mask;
+        INSERT_PADDING_WORDS(2);
         PolygonOffset poly_offset;
         GsInstances vgt_gs_instance_cnt;
         StreamOutConfig vgt_strmout_config;
         StreamOutBufferConfig vgt_strmout_buffer_config;
         INSERT_PADDING_WORDS(17);
         AaConfig aa_config;
-        INSERT_PADDING_WORDS(31);
+        INSERT_PADDING_WORDS(21);
+        AaSampleMask aa_mask;
+        INSERT_PADDING_WORDS(8);
         ColorBuffer color_buffers[NUM_COLOR_BUFFERS];
         INSERT_PADDING_WORDS(7343);
         StreamOutControl cp_strmout_cntl;
