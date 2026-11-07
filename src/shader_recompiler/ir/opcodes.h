@@ -112,5 +112,5 @@ struct fmt::formatter<Shader::IR::Opcode> {
 template <>
 struct magic_enum::customize::enum_range<Shader::IR::Opcode> {
     static constexpr int min = static_cast<int>(Shader::IR::Opcode::Phi);
-    static constexpr int max = static_cast<int>(Shader::IR::Opcode::GroupAny);
+    static constexpr int max = static_cast<int>(Shader::IR::Opcode::GroupBitwiseXor32);
 };
