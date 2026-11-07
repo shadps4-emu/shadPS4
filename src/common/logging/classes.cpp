@@ -169,6 +169,8 @@ std::string_view NameOf(Class log_class) {
         return "Lib.Videodec";
     case Class::Lib_VideoRecording:
         return "Lib.VideoRecording";
+    case Class::Lib_VideoCoreInterface:
+        return "Lib.VideoCoreInterface";
     case Class::Lib_Voice:
         return "Lib.Voice";
     case Class::Lib_RazorCpu:

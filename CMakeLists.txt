@@ -521,6 +521,9 @@ set(VIDEOOUT_LIB src/core/libraries/videoout/buffer.h
                  src/core/libraries/videoout/driver.h
                  src/core/libraries/videoout/video_out.cpp
                  src/core/libraries/videoout/video_out.h
+                 src/core/libraries/videoout/videocore_interface.cpp
+                 src/core/libraries/videoout/videocore_interface.h
+                 src/core/libraries/videoout/videocore_interface_error.h
                  src/core/libraries/videoout/videoout_error.h
 )
 
