@@ -292,8 +292,7 @@ void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
     case SIGBUS: {
         const bool is_write = Common::IsWriteError(raw_context);
         const bool is_exec = Common::IsExecuteError(raw_context);
-        if (is_general_protection ||
-            !signals->DispatchAccessViolation(raw_context, info->si_addr)) {
+        if (!signals->DispatchAccessViolation(raw_context, info->si_addr)) {
             if (thread && thread->DispatchSignal(guest_sig, info_p, context_p)) {
                 return;
             }
