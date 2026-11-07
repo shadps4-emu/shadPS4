@@ -850,6 +850,18 @@ void TextureCache::AssociateStencil(ImageId depth_id, const ImageInfo& depth_inf
     Image& stencil_image = slot_images[stencil_id];
     TouchImage(stencil_image);
     stencil_image.AssociateDepth(depth_id, slot_images[depth_id].image_uid);
+    InheritStencilWrites(stencil_image, slot_images[depth_id]);
+}
+
+void TextureCache::InheritStencilWrites(Image& stencil_image, Image& depth_image) {
+    // Guest writes to the stencil plane land on the stencil image, which has no host contents
+    // of its own. Hand them over to the depth image, which owns the stencil aspect.
+    if (False(stencil_image.flags & ImageFlagBits::Dirty)) {
+        return;
+    }
+    stencil_image.flags &= ~ImageFlagBits::Dirty;
+    depth_image.flags |= ImageFlagBits::StencilDirty;
+    RefreshStencil(depth_image);
 }
 
 void TextureCache::RefreshImage(Image& image) {
@@ -924,6 +936,51 @@ void TextureCache::RefreshImage(Image& image) {
     }
 
     runtime.UploadImage(&image, buffer, image_copies);
+}
+
+void TextureCache::RefreshStencil(Image& image) {
+    if (False(image.flags & ImageFlagBits::StencilDirty)) {
+        return;
+    }
+    image.flags &= ~ImageFlagBits::StencilDirty;
+
+    const auto& info = image.info;
+    if (!info.props.has_stencil || info.stencil_addr == 0 ||
+        info.stencil_addr == info.guest_address || info.num_samples > 1 ||
+        !(image.aspect_mask & vk::ImageAspectFlagBits::eStencil)) {
+        return;
+    }
+
+    RENDERER_TRACE;
+    TRACE_HINT(fmt::format("{:x}:{:x}", info.stencil_addr, info.stencil_size));
+
+    const ImageInfo plane = info.StencilPlane();
+    const auto [mip_size, mip_pitch, mip_height, mip_offset] = plane.mips_layout[0];
+    const u32 width = info.size.width;
+    const u32 height = info.size.height;
+    vk::BufferImageCopy copy{
+        .bufferOffset = mip_offset,
+        .bufferRowLength = mip_pitch,
+        .bufferImageHeight = mip_height,
+        .imageSubresource{
+            .aspectMask = vk::ImageAspectFlagBits::eStencil,
+            .mipLevel = 0,
+            .baseArrayLayer = 0,
+            .layerCount = info.resources.layers,
+        },
+        .imageOffset = {0, 0, 0},
+        .imageExtent = {mip_pitch ? std::min<u32>(mip_pitch, width) : width,
+                        mip_height ? std::min<u32>(mip_height, height) : height, 1},
+    };
+
+    scheduler.EndRendering();
+
+    const auto [in_buffer, in_offset] =
+        buffer_cache.ObtainBufferForImage(plane.guest_address, plane.guest_size);
+    const auto [buffer, offset] = tile_manager.DetileImage(in_buffer, in_offset, plane);
+    copy.bufferOffset += offset;
+
+    runtime.UploadImage(&image, buffer, {&copy, 1}, plane.pixel_format);
 }
 
 vk::Sampler TextureCache::GetSampler(const AmdGpu::Sampler& sharp,
