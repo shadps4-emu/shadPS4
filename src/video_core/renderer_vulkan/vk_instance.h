@@ -375,6 +375,14 @@ public:
         return push_descriptor_props.maxPushDescriptors;
     }
 
+    bool IsSampledImageArrayNonUniformIndexingSupported() const {
+        return vk12_features.shaderSampledImageArrayNonUniformIndexing;
+    }
+
+    const vk::PhysicalDeviceLimits& GetLimits() const {
+        return properties.limits;
+    }
+
     /// Returns the maximum size of a single VkDeviceMemory
     vk::DeviceSize MaxMemoryAllocationSize() const {
         return vk11_props.maxMemoryAllocationSize;

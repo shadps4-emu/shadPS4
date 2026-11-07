@@ -307,6 +307,7 @@ public:
         AmdGpu::ImageType view_type;
         bool is_integer = false;
         bool is_storage = false;
+        bool is_descriptor_array = false;
         MipStorageFallbackMode mip_fallback_mode{};
     };
 

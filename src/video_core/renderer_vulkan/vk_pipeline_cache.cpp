@@ -28,10 +28,11 @@ using Shader::SwStage;
 
 constexpr static auto SpirvVersion1_6 = 0x00010600U;
 
+constexpr u32 SampledImagePoolSize = 8192;
 constexpr static std::array DescriptorHeapSizes = {
     vk::DescriptorPoolSize{vk::DescriptorType::eUniformBuffer, 512},
     vk::DescriptorPoolSize{vk::DescriptorType::eStorageBuffer, 8192},
-    vk::DescriptorPoolSize{vk::DescriptorType::eSampledImage, 8192},
+    vk::DescriptorPoolSize{vk::DescriptorType::eSampledImage, SampledImagePoolSize},
     vk::DescriptorPoolSize{vk::DescriptorType::eStorageImage, 1024},
     vk::DescriptorPoolSize{vk::DescriptorType::eSampler, 1024},
 };
@@ -176,6 +177,7 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(HwStage stage, SwStag
                 ? regs.aa_config.NumSamples()
                 : 1;
         info.hw.fs.z_export_format = regs.z_export_format;
+        info.hw.fs.color_shader_mask = regs.color_shader_mask;
         u8 stencil_ref_export_enable = regs.depth_shader_control.stencil_op_val_export_enable |
                                        regs.depth_shader_control.stencil_test_val_export_enable;
         info.hw.fs.mrtz_mask = regs.depth_shader_control.z_export_enable |
@@ -281,6 +283,9 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
         .supported_spirv = SpirvVersion1_6,
         .subgroup_size = instance.SubgroupSize(),
         .sparse_page_shift = sparse_page_shift,
+        .max_sampled_image_descriptors =
+            std::min({instance_.GetLimits().maxPerStageDescriptorSampledImages,
+                      instance_.GetLimits().maxDescriptorSetSampledImages, SampledImagePoolSize}),
         .support_int8 = instance.IsShaderInt8Supported(),
         .support_int16 = instance.IsShaderInt16Supported(),
         .support_int64 = instance.IsShaderInt64Supported(),
@@ -320,6 +325,8 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
         .supports_amd_shader_explicit_vertex_parameter =
             instance_.IsAmdShaderExplicitVertexParameterSupported(),
         .supports_fragment_shader_barycentric = instance_.IsFragmentShaderBarycentricSupported(),
+        .supports_sampled_image_array_non_uniform_indexing =
+            instance_.IsSampledImageArrayNonUniformIndexingSupported(),
         .supports_shader_subgroup_clock = instance_.IsShaderSubgroupClockSupported(),
         .needs_manual_interpolation = instance.IsFragmentShaderBarycentricSupported() &&
                                       instance.GetDriverID() == vk::DriverId::eNvidiaProprietary,
@@ -342,6 +349,51 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
 
 PipelineCache::~PipelineCache() = default;
 
+bool PipelineCache::CheckSampledImageArrayLimits(std::span<const Shader::Info* const> stages,
+                                                 u32 color_attachments) const {
+    if (!std::ranges::any_of(stages, [](const auto* stage) {
+            return stage && std::ranges::any_of(stage->images, [](const auto& image) {
+                       return image.descriptor_count != 0;
+                   });
+        })) {
+        return true;
+    }
+
+    const auto& limits = instance.GetLimits();
+    u32 set_sampled_images{};
+    for (const auto* stage : stages) {
+        if (!stage) {
+            continue;
+        }
+        u32 sampled_images{};
+        u32 resources = stage->buffers.size();
+        if (stage->sw_stage == SwStage::Fragment) {
+            resources += color_attachments;
+        }
+        for (const auto& image : stage->images) {
+            const u32 count = image.NumBindings(*stage);
+            resources += count;
+            if (!image.is_written) {
+                sampled_images += count;
+            }
+        }
+        if (sampled_images > limits.maxPerStageDescriptorSampledImages ||
+            resources > limits.maxPerStageResources) {
+            LOG_ERROR(Render_Vulkan, "Sampled image arrays exceed the descriptor limits for {}",
+                      u32(stage->sw_stage));
+            return false;
+        }
+        set_sampled_images += sampled_images;
+    }
+
+    if (set_sampled_images > limits.maxDescriptorSetSampledImages ||
+        set_sampled_images > SampledImagePoolSize) {
+        LOG_ERROR(Render_Vulkan, "Sampled image arrays exceed the descriptor set limit");
+        return false;
+    }
+    return true;
+}
+
 const GraphicsPipeline* PipelineCache::GetGraphicsPipeline(const DrawIndirectParams params) {
     draw_indirect_params = params;
     if (!RefreshGraphicsKey()) {
@@ -349,6 +401,9 @@ const GraphicsPipeline* PipelineCache::GetGraphicsPipeline(const DrawIndirectPar
     }
     const auto [it, is_new] = graphics_pipelines.try_emplace(graphics_key);
     if (is_new) {
+        if (!CheckSampledImageArrayLimits(infos, graphics_key.num_color_attachments)) {
+            return nullptr;
+        }
         const auto pipeline_hash = std::hash<GraphicsPipelineKey>{}(graphics_key);
         LOG_INFO(Render_Vulkan, "Compiling graphics pipeline {:#x}", pipeline_hash);
 
@@ -378,6 +433,9 @@ const ComputePipeline* PipelineCache::GetComputePipeline() {
     }
     const auto [it, is_new] = compute_pipelines.try_emplace(compute_key);
     if (is_new) {
+        if (!CheckSampledImageArrayLimits(std::span{infos}.first<1>(), 0)) {
+            return nullptr;
+        }
         const auto pipeline_hash = std::hash<ComputePipelineKey>{}(compute_key);
         LOG_INFO(Render_Vulkan, "Compiling compute pipeline {:#x}", pipeline_hash);
 
@@ -437,7 +495,8 @@ bool PipelineCache::RefreshGraphicsKey() {
         color_buffer.data_format = col_buf.GetDataFmt();
         color_buffer.num_format = col_buf.GetNumberFmt();
         color_buffer.num_conversion = col_buf.GetNumberConversion();
-        color_buffer.export_format = regs.color_export_format.GetFormat(cb);
+        color_buffer.export_format =
+            regs.color_export_format.GetFormat(regs.color_shader_mask.GetExport(cb));
         color_buffer.swizzle = col_buf.Swizzle();
 
         const auto& bc = regs.blend_control[cb];
@@ -531,7 +590,20 @@ bool PipelineCache::RefreshGraphicsStages() {
     bind_stage(HwStage::Fragment, SwStage::Fragment);
 
     const auto* fs_info = infos[static_cast<u32>(SwStage::Fragment)];
-    key.mrt_mask = fs_info ? fs_info->mrt_mask : 0u;
+    key.mrt_mask = 0;
+    if (fs_info && runtime_infos[u32(SwStage::Fragment)].hw.fs.dual_source_blending) {
+        key.mrt_mask = (fs_info->mrt_mask & 0x3) != 0;
+    } else if (fs_info) {
+        for (u32 export_id = 0; export_id < AmdGpu::NUM_COLOR_BUFFERS; ++export_id) {
+            if ((fs_info->mrt_mask & (1u << export_id)) == 0) {
+                continue;
+            }
+            const auto target = regs.color_shader_mask.GetTarget(export_id);
+            if (target < AmdGpu::NUM_COLOR_BUFFERS) {
+                key.mrt_mask |= 1u << target;
+            }
+        }
+    }
     key.num_color_attachments = std::bit_width(key.mrt_mask);
 
     switch (regs.stage_enable.raw) {
