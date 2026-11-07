@@ -93,6 +93,7 @@ enum class Class {
     Lib_Vdecsw,               ///< The LibSceVdecsw implementation.
     Lib_Videodec,             ///< The LibSceVideodec implementation.
     Lib_VideoRecording,       ///< The LibSceVideoRecording implementation.
+    Lib_VideoCoreInterface,   ///< The LibSceVideoCoreInterface implementation.
     Lib_Voice,                ///< The LibSceVoice implementation.
     Lib_RazorCpu,             ///< The LibRazorCpu implementation.
     Lib_Mouse,                ///< The LibSceMouse implementation
