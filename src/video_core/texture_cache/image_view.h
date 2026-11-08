@@ -44,7 +44,8 @@ struct ImageViewInfo {
 struct Image;
 
 struct ImageView {
-    ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info, const Image& image);
+    ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info, const Image& image,
+              vk::Image view_image);
     ~ImageView();
 
     ImageView(const ImageView&) = delete;
