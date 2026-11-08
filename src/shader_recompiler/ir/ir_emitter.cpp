@@ -718,6 +718,10 @@ U1 IREmitter::GroupAny(const U1& bit) {
     return Inst<U1>(Opcode::GroupAny, bit);
 }
 
+U32 IREmitter::GroupUMin(const U32& value) {
+    return Inst<U32>(Opcode::GroupUMin32, value);
+}
+
 F32F64 IREmitter::FPAdd(const F32F64& a, const F32F64& b) {
     if (a.Type() != b.Type()) {
         UNREACHABLE_MSG("Mismatching types {} and {}", a.Type(), b.Type());

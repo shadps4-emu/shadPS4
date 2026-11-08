@@ -331,6 +331,13 @@ PipelineCache::PipelineCache(const Instance& instance_, Scheduler& scheduler_,
         .supports_shader_stencil_export = instance_.IsShaderStencilExportSupported(),
         .fast_shader_math = EmulatorSettings.IsFastShaderMath(),
         .support_bda = instance_.IsBufferDeviceAddressSupported(),
+        .subgroup_arithmetic_stages =
+            (instance.IsSubgroupArithmeticSupported(vk::ShaderStageFlagBits::eCompute)
+                 ? 1u << static_cast<u32>(Shader::HwStage::Compute)
+                 : 0u) |
+            (instance.IsSubgroupArithmeticSupported(vk::ShaderStageFlagBits::eFragment)
+                 ? 1u << static_cast<u32>(Shader::HwStage::Fragment)
+                 : 0u),
     };
     WarmUp();
 

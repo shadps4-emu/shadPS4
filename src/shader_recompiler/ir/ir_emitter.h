@@ -188,6 +188,7 @@ public:
     [[nodiscard]] U32 BallotFindLsb(const U64& mask);
     [[nodiscard]] U1 InverseBallot(const U64& mask);
     [[nodiscard]] U1 GroupAny(const U1& bit);
+    [[nodiscard]] U32 GroupUMin(const U32& value);
 
     [[nodiscard]] Value CompositeConstruct(const Value& e1, const Value& e2);
     [[nodiscard]] Value CompositeConstruct(const Value& e1, const Value& e2, const Value& e3);
