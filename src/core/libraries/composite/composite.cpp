@@ -1,11 +1,14 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
 #include <array>
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
+#include <cstring>
 #include <mutex>
+#include <optional>
 #include <thread>
 #include <vector>
 #include <fmt/format.h>
@@ -18,7 +21,10 @@
 #include "core/libraries/gnmdriver/gnmdriver.h"
 #include "core/libraries/kernel/memory.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/system/userservice.h"
+#include "core/libraries/videoout/video_out.h"
 #include "video_core/amdgpu/pm4_cmds.h"
+#include "video_core/amdgpu/resource.h"
 
 namespace Libraries::Composite {
 
@@ -40,19 +46,54 @@ constexpr u64 DummyAddress = 0xFF2000000;
 constexpr u64 DummySize = 0x400;
 constexpr std::chrono::seconds PostEventTimeout{10};
 constexpr std::chrono::microseconds FencePollInterval{200};
-constexpr u64 SyncRegionSize = 0x4000;
 constexpr u64 SyncPacketOffset = 0x100;
 constexpr u32 SyncPacketSize = 32;
-constexpr u32 SyncPacketCount = (SyncRegionSize - SyncPacketOffset) / SyncPacketSize;
+constexpr u64 FlipScratchOffset = 0x4000;
+constexpr u32 FlipScratchSize = 0x100;
+constexpr u32 FlipScratchCount = 16;
+constexpr u64 SyncRegionSize = FlipScratchOffset + FlipScratchSize * FlipScratchCount;
+constexpr u32 SyncPacketCount = (FlipScratchOffset - SyncPacketOffset) / SyncPacketSize;
+constexpr u32 CanvasCount = MaxCanvasIndex + 1;
+constexpr s32 FlipModeVsync = 1;
 
 struct Region {
     void* addr{};
     u64 size{};
 };
 
-struct PendingDcb {
-    const u32* addr;
-    u32 size;
+enum class CommandType : u8 {
+    Dcb,
+    Patch,
+    PostEvent,
+    CompositeCanvas,
+    InvisibleCanvas,
+};
+
+struct Command {
+    CommandType type;
+    void* addr;
+    u32 value;
+    AmdGpu::Image sharp{};
+};
+
+struct Canvas {
+    bool visible{};
+    AmdGpu::Image sharp{};
+};
+
+struct DisplayBuffer {
+    VAddr addr;
+    Libraries::VideoOut::BufferAttribute attrib;
+};
+
+struct Display {
+    s32 handle{-1};
+    std::array<Canvas, CanvasCount> canvases{};
+    std::vector<DisplayBuffer> buffers;
+    u32 flip_count{};
+    u32 scratch_index{};
+    bool warned_format{};
+    bool warned_open{};
 };
 
 struct State {
@@ -62,8 +103,7 @@ struct State {
     Region system;
     Region video;
     Region sync;
-    std::vector<PendingDcb> pending_dcbs;
-    std::vector<u8> pending_post_events;
+    std::vector<Command> pending;
     std::array<u32, MaxPostEventIndex + 1> post_serials{};
     u32 last_serial{};
     u32 post_events{};
@@ -79,6 +119,7 @@ struct CommandLock {
 };
 
 State g_state;
+Display g_display;
 CommandLock g_command_lock;
 std::mutex g_flush_mutex;
 std::mutex g_index_mutex;
@@ -141,11 +182,152 @@ s32 CheckConnected() {
     return IsConnected() ? ORBIS_OK : ORBIS_COMPOSITE_ERROR_NOT_CONNECTED;
 }
 
+bool IsInsideRegion(const Region& region, const void* addr, u64 size) {
+    const u64 begin = reinterpret_cast<u64>(region.addr);
+    const u64 value = reinterpret_cast<u64>(addr);
+    return region.addr != nullptr && value >= begin && value + size <= begin + region.size;
+}
+
 bool IsInsideVideoRegion(const void* addr, u64 size) {
     std::scoped_lock lk{g_state.mutex};
-    const u64 begin = reinterpret_cast<u64>(g_state.video.addr);
-    const u64 value = reinterpret_cast<u64>(addr);
-    return value >= begin && value + size <= begin + g_state.video.size;
+    return IsInsideRegion(g_state.video, addr, size);
+}
+
+bool SubmitToGpu(const void* addr, u32 size) {
+    const u32* dcb = static_cast<const u32*>(addr);
+    const s32 rc =
+        Libraries::GnmDriver::sceGnmSubmitCommandBuffers(1, &dcb, &size, nullptr, nullptr);
+    if (rc != ORBIS_OK) {
+        LOG_ERROR(Lib_Composite, "Failed to submit {} ({:#x} bytes), rc = {:#x}", fmt::ptr(addr),
+                  size, static_cast<u32>(rc));
+    }
+    return rc == ORBIS_OK;
+}
+
+static_assert(sizeof(AmdGpu::Image) == 32);
+
+std::optional<Libraries::VideoOut::BufferAttribute> MakeBufferAttribute(
+    const AmdGpu::Image& sharp) {
+    using namespace Libraries::VideoOut;
+    const auto number_fmt = sharp.GetNumberFmt();
+    if (sharp.GetDataFmt() != AmdGpu::DataFormat::Format8_8_8_8 ||
+        (number_fmt != AmdGpu::NumberFormat::Unorm && number_fmt != AmdGpu::NumberFormat::Srgb)) {
+        if (!g_display.warned_format) {
+            g_display.warned_format = true;
+            LOG_ERROR(Lib_Composite, "Unsupported canvas format {} {}",
+                      static_cast<u32>(sharp.GetDataFmt()), static_cast<u32>(number_fmt));
+        }
+        return std::nullopt;
+    }
+
+    BufferAttribute attrib{};
+    const bool bgra = sharp.dst_sel_x == static_cast<u64>(AmdGpu::CompSwizzle::Blue) &&
+                      sharp.dst_sel_z == static_cast<u64>(AmdGpu::CompSwizzle::Red);
+    attrib.pixel_format = bgra ? PixelFormat::A8R8G8B8Srgb : PixelFormat::A8B8G8R8Srgb;
+    switch (sharp.GetTileMode()) {
+    case AmdGpu::TileMode::DisplayLinearAligned:
+    case AmdGpu::TileMode::DisplayLinearGeneral:
+        attrib.tiling_mode = TilingMode::Linear;
+        break;
+    default:
+        attrib.tiling_mode = TilingMode::Tile;
+        break;
+    }
+    attrib.width = static_cast<u32>(sharp.width) + 1;
+    attrib.height = static_cast<u32>(sharp.height) + 1;
+    attrib.pitch_in_pixel = std::max(sharp.Pitch(), attrib.width);
+    return attrib;
+}
+
+bool SameBuffer(const Libraries::VideoOut::BufferAttribute& a,
+                const Libraries::VideoOut::BufferAttribute& b) {
+    return a.pixel_format == b.pixel_format && a.tiling_mode == b.tiling_mode &&
+           a.width == b.width && a.height == b.height && a.pitch_in_pixel == b.pitch_in_pixel;
+}
+
+void CloseDisplay() {
+    if (g_display.handle >= 0) {
+        Libraries::VideoOut::sceVideoOutClose(g_display.handle);
+    }
+    g_display.handle = -1;
+    g_display.buffers.clear();
+}
+
+bool OpenDisplay() {
+    if (g_display.handle >= 0) {
+        return true;
+    }
+    const s32 handle = Libraries::VideoOut::sceVideoOutOpen(
+        Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_SYSTEM,
+        Libraries::VideoOut::SCE_VIDEO_OUT_BUS_TYPE_MAIN, 0, nullptr);
+    if (handle < 0) {
+        if (!g_display.warned_open) {
+            g_display.warned_open = true;
+            LOG_ERROR(Lib_Composite, "Failed to open the video out port, rc = {:#x}",
+                      static_cast<u32>(handle));
+        }
+        return false;
+    }
+    g_display.handle = handle;
+    return true;
+}
+
+bool PresentCanvases(const Region& sync) {
+    const Canvas* top = nullptr;
+    for (u32 i = CanvasCount; i-- > 0;) {
+        if (g_display.canvases[i].visible && g_display.canvases[i].sharp.base_address != 0) {
+            top = &g_display.canvases[i];
+            break;
+        }
+    }
+    if (top == nullptr || sync.addr == nullptr) {
+        return false;
+    }
+    const auto attrib = MakeBufferAttribute(top->sharp);
+    if (!attrib || !OpenDisplay()) {
+        return false;
+    }
+
+    const VAddr addr = top->sharp.Address();
+    s32 slot = -1;
+    bool attribute_changed = false;
+    for (u32 i = 0; i < g_display.buffers.size(); i++) {
+        if (g_display.buffers[i].addr == addr) {
+            slot = static_cast<s32>(i);
+            attribute_changed = !SameBuffer(g_display.buffers[i].attrib, *attrib);
+            break;
+        }
+    }
+    if (attribute_changed ||
+        (slot == -1 && g_display.buffers.size() >= Libraries::VideoOut::MaxDisplayBufferGroups)) {
+        CloseDisplay();
+        slot = -1;
+        if (!OpenDisplay()) {
+            return false;
+        }
+    }
+    if (slot == -1) {
+        void* address = reinterpret_cast<void*>(addr);
+        slot = static_cast<s32>(g_display.buffers.size());
+        const s32 rc = Libraries::VideoOut::sceVideoOutRegisterBuffers(g_display.handle, slot,
+                                                                       &address, 1, &*attrib);
+        if (rc < 0) {
+            LOG_ERROR(Lib_Composite, "Failed to register canvas buffer {:#x}, rc = {:#x}", addr,
+                      static_cast<u32>(rc));
+            return false;
+        }
+        g_display.buffers.push_back({addr, *attrib});
+    }
+
+    auto* scratch =
+        reinterpret_cast<u32*>(static_cast<u8*>(sync.addr) + FlipScratchOffset +
+                               (g_display.scratch_index++ % FlipScratchCount) * FlipScratchSize);
+    const s32 rc = Libraries::GnmDriver::sceGnmRequestFlipAndSubmitDone(
+        scratch, FlipScratchSize, g_display.handle, slot, FlipModeVsync, ++g_display.flip_count);
+    if (rc != ORBIS_OK) {
+        LOG_DEBUG(Lib_Composite, "Flip request failed, rc = {:#x}", static_cast<u32>(rc));
+    }
+    return rc == ORBIS_OK;
 }
 
 } // namespace
@@ -164,6 +346,7 @@ s32 PS4_SYSV_ABI sceCompositorInitWithProcessOrder(u32 system_size, u32 video_sh
         return ORBIS_COMPOSITE_ERROR_INVALID_MEMORY;
     }
 
+    std::scoped_lock flush_lock{g_flush_mutex};
     std::scoped_lock lk{g_state.mutex};
     if (g_state.connected) {
         return ORBIS_COMPOSITE_ERROR_ALREADY_INITIALIZED;
@@ -179,8 +362,8 @@ s32 PS4_SYSV_ABI sceCompositorInitWithProcessOrder(u32 system_size, u32 video_sh
     if (!MapRegion(g_state.sync, SyncRegionSize, "SceCompositorSync")) {
         LOG_WARNING(Lib_Composite, "Post events will not wait for the GPU");
     }
-    g_state.pending_dcbs.clear();
-    g_state.pending_post_events.clear();
+    g_display = {};
+    g_state.pending.clear();
     g_state.post_serials.fill(0);
     g_state.last_serial = 0;
     g_state.post_events = 0;
@@ -206,11 +389,12 @@ s32 PS4_SYSV_ABI sceCompositorQuit() {
            std::chrono::steady_clock::now() < deadline) {
         std::this_thread::sleep_for(FencePollInterval);
     }
+    CloseDisplay();
+    g_display = {};
     UnmapRegion(g_state.system);
     UnmapRegion(g_state.video);
     UnmapRegion(g_state.sync);
-    g_state.pending_dcbs.clear();
-    g_state.pending_post_events.clear();
+    g_state.pending.clear();
     g_state.connected = false;
     g_state.post_events = 0;
     g_state.event_pending = false;
@@ -399,10 +583,11 @@ s32 PS4_SYSV_ABI sceCompsoitorGetGpuClock(u64* clock) {
 }
 
 s32 PS4_SYSV_ABI sceCompositorGetRemainedCommandNum() {
-    if (!IsConnected()) {
+    std::scoped_lock lk{g_state.mutex};
+    if (!g_state.connected) {
         return ORBIS_COMPOSITE_ERROR_NOT_CONNECTED;
     }
-    return RingCapacity;
+    return RingCapacity - static_cast<u32>(std::min<size_t>(g_state.pending.size(), RingCapacity));
 }
 
 s32 PS4_SYSV_ABI sceCompositorReserveCommandBuffer(u32 count, u32 unk1, u32 unk2) {
@@ -411,53 +596,67 @@ s32 PS4_SYSV_ABI sceCompositorReserveCommandBuffer(u32 count, u32 unk1, u32 unk2
 
 static s32 FlushCommands() {
     std::scoped_lock flush_lock{g_flush_mutex};
-    std::vector<PendingDcb> dcbs;
-    std::vector<u8> post_events;
-    u32 serial = 0;
-    const u32* fence_packet = nullptr;
+    std::vector<Command> commands;
+    Region system;
+    Region sync;
     {
         std::scoped_lock lk{g_state.mutex};
         if (!g_state.connected) {
             return ORBIS_COMPOSITE_ERROR_NOT_CONNECTED;
         }
-        dcbs.swap(g_state.pending_dcbs);
-        post_events.swap(g_state.pending_post_events);
-        if (!post_events.empty() && g_state.sync.addr != nullptr) {
-            serial = ++g_state.last_serial;
-            const u32 slot = BuildFencePacket(g_state.sync, serial);
-            fence_packet = reinterpret_cast<const u32*>(static_cast<u8*>(g_state.sync.addr) +
-                                                        SyncPacketOffset + slot * SyncPacketSize);
-        }
+        commands.swap(g_state.pending);
+        system = g_state.system;
+        sync = g_state.sync;
     }
 
-    for (const auto& dcb : dcbs) {
-        const u32* addr = dcb.addr;
-        u32 size = dcb.size;
-        const s32 rc =
-            Libraries::GnmDriver::sceGnmSubmitCommandBuffers(1, &addr, &size, nullptr, nullptr);
-        if (rc != ORBIS_OK) {
-            LOG_ERROR(Lib_Composite, "Failed to submit DCB {} ({:#x} bytes), rc = {:#x}",
-                      fmt::ptr(addr), size, static_cast<u32>(rc));
+    bool needs_present = false;
+    for (const auto& command : commands) {
+        switch (command.type) {
+        case CommandType::Dcb:
+            SubmitToGpu(command.addr, command.value);
+            needs_present = true;
+            break;
+        case CommandType::CompositeCanvas:
+            g_display.canvases[command.value] = {true, command.sharp};
+            needs_present = true;
+            break;
+        case CommandType::InvisibleCanvas:
+            g_display.canvases[command.value].visible = false;
+            needs_present = true;
+            break;
+        case CommandType::Patch:
+            if (IsInsideRegion(system, command.addr, sizeof(u16))) {
+                const u16 value = static_cast<u16>(command.value);
+                std::memcpy(command.addr, &value, sizeof(value));
+            } else {
+                LOG_ERROR(Lib_Composite, "Patch address {} is outside of the system region",
+                          fmt::ptr(command.addr));
+            }
+            break;
+        case CommandType::PostEvent: {
+            u32 serial = 0;
+            if (sync.addr != nullptr) {
+                {
+                    std::scoped_lock lk{g_state.mutex};
+                    serial = ++g_state.last_serial;
+                }
+                const u32 slot = BuildFencePacket(sync, serial);
+                const void* packet =
+                    static_cast<u8*>(sync.addr) + SyncPacketOffset + slot * SyncPacketSize;
+                if (!SubmitToGpu(packet, sizeof(AmdGpu::PM4CmdEventWriteEop))) {
+                    serial = 0;
+                }
+            }
+            std::scoped_lock lk{g_state.mutex};
+            g_state.post_serials[command.value] = serial;
+            g_state.post_events |= 1u << command.value;
+            g_state.post_event_cv.notify_all();
+            break;
+        }
         }
     }
-    if (fence_packet != nullptr) {
-        const u32* addr = fence_packet;
-        u32 size = sizeof(AmdGpu::PM4CmdEventWriteEop);
-        const s32 rc =
-            Libraries::GnmDriver::sceGnmSubmitCommandBuffers(1, &addr, &size, nullptr, nullptr);
-        if (rc != ORBIS_OK) {
-            LOG_ERROR(Lib_Composite, "Failed to submit fence, rc = {:#x}", static_cast<u32>(rc));
-            serial = 0;
-        }
-    }
-
-    if (!post_events.empty()) {
-        std::scoped_lock lk{g_state.mutex};
-        for (const u8 index : post_events) {
-            g_state.post_serials[index] = serial;
-            g_state.post_events |= 1u << index;
-        }
-        g_state.post_event_cv.notify_all();
+    if (needs_present) {
+        PresentCanvases(sync);
     }
     return ORBIS_OK;
 }
@@ -481,7 +680,7 @@ s32 PS4_SYSV_ABI sceCompositorSetGnmContextCommand(const void* dcb, u32 dcb_size
         return ORBIS_COMPOSITE_ERROR_INVALID_ARGUMENT;
     }
     LOG_TRACE(Lib_Composite, "dcb = {}, dcb_size = {:#x}", fmt::ptr(dcb), dcb_size);
-    g_state.pending_dcbs.push_back({static_cast<const u32*>(dcb), dcb_size});
+    g_state.pending.push_back({CommandType::Dcb, const_cast<void*>(dcb), dcb_size});
     return ORBIS_OK;
 }
 
@@ -489,18 +688,30 @@ s32 PS4_SYSV_ABI sceCompositorSetSeparateContextCommand() {
     return CheckConnected();
 }
 
-s32 PS4_SYSV_ABI sceCompositorSetCompositeCanvasCommandInC(u8 canvas, const void* params) {
-    if (!IsConnected()) {
+s32 PS4_SYSV_ABI sceCompositorSetCompositeCanvasCommandInC(u8 canvas, const void* sharp) {
+    std::scoped_lock lk{g_state.mutex};
+    if (!g_state.connected) {
         return ORBIS_COMPOSITE_ERROR_NOT_CONNECTED;
     }
-    if (canvas > MaxCanvasIndex || params == nullptr) {
+    if (canvas > MaxCanvasIndex || sharp == nullptr) {
         return ORBIS_COMPOSITE_ERROR_INVALID_ARGUMENT;
     }
+    Command command{CommandType::CompositeCanvas, nullptr, canvas, {}};
+    std::memcpy(&command.sharp, sharp, sizeof(command.sharp));
+    g_state.pending.push_back(command);
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceCompositorSetInvisibleCanvasCommand(u8 canvas) {
-    return CheckConnected();
+    std::scoped_lock lk{g_state.mutex};
+    if (!g_state.connected) {
+        return ORBIS_COMPOSITE_ERROR_NOT_CONNECTED;
+    }
+    if (canvas > MaxCanvasIndex) {
+        return ORBIS_COMPOSITE_ERROR_INVALID_ARGUMENT;
+    }
+    g_state.pending.push_back({CommandType::InvisibleCanvas, nullptr, canvas, {}});
+    return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceCompositorSetEndOfFrameCommand() {
@@ -529,7 +740,7 @@ s32 PS4_SYSV_ABI sceCompositorSetPostEventCommand(u8 index) {
     if (index > MaxPostEventIndex) {
         return ORBIS_COMPOSITE_ERROR_INVALID_ARGUMENT;
     }
-    g_state.pending_post_events.push_back(index);
+    g_state.pending.push_back({CommandType::PostEvent, nullptr, index});
     return ORBIS_OK;
 }
 
@@ -594,7 +805,12 @@ s32 PS4_SYSV_ABI sceCompositorSetDebugPositionCommand(u8 id, u16 x, u16 y, u16 w
 }
 
 s32 PS4_SYSV_ABI sceCompositorSetPatchCommand(void* addr, u16 value) {
-    return CheckConnected();
+    std::scoped_lock lk{g_state.mutex};
+    if (!g_state.connected) {
+        return ORBIS_COMPOSITE_ERROR_NOT_CONNECTED;
+    }
+    g_state.pending.push_back({CommandType::Patch, addr, value});
+    return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceCompositorSetMemoryCommand(u32 value) {
