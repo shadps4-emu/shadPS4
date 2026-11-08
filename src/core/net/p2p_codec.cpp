@@ -111,20 +111,16 @@ Codec::Decoded FramingCodec::Decode(std::span<const u8> packet, const Endpoint& 
     u16 src_vport = 0;
     u16 dst_vport = 0;
     if (flags & FlagBroadcast) {
-        // Layout unconfirmed, report a few so we can check
-        if (broadcast_observer &&
-            reported_broadcasts.fetch_add(1, std::memory_order_relaxed) < MaxReportedBroadcasts) {
-            broadcast_observer(packet, from);
-        }
-        if (stream) {
-            return out; // no broadcast TCP
-        }
-        offset = 4;
-        if (packet.size() < offset) {
+        if (stream || packet.size() < 4) {
+            if (broadcast_observer && reported_broadcasts.fetch_add(1, std::memory_order_relaxed) <
+                                          MaxReportedBroadcasts) {
+                broadcast_observer(packet, from);
+            }
             return out;
         }
-        dst_vport = static_cast<u16>((packet[2] << 8) | packet[3]);
-        src_vport = dst_vport;
+        offset = 4;
+        src_vport = packet[2];
+        dst_vport = packet[3];
     } else if (!stream) {
         offset = 6;
         if (packet.size() < offset) {
