@@ -59,6 +59,7 @@
 #include "core/libraries/np/np_web_api/np_web_api.h"
 #include "core/libraries/np/np_web_api2/np_web_api2.h"
 #include "core/libraries/pad/pad.h"
+#include "core/libraries/piglet/piglet.h"
 #include "core/libraries/playgo/playgo.h"
 #include "core/libraries/playgo/playgo_dialog.h"
 #include "core/libraries/random/random.h"
@@ -195,6 +196,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
             {"libSceCompanionHttpd.sprx", Libraries::CompanionHttpd::RegisterLib},
             {"libSceCompanionUtil.sprx", Libraries::CompanionUtil::RegisterLib},
             {"libSceVoice.sprx", Libraries::Voice::RegisterLib},
+            {"libScePigletv2VSH.sprx", Libraries::Piglet::RegisterLib},
             {"libSceVrTracker.sprx", Libraries::VrTracker::RegisterLib},
             {"libSceVrTrackerDialog.sprx", Libraries::VrServiceDialog::RegisterLib},
             {"libSceContentExport.sprx", Libraries::ContentExport::RegisterLib},
