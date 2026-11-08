@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
@@ -23,9 +23,9 @@
 #include "common/thread.h"
 
 constexpr std::string_view sce_sys = "sce_sys";               // system folder inside save
-constexpr std::string_view backup_dir = "sce_backup";         // backup folder
-constexpr std::string_view backup_dir_tmp = "sce_backup_tmp"; // in-progress backup folder
-constexpr std::string_view backup_dir_old = "sce_backup_old"; // previous backup folder
+constexpr std::string_view backup_prefix = "sce_bu_";         // backup folder prefix
+constexpr std::string_view backup_prefix_tmp = "sce_bu_tmp_"; // in-progress backup folder prefix
+constexpr std::string_view backup_prefix_old = "sce_bu_old_"; // previous backup folder prefix
 
 namespace fs = std::filesystem;
 
@@ -101,19 +101,18 @@ static void backup(const std::filesystem::path& dir_name) {
                                    std::make_error_code(std::errc::no_such_file_or_directory));
     }
 
-    const auto backup_dir = dir_name / ::backup_dir;
-    const auto backup_dir_tmp = dir_name / ::backup_dir_tmp;
-    const auto backup_dir_old = dir_name / ::backup_dir_old;
+    const auto parent = dir_name.parent_path();
+    const auto name = dir_name.filename().string();
+    const auto backup_dir = parent / (std::string(backup_prefix) + name);
+    const auto backup_dir_tmp = parent / (std::string(backup_prefix_tmp) + name);
+    const auto backup_dir_old = parent / (std::string(backup_prefix_old) + name);
 
     fs::remove_all(backup_dir_tmp);
     fs::remove_all(backup_dir_old);
 
     std::vector<std::filesystem::path> backup_files;
     for (const auto& entry : fs::directory_iterator(dir_name)) {
-        const auto filename = entry.path().filename();
-        if (filename != ::backup_dir) {
-            backup_files.push_back(entry.path());
-        }
+        backup_files.push_back(entry.path());
     }
 
     g_backup_progress = 0;
@@ -279,19 +278,16 @@ bool NewRequest(Libraries::UserService::OrbisUserServiceUserId user_id, std::str
 bool Restore(const std::filesystem::path& save_path) {
     LOG_INFO(Lib_SaveData, "Restoring backup for {}", fmt::UTF(save_path.u8string()));
     std::unique_lock lk{g_backup_running_mutex};
-    if (!fs::exists(save_path) || !fs::exists(save_path / backup_dir)) {
+    const auto backup_dir = MakeBackupPath(save_path);
+    if (!fs::exists(save_path) || !fs::exists(backup_dir)) {
         return false;
     }
     for (const auto& entry : fs::directory_iterator(save_path)) {
-        const auto filename = entry.path().filename();
-        if (filename != backup_dir) {
-            fs::remove_all(entry.path());
-        }
+        fs::remove_all(entry.path());
     }
 
-    for (const auto& entry : fs::directory_iterator(save_path / backup_dir)) {
-        const auto filename = entry.path().filename();
-        fs::copy(entry.path(), save_path / filename, fs::copy_options::recursive);
+    for (const auto& entry : fs::directory_iterator(backup_dir)) {
+        fs::copy(entry.path(), save_path / entry.path().filename(), fs::copy_options::recursive);
     }
 
     return true;
@@ -308,8 +304,13 @@ bool IsBackupExecutingFor(const std::filesystem::path& save_path) {
     return it != g_backup_queue.end() && !it->done;
 }
 
+bool HasPendingEvents() {
+    std::scoped_lock lk{g_backup_queue_mutex};
+    return !g_backup_queue.empty() || g_backup_status == WorkerStatus::Running;
+}
+
 std::filesystem::path MakeBackupPath(const std::filesystem::path& save_path) {
-    return save_path / backup_dir;
+    return save_path.parent_path() / (std::string(backup_prefix) + save_path.filename().string());
 }
 
 std::optional<BackupRequest> PopLastEvent() {
