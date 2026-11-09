@@ -477,7 +477,8 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
                                     : 0;
             const u64 size = advance + sizeof(u32);
             if (u64(loop.first_offset) + advance + loop.step > std::numeric_limits<u32>::max() ||
-                size > 256_KB || !buffer_cache.IsDmaTouchRangeMapped(address, u32(size))) {
+                size > std::numeric_limits<u32>::max() ||
+                !buffer_cache.IsDmaTouchRangeMapped(address, u32(size))) {
                 continue;
             }
             loop_ranges.push_back({address, u32(size)});
