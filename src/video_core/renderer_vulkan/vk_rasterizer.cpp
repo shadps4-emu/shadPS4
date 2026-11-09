@@ -459,35 +459,29 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
                 std::span{stage->touch_addrs}.first(stage->srt_info.touch_addr_bufsize_qw);
             touch_addresses.insert(touch_addresses.end(), addresses.begin(), addresses.end());
         }
-        boost::container::small_vector<u32, 64> loop_flatbuf;
-        const bool uses_selective_loops =
-            True(stage->readconst_types & Shader::InfoPersistent::ReadConstType::Loop);
-        if (uses_selective_loops) {
-            loop_flatbuf.assign(stage->flattened_ud_buf.begin(), stage->flattened_ud_buf.end());
+        boost::container::small_vector<u32, 64> bounded_read_flatbuf;
+        const bool has_bounded_read_consts =
+            True(stage->readconst_types & Shader::InfoPersistent::ReadConstType::Bounded);
+        if (has_bounded_read_consts) {
+            bounded_read_flatbuf.assign(stage->flattened_ud_buf.begin(),
+                                        stage->flattened_ud_buf.end());
         }
         for (const auto& loop : stage->srt_loop_touches) {
             const u32 dw = loop.range_offset_dw;
             const VAddr address =
                 VAddr(stage->flattened_ud_buf[dw]) | (VAddr(stage->flattened_ud_buf[dw + 1]) << 32);
-            const u32 limit = loop.limit_reg < stage->user_data.size()
-                                  ? stage->user_data[loop.limit_reg]
-                                  : loop.limit;
-            const u64 advance = limit > loop.first_offset
-                                    ? (u64(limit - loop.first_offset - 1) / loop.step) * loop.step
-                                    : 0;
-            const u64 size = advance + sizeof(u32);
-            if (u64(loop.first_offset) + advance + loop.step > std::numeric_limits<u32>::max() ||
-                size > std::numeric_limits<u32>::max() ||
-                !buffer_cache.IsDmaTouchRangeMapped(address, u32(size))) {
+            const u32 size = loop.SizeInBytes(stage->user_data);
+            if (!size || !buffer_cache.IsDmaTouchRangeMapped(address, size)) {
                 continue;
             }
-            loop_ranges.push_back({address, u32(size)});
-            if (uses_selective_loops) {
-                loop_flatbuf[dw + 2] = u32(size);
+            loop_ranges.push_back({address, size});
+            if (has_bounded_read_consts) {
+                bounded_read_flatbuf[dw + 2] = size;
             }
         }
-        const std::span<const u32> flatbuf =
-            uses_selective_loops ? std::span<const u32>{loop_flatbuf} : stage->flattened_ud_buf;
+        const std::span<const u32> flatbuf = has_bounded_read_consts
+                                                 ? std::span<const u32>{bounded_read_flatbuf}
+                                                 : stage->flattened_ud_buf;
         BindBuffers(*stage, binding, push_data, flatbuf);
         BindTextures(*stage, binding);
     }

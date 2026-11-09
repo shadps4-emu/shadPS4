@@ -579,6 +579,12 @@ static inline void PopPtr(Xbyak::CodeGenerator& c) {
     c.pop(rdi);
 }
 
+//     s_mov_b32 s8, 0
+// loop:
+//     s_load_dword s12, s[10:11], s8
+//     s_add_u32 s8, s8, 4
+//     s_cmp_lt_u32 s8, s6
+//     s_cbranch_scc1 loop
 static std::optional<Info::SrtLoopTouch> FindReadConstLoop(const IR::Inst& read) {
     if (read.GetOpcode() != IR::Opcode::ReadConst || IsSharpSource(&read)) {
         return std::nullopt;

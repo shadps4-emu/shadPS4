@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <limits>
 #include <span>
 #include <vector>
 #include <boost/container/static_vector.hpp>
@@ -43,7 +44,7 @@ struct InfoPersistent {
         None = 0,
         Unchecked = 1 << 0,
         Checked = 1 << 1,
-        Loop = 1 << 2,
+        Bounded = 1 << 2,
     };
 
     BufferResourceList buffers;
@@ -109,6 +110,16 @@ struct Info : InfoPersistent {
         u32 limit;
         u16 limit_reg;
         u16 range_offset_dw{};
+
+        u32 SizeInBytes(std::span<const u32> user_data) const {
+            const u32 bound = limit_reg < user_data.size() ? user_data[limit_reg] : limit;
+            const u64 advance =
+                bound > first_offset ? (u64(bound - first_offset - 1) / step) * step : 0;
+            if (first_offset + advance + step > std::numeric_limits<u32>::max()) {
+                return 0;
+            }
+            return u32(advance + sizeof(u32));
+        }
     };
 
     std::vector<VAddr> touch_addrs;

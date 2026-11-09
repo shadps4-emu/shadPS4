@@ -1235,59 +1235,63 @@ Id EmitContext::DefineGetBdaPointer(bool faulting) {
     return func;
 }
 
-Id EmitContext::DefineReadConst(bool checked, bool loop) {
-    const auto func_type{loop ? TypeFunction(U32[1], U32[2], U32[1], U32[1])
-                              : TypeFunction(U32[1], U32[2], U32[1])};
-    const auto func{OpFunction(U32[1], spv::FunctionControlMask::MaskNone, func_type)};
-    const auto base{OpFunctionParameter(U32[2])};
-    const auto offset{OpFunctionParameter(U32[1])};
-    const auto range_offset{loop ? OpFunctionParameter(U32[1]) : Id{}};
-    Name(func, loop ? "read_const_loop" : (checked ? "read_const_checked" : "read_const"));
-    AddLabel();
-
+Id EmitContext::ReadConstAddress(Id base, Id offset) {
     const auto base_lo{OpUConvert(U64, OpCompositeExtract(U32[1], base, 0))};
     const auto base_hi{OpUConvert(U64, OpCompositeExtract(U32[1], base, 1))};
     const auto base_shift{OpShiftLeftLogical(U64, base_hi, ConstU32(32U))};
     const auto base_addr{OpBitwiseOr(U64, base_lo, base_shift)};
     const auto offset_bytes{OpShiftLeftLogical(U32[1], offset, ConstU32(2U))};
-    const auto addr{OpIAdd(U64, base_addr, OpUConvert(U64, offset_bytes))};
+    return OpIAdd(U64, base_addr, OpUConvert(U64, offset_bytes));
+}
 
-    const auto result = ([&]() {
-        if (loop) {
-            const auto lo = EmitFlatbufferLoad(range_offset);
-            const auto hi = EmitFlatbufferLoad(OpIAdd(U32[1], range_offset, u32_one_value));
-            const auto size = EmitFlatbufferLoad(OpIAdd(U32[1], range_offset, ConstU32(2u)));
-            const auto first =
-                OpBitwiseOr(U64, OpUConvert(U64, lo),
-                            OpShiftLeftLogical(U64, OpUConvert(U64, hi), ConstU32(32u)));
-            const auto relative = OpISub(U64, addr, first);
-            const auto inside = OpULessThan(U1[1], relative, OpUConvert(U64, size));
-            const auto aligned =
-                OpIEqual(U1[1], OpBitwiseAnd(U64, relative, Constant(U64, u64(sizeof(u32) - 1))),
-                         u64_zero_value);
-            const auto can_read = OpLogicalAnd(U1[1], inside, aligned);
-            const auto load_label = OpLabel();
-            const auto skip_label = OpLabel();
-            const auto merge_label = OpLabel();
-            OpSelectionMerge(merge_label, spv::SelectionControlMask::MaskNone);
-            OpBranchConditional(can_read, load_label, skip_label);
+Id EmitContext::DefineReadConst(bool checked) {
+    const auto func_type{TypeFunction(U32[1], U32[2], U32[1])};
+    const auto func{OpFunction(U32[1], spv::FunctionControlMask::MaskNone, func_type)};
+    const auto base{OpFunctionParameter(U32[2])};
+    const auto offset{OpFunctionParameter(U32[1])};
+    Name(func, checked ? "read_const_checked" : "read_const");
+    AddLabel();
 
-            AddLabel(load_label);
-            const auto value = EmitDwordMemoryRead(addr);
-            OpBranch(merge_label);
-            AddLabel(skip_label);
-            OpBranch(merge_label);
-            AddLabel(merge_label);
-            return OpPhi(U32[1], value, load_label, u32_zero_value, skip_label);
-        }
-        if (checked) {
-            return EmitCheckedDwordMemoryRead(addr);
-        } else {
-            return EmitDwordMemoryRead(addr);
-        }
-    })();
+    const auto addr = ReadConstAddress(base, offset);
+    OpReturnValue(checked ? EmitCheckedDwordMemoryRead(addr) : EmitDwordMemoryRead(addr));
+    OpFunctionEnd();
+    return func;
+}
 
-    OpReturnValue(result);
+Id EmitContext::DefineReadConstInRange() {
+    const auto func_type{TypeFunction(U32[1], U32[2], U32[1], U32[1])};
+    const auto func{OpFunction(U32[1], spv::FunctionControlMask::MaskNone, func_type)};
+    const auto base{OpFunctionParameter(U32[2])};
+    const auto offset{OpFunctionParameter(U32[1])};
+    const auto range_offset{OpFunctionParameter(U32[1])};
+    Name(func, "read_const_in_range");
+    AddLabel();
+
+    const auto addr = ReadConstAddress(base, offset);
+    const auto lo = EmitFlatbufferLoad(range_offset);
+    const auto hi = EmitFlatbufferLoad(OpIAdd(U32[1], range_offset, u32_one_value));
+    const auto size = EmitFlatbufferLoad(OpIAdd(U32[1], range_offset, ConstU32(2u)));
+    const auto first = OpBitwiseOr(U64, OpUConvert(U64, lo),
+                                   OpShiftLeftLogical(U64, OpUConvert(U64, hi), ConstU32(32u)));
+    const auto relative = OpISub(U64, addr, first);
+    const auto inside = OpULessThan(U1[1], relative, OpUConvert(U64, size));
+    const auto aligned = OpIEqual(
+        U1[1], OpBitwiseAnd(U64, relative, Constant(U64, u64(sizeof(u32) - 1))), u64_zero_value);
+    const auto can_read = OpLogicalAnd(U1[1], inside, aligned);
+    const auto load_label = OpLabel();
+    const auto skip_label = OpLabel();
+    const auto merge_label = OpLabel();
+    OpSelectionMerge(merge_label, spv::SelectionControlMask::MaskNone);
+    OpBranchConditional(can_read, load_label, skip_label);
+
+    AddLabel(load_label);
+    const auto value = EmitDwordMemoryRead(addr);
+    OpBranch(merge_label);
+    AddLabel(skip_label);
+    OpBranch(merge_label);
+    AddLabel(merge_label);
+
+    OpReturnValue(OpPhi(U32[1], value, load_label, u32_zero_value, skip_label));
     OpFunctionEnd();
     return func;
 }
@@ -1301,15 +1305,16 @@ void EmitContext::DefineFunctions() {
         uf11_to_f32 = DefineUfloatM5ToFloat32(6, "uf11_to_f32");
         uf10_to_f32 = DefineUfloatM5ToFloat32(5, "uf10_to_f32");
     }
-    if (True(info.readconst_types & (Info::ReadConstType::Unchecked | Info::ReadConstType::Loop))) {
+    if (True(info.readconst_types &
+             (Info::ReadConstType::Unchecked | Info::ReadConstType::Bounded))) {
         get_bda_pointer = DefineGetBdaPointer(false);
     }
     if (True(info.readconst_types & Info::ReadConstType::Unchecked)) {
         LOG_DEBUG(Render_Recompiler, "Shader {:#x} uses unchecked ReadConst", info.pgm_hash);
         read_const = DefineReadConst(false);
     }
-    if (True(info.readconst_types & Info::ReadConstType::Loop)) {
-        read_const_loop = DefineReadConst(false, true);
+    if (True(info.readconst_types & Info::ReadConstType::Bounded)) {
+        read_const_in_range = DefineReadConstInRange();
     }
     if (True(info.readconst_types & Info::ReadConstType::Checked)) {
         LOG_DEBUG(Render_Recompiler, "Shader {:#x} uses checked ReadConst", info.pgm_hash);

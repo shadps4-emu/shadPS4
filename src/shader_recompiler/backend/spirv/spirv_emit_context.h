@@ -399,7 +399,7 @@ public:
 
     Id read_const{};
     Id read_const_checked{};
-    Id read_const_loop{};
+    Id read_const_in_range{};
 
 private:
     void DefineArithmeticTypes();
@@ -424,7 +424,9 @@ private:
 
     Id DefineGetBdaPointer(bool faulting);
 
-    Id DefineReadConst(bool checked, bool loop = false);
+    Id ReadConstAddress(Id base, Id offset);
+    Id DefineReadConst(bool checked);
+    Id DefineReadConstInRange();
 };
 
 } // namespace Shader::Backend::SPIRV
