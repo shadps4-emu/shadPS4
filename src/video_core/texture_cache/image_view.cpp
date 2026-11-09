@@ -91,7 +91,7 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::DepthBuffer& depth_buffer, AmdGpu::De
 }
 
 ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info_,
-                     const Image& image)
+                     const Image& image, vk::Image view_image)
     : info{info_} {
     vk::ImageViewUsageCreateInfo usage_ci{.usage = image.usage_flags};
     if (!info.is_storage) {
@@ -124,7 +124,7 @@ ImageView::ImageView(const Vulkan::Instance& instance, const ImageViewInfo& info
 
     const vk::ImageViewCreateInfo image_view_ci = {
         .pNext = &usage_ci,
-        .image = image.GetImage(),
+        .image = view_image,
         .viewType = ConvertImageViewType(info.type),
         .format = instance.GetSupportedFormat(format, image.format_features),
         .components = components,
