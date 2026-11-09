@@ -182,12 +182,12 @@ void MntPoints::UnmountAll() {
 // /app0//game.kpf) and directory traversal (e.g. /app0/../savedata0/) per POSIX pathname resolution
 // standards.
 std::optional<std::string> MntPoints::SanitizeGuestPath(std::string_view path) {
-    if (path.empty() || path.length() > 255) {
+    if (path.empty() || path.length() >= 1024) {
         return std::nullopt;
     }
     std::filesystem::path p(path);
     std::string normalized = p.lexically_normal().generic_string();
-    if (normalized.length() > 255) {
+    if (normalized.length() >= 1024) {
         return std::nullopt;
     }
     return normalized;
