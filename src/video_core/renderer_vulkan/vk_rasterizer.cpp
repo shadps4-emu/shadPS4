@@ -440,8 +440,8 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
     image_infos.clear();
 
     bool sync_all_buffers = false;
-    bool uses_bda_pagetable = false;
     boost::container::small_vector<VAddr, 32> touch_addresses;
+    boost::container::small_vector<VideoCore::BufferCache::DmaTouchRange, 4> loop_ranges;
 
     // Bind resource buffers and textures.
     Shader::Backend::Bindings binding{};
@@ -452,24 +452,51 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
         }
         set_writes.resize(set_writes.size() + stage->buffers.size() + stage->images.size() +
                           stage->samplers.size());
-        BindBuffers(*stage, binding, push_data);
-        BindTextures(*stage, binding);
         sync_all_buffers |=
             True(stage->readconst_types & Shader::InfoPersistent::ReadConstType::Checked);
-        uses_bda_pagetable |= True(stage->readconst_types);
         if (stage->srt_info.touch_addr_bufsize_qw > 0) {
             const auto addresses =
                 std::span{stage->touch_addrs}.first(stage->srt_info.touch_addr_bufsize_qw);
             touch_addresses.insert(touch_addresses.end(), addresses.begin(), addresses.end());
         }
+        boost::container::small_vector<u32, 64> loop_flatbuf;
+        const bool uses_selective_loops =
+            True(stage->readconst_types & Shader::InfoPersistent::ReadConstType::Loop);
+        if (uses_selective_loops) {
+            loop_flatbuf.assign(stage->flattened_ud_buf.begin(), stage->flattened_ud_buf.end());
+        }
+        for (const auto& loop : stage->srt_loop_touches) {
+            const u32 dw = loop.range_offset_dw;
+            const VAddr address =
+                VAddr(stage->flattened_ud_buf[dw]) | (VAddr(stage->flattened_ud_buf[dw + 1]) << 32);
+            const u32 limit = loop.limit_reg < stage->user_data.size()
+                                  ? stage->user_data[loop.limit_reg]
+                                  : loop.limit;
+            const u64 advance = limit > loop.first_offset
+                                    ? (u64(limit - loop.first_offset - 1) / loop.step) * loop.step
+                                    : 0;
+            const u64 size = advance + sizeof(u32);
+            if (u64(loop.first_offset) + advance + loop.step > std::numeric_limits<u32>::max() ||
+                size > 256_KB || !buffer_cache.IsDmaTouchRangeMapped(address, u32(size))) {
+                continue;
+            }
+            loop_ranges.push_back({address, u32(size)});
+            if (uses_selective_loops) {
+                loop_flatbuf[dw + 2] = u32(size);
+            }
+        }
+        const std::span<const u32> flatbuf =
+            uses_selective_loops ? std::span<const u32>{loop_flatbuf} : stage->flattened_ud_buf;
+        BindBuffers(*stage, binding, push_data, flatbuf);
+        BindTextures(*stage, binding);
     }
 
     const auto dma_ranges = ([&]() {
         if (sync_all_buffers) {
-            return buffer_cache.SynchronizeAllDmaBuffers(touch_addresses);
-        } else if (!touch_addresses.empty()) {
+            return buffer_cache.SynchronizeAllDmaBuffers(touch_addresses, loop_ranges);
+        } else if (!touch_addresses.empty() || !loop_ranges.empty()) {
             std::ranges::sort(touch_addresses);
-            return buffer_cache.SynchronizeDmaBuffers(touch_addresses);
+            return buffer_cache.SynchronizeDmaBuffers(touch_addresses, loop_ranges);
         }
         return VideoCore::BufferCache::DmaBufferRangeList{};
     })();
@@ -800,7 +827,7 @@ bool Rasterizer::IsComputeImageClear(const Pipeline* pipeline) {
 }
 
 void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Bindings& binding,
-                             Shader::PushData& push_data) {
+                             Shader::PushData& push_data, std::span<const u32> flatbuf) {
     const u64 alignment = instance.StorageMinAlignment();
     for (const auto& desc : stage.buffers) {
         const auto src_access =
@@ -815,9 +842,8 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
                 bound_buffers.emplace_back(gds_buf, 0, gds_buf->SizeBytes(), src_access);
             } else if (desc.buffer_type == Shader::BufferType::Flatbuf) {
                 auto& vk_buffer = buffer_cache.GetStreamBuffer();
-                const u32 ubo_size = stage.flattened_ud_buf.size() * sizeof(u32);
-                const u64 offset =
-                    vk_buffer.Copy(stage.flattened_ud_buf.data(), ubo_size, alignment);
+                const u32 ubo_size = flatbuf.size_bytes();
+                const u64 offset = vk_buffer.Copy(flatbuf.data(), ubo_size, alignment);
                 buffer_infos.emplace_back(vk_buffer.Handle(), offset, ubo_size);
             } else if (desc.buffer_type == Shader::BufferType::ClipPlanes) {
                 // Permutations compiled without enabled planes never read the buffer, so the

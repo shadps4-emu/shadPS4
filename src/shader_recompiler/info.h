@@ -43,6 +43,7 @@ struct InfoPersistent {
         None = 0,
         Unchecked = 1 << 0,
         Checked = 1 << 1,
+        Loop = 1 << 2,
     };
 
     BufferResourceList buffers;
@@ -102,7 +103,16 @@ struct Info : InfoPersistent {
 
     std::span<const u32> user_data;
     std::vector<u32> flattened_ud_buf;
+    struct SrtLoopTouch {
+        u32 first_offset;
+        u32 step;
+        u32 limit;
+        u16 limit_reg;
+        u16 range_offset_dw{};
+    };
+
     std::vector<VAddr> touch_addrs;
+    std::vector<SrtLoopTouch> srt_loop_touches;
     PersistentSrtInfo srt_info;
 
     AttributeFlags loads{};
@@ -169,6 +179,10 @@ struct Info : InfoPersistent {
     void RefreshFlatBuf() {
         flattened_ud_buf.resize(srt_info.flattened_bufsize_dw);
         touch_addrs.resize(srt_info.touch_addr_bufsize_qw);
+        for (const auto& loop : srt_loop_touches) {
+            flattened_ud_buf[loop.range_offset_dw] = 0;
+            flattened_ud_buf[loop.range_offset_dw + 1] = 0;
+        }
         ASSERT(user_data.size() <= NUM_USER_DATA_REGS);
         std::memcpy(flattened_ud_buf.data(), user_data.data(), user_data.size_bytes());
         if (srt_info.walker_func) {

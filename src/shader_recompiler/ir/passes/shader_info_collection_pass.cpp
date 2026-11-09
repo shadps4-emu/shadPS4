@@ -203,6 +203,9 @@ void Visit(Info& info, const IR::Inst& inst, const Profile& profile) {
             info.readconst_types |= InfoPersistent::ReadConstType::Unchecked;
         } else if (EmulatorSettings.IsFullDmaSyncEnabled()) {
             info.readconst_types |= InfoPersistent::ReadConstType::Checked;
+        } else if (inst.Flags<IR::ReadConstInstInfo>().loop_touch) {
+            AddFlatbuf(info);
+            info.readconst_types |= InfoPersistent::ReadConstType::Loop;
         }
         break;
     }

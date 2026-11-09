@@ -128,16 +128,27 @@ public:
     /// Mark region as modified from the GPU
     void MarkRegionAsGpuModified(VAddr addr, size_t size);
 
-    /// Synchronizes all resident buffers needed for DMA.
-    DmaBufferRangeList SynchronizeAllDmaBuffers(std::span<const VAddr> addresses);
+    struct DmaTouchRange {
+        VAddr address;
+        u32 size;
+    };
 
-    /// Synchronizes all buffers needed for DMA.
-    DmaBufferRangeList SynchronizeDmaBuffers(std::span<const VAddr> addresses);
+    [[nodiscard]] bool IsDmaTouchRangeMapped(VAddr address, u32 size) const;
+
+    /// Synchronizes all resident buffers needed for DMA.
+    DmaBufferRangeList SynchronizeAllDmaBuffers(std::span<const VAddr> addresses,
+                                                std::span<const DmaTouchRange> loop_ranges);
+
+    /// Synchronizes touched buffers needed for DMA.
+    DmaBufferRangeList SynchronizeDmaBuffers(std::span<const VAddr> addresses,
+                                             std::span<const DmaTouchRange> loop_ranges);
 
     /// Commits pending sparse buffer memory binds. Must be called before every scheduler submit.
     void SubmitPendingArenaBinds(Vulkan::SubmitInfo& info);
 
 private:
+    DmaBufferRangeList MakeDmaTouchRangesResident(std::span<const DmaTouchRange> loop_ranges);
+
     struct ArenaBinds {
         const Buffer* arena;
         boost::container::small_vector<vk::SparseMemoryBind, 32> binds;

@@ -168,6 +168,7 @@ struct PassInfo {
     // pick a single inst for a given value number
     std::unordered_map<u32, IR::Inst*> vn_to_inst;
     std::unordered_map<IR::Inst*, u16> touchbuf_offsets;
+    std::vector<Info::SrtLoopTouch> loop_touches;
 
     // Bumped during codegen to assign offsets to readconsts
     u16 flatbuf_dst_off_dw;
@@ -578,6 +579,54 @@ static inline void PopPtr(Xbyak::CodeGenerator& c) {
     c.pop(rdi);
 }
 
+static std::optional<Info::SrtLoopTouch> FindReadConstLoop(const IR::Inst& read) {
+    if (read.GetOpcode() != IR::Opcode::ReadConst || IsSharpSource(&read)) {
+        return std::nullopt;
+    }
+    const auto* offset = read.Arg(1).TryInst();
+    if (!offset || offset->GetOpcode() != IR::Opcode::ShiftRightLogical32 ||
+        !offset->Arg(1).IsImmediate() || offset->Arg(1).U32() != 2) {
+        return std::nullopt;
+    }
+    const auto* counter = offset->Arg(0).TryInst();
+    const auto* block = read.GetParent();
+    const auto successors = block->ImmSuccessors();
+    if (!counter || counter->GetOpcode() != IR::Opcode::Phi || counter->NumArgs() != 2 ||
+        counter->GetParent() != block || successors.size() != 2 || successors[0] != block ||
+        successors[1] == block || block->back().GetOpcode() != IR::Opcode::ConditionRef) {
+        return std::nullopt;
+    }
+
+    const size_t backedge = counter->PhiBlock(0) == block ? 0 : 1;
+    if (counter->PhiBlock(backedge) != block || counter->PhiBlock(1 - backedge) == block) {
+        return std::nullopt;
+    }
+    const auto initial = counter->Arg(1 - backedge);
+    const auto* next = counter->Arg(backedge).TryInst();
+    const auto* condition = block->back().Arg(0).TryInst();
+    if (!initial.IsImmediate() || !next || next->GetOpcode() != IR::Opcode::IAdd32 ||
+        next->Arg(0).TryInst() != counter || !next->Arg(1).IsImmediate() || !condition ||
+        condition->GetOpcode() != IR::Opcode::ULessThan32 || condition->Arg(0).TryInst() != next) {
+        return std::nullopt;
+    }
+
+    const u32 first_offset = initial.U32();
+    const u32 step = next->Arg(1).U32();
+    if (!step || ((first_offset | step) & (sizeof(u32) - 1))) {
+        return std::nullopt;
+    }
+    const auto limit = condition->Arg(1);
+    if (limit.IsImmediate()) {
+        return Info::SrtLoopTouch{first_offset, step, limit.U32(), NUM_USER_DATA_REGS};
+    }
+    const auto* limit_inst = limit.TryInst();
+    if (!limit_inst || limit_inst->GetOpcode() != IR::Opcode::GetUserData ||
+        u32(limit_inst->Arg(0).ScalarReg()) >= NUM_USER_DATA_REGS) {
+        return std::nullopt;
+    }
+    return Info::SrtLoopTouch{first_offset, step, 0, u16(limit_inst->Arg(0).ScalarReg())};
+}
+
 static void VisitPointer(const IR::Value& off_dw, IR::Inst* subtree, PassInfo& pass_info,
                          Xbyak::CodeGenerator& c) {
     if (subtree->GetOpcode() == IR::Opcode::ReadConst ||
@@ -603,6 +652,23 @@ static void VisitPointer(const IR::Value& off_dw, IR::Inst* subtree, PassInfo& p
         if (src_off_dw.IsImmediate()) {
             c.lea(r10, ptr[rdi + (src_off_dw.U32() << 2)]);
         } else {
+            if (auto loop = FindReadConstLoop(*use)) {
+                if (pass_info.flatbuf_dst_off_dw > std::numeric_limits<u16>::max() - 3) {
+                    continue;
+                }
+                loop->range_offset_dw = pass_info.flatbuf_dst_off_dw;
+                pass_info.flatbuf_dst_off_dw += 3;
+                c.mov(r10d, loop->first_offset);
+                c.lea(r10, ptr[rdi + r10]);
+                c.mov(ptr[rsi + (loop->range_offset_dw << 2)], r10);
+                pass_info.loop_touches.push_back(*loop);
+
+                auto flags = use->Flags<IR::ReadConstInstInfo>();
+                flags.flatbuf_off_dw.Assign(loop->range_offset_dw);
+                flags.loop_touch.Assign(true);
+                use->SetFlags(flags);
+                continue;
+            }
             if (!ComputeOffset(c, r10d, pass_info, src_off_dw)) {
                 LOG_ERROR(Render_Recompiler, "Failed to compute offset for SRT walker");
                 continue;
@@ -672,6 +738,7 @@ static void GenerateSrtProgram(Info& info, PassInfo& pass_info) {
 
     info.srt_info.flattened_bufsize_dw = pass_info.flatbuf_dst_off_dw;
     info.srt_info.touch_addr_bufsize_qw = pass_info.touchbuf_dst_off_qw;
+    info.srt_loop_touches = std::move(pass_info.loop_touches);
 }
 
 static bool IsReadConstSource(const IR::Value base) {
@@ -855,8 +922,12 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
     for (IR::Inst* readconst : all_readconsts) {
         ASSERT(pass_info.vn_to_inst.contains(pass_info.gvn_table.GetValueNumber(readconst)));
         IR::Inst* original = pass_info.DeduplicateInstruction(readconst);
-        const u16 offset = IR::GetFlatBufferOffset(original);
-        IR::TouchReadConstAddress(readconst, offset);
+        if (IR::IsReadConstAddressTouched(original)) {
+            IR::TouchReadConstAddress(readconst, IR::GetFlatBufferOffset(original));
+        } else if (original->GetOpcode() == IR::Opcode::ReadConst &&
+                   original->Flags<IR::ReadConstInstInfo>().loop_touch) {
+            readconst->SetFlags(original->Flags<IR::ReadConstInstInfo>());
+        }
     }
 
     program.info.RefreshFlatBuf();

@@ -318,8 +318,44 @@ void BufferCache::ReadEdgeImagePages(const Image& image) {
         });
 }
 
+bool BufferCache::IsDmaTouchRangeMapped(VAddr address, u32 size) const {
+    if (!address || (address & (sizeof(u32) - 1)) || !memory->IsValidGpuMapping(address, 0) ||
+        !memory->IsValidGpuMapping(address, size)) {
+        return false;
+    }
+    const VAddr last_addr = address + size - 1;
+    const auto& backing_pages = memory->GetAddressSpace().BackingPages();
+    for (u64 page = address >> Core::GUEST_PAGE_BITS; page <= last_addr >> Core::GUEST_PAGE_BITS;
+         ++page) {
+        const auto* entry = backing_pages.find(page);
+        if (!entry || !*entry) {
+            return false;
+        }
+    }
+    return true;
+}
+
+BufferCache::DmaBufferRangeList BufferCache::MakeDmaTouchRangesResident(
+    std::span<const DmaTouchRange> loop_ranges) {
+    DmaBufferRangeList ranges;
+    for (const auto& [address, size] : loop_ranges) {
+        const VAddr end = address + size;
+        for (VAddr start = address; start < end;) {
+            const VAddr stop = std::min(end, (start | (ARENA_PAGE_SIZE - 1)) + 1);
+            const u64 first_block = start >> block_shift;
+            const u64 last_block = (stop - 1) >> block_shift;
+            const auto* arena = GetArena(first_block, last_block);
+            EnsureResident(arena, first_block, last_block);
+            ranges.push_back({arena, arena->Offset(start), u32(stop - start)});
+            start = stop;
+        }
+    }
+    return ranges;
+}
+
 BufferCache::DmaBufferRangeList BufferCache::SynchronizeAllDmaBuffers(
-    std::span<const VAddr> addresses) {
+    std::span<const VAddr> addresses, std::span<const DmaTouchRange> loop_ranges) {
+    MakeDmaTouchRangesResident(loop_ranges);
     for (const auto addr : addresses) {
         const u64 page = addr >> ARENA_PAGE_BITS;
         if (page >= address_space.size()) {
@@ -345,9 +381,12 @@ BufferCache::DmaBufferRangeList BufferCache::SynchronizeAllDmaBuffers(
 }
 
 BufferCache::DmaBufferRangeList BufferCache::SynchronizeDmaBuffers(
-    std::span<const VAddr> addresses) {
+    std::span<const VAddr> addresses, std::span<const DmaTouchRange> loop_ranges) {
     constexpr u32 read_size = sizeof(u32);
-    DmaBufferRangeList ranges;
+    auto ranges = MakeDmaTouchRangesResident(loop_ranges);
+    for (const auto& [buffer, offset, size] : ranges) {
+        SynchronizeMemory(buffer, buffer->CpuAddr() + offset, size, false, false);
+    }
     VAddr range_start = 0;
     VAddr range_end = 0;
     u32 range_size = 0;

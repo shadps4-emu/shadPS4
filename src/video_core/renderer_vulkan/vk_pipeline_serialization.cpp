@@ -12,8 +12,8 @@
 
 namespace Serialization {
 /* You should increment versions below once corresponding serialization scheme is changed. */
-static constexpr u32 ShaderBinaryVersion = 15u;
-static constexpr u32 ShaderMetaVersion = 8u;
+static constexpr u32 ShaderBinaryVersion = 16u;
+static constexpr u32 ShaderMetaVersion = 9u;
 static constexpr u32 PipelineKeyVersion = 4u;
 } // namespace Serialization
 
@@ -70,6 +70,7 @@ void RegisterShaderMeta(const Shader::Info& info,
 
     meta.Write(Serialization::ShaderMetaVersion);
     meta.Write(Serialization::ShaderBinaryVersion);
+    meta.Write(EmulatorSettings.IsFullDmaSyncEnabled());
 
     meta.Write(perm_hash);
     meta.Write(perm_idx);
@@ -104,6 +105,12 @@ bool LoadShaderMeta(Serialization::Archive& ar, Shader::Info& info,
     u32 binary_version{};
     meta.Read(binary_version);
     if (binary_version != Serialization::ShaderBinaryVersion) {
+        return false;
+    }
+
+    bool full_dma_sync{};
+    meta.Read(full_dma_sync);
+    if (full_dma_sync != EmulatorSettings.IsFullDmaSyncEnabled()) {
         return false;
     }
 
@@ -390,6 +397,7 @@ void Info::Serialize(Serialization::Archive& ar) const {
 
     info.Write(this, sizeof(InfoPersistent));
     info.Write(flattened_ud_buf);
+    info.Write(srt_loop_touches);
     srt_info.Serialize(ar);
 }
 
@@ -398,6 +406,7 @@ bool Info::Deserialize(Serialization::Archive& ar) {
 
     info.Read(this, sizeof(Shader::InfoPersistent));
     info.Read(flattened_ud_buf);
+    info.Read(srt_loop_touches);
 
     return srt_info.Deserialize(ar);
 }
