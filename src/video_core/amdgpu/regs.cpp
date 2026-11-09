@@ -32,6 +32,7 @@ void Regs::SetDefaults() {
 
     // Individual context regs values
     reg_array[ContextRegWordOffset + 0x000d] = 0x40004000u;
+    reg_array[ContextRegWordOffset + 0x0083] = 0x0000ffffu;
     reg_array[ContextRegWordOffset + 0x008e] = 0xffffffffu;
     reg_array[ContextRegWordOffset + 0x008f] = 0xffffffffu;
     reg_array[ContextRegWordOffset + 0x01b6] = 0x00000002u;
@@ -40,13 +41,15 @@ void Regs::SetDefaults() {
     reg_array[ContextRegWordOffset + 0x0295] = 0x00000100u;
     reg_array[ContextRegWordOffset + 0x0296] = 0x00000080u;
     reg_array[ContextRegWordOffset + 0x0297] = 0x00000002u;
-    reg_array[ContextRegWordOffset + 0x02aa] = 0x00001000u;
+    reg_array[ContextRegWordOffset + 0x02aa] = 0x000000ffu;
     reg_array[ContextRegWordOffset + 0x02f7] = 0x00001000u;
     reg_array[ContextRegWordOffset + 0x02f9] = 0x00000005u;
     reg_array[ContextRegWordOffset + 0x02fa] = 0x3f800000u;
     reg_array[ContextRegWordOffset + 0x02fb] = 0x3f800000u;
     reg_array[ContextRegWordOffset + 0x02fc] = 0x3f800000u;
     reg_array[ContextRegWordOffset + 0x02fd] = 0x3f800000u;
+    reg_array[ContextRegWordOffset + 0x030e] = 0xffffffffu;
+    reg_array[ContextRegWordOffset + 0x030f] = 0xffffffffu;
     reg_array[ContextRegWordOffset + 0x0316] = 0x0000000eu;
     reg_array[ContextRegWordOffset + 0x0317] = 0x00000010u;
 }
