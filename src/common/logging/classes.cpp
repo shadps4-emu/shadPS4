@@ -203,6 +203,8 @@ std::string_view NameOf(Class log_class) {
         return "Lib.ContentExport";
     case Class::Lib_VrTracker:
         return "Lib.VrTracker";
+    case Class::Lib_SysCore:
+        return "Lib.SysCore";
     case Class::Lib_Font:
         return "Lib.Font";
     case Class::Lib_FontFt:
