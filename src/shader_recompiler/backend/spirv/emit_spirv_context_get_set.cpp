@@ -60,6 +60,11 @@ Id EmitReadConst(EmitContext& ctx, IR::Inst* inst, Id addr, Id offset) {
     }
     if (EmulatorSettings.IsFullDmaSyncEnabled()) {
         return ctx.OpFunctionCall(ctx.U32[1], ctx.read_const_checked, addr, offset);
+    }
+    const auto flags = inst->Flags<IR::ReadConstInstInfo>();
+    if (flags.loop_touch) {
+        return ctx.OpFunctionCall(ctx.U32[1], ctx.read_const_loop, addr, offset,
+                                  ctx.ConstU32(flags.flatbuf_off_dw.Value()));
     } else {
         LOG_WARNING(Render_Recompiler, "Shader {:#x} ReadConst with untouched address.",
                     ctx.info.pgm_hash);
