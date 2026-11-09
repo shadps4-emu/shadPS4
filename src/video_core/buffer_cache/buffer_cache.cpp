@@ -341,7 +341,7 @@ BufferCache::DmaBufferRangeList BufferCache::MakeDmaTouchRangesResident(
     for (const auto& [address, size] : loop_ranges) {
         const VAddr end = address + size;
         for (VAddr start = address; start < end;) {
-            const VAddr stop = std::min(end, (start | (ARENA_PAGE_SIZE - 1)) + 1);
+            const VAddr stop = std::min<VAddr>(end, (start | (HIGHER_PAGE_SIZE - 1)) + 1);
             const u64 first_block = start >> block_shift;
             const u64 last_block = (stop - 1) >> block_shift;
             const auto* arena = GetArena(first_block, last_block);
