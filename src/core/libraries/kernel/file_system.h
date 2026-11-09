@@ -49,6 +49,32 @@ struct OrbisKernelDirent {
     char d_name[ORBIS_MAX_PATH + 1]; /* name must be no longer than this */
 };
 
+struct OrbisKernelStatfs {
+    u32 f_version;
+    u32 f_type;
+    u64 f_flags;
+    u64 f_bsize;
+    u64 f_iosize;
+    u64 f_blocks;
+    u64 f_bfree;
+    s64 f_bavail;
+    u64 f_files;
+    s64 f_ffree;
+    u64 f_syncwrites;
+    u64 f_asyncwrites;
+    u64 f_syncreads;
+    u64 f_asyncreads;
+    u64 f_spare[10];
+    u32 f_namemax;
+    u32 f_owner;
+    u32 f_fsid[2];
+    char f_charspare[80];
+    char f_fstypename[16];
+    char f_mntfromname[88];
+    char f_mntonname[88];
+};
+static_assert(sizeof(OrbisKernelStatfs) == 472);
+
 // flags for Open
 constexpr int ORBIS_KERNEL_O_RDONLY = 0x0000;
 constexpr int ORBIS_KERNEL_O_WRONLY = 0x0001;
@@ -88,6 +114,30 @@ constexpr int ORBIS_KERNEL_F_GETOWN = 5;
 constexpr int ORBIS_KERNEL_F_SETOWN = 6;
 constexpr int ORBIS_KERNEL_F_OGETLK = 7;
 constexpr int ORBIS_KERNEL_F_OSETLK = 8;
+
+// names for pathconf
+constexpr s32 ORBIS_PC_LINK_MAX = 1;
+constexpr s32 ORBIS_PC_MAX_CANON = 2;
+constexpr s32 ORBIS_PC_MAX_INPUT = 3;
+constexpr s32 ORBIS_PC_NAME_MAX = 4;
+constexpr s32 ORBIS_PC_PATH_MAX = 5;
+constexpr s32 ORBIS_PC_PIPE_BUF = 6;
+constexpr s32 ORBIS_PC_CHOWN_RESTRICTED = 7;
+constexpr s32 ORBIS_PC_NO_TRUNC = 8;
+constexpr s32 ORBIS_PC_VDISABLE = 9;
+constexpr s32 ORBIS_PC_ALLOC_SIZE_MIN = 10;
+constexpr s32 ORBIS_PC_FILESIZEBITS = 11;
+constexpr s32 ORBIS_PC_REC_INCR_XFER_SIZE = 12;
+constexpr s32 ORBIS_PC_REC_MAX_XFER_SIZE = 13;
+constexpr s32 ORBIS_PC_REC_MIN_XFER_SIZE = 14;
+constexpr s32 ORBIS_PC_REC_XFER_ALIGN = 15;
+constexpr s32 ORBIS_PC_SYMLINK_MAX = 16;
+constexpr s32 ORBIS_PC_MIN_HOLE_SIZE = 21;
+constexpr s32 ORBIS_PC_ACL_EXTENDED = 59;
+constexpr s32 ORBIS_PC_ACL_PATH_MAX = 60;
+constexpr s32 ORBIS_PC_CAP_PRESENT = 61;
+constexpr s32 ORBIS_PC_INF_PRESENT = 62;
+constexpr s32 ORBIS_PC_MAC_PRESENT = 63;
 constexpr int ORBIS_KERNEL_F_OSETLKW = 9;
 constexpr int ORBIS_KERNEL_F_DUP2FD = 10;
 constexpr int ORBIS_KERNEL_F_GETLK = 11;
@@ -116,11 +166,18 @@ struct OrbisKernelFlock {
 };
 
 s32 PS4_SYSV_ABI posix_open(const char* path, s32 flags, u16 mode);
+s32 PS4_SYSV_ABI posix_openat(s32 fd, const char* path, s32 flags, u16 mode);
+s32 PS4_SYSV_ABI posix_creat(const char* path, u16 mode);
+s32 PS4_SYSV_ABI posix_pipe(s32 fildes[2]);
 s32 PS4_SYSV_ABI posix_close(s32 fd);
 s32 PS4_SYSV_ABI posix_fcntl(s32 fd, s32 cmd, s64 arg);
 s32 PS4_SYSV_ABI sceKernelFcntl(s32 fd, s32 cmd, s64 arg);
 s32 PS4_SYSV_ABI posix_dup(s32 old_fd);
 s32 PS4_SYSV_ABI posix_dup2(s32 old_fd, s32 new_fd);
+s64 PS4_SYSV_ABI posix_fpathconf(s32 fd, s32 name);
+s64 PS4_SYSV_ABI posix_pathconf(const char* path, s32 name);
+s32 PS4_SYSV_ABI posix_fstatfs(s32 fd, OrbisKernelStatfs* buf);
+s32 PS4_SYSV_ABI posix_statfs(const char* path, OrbisKernelStatfs* buf);
 s64 PS4_SYSV_ABI posix_lseek(s32 fd, s64 offset, s32 whence);
 s64 PS4_SYSV_ABI sceKernelWrite(s32 fd, const void* buf, u64 nbytes);
 s64 PS4_SYSV_ABI sceKernelRead(s32 fd, void* buf, u64 nbytes);
