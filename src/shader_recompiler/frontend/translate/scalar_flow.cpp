@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "shader_recompiler/frontend/opcodes.h"
@@ -30,7 +30,6 @@ void Translator::EmitFlowControl(const GcnInst& inst) {
     case Opcode::S_SETPC_B64:
     case Opcode::S_WAITCNT:
     case Opcode::S_NOP:
-    case Opcode::S_ENDPGM:
     case Opcode::S_CBRANCH_EXECZ:
     case Opcode::S_CBRANCH_SCC0:
     case Opcode::S_CBRANCH_SCC1:
@@ -38,6 +37,11 @@ void Translator::EmitFlowControl(const GcnInst& inst) {
     case Opcode::S_CBRANCH_VCCZ:
     case Opcode::S_CBRANCH_EXECNZ:
     case Opcode::S_BRANCH:
+        return;
+    case Opcode::S_ENDPGM:
+        if (info.hw_stage == HwStage::Fragment && valid_mask_exported) {
+            ir.Discard(ir.LogicalNot(ir.GetExec()));
+        }
         return;
     case Opcode::S_SENDMSG:
         S_SENDMSG(inst);

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -384,11 +384,13 @@ private:
     IR::U32 GetCarryIn(const GcnInst& inst);
     void SetCarryOut(const GcnInst& inst, const IR::U1& carry);
     IR::F32 LegacyMul(const IR::F32& a, const IR::F32& b);
-    IR::U32 VMovRelSHelper(u32 src_vgprno, const IR::U32 m0);
-    void VMovRelDHelper(u32 dst_vgprno, const IR::U32 src_val, const IR::U32 m0);
 
     void ExportRenderTarget(const GcnInst& inst);
     void ExportDepth(const GcnInst& inst);
+    IR::U32 AlphaToMaskLevel(const IR::F32& alpha);
+    IR::U32 AlphaToMaskLevel(const IR::U32& packed, AmdGpu::ShaderExportFormat format);
+    void ExportAlphaToMask(const IR::U32& level);
+    IR::U32 ReplicateSampleMask(const IR::U32& mask, u32 log2_samples);
     void LogMissingOpcode(const GcnInst& inst);
 
     IR::VectorReg GetScratchVgpr(u32 offset);
@@ -403,6 +405,7 @@ private:
     std::array<IR::Attribute, MaxInterpVgpr> vgpr_to_interp{};
     FetchShaderData fetch_data{};
     bool opcode_missing = false;
+    bool valid_mask_exported = false;
     u32 pc{};
 };
 

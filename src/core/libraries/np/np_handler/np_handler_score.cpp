@@ -366,12 +366,12 @@ s32 NpHandler::GetRankingByNpId(s32 user_id, s32 service_label, u32 boardId,
     payload.push_back(static_cast<u8>(sz >> 24));
     payload.insert(payload.end(), proto_bytes.begin(), proto_bytes.end());
 
-    const u64 pkt_id = client->SubmitRequest(ShadNet::CommandType::GetScoreNpid, payload);
+    const u64 pkt_id = client->SubmitRequest(ShadNet::CommandType::GetScoreNpId, payload);
     {
         std::lock_guard lock(m_mutex_pending_score);
         PendingScoreRequest pending;
         pending.req = std::move(req);
-        pending.cmd = ShadNet::CommandType::GetScoreNpid;
+        pending.cmd = ShadNet::CommandType::GetScoreNpId;
         pending.requestedNpIds = npIds;
         pending.rankArray = rankArray;
         pending.commentArray = commentArray;
@@ -1001,7 +1001,7 @@ void NpHandler::OnScoreReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id,
         default:
             break;
         }
-        LOG_WARNING(NpHandler, "user_id={} pkt_id={} cmd={} server_error={} → orbis_err={:#x}",
+        LOG_WARNING(NpHandler, "user_id={} pkt_id={} cmd={} server_error={} orbis_err={:#x}",
                     user_id, pkt_id, static_cast<int>(cmd), static_cast<int>(error), orbis_err);
         req->SetResult(orbis_err);
         return;
@@ -1104,7 +1104,7 @@ void NpHandler::OnScoreReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id,
         break;
     }
 
-    case ShadNet::CommandType::GetScoreNpid: {
+    case ShadNet::CommandType::GetScoreNpId: {
         // Reply body = u32 LE proto size + GetScoreResponse proto bytes.
         if (body.size() < 4) {
             LOG_ERROR(NpHandler, "GetScoreNpid body too small ({})", body.size());
@@ -1219,7 +1219,10 @@ void NpHandler::OnScoreReply(s32 user_id, ShadNet::CommandType cmd, u64 pkt_id,
         LOG_INFO(NpHandler, "{} user_id={} pkt_id={} found={}/{} totalRecord={}{}", cmd_name,
                  user_id, pkt_id, found, pending.arrayNum, resp.totalrecord(),
                  pending.aRankArray != nullptr ? " (A-variant)" : "");
-        req->SetResult(static_cast<s32>(found));
+        // Friends rankings return 0 when empty, the rest return GAME_RANKING_NOT_FOUND.
+        req->SetResult(found > 0 || cmd == ShadNet::CommandType::GetScoreFriends
+                           ? static_cast<s32>(found)
+                           : ORBIS_NP_COMMUNITY_SERVER_ERROR_GAME_RANKING_NOT_FOUND);
         break;
     }
 
