@@ -1267,17 +1267,8 @@ Id EmitContext::DefineReadConstInRange() {
     Name(func, "read_const_in_range");
     AddLabel();
 
-    const auto addr = ReadConstAddress(base, offset);
-    const auto lo = EmitFlatbufferLoad(range_offset);
-    const auto hi = EmitFlatbufferLoad(OpIAdd(U32[1], range_offset, u32_one_value));
     const auto size = EmitFlatbufferLoad(OpIAdd(U32[1], range_offset, ConstU32(2u)));
-    const auto first = OpBitwiseOr(U64, OpUConvert(U64, lo),
-                                   OpShiftLeftLogical(U64, OpUConvert(U64, hi), ConstU32(32u)));
-    const auto relative = OpISub(U64, addr, first);
-    const auto inside = OpULessThan(U1[1], relative, OpUConvert(U64, size));
-    const auto aligned = OpIEqual(
-        U1[1], OpBitwiseAnd(U64, relative, Constant(U64, u64(sizeof(u32) - 1))), u64_zero_value);
-    const auto can_read = OpLogicalAnd(U1[1], inside, aligned);
+    const auto can_read = OpINotEqual(U1[1], size, u32_zero_value);
     const auto load_label = OpLabel();
     const auto skip_label = OpLabel();
     const auto merge_label = OpLabel();
@@ -1285,6 +1276,7 @@ Id EmitContext::DefineReadConstInRange() {
     OpBranchConditional(can_read, load_label, skip_label);
 
     AddLabel(load_label);
+    const auto addr = ReadConstAddress(base, offset);
     const auto value = EmitDwordMemoryRead(addr);
     OpBranch(merge_label);
     AddLabel(skip_label);
