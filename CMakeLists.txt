@@ -430,6 +430,9 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/sysmodule/sysmodule_internal.h
                 src/core/libraries/sysmodule/sysmodule_error.h
                 src/core/libraries/sysmodule/sysmodule_table.h
+                src/core/libraries/syscore/syscore.cpp
+                src/core/libraries/syscore/syscore.h
+                src/core/libraries/syscore/syscore_error.h
                 src/core/libraries/system/systemservice.cpp
                 src/core/libraries/system/systemservice.h
                 src/core/libraries/system/systemservice_error.h
