@@ -4,9 +4,9 @@
 #include <limits>
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/basic_block.h"
+#include "shader_recompiler/ir/helpers.h"
 #include "shader_recompiler/ir/ir_emitter.h"
 #include "shader_recompiler/ir/opcodes.h"
-#include "shader_recompiler/ir/operand_helper.h"
 #include "shader_recompiler/ir/passes/ir_passes.h"
 #include "shader_recompiler/ir/passes/resource_pass.h"
 #include "shader_recompiler/ir/reinterpret.h"
@@ -166,10 +166,8 @@ SharpLocation SharpLocationFromSource(const IR::Inst* inst) {
     SharpLocation location{};
     if (inst->GetOpcode() == IR::Opcode::GetUserData) {
         return static_cast<SharpLocation>(inst->Arg(0).ScalarReg());
-    } else if (inst->GetOpcode() == IR::Opcode::ReadConstBuffer) {
-        location = inst->Flags<IR::BufferInstInfo>().flatbuf_off_dw;
     } else {
-        location = inst->Flags<SharpLocation>();
+        location = IR::GetFlatBufferOffset(inst);
     }
     if (location == 0) {
         LOG_WARNING(Render_Recompiler, "Sharp source was not flatenned");

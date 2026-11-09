@@ -5,6 +5,7 @@
 #include <initializer_list>
 #include <map>
 #include "shader_recompiler/ir/basic_block.h"
+#include "shader_recompiler/ir/helpers.h"
 #include "shader_recompiler/ir/value.h"
 
 namespace Shader::IR {
@@ -160,12 +161,14 @@ std::string DumpBlock(const Block& block, const std::map<const Block*, size_t>& 
             ret += fmt::format("         {}", op); // '%00000 = ' -> 1 + 5 + 3 = 9 spaces
         }
 
-        if (op == Opcode::ReadConst || op == Opcode::ImageSampleRaw) {
+        if (op == Opcode::ImageSampleRaw) {
             ret += fmt::format(" (flags={:#x}) ", inst.Flags<u32>());
-        } else if (op == Opcode::ReadConstBuffer) {
+        } else if (op == Opcode::ReadConst || op == Opcode::ReadConstBuffer) {
             const auto info = inst.Flags<BufferInstInfo>();
-            ret += fmt::format(" (sharp_source={}, flatbuf_off_dw={:#x}) ", bool(info.sharp_source),
-                               info.flatbuf_off_dw.Value());
+            const bool is_touch = IR::IsReadConstAddressTouched(&inst);
+            const u16 offset = IR::GetFlatBufferOffset(&inst);
+            ret += fmt::format(" (sharp_source={}, userdatabuf_off={:#x}, touch_buf={}) ",
+                               bool(info.sharp_source), offset, is_touch);
         }
         const size_t arg_count{inst.NumArgs()};
         for (size_t arg_index = 0; arg_index < arg_count; ++arg_index) {

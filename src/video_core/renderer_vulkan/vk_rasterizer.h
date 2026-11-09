@@ -119,7 +119,7 @@ private:
     bool FilterDraw();
 
     void BindBuffers(const Shader::Info& stage, Shader::Backend::Bindings& binding,
-                     Shader::PushData& push_data);
+                     Shader::PushData& push_data, std::span<const u32> flatbuf);
     void BindTextures(const Shader::Info& stage, Shader::Backend::Bindings& binding);
     bool BindResources(const Pipeline* pipeline);
 

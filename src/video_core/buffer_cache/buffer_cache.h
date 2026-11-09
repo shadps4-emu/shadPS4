@@ -4,6 +4,7 @@
 #pragma once
 
 #include <deque>
+#include <span>
 #include <boost/container/small_vector.hpp>
 
 #include "common/enum.h"
@@ -55,6 +56,13 @@ class BufferCache {
     static constexpr u64 STREAM_THRESHOLD = 16_KB;
 
 public:
+    struct DmaBufferRange {
+        const Buffer* buffer;
+        u64 offset;
+        u32 size;
+    };
+    using DmaBufferRangeList = boost::container::small_vector<DmaBufferRange, 8>;
+
     explicit BufferCache(const Vulkan::Instance& instance, Vulkan::Scheduler& scheduler,
                          Vulkan::Runtime& runtime, AmdGpu::Liverpool* liverpool,
                          TextureCache& texture_cache, PageManager& tracker);
@@ -120,13 +128,27 @@ public:
     /// Mark region as modified from the GPU
     void MarkRegionAsGpuModified(VAddr addr, size_t size);
 
-    /// Synchronizes all buffers needed for DMA.
-    void SynchronizeDmaBuffers();
+    struct DmaTouchRange {
+        VAddr address;
+        u32 size;
+    };
+
+    [[nodiscard]] bool IsDmaTouchRangeMapped(VAddr address, u32 size) const;
+
+    /// Synchronizes all resident buffers needed for DMA.
+    DmaBufferRangeList SynchronizeAllDmaBuffers(std::span<const VAddr> addresses,
+                                                std::span<const DmaTouchRange> loop_ranges);
+
+    /// Synchronizes touched buffers needed for DMA.
+    DmaBufferRangeList SynchronizeDmaBuffers(std::span<const VAddr> addresses,
+                                             std::span<const DmaTouchRange> loop_ranges);
 
     /// Commits pending sparse buffer memory binds. Must be called before every scheduler submit.
     void SubmitPendingArenaBinds(Vulkan::SubmitInfo& info);
 
 private:
+    DmaBufferRangeList MakeDmaTouchRangesResident(std::span<const DmaTouchRange> loop_ranges);
+
     struct ArenaBinds {
         const Buffer* arena;
         boost::container::small_vector<vk::SparseMemoryBind, 32> binds;
