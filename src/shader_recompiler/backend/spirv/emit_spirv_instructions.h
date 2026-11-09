@@ -490,6 +490,14 @@ Id EmitBallot(EmitContext& ctx, Id bit);
 Id EmitBallotFindLsb(EmitContext& ctx, Id mask);
 Id EmitInverseBallot(EmitContext& ctx, Id mask);
 Id EmitGroupAny(EmitContext& ctx, Id bit);
+Id EmitGroupIAdd32(EmitContext& ctx, Id value);
+Id EmitGroupSMin32(EmitContext& ctx, Id value);
+Id EmitGroupUMin32(EmitContext& ctx, Id value);
+Id EmitGroupSMax32(EmitContext& ctx, Id value);
+Id EmitGroupUMax32(EmitContext& ctx, Id value);
+Id EmitGroupBitwiseAnd32(EmitContext& ctx, Id value);
+Id EmitGroupBitwiseOr32(EmitContext& ctx, Id value);
+Id EmitGroupBitwiseXor32(EmitContext& ctx, Id value);
 Id EmitDataAppend(EmitContext& ctx, Id gds_dw_offset, Id exec);
 Id EmitDataConsume(EmitContext& ctx, Id gds_dw_offset, Id exec);
 
