@@ -119,7 +119,8 @@ void Rasterizer::PrepareRenderState(const GraphicsPipeline* pipeline) {
     for (s32 cb = 0; cb < std::bit_width(key.mrt_mask); ++cb) {
         auto& [image_id, desc] = cb_descs[cb];
         const auto& col_buf = regs.color_buffers[cb];
-        const u32 target_mask = regs.color_target_mask.GetMask(cb);
+        const u32 target_mask =
+            regs.color_target_mask.GetMask(cb) & regs.color_shader_mask.GetMask(cb);
         if (skip_cb_binding || !col_buf || !target_mask || (key.mrt_mask & (1 << cb)) == 0) {
             image_id = {};
             continue;
@@ -617,7 +618,11 @@ void Rasterizer::BindIndexBuffer(u32 index_offset, bool is_indirect) {
 
 void Rasterizer::ResetBindings(bool is_compute) {
     for (auto& image_id : bound_images) {
-        texture_cache.GetImage(image_id).binding = {};
+        auto& image = texture_cache.GetImage(image_id);
+        if (image.binding.is_target || image.binding.is_storage) {
+            image.InvalidateSubrects();
+        }
+        image.binding = {};
     }
     for (const auto [buffer, offset, size, src_access] : bound_buffers) {
         const auto dst_stage = is_compute ? vk::PipelineStageFlagBits2::eComputeShader
@@ -936,6 +941,9 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
                 image_id = depth_image_id;
                 image = &texture_cache.GetImage(image_id);
             }
+            if (desc.IsSubrectTexture(image->info)) {
+                continue;
+            }
             if (image->binding.is_bound) {
                 // The image is already bound. In case if it is about to be used as storage we
                 // need to force general layout on it.
@@ -953,7 +961,9 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
             image_infos.emplace_back(VK_NULL_HANDLE, VK_NULL_HANDLE, vk::ImageLayout::eGeneral);
         } else {
             if (auto& old_image = texture_cache.GetImage(image_id);
-                old_image.binding.needs_rebind) {
+                old_image.binding.needs_rebind ||
+                (desc.IsSubrectTexture(old_image.info) &&
+                 False(old_image.flags & VideoCore::ImageFlagBits::Registered))) {
                 old_image.binding = {};
                 image_id = texture_cache.FindImage(desc);
             }
@@ -961,7 +971,15 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
             bound_images.emplace_back(image_id);
 
             auto& image = texture_cache.GetImage(image_id);
+            if (desc.IsSubrectTexture(image.info)) {
+                texture_cache.UpdateImage(image_id);
+                auto& view = runtime.FindSubrectView(image, desc.info, desc.view_info);
+                image_infos.emplace_back(VK_NULL_HANDLE, *view.image_view,
+                                         vk::ImageLayout::eShaderReadOnlyOptimal);
+                continue;
+            }
             auto& image_view = texture_cache.FindTexture(image_id, desc);
+            image.binding.is_storage |= is_storage;
             const auto binding = image.binding;
 
             // The image is either bound as storage in a separate descriptor or bound as render

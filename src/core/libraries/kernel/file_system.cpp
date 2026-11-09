@@ -357,9 +357,7 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
 
         // Map the guest open flags onto a single host access mode.
         Common::FS::FileAccessMode access_mode;
-        if (truncate) {
-            access_mode = Common::FS::FileAccessMode::ReadWrite;
-        } else if (read) {
+        if (read) {
             access_mode = Common::FS::FileAccessMode::Read;
         } else if (write) {
             access_mode =
@@ -419,8 +417,8 @@ s32 PS4_SYSV_ABI close(s32 fd) {
     if (file->type == Core::FileSys::FileType::Socket) {
         return Libraries::Net::KernelClose(fd);
     }
-    ReleaseFlockState(file);
     if (file->ref_count <= 1) {
+        ReleaseFlockState(file);
         if (file->type == Core::FileSys::FileType::Regular) {
             file->handle.reset();
         }

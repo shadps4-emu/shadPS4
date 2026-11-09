@@ -1,7 +1,9 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
+
+#include <array>
 
 #include "common/assert.h"
 #include "common/types.h"
@@ -164,8 +166,8 @@ struct DepthRenderOverride {
 };
 
 struct Eqaa {
-    u32 max_anchor_samples : 1;
-    u32 : 3;
+    u32 max_anchor_samples : 3;
+    u32 : 1;
     u32 ps_iter_samples : 3;
     u32 : 1;
     u32 mask_export_num_samples : 3;
@@ -181,6 +183,21 @@ struct Eqaa {
     u32 : 2;
     u32 overrasterization_amount : 3;
     u32 enable_postz_overrasterization : 1;
+};
+
+struct AlphaToMask {
+    u32 enable : 1;
+    u32 : 7;
+    u32 offset0 : 2;
+    u32 offset1 : 2;
+    u32 offset2 : 2;
+    u32 offset3 : 2;
+    u32 offset_round : 1;
+
+    u32 Offset(u32 pixel) const {
+        const std::array<u32, 4> offsets{offset0, offset1, offset2, offset3};
+        return 2 * offsets[pixel] + offset_round;
+    }
 };
 
 struct DepthBuffer {
