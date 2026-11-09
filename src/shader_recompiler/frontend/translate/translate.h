@@ -387,6 +387,10 @@ private:
 
     void ExportRenderTarget(const GcnInst& inst);
     void ExportDepth(const GcnInst& inst);
+    IR::U32 AlphaToMaskLevel(const IR::F32& alpha);
+    IR::U32 AlphaToMaskLevel(const IR::U32& packed, AmdGpu::ShaderExportFormat format);
+    void ExportAlphaToMask(const IR::U32& level);
+    IR::U32 ReplicateSampleMask(const IR::U32& mask, u32 log2_samples);
     void LogMissingOpcode(const GcnInst& inst);
 
     IR::VectorReg GetScratchVgpr(u32 offset);
@@ -401,6 +405,7 @@ private:
     std::array<IR::Attribute, MaxInterpVgpr> vgpr_to_interp{};
     FetchShaderData fetch_data{};
     bool opcode_missing = false;
+    bool valid_mask_exported = false;
     u32 pc{};
 };
 
