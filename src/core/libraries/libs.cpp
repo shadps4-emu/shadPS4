@@ -71,6 +71,7 @@
 #include "core/libraries/screenshot/screenshot.h"
 #include "core/libraries/share_play/shareplay.h"
 #include "core/libraries/signin_dialog/signindialog.h"
+#include "core/libraries/syscore/syscore.h"
 #include "core/libraries/sysmodule/sysmodule.h"
 #include "core/libraries/system/commondialog.h"
 #include "core/libraries/system/msgdialog.h"
@@ -145,6 +146,7 @@ void InitHLELibs(Core::Loader::SymbolsResolver* sym) {
             {"libSceSaveDataDialog.sprx", Libraries::SaveData::Dialog::RegisterLib},
             {"libSceSsl2.sprx", Libraries::Ssl2::RegisterLib},
             {"libSceSysmodule.sprx", Libraries::SysModule::RegisterLib},
+            {"libSceSysCore.sprx", Libraries::SysCore::RegisterLib},
             {"libSceNpCommerce.sprx", Libraries::Np::NpCommerce::RegisterLib},
             {"libSceNpCommon.sprx", Libraries::Np::NpCommon::RegisterLib},
             {"libSceNpManager.sprx", Libraries::Np::NpManager::RegisterLib},
