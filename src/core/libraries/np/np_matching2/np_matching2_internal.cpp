@@ -1731,11 +1731,30 @@ void FireEvent(const PendingEvent& ev) {
 
 } // namespace
 
+DispatchHold::DispatchHold() {
+    auto& state = NpHandler::GetInstance().GetMatching2State();
+    std::scoped_lock lock(state.queue_mutex);
+    ++state.dispatch_holds;
+}
+
+DispatchHold::~DispatchHold() {
+    auto& state = NpHandler::GetInstance().GetMatching2State();
+    {
+        std::scoped_lock lock(state.queue_mutex);
+        --state.dispatch_holds;
+    }
+    state.queue_cv.notify_all();
+}
+
 PS4_SYSV_ABI void* EventDispatcherThreadMain(void*) {
     Common::SetCurrentThreadName("Matching2:Dispatch");
     auto& state = NpHandler::GetInstance().GetMatching2State();
     std::unique_lock lock(state.queue_mutex);
     while (state.dispatch_running.load()) {
+        if (state.dispatch_holds > 0) {
+            state.queue_cv.wait(lock);
+            continue;
+        }
         const auto now = std::chrono::steady_clock::now();
 
         std::vector<PendingEvent> ready;
