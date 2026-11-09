@@ -687,16 +687,16 @@ int HandleTable::CreateHandle() {
     return m_files.size() - 1;
 }
 
-void HandleTable::DeleteHandle(int d) {
+File* HandleTable::UnrefHandle(int d) {
     File* to_delete = nullptr;
     {
         std::scoped_lock lock{m_mutex};
         if (d < 0 || static_cast<size_t>(d) >= m_files.size()) {
-            return;
+            return nullptr;
         }
         auto* file = m_files[d];
         if (!file) {
-            return;
+            return nullptr;
         }
         m_files[d] = nullptr;
         if (static_cast<size_t>(d) < m_fd_flags.size()) {
@@ -706,7 +706,11 @@ void HandleTable::DeleteHandle(int d) {
             to_delete = file;
         }
     }
-    delete to_delete;
+    return to_delete;
+}
+
+void HandleTable::DeleteHandle(int d) {
+    delete UnrefHandle(d);
 }
 
 int HandleTable::DuplicateHandleFrom(int old_fd, int min_fd, bool cloexec) {

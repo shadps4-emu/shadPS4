@@ -417,16 +417,15 @@ s32 PS4_SYSV_ABI close(s32 fd) {
     if (file->type == Core::FileSys::FileType::Socket) {
         return Libraries::Net::KernelClose(fd);
     }
-    if (file->ref_count <= 1) {
-        ReleaseFlockState(file);
-        if (file->type == Core::FileSys::FileType::Regular) {
-            file->handle.reset();
-        }
-        file->is_opened = false;
-    }
     LOG_INFO(Kernel_Fs, "Closing {}", file->m_guest_name);
-    // FIXME: Lock file mutex before deleting it?
-    h->DeleteHandle(fd);
+    if (auto* to_delete = h->UnrefHandle(fd)) {
+        ReleaseFlockState(to_delete);
+        if (to_delete->type == Core::FileSys::FileType::Regular) {
+            to_delete->handle.reset();
+        }
+        to_delete->is_opened = false;
+        delete to_delete;
+    }
     return ORBIS_OK;
 }
 
