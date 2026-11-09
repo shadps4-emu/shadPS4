@@ -33,6 +33,7 @@ void Regs::SetDefaults() {
     // Individual context regs values
     reg_array[ContextRegWordOffset + 0x000d] = 0x40004000u;
     reg_array[ContextRegWordOffset + 0x008e] = 0xffffffffu;
+    reg_array[ContextRegWordOffset + 0x008f] = 0xffffffffu;
     reg_array[ContextRegWordOffset + 0x01b6] = 0x00000002u;
     reg_array[ContextRegWordOffset + 0x0204] = 0x00090000u;
     reg_array[ContextRegWordOffset + 0x0205] = 0x00000004u;
