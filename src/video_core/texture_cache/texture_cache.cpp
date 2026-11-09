@@ -894,14 +894,23 @@ void TextureCache::RefreshImage(Image& image) {
     const u32 num_mips = image.info.resources.levels;
 
     SmallVector<vk::BufferImageCopy, 14> image_copies;
+    // The Vulkan image dimensions may differ from the guest image dimensions (e.g. when clamped
+    // by device limits). Clamp copy extents to the actual Vulkan image dimensions to avoid
+    // VUID-vkCmdCopyBufferToImage-imageSubresource-07971 validation errors.
+    const u32 vk_width = image.backing->image.image_ci.extent.width;
+    const u32 vk_height = image.backing->image.image_ci.extent.height;
     for (u32 m = 0; m < num_mips; m++) {
         const u32 width = std::max(image.info.size.width >> m, 1u);
         const u32 height = std::max(image.info.size.height >> m, 1u);
         const u32 depth =
             image.info.props.is_volume ? std::max(image.info.size.depth >> m, 1u) : 1u;
         const auto [mip_size, mip_pitch, mip_height, mip_offset] = image.info.mips_layout[m];
-        const u32 extent_width = mip_pitch ? std::min<u32>(mip_pitch, width) : width;
-        const u32 extent_height = mip_height ? std::min<u32>(mip_height, height) : height;
+        const u32 vk_mip_w = std::max(vk_width >> m, 1u);
+        const u32 vk_mip_h = std::max(vk_height >> m, 1u);
+        const u32 extent_width =
+            std::min<u32>({mip_pitch ? mip_pitch : width, width, vk_mip_w});
+        const u32 extent_height =
+            std::min<u32>({mip_height ? mip_height : height, height, vk_mip_h});
         image_copies.push_back({
             .bufferOffset = mip_offset,
             .bufferRowLength = mip_pitch,
