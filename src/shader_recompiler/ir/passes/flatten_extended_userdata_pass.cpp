@@ -571,7 +571,7 @@ static inline bool PushPtr(Xbyak::CodeGenerator& c, PassInfo& pass_info, const I
     if (off_dw.IsImmediate()) {
         c.mov(rdi, ptr[rdi + (off_dw.U32() << 2)]);
     } else {
-        ABORT_ON_FAILURE(ComputeOffset(c, r10d, pass_info, off_dw));
+        POP_ABORT_ON_FAILURE(ComputeOffset(c, r10d, pass_info, off_dw));
         c.shl(r10d, 2);
         c.mov(r10d, r10d);
         c.mov(rdi, ptr[rdi + r10]);

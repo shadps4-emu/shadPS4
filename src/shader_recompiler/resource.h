@@ -188,7 +188,8 @@ struct SamplerResource {
     constexpr AmdGpu::Sampler GetSharp(const auto& info) const noexcept {
         AmdGpu::Sampler sampler{};
         sharp_fetch.Fetch(info.flattened_ud_buf.data(), &sampler);
-        if (post_op == SharpFetchPostOp::DisableAnisoIfSingleLod) {
+        if (post_op == SharpFetchPostOp::DisableAnisoIfSingleLod &&
+            post_op_tsharp_dw3_off != UNKNOWN_LOCATION) {
             const u32 tsharp_dw3 = info.flattened_ud_buf[post_op_tsharp_dw3_off];
             if (((tsharp_dw3 >> 12) & 0xff) == 0) {
                 sampler.max_aniso.Assign(AmdGpu::AnisoRatio::One);
