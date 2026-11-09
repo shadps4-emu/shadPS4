@@ -346,15 +346,15 @@ void PatchImageSharp(const ResourceDiscovery& resource, Info& info, Descriptors&
     }
 }
 
-static IR::Value IsMbcntWithExec(IR::Value value, bool is_hi, IR::U1 exec) {
+static std::pair<IR::Value, bool> IsMbcntWithExec(IR::Value value, IR::U1 exec) {
     if (value.IsImmediate()) {
         return {};
     }
     const IR::Inst* inst = value.Inst();
-    if (inst->GetOpcode() != IR::Opcode::MaskedBitCount32 || inst->Arg(0).IsImmediate() ||
-        inst->Arg(2).U1() != is_hi) {
+    if (inst->GetOpcode() != IR::Opcode::MaskedBitCount32 || inst->Arg(0).IsImmediate()) {
         return {};
     }
+    const bool is_hi = inst->Arg(2).U1();
     IR::Inst* prod = inst->Arg(0).Inst();
     if (prod->GetOpcode() != IR::Opcode::CompositeExtractU32x2 || prod->Arg(0).IsImmediate() ||
         prod->Arg(1).U32() != is_hi) {
@@ -365,10 +365,10 @@ static IR::Value IsMbcntWithExec(IR::Value value, bool is_hi, IR::U1 exec) {
         return {};
     }
     prod = prod->Arg(0).Inst();
-    if (prod->GetOpcode() != IR::Opcode::Ballot || (prod->Arg(0) != exec && !is_hi)) {
+    if (prod->GetOpcode() != IR::Opcode::Ballot || (prod->Arg(0) != exec)) {
         return {};
     }
-    return inst->Arg(1);
+    return std::make_pair(inst->Arg(1), is_hi);
 }
 
 static IR::Use FindUniqueUser(IR::Inst* inst, auto&& pred) {
@@ -416,13 +416,14 @@ static void RemoveAppendBufferLaneOffset(IR::Inst& vx) {
             // First pattern
             ASSERT(vx.GetOpcode() == IR::Opcode::DataAppend);
             IR::Inst* vy = user;
-            auto vx_2 = IsMbcntWithExec(IR::Value{vy}, true, exec);
+            auto [vx_2, is_hi_1] = IsMbcntWithExec(IR::Value{vy}, exec);
             ASSERT(!vx_2.IsEmpty() && vx_2 == IR::Value{&vx});
             const auto [idx, operand] = FindUniqueUser(vy, [](const IR::Inst* inst) {
                 return inst->GetOpcode() == IR::Opcode::MaskedBitCount32;
             });
-            auto vy_2 = IsMbcntWithExec(IR::Value{idx}, false, exec);
+            auto [vy_2, is_hi_2] = IsMbcntWithExec(IR::Value{idx}, exec);
             ASSERT(!vy_2.IsEmpty() && vy_2 == IR::Value{vy});
+            ASSERT(is_hi_1 != is_hi_2);
             idx->ReplaceUsesWithAndRemove(IR::Value{&vx});
             continue;
         }
@@ -442,10 +443,11 @@ static void RemoveAppendBufferLaneOffset(IR::Inst& vx) {
 
         // Other patterns
         auto vz = user->Arg(1 - operand);
-        auto vy = IsMbcntWithExec(vz, false, exec);
+        auto [vy, is_hi_1] = IsMbcntWithExec(vz, exec);
         ASSERT(!vy.IsEmpty() && !vy.IsImmediate());
-        auto zero_const = IsMbcntWithExec(vy, true, exec);
+        auto [zero_const, is_hi_2] = IsMbcntWithExec(vy, exec);
         ASSERT(!zero_const.IsEmpty() && zero_const.IsImmediate() && zero_const.U32() == 0u);
+        ASSERT(is_hi_1 != is_hi_2);
         user->SetArg(1 - operand, IR::Value{u32{0u}});
     }
 }
