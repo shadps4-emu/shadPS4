@@ -524,6 +524,8 @@ bool Instance::CreateDevice() {
         vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT{
             .shaderBufferFloat32AtomicMinMax =
                 shader_atomic_float2_features.shaderBufferFloat32AtomicMinMax,
+            .shaderSharedFloat32AtomicMinMax =
+                shader_atomic_float2_features.shaderSharedFloat32AtomicMinMax,
             .shaderImageFloat32AtomicMinMax =
                 shader_atomic_float2_features.shaderImageFloat32AtomicMinMax,
         },
