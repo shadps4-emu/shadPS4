@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cstring>
 #include <string>
 #include <vector>
 
@@ -90,6 +91,11 @@ private:
 
 class PushEventFilter {
 public:
+    struct Entry {
+        std::string data_type;
+        std::vector<std::string> extd_data_keys;
+    };
+
     PushEventFilter(s32 new_id, const char* service_name, OrbisNpServiceLabel service_label,
                     bool is_internal)
         : id(new_id), np_service_name(service_name ? service_name : ""),
@@ -103,13 +109,38 @@ public:
         return id;
     }
 
+    const std::string& GetServiceName() const {
+        return np_service_name;
+    }
+
+    OrbisNpServiceLabel GetServiceLabel() const {
+        return np_service_label;
+    }
+
+    const std::vector<Entry>& GetEntries() const {
+        return entries;
+    }
+
+    const Entry* FindEntry(const std::string& data_type) const {
+        for (const Entry& entry : entries) {
+            if (entry.data_type == data_type) {
+                return &entry;
+            }
+        }
+        return nullptr;
+    }
+
+    bool MatchesService(const std::string& event_service_name) const {
+        return np_service_name.empty() || event_service_name.empty() ||
+               np_service_name == event_service_name;
+    }
+
 private:
     s32 id{};
+    std::string np_service_name{};
     OrbisNpServiceLabel np_service_label{};
     bool internal{};
-    std::vector<OrbisNpWebApi2PushEventFilterParameter> filter_params{};
-    std::vector<std::vector<OrbisNpWebApi2PushEventExtdDataKey>> data_key_copy_storage{};
-    std::string np_service_name{};
+    std::vector<Entry> entries{};
 };
 
 struct PushEventCallback {
@@ -148,6 +179,14 @@ public:
 
     bool CallbackRunning() {
         return state == 2;
+    }
+
+    bool IsStarted() const {
+        return started;
+    }
+
+    std::string GetUuid() const {
+        return std::string(id.uuid, strnlen(id.uuid, sizeof(id.uuid)));
     }
 
 private:
