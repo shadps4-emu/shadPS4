@@ -22,6 +22,7 @@ constexpr u64 RING_IDLE_FRAMES = 300;
 constexpr u64 LARGE_IDLE_FRAMES = 120;
 constexpr u64 LARGE_MIN_GRANULARITY = 64_KB;
 constexpr u64 BLOCK_SIZE = 16_MB;
+constexpr u64 RING_MAX_BLOCKS = 16;
 
 u64 RoundAllocationSize(u64 size) {
     const u64 step = std::max(std::bit_floor(size) / 4, LARGE_MIN_GRANULARITY);
@@ -63,6 +64,12 @@ StagingBufferRef StagingBufferPool::RequestFromRing(Ring& ring, u64 size, u64 al
         if (!ring.blocks.empty() && unsynchronized) {
             best = &ring.blocks[(ring.current + 1) % ring.blocks.size()];
             best_offset = 0;
+        } else if (ring.blocks.size() >= RING_MAX_BLOCKS) {
+            // The ring is full. Wait for the GPU to release the oldest block instead of adding
+            // another one for every request made while all blocks are still in use.
+            ring.current = (ring.current + 1) % ring.blocks.size();
+            best = &ring.blocks[ring.current];
+            best_offset = *best->buffer->Reserve(size, alignment, true);
         } else {
             best = &ring.blocks.emplace_back(Block{
                 .buffer = std::make_unique<VideoCore::StreamBuffer>(instance, scheduler, type,
