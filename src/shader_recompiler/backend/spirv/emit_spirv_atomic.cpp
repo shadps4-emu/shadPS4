@@ -11,62 +11,56 @@ namespace {
 using PointerType = EmitContext::PointerType;
 using PointerSize = EmitContext::PointerSize;
 
-std::pair<Id, Id> AtomicArgs(EmitContext& ctx) {
+std::pair<Id, Id> BufferAtomicArgs(EmitContext& ctx) {
     const Id scope{ctx.ConstU32(static_cast<u32>(spv::Scope::Device))};
+    const Id semantics{ctx.u32_zero_value};
+    return {scope, semantics};
+}
+
+std::pair<Id, Id> SharedAtomicArgs(EmitContext& ctx) {
+    const Id scope{ctx.ConstU32(static_cast<u32>(spv::Scope::Workgroup))};
     const Id semantics{ctx.u32_zero_value};
     return {scope, semantics};
 }
 
 Id SharedAtomicU32(EmitContext& ctx, Id offset, Id value,
                    Id (Sirit::Module::*atomic_func)(Id, Id, Id, Id, Id)) {
-    const Id shift_id{ctx.ConstU32(2U)};
-    const Id index{ctx.OpShiftRightLogical(ctx.U32[1], offset, shift_id)};
-    const Id pointer{ctx.EmitSharedMemoryAccess(ctx.shared_u32, ctx.shared_memory_u32, index)};
-    const auto [scope, semantics]{AtomicArgs(ctx)};
+    const Id pointer = ctx.EmitSharedMemoryAccess(offset, PointerType::U32);
+    const auto [scope, semantics]{SharedAtomicArgs(ctx)};
     return (ctx.*atomic_func)(ctx.U32[1], pointer, scope, semantics, value);
 }
 
 Id SharedAtomicU32IncDec(EmitContext& ctx, Id offset,
                          Id (Sirit::Module::*atomic_func)(Id, Id, Id, Id)) {
-    const Id shift_id{ctx.ConstU32(2U)};
-    const Id index{ctx.OpShiftRightLogical(ctx.U32[1], offset, shift_id)};
-    const Id pointer{ctx.EmitSharedMemoryAccess(ctx.shared_u32, ctx.shared_memory_u32, index)};
-    const auto [scope, semantics]{AtomicArgs(ctx)};
+    const Id pointer = ctx.EmitSharedMemoryAccess(offset, PointerType::U32);
+    const auto [scope, semantics]{SharedAtomicArgs(ctx)};
     return (ctx.*atomic_func)(ctx.U32[1], pointer, scope, semantics);
 }
 
 Id SharedAtomicU64(EmitContext& ctx, Id offset, Id value,
                    Id (Sirit::Module::*atomic_func)(Id, Id, Id, Id, Id)) {
-    const Id shift_id{ctx.ConstU32(3U)};
-    const Id index{ctx.OpShiftRightLogical(ctx.U32[1], offset, shift_id)};
-    const Id pointer{ctx.EmitSharedMemoryAccess(ctx.shared_u64, ctx.shared_memory_u64, index)};
-    const auto [scope, semantics]{AtomicArgs(ctx)};
+    const Id pointer = ctx.EmitSharedMemoryAccess(offset, PointerType::U64);
+    const auto [scope, semantics]{SharedAtomicArgs(ctx)};
     return (ctx.*atomic_func)(ctx.U64, pointer, scope, semantics, value);
 }
 
 Id SharedAtomicU64IncDec(EmitContext& ctx, Id offset,
                          Id (Sirit::Module::*atomic_func)(Id, Id, Id, Id)) {
-    const Id shift_id{ctx.ConstU32(3U)};
-    const Id index{ctx.OpShiftRightLogical(ctx.U32[1], offset, shift_id)};
-    const Id pointer{ctx.EmitSharedMemoryAccess(ctx.shared_u64, ctx.shared_memory_u64, index)};
-    const auto [scope, semantics]{AtomicArgs(ctx)};
+    const Id pointer = ctx.EmitSharedMemoryAccess(offset, PointerType::U64);
+    const auto [scope, semantics]{SharedAtomicArgs(ctx)};
     return (ctx.*atomic_func)(ctx.U64, pointer, scope, semantics);
 }
 
 Id SharedAtomicU32CmpSwap(EmitContext& ctx, Id offset, Id value, Id cmp_value) {
-    const Id shift_id{ctx.ConstU32(2U)};
-    const Id index{ctx.OpShiftRightLogical(ctx.U32[1], offset, shift_id)};
-    const Id pointer{ctx.EmitSharedMemoryAccess(ctx.shared_u32, ctx.shared_memory_u32, index)};
-    const auto [scope, semantics]{AtomicArgs(ctx)};
+    const Id pointer = ctx.EmitSharedMemoryAccess(offset, PointerType::U32);
+    const auto [scope, semantics]{SharedAtomicArgs(ctx)};
     return ctx.OpAtomicCompareExchange(ctx.U32[1], pointer, scope, semantics, semantics, value,
                                        cmp_value);
 }
 
 Id SharedAtomicU64CmpSwap(EmitContext& ctx, Id offset, Id value, Id cmp_value) {
-    const Id shift_id{ctx.ConstU32(3U)};
-    const Id index{ctx.OpShiftRightLogical(ctx.U32[1], offset, shift_id)};
-    const Id pointer{ctx.EmitSharedMemoryAccess(ctx.shared_u64, ctx.shared_memory_u64, index)};
-    const auto [scope, semantics]{AtomicArgs(ctx)};
+    const Id pointer = ctx.EmitSharedMemoryAccess(offset, PointerType::U64);
+    const auto [scope, semantics]{SharedAtomicArgs(ctx)};
     return ctx.OpAtomicCompareExchange(ctx.U64, pointer, scope, semantics, semantics, value,
                                        cmp_value);
 }
@@ -81,7 +75,7 @@ Id BufferAtomicU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id 
     }
     const auto [id, pointer_type] = buffer.Alias(is_float ? PointerType::F32 : PointerType::U32);
     const Id ptr = ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, address);
-    const auto [scope, semantics]{AtomicArgs(ctx)};
+    const auto [scope, semantics]{BufferAtomicArgs(ctx)};
     return (ctx.*atomic_func)(type, ptr, scope, semantics, value);
 }
 
@@ -93,7 +87,7 @@ Id BufferAtomicU32IncDec(EmitContext& ctx, IR::Inst* inst, u32 handle, Id addres
     }
     const auto [id, pointer_type] = buffer.Alias(PointerType::U32);
     const Id ptr = ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, address);
-    const auto [scope, semantics]{AtomicArgs(ctx)};
+    const auto [scope, semantics]{BufferAtomicArgs(ctx)};
     return (ctx.*atomic_func)(ctx.U32[1], ptr, scope, semantics);
 }
 
@@ -106,7 +100,7 @@ Id BufferAtomicU32CmpSwap(EmitContext& ctx, IR::Inst* inst, u32 handle, Id addre
     }
     const auto [id, pointer_type] = buffer.Alias(PointerType::U32);
     const Id ptr = ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, address);
-    const auto [scope, semantics]{AtomicArgs(ctx)};
+    const auto [scope, semantics]{BufferAtomicArgs(ctx)};
     return (ctx.*atomic_func)(ctx.U32[1], ptr, scope, semantics, semantics, value, cmp_value);
 }
 
@@ -118,7 +112,7 @@ Id BufferAtomicU64(EmitContext& ctx, IR::Inst* inst, u32 handle, Id address, Id 
     }
     const auto [id, pointer_type] = buffer.Alias(PointerType::U64);
     const Id ptr = ctx.OpAccessChain(pointer_type, id, ctx.u32_zero_value, address);
-    const auto [scope, semantics]{AtomicArgs(ctx)};
+    const auto [scope, semantics]{BufferAtomicArgs(ctx)};
     return (ctx.*atomic_func)(ctx.U64, ptr, scope, semantics, value);
 }
 
@@ -146,7 +140,7 @@ Id ImageAtomicU32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id va
     const Id fixed_coords{FixImageAtomicCoords(ctx, coords, texture.view_type)};
     const Id pointer{
         ctx.OpImageTexelPointer(ctx.image_u32, texture.id, fixed_coords, ctx.ConstU32(0U))};
-    const auto [scope, semantics]{AtomicArgs(ctx)};
+    const auto [scope, semantics]{BufferAtomicArgs(ctx)};
     return (ctx.*atomic_func)(ctx.U32[1], pointer, scope, semantics, value);
 }
 
@@ -156,7 +150,7 @@ Id ImageAtomicF32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id va
     const Id fixed_coords{FixImageAtomicCoords(ctx, coords, texture.view_type)};
     const Id pointer{
         ctx.OpImageTexelPointer(ctx.image_f32, texture.id, fixed_coords, ctx.ConstU32(0U))};
-    const auto [scope, semantics]{AtomicArgs(ctx)};
+    const auto [scope, semantics]{BufferAtomicArgs(ctx)};
     return (ctx.*atomic_func)(ctx.F32[1], pointer, scope, semantics, value);
 }
 
@@ -167,7 +161,7 @@ Id ImageAtomicU32CmpSwap(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords
     const Id fixed_coords{FixImageAtomicCoords(ctx, coords, texture.view_type)};
     const Id pointer{
         ctx.OpImageTexelPointer(ctx.image_u32, texture.id, fixed_coords, ctx.ConstU32(0U))};
-    const auto [scope, semantics]{AtomicArgs(ctx)};
+    const auto [scope, semantics]{BufferAtomicArgs(ctx)};
     return (ctx.*atomic_func)(ctx.U32[1], pointer, scope, semantics, semantics, value, cmp_value);
 }
 } // Anonymous namespace

@@ -356,7 +356,7 @@ static std::pair<IR::Value, bool> IsMbcntWithExec(IR::Value value, IR::U1 exec) 
         return {};
     }
     prod = prod->Arg(0).Inst();
-    if (prod->GetOpcode() != IR::Opcode::Ballot || (prod->Arg(0) != exec)) {
+    if (prod->GetOpcode() != IR::Opcode::Ballot || (prod->Arg(0) != exec && !is_hi)) {
         return {};
     }
     return std::make_pair(inst->Arg(1), is_hi);
