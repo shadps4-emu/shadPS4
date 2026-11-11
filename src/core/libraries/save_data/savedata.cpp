@@ -774,10 +774,14 @@ Error PS4_SYSV_ABI sceSaveDataDelete(const OrbisSaveDataDelete* del) {
     }
     const auto save_path = SaveInstance::MakeDirSavePath(del->userId, g_game_serial, dirName);
     try {
+        if (Backup::IsBackupExecutingFor(save_path)) {
+            return Error::BACKUP_BUSY;
+        }
+        std::error_code ec;
+        fs::remove_all(Backup::MakeBackupPath(save_path), ec);
         if (fs::exists(save_path)) {
             fs::remove_all(save_path);
         }
-        fs::remove_all(Backup::MakeBackupPath(save_path));
     } catch (const fs::filesystem_error& e) {
         LOG_ERROR(Lib_SaveData, "Failed to delete save data: {}", e.what());
         return Error::INTERNAL;
