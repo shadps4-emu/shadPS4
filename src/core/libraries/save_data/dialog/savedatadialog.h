@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -12,11 +12,14 @@ class SymbolsResolver;
 
 namespace Libraries::SaveData::Dialog {
 
+struct OrbisSaveDataDialogCloseParam;
 struct OrbisSaveDataDialogParam;
 struct OrbisSaveDataDialogResult;
+class SaveDialogState;
 enum class OrbisSaveDataDialogProgressBarTarget : u32;
 
-CommonDialog::Error PS4_SYSV_ABI sceSaveDataDialogClose();
+CommonDialog::Error PS4_SYSV_ABI
+sceSaveDataDialogClose(const OrbisSaveDataDialogCloseParam* closeParam);
 CommonDialog::Error PS4_SYSV_ABI sceSaveDataDialogGetResult(OrbisSaveDataDialogResult* result);
 CommonDialog::Status PS4_SYSV_ABI sceSaveDataDialogGetStatus();
 CommonDialog::Error PS4_SYSV_ABI sceSaveDataDialogInitialize();
@@ -30,4 +33,8 @@ CommonDialog::Error PS4_SYSV_ABI sceSaveDataDialogTerminate();
 CommonDialog::Status PS4_SYSV_ABI sceSaveDataDialogUpdateStatus();
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
+
+const SaveDialogState& GetDialogStateForTest();
+void ResetDialogForTest();
+
 } // namespace Libraries::SaveData::Dialog

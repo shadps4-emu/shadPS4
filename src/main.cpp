@@ -22,6 +22,7 @@
 #include "core/emulator_state.h"
 #include "core/file_sys/fs.h"
 #include "core/ipc/ipc.h"
+#include "core/libraries/save_data/save_db.h"
 #include "core/user_settings.h"
 #include "emulator.h"
 #include "imgui/big_picture/big_picture.h"
@@ -72,6 +73,7 @@ int main(int argc, char* argv[]) {
     std::optional<std::filesystem::path> addGameFolder;
     std::optional<std::filesystem::path> setAddonFolder;
     std::optional<std::string> patchFile;
+    std::optional<std::string> rebuildSaveDataUser;
 
     std::vector<std::pair<std::filesystem::path, std::string>> mounts;
     static std::vector<std::string> env_vars;
@@ -105,6 +107,9 @@ int main(int argc, char* argv[]) {
 
     app.add_option("--add-game-folder", addGameFolder)->check(CLI::ExistingDirectory);
     app.add_option("--set-addon-folder", setAddonFolder)->check(CLI::ExistingDirectory);
+    app.add_option("-R,--rebuild-savedata", rebuildSaveDataUser,
+                   "Rebuild savedata.db from disk for a user ID (or all users if omitted)")
+        ->expected(0, 1);
     app.add_option("--mount", mounts, "Mount source to destination");
     app.add_option("-e,--env", env_vars, "Environment variables to pass to the guest");
 
@@ -180,6 +185,69 @@ int main(int argc, char* argv[]) {
         EmulatorSettings.Save();
         LOG_INFO(Config, "Addon folder successfully saved.");
         return 0;
+    }
+
+    if (app.count("--rebuild-savedata")) {
+        bool ok = true;
+        if (rebuildSaveDataUser && !rebuildSaveDataUser->empty()) {
+            u32 uid = 0;
+            const std::string& str = *rebuildSaveDataUser;
+            try {
+                if (str.rfind("0x", 0) == 0 || str.rfind("0X", 0) == 0) {
+                    uid = std::stoul(str, nullptr, 16);
+                } else if (str.size() == 8 &&
+                           str.find_first_not_of("0123456789abcdefABCDEF") == std::string::npos) {
+                    uid = std::stoul(str, nullptr, 16);
+                } else {
+                    uid = std::stoul(str, nullptr, 10);
+                }
+            } catch (...) {
+                LOG_ERROR(Debug, "Invalid user ID: {}", str);
+                return 1;
+            }
+            ok = Libraries::SaveData::SaveDb::RebuildFromDisk(uid);
+            LOG_INFO(Debug, "Rebuilding save data database for user {:08x}: {}", uid,
+                     ok ? "SUCCESS" : "FAILED");
+        } else {
+            std::vector<u32> user_ids;
+            for (const auto& u : UserManagement.GetAllUsers()) {
+                if (u.user_id >= 0) {
+                    user_ids.push_back(static_cast<u32>(u.user_id));
+                }
+            }
+            const auto home_dir = EmulatorSettings.GetHomeDir();
+            std::error_code ec;
+            if (std::filesystem::exists(home_dir, ec) &&
+                std::filesystem::is_directory(home_dir, ec)) {
+                for (const auto& entry : std::filesystem::directory_iterator(home_dir, ec)) {
+                    if (!entry.is_directory(ec)) {
+                        continue;
+                    }
+                    const auto name = entry.path().filename().string();
+                    if (name.size() == 8 &&
+                        name.find_first_not_of("0123456789abcdefABCDEF") == std::string::npos) {
+                        try {
+                            const u32 uid = std::stoul(name, nullptr, 16);
+                            if (std::find(user_ids.begin(), user_ids.end(), uid) ==
+                                user_ids.end()) {
+                                user_ids.push_back(uid);
+                            }
+                        } catch (...) {
+                        }
+                    }
+                }
+            }
+            if (user_ids.empty()) {
+                user_ids.push_back(UserManagement.GetDefaultUser().user_id);
+            }
+            for (u32 uid : user_ids) {
+                if (!Libraries::SaveData::SaveDb::RebuildFromDisk(uid)) {
+                    ok = false;
+                }
+            }
+            LOG_INFO(Debug, "Rebuilding save data database: {}", ok ? "SUCCESS" : "FAILED");
+        }
+        return ok ? 0 : 1;
     }
 
     if (!gamePath.has_value()) {

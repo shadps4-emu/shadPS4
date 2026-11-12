@@ -1,15 +1,19 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
+#include <cstring>
 #include <fmt/chrono.h>
 #include <imgui.h>
 #include <magic_enum/magic_enum.hpp>
 
 #include "common/elf_info.h"
+#include "common/io_file.h"
 #include "common/singleton.h"
 #include "common/string_util.h"
 #include "core/file_format/psf.h"
 #include "core/file_sys/fs.h"
+#include "core/libraries/save_data/save_db.h"
 #include "core/libraries/save_data/save_instance.h"
 #include "imgui/imgui_std.h"
 #include "savedatadialog_ui.h"
@@ -17,8 +21,6 @@
 using namespace ImGui;
 using namespace Libraries::CommonDialog;
 using Common::ElfInfo;
-
-constexpr u32 OrbisSaveDataBlockSize = 32768; // 32 KiB
 
 constexpr auto SAVE_ICON_SIZE = ImVec2{152.0f, 85.0f};
 constexpr auto SAVE_ICON_PADDING = ImVec2{8.0f, 2.0f};
@@ -46,15 +48,54 @@ static std::string SpaceSizeToString(size_t size) {
 
 namespace Libraries::SaveData::Dialog {
 
+static u32 GetFirmwareVerSafe() {
+    return ElfInfo::Instance().IsInitialized() ? ElfInfo::Instance().FirmwareVer()
+                                               : ElfInfo::FW_1150;
+}
+
+static std::string GetDefaultTitleIdSafe() {
+    std::string tid = "CUSA00000";
+    if (ElfInfo::Instance().IsInitialized()) {
+        tid = ElfInfo::Instance().GameSerial();
+    }
+    if (auto* psf = Common::Singleton<PSF>::Instance()) {
+        if (auto install_dir = psf->GetString("INSTALL_DIR_SAVEDATA");
+            install_dir && !install_dir->empty()) {
+            tid = std::string(*install_dir);
+        }
+    }
+    return tid;
+}
+
+static std::string FixedCharToString(const char* buf, size_t cap) {
+    return std::string(buf, strnlen(buf, cap));
+}
+
 void SaveDialogResult::CopyTo(OrbisSaveDataDialogResult& result) const {
     result.mode = this->mode;
     result.result = this->result;
     result.buttonId = this->button_id;
     if (result.dirName != nullptr) {
-        result.dirName->data.FromString(this->dir_name);
+        std::memset(result.dirName, 0, sizeof(OrbisSaveDataDirName));
+        std::memcpy(result.dirName->data, this->dir_name.data(),
+                    std::min(this->dir_name.size(), sizeof(result.dirName->data) - 1));
     }
-    if (result.param != nullptr && this->param.GetString(SaveParams::MAINTITLE).has_value()) {
-        result.param->FromSFO(this->param);
+    if (result.param != nullptr && this->param.GetString("MAINTITLE").has_value()) {
+        std::memset(result.param, 0, sizeof(OrbisSaveDataParam));
+        TruncateUtf8(*this->param.GetString("MAINTITLE"), result.param->title,
+                     sizeof(result.param->title));
+        if (auto v = this->param.GetString("SUBTITLE")) {
+            TruncateUtf8(*v, result.param->subTitle, sizeof(result.param->subTitle));
+        }
+        if (auto v = this->param.GetString("DETAIL")) {
+            TruncateUtf8(*v, result.param->detail, sizeof(result.param->detail));
+        }
+        if (auto v = this->param.GetInteger("SAVEDATA_LIST_PARAM")) {
+            result.param->userParam = static_cast<u32>(*v);
+        }
+        if (auto v = this->param.GetString("MTIME")) {
+            result.param->mtime = Iso8601ToUtcTime(*v);
+        }
     }
     result.userData = this->user_data;
 }
@@ -64,113 +105,133 @@ SaveDialogState::SaveDialogState(const OrbisSaveDataDialogParam& param) {
     this->type = param.dispType;
     this->user_data = param.userData;
     if (param.optionParam != nullptr) {
-        this->enable_back = {param.optionParam->back == OptionBack::ENABLE};
+        this->enable_back = {param.optionParam->back == OrbisSaveDataDialogOptionBack::ENABLE};
     }
 
-    const auto& game_serial = Common::Singleton<PSF>::Instance()
-                                  ->GetString("INSTALL_DIR_SAVEDATA")
-                                  .value_or(ElfInfo::Instance().GameSerial());
-
+    const std::string game_serial = GetDefaultTitleIdSafe();
     const auto item = param.items;
-    this->user_id = item->userId;
-
-    if (item->titleId == nullptr) {
+    if (item == nullptr) {
         this->title_id = game_serial;
     } else {
-        this->title_id = item->titleId->data.to_string();
-    }
-
-    if (item->dirName != nullptr) {
-        for (u32 i = 0; i < item->dirNameNum; i++) {
-            const auto dir_name = item->dirName[i].data.to_view();
-
-            if (dir_name.empty()) {
-                continue;
-            }
-
-            auto dir_path = SaveInstance::MakeDirSavePath(user_id, title_id, dir_name);
-
-            auto param_sfo_path = dir_path / "sce_sys" / "param.sfo";
-            if (!std::filesystem::exists(param_sfo_path)) {
-                continue;
-            }
-
-            PSF param_sfo;
-            param_sfo.Open(param_sfo_path);
-
-            auto last_write = std::chrono::system_clock::to_time_t(param_sfo.GetLastWrite());
-            std::string date_str = fmt::format("{:%d %b, %Y %R}", *std::localtime(&last_write));
-
-            size_t size = Common::FS::GetDirectorySize(dir_path);
-            std::string size_str = SpaceSizeToString(size);
-
-            auto icon_path = dir_path / "sce_sys" / "icon0.png";
-            RefCountedTexture icon;
-            if (std::filesystem::exists(icon_path)) {
-                icon = RefCountedTexture::DecodePngFile(icon_path);
-            }
-
-            bool is_corrupted = std::filesystem::exists(dir_path / "sce_sys" / "corrupted");
-
-            this->save_list.emplace_back(Item{
-                .dir_name = std::string{dir_name},
-                .icon = icon,
-
-                .title =
-                    std::string{param_sfo.GetString(SaveParams::MAINTITLE).value_or("Unknown")},
-                .subtitle = std::string{param_sfo.GetString(SaveParams::SUBTITLE).value_or("")},
-                .details = std::string{param_sfo.GetString(SaveParams::DETAIL).value_or("")},
-                .date = date_str,
-                .size = size_str,
-                .last_write = param_sfo.GetLastWrite(),
-                .pfo = param_sfo,
-                .is_corrupted = is_corrupted,
-            });
-        }
-    }
-
-    if (type == DialogType::SAVE && item->newItem != nullptr) {
-        RefCountedTexture icon;
-        std::string title{"New Save"};
-
-        const auto new_item = item->newItem;
-        if (new_item->iconBuf && new_item->iconSize) {
-            auto buf = (u8*)new_item->iconBuf;
-            icon = RefCountedTexture::DecodePngTexture({buf, buf + new_item->iconSize});
+        this->user_id = item->userId;
+        if (item->titleId == nullptr) {
+            this->title_id = game_serial;
         } else {
-            if (auto bytes = g_mnt->ReadFile("/app0/sce_sys/save_data.png")) {
+            this->title_id = FixedCharToString(item->titleId->data, sizeof(item->titleId->data));
+        }
+
+        if (item->dirName != nullptr) {
+            for (u32 i = 0; i < item->dirNameNum; i++) {
+                const std::string dir_name =
+                    FixedCharToString(item->dirName[i].data, sizeof(item->dirName[i].data));
+                if (dir_name.empty()) {
+                    continue;
+                }
+
+                const auto dir_path = GetSaveDirPath(user_id, title_id, dir_name);
+                const auto param_sfo_path = dir_path / "sce_sys" / "param.sfo";
+
+                auto db_entry_opt = SaveDb::GetEntry(user_id, title_id, dir_name);
+                const bool has_db = db_entry_opt.has_value();
+                const SaveDbEntry db_entry = db_entry_opt.value_or(SaveDbEntry{});
+                const bool has_sfo = std::filesystem::exists(param_sfo_path);
+                if (!has_sfo && !has_db) {
+                    continue;
+                }
+
+                PSF param_sfo;
+                const bool sfo_ok = has_sfo && param_sfo.Open(param_sfo_path);
+                const bool is_corrupted = (has_db && db_entry.is_broken) || !sfo_ok;
+
+                if (!sfo_ok && has_db) {
+                    param_sfo.AddString("MAINTITLE", db_entry.main_title, true);
+                    param_sfo.AddString("SUBTITLE", db_entry.sub_title, true);
+                    param_sfo.AddString("DETAIL", db_entry.detail, true);
+                    param_sfo.AddInteger("SAVEDATA_LIST_PARAM",
+                                         static_cast<s32>(db_entry.user_param), true);
+                    if (db_entry.mtime != 0) {
+                        param_sfo.AddString("MTIME", UtcTimeToIso8601(db_entry.mtime), true);
+                    }
+                }
+
+                const auto last_write_tp = param_sfo.GetLastWrite();
+                const auto last_write = std::chrono::system_clock::to_time_t(last_write_tp);
+                std::string date_str;
+                if (const auto* tm = std::localtime(&last_write)) {
+                    date_str = fmt::format("{:%d %b, %Y %R}", *tm);
+                }
+
+                const size_t size =
+                    std::filesystem::exists(dir_path)
+                        ? Common::FS::GetDirectorySize(dir_path)
+                        : static_cast<size_t>(db_entry.blocks * OrbisSaveDataBlockSize);
+                const std::string size_str = SpaceSizeToString(size);
+
+                const auto meta_icon = GetMetaIconPath(user_id, title_id, dir_name);
+                const auto save_icon = dir_path / "sce_sys" / "icon0.png";
+                const auto& icon_path = std::filesystem::exists(meta_icon) ? meta_icon : save_icon;
+                RefCountedTexture icon;
+                if (std::filesystem::exists(icon_path)) {
+                    icon = RefCountedTexture::DecodePngFile(icon_path);
+                }
+
+                this->save_list.emplace_back(Item{
+                    .dir_name = dir_name,
+                    .icon = icon,
+                    .title = std::string{param_sfo.GetString("MAINTITLE").value_or("Unknown")},
+                    .subtitle = std::string{param_sfo.GetString("SUBTITLE").value_or("")},
+                    .details = std::string{param_sfo.GetString("DETAIL").value_or("")},
+                    .date = date_str,
+                    .size = size_str,
+                    .last_write = last_write_tp,
+                    .pfo = param_sfo,
+                    .is_corrupted = is_corrupted,
+                });
+            }
+        }
+
+        if (type == OrbisSaveDataDialogType::SAVE && item->newItem != nullptr) {
+            RefCountedTexture icon;
+            std::string title{"New Save"};
+
+            const auto new_item = item->newItem;
+            if (new_item->iconBuf && new_item->iconSize) {
+                const auto* buf = static_cast<const u8*>(new_item->iconBuf);
+                icon = RefCountedTexture::DecodePngTexture({buf, buf + new_item->iconSize});
+            } else if (auto bytes = g_mnt->ReadFile("/app0/sce_sys/save_data.png")) {
                 icon = RefCountedTexture::DecodePngTexture(std::move(*bytes));
             }
-        }
-        if (new_item->title != nullptr) {
-            title = std::string{new_item->title};
+            if (new_item->title != nullptr) {
+                title = std::string{new_item->title};
+            }
+
+            this->new_item = Item{
+                .dir_name = "",
+                .icon = icon,
+                .title = title,
+            };
         }
 
-        this->new_item = Item{
-            .dir_name = "",
-            .icon = icon,
-            .title = title,
-        };
+        if (item->focusPos != OrbisSaveDataDialogFocusPos::DIRNAME) {
+            this->focus_pos = item->focusPos;
+        } else if (item->focusPosDirName != nullptr) {
+            this->focus_pos =
+                FixedCharToString(item->focusPosDirName->data, sizeof(item->focusPosDirName->data));
+        }
+        this->style = item->itemStyle;
     }
-
-    if (item->focusPos != FocusPos::DIRNAME) {
-        this->focus_pos = item->focusPos;
-    } else if (item->focusPosDirName != nullptr) {
-        this->focus_pos = item->focusPosDirName->data.to_string();
-    }
-    this->style = item->itemStyle;
 
     switch (mode) {
-    case SaveDataDialogMode::USER_MSG: {
+    case OrbisSaveDataDialogMode::USER_MSG: {
         this->state = UserState{param};
     } break;
-    case SaveDataDialogMode::SYSTEM_MSG:
+    case OrbisSaveDataDialogMode::SYSTEM_MSG:
         this->state = SystemState{*this, param};
         break;
-    case SaveDataDialogMode::ERROR_CODE: {
+    case OrbisSaveDataDialogMode::ERROR_CODE: {
         this->state = ErrorCodeState{param};
     } break;
-    case SaveDataDialogMode::PROGRESS_BAR: {
+    case OrbisSaveDataDialogMode::PROGRESS_BAR: {
         this->state = ProgressBarState{*this, param};
     } break;
     default:
@@ -188,76 +249,76 @@ SaveDialogState::UserState::UserState(const OrbisSaveDataDialogParam& param) {
 SaveDialogState::SystemState::SystemState(const SaveDialogState& state,
                                           const OrbisSaveDataDialogParam& param) {
 #define M(save, load, del)                                                                         \
-    if (type == DialogType::SAVE)                                                                  \
+    if (type == OrbisSaveDataDialogType::SAVE)                                                     \
         this->msg = save;                                                                          \
-    else if (type == DialogType::LOAD)                                                             \
+    else if (type == OrbisSaveDataDialogType::LOAD)                                                \
         this->msg = load;                                                                          \
-    else if (type == DialogType::DELETE)                                                           \
+    else if (type == OrbisSaveDataDialogType::DELETE)                                              \
         this->msg = del;                                                                           \
     else                                                                                           \
-        UNREACHABLE()
+        this->msg = ""
 
     auto type = param.dispType;
     auto& sys = *param.sysMsgParam;
     switch (sys.msgType) {
-    case SystemMessageType::NODATA: {
+    case OrbisSaveDataDialogSystemMessageType::NODATA: {
         return_cancel = true;
         this->msg = "There is no saved data";
     } break;
-    case SystemMessageType::CONFIRM:
+    case OrbisSaveDataDialogSystemMessageType::CONFIRM:
         show_no = true;
         M("Do you want to save?", "Do you want to load this saved data?",
           "Do you want to delete this saved data?");
         break;
-    case SystemMessageType::OVERWRITE:
+    case OrbisSaveDataDialogSystemMessageType::OVERWRITE:
         show_no = true;
         M("Do you want to overwrite the existing saved data?", "##UNKNOWN##", "##UNKNOWN##");
         break;
-    case SystemMessageType::NOSPACE:
+    case OrbisSaveDataDialogSystemMessageType::NOSPACE:
         return_cancel = true;
         M(fmt::format(
               "There is not enough space to save the data. To continue {} free space is required.",
               SpaceSizeToString(sys.value * OrbisSaveDataBlockSize)),
           "##UNKNOWN##", "##UNKNOWN##");
         break;
-    case SystemMessageType::PROGRESS:
+    case OrbisSaveDataDialogSystemMessageType::PROGRESS:
         hide_ok = true;
         show_cancel = state.enable_back.value_or(false);
         M("Saving...", "Loading...", "Deleting...");
         break;
-    case SystemMessageType::FILE_CORRUPTED:
+    case OrbisSaveDataDialogSystemMessageType::FILE_CORRUPTED:
         return_cancel = true;
         this->msg = "The saved data is corrupted.";
         break;
-    case SystemMessageType::FINISHED:
+    case OrbisSaveDataDialogSystemMessageType::FINISHED:
         return_cancel = true;
         M("Saved successfully.", "Loading complete.", "Deletion complete.");
         break;
-    case SystemMessageType::NOSPACE_CONTINUABLE:
+    case OrbisSaveDataDialogSystemMessageType::NOSPACE_CONTINUABLE:
         return_cancel = true;
         M(fmt::format("There is not enough space to save the data. {} free space is required.",
                       SpaceSizeToString(sys.value * OrbisSaveDataBlockSize)),
           "##UNKNOWN##", "##UNKNOWN##");
         break;
-    case SystemMessageType::CORRUPTED_AND_DELETED: {
+    case OrbisSaveDataDialogSystemMessageType::CORRUPTED_AND_DELETED: {
         show_cancel = state.enable_back.value_or(true);
         const char* msg1 = "The saved data is corrupted and will be deleted.";
         M(msg1, msg1, "##UNKNOWN##");
     } break;
-    case SystemMessageType::CORRUPTED_AND_CREATED: {
+    case OrbisSaveDataDialogSystemMessageType::CORRUPTED_AND_CREATED: {
         show_cancel = state.enable_back.value_or(true);
         const char* msg2 = "The saved data is corrupted. This saved data will be deleted and a new "
                            "one will be created.";
         M(msg2, msg2, "##UNKNOWN##");
     } break;
-    case SystemMessageType::CORRUPTED_AND_RESTORE: {
+    case OrbisSaveDataDialogSystemMessageType::CORRUPTED_AND_RESTORE: {
         show_cancel = state.enable_back.value_or(true);
         const char* msg3 =
             "The saved data is corrupted. The data that was backed up by the system will be "
             "restored.";
         M(msg3, msg3, "##UNKNOWN##");
     } break;
-    case SystemMessageType::TOTAL_SIZE_EXCEEDED:
+    case OrbisSaveDataDialogSystemMessageType::TOTAL_SIZE_EXCEEDED:
         M("Cannot create more saved data", "##UNKNOWN##", "##UNKNOWN##");
         break;
     default:
@@ -286,8 +347,6 @@ SaveDialogState::ErrorCodeState::ErrorCodeState(const OrbisSaveDataDialogParam& 
 }
 SaveDialogState::ProgressBarState::ProgressBarState(const SaveDialogState& state,
                                                     const OrbisSaveDataDialogParam& param) {
-    static auto fw_ver = ElfInfo::Instance().FirmwareVer();
-
     this->progress = 0;
 
     auto& bar = *param.progressBarParam;
@@ -296,23 +355,23 @@ SaveDialogState::ProgressBarState::ProgressBarState(const SaveDialogState& state
         this->msg = std::string{bar.msg};
     } else {
         switch (bar.sysMsgType) {
-        case ProgressSystemMessageType::INVALID:
+        case OrbisSaveDataDialogProgressSystemMessageType::INVALID:
             this->msg = "";
             break;
-        case ProgressSystemMessageType::PROGRESS:
+        case OrbisSaveDataDialogProgressSystemMessageType::PROGRESS:
             switch (state.type) {
-            case DialogType::SAVE:
+            case OrbisSaveDataDialogType::SAVE:
                 this->msg = "Saving...";
                 break;
-            case DialogType::LOAD:
+            case OrbisSaveDataDialogType::LOAD:
                 this->msg = "Loading...";
                 break;
-            case DialogType::DELETE:
+            case OrbisSaveDataDialogType::DELETE:
                 this->msg = "Deleting...";
                 break;
             }
             break;
-        case ProgressSystemMessageType::RESTORE:
+        case OrbisSaveDataDialogProgressSystemMessageType::RESTORE:
             this->msg = "Restoring saved data...";
             break;
         }
@@ -328,7 +387,7 @@ SaveDialogUi::SaveDialogUi(SaveDialogState* state, Status* status, SaveDialogRes
 }
 
 SaveDialogUi::~SaveDialogUi() {
-    Finish(ButtonId::INVALID);
+    Finish(OrbisSaveDataDialogButtonId::INVALID);
 }
 
 SaveDialogUi::SaveDialogUi(SaveDialogUi&& other) noexcept
@@ -359,14 +418,14 @@ SaveDialogUi& SaveDialogUi::operator=(SaveDialogUi&& other) noexcept {
     return *this;
 }
 
-void SaveDialogUi::Finish(ButtonId buttonId, Result r) {
+void SaveDialogUi::Finish(OrbisSaveDataDialogButtonId buttonId, Result r) {
     std::unique_lock lock(draw_mutex);
-    if (result) {
+    if (result && state) {
         result->mode = this->state->mode;
         result->result = r;
         result->button_id = buttonId;
         result->user_data = this->state->user_data;
-        if (state && state->mode != SaveDataDialogMode::LIST && !state->save_list.empty()) {
+        if (state->mode != OrbisSaveDataDialogMode::LIST && !state->save_list.empty()) {
             result->dir_name = state->save_list.front().dir_name;
         }
     }
@@ -388,7 +447,7 @@ void SaveDialogUi::Draw() {
 
     ImVec2 window_size;
 
-    if (state->GetMode() == SaveDataDialogMode::LIST) {
+    if (state->GetMode() == OrbisSaveDataDialogMode::LIST) {
         window_size = ImVec2{
             std::min(io.DisplaySize.x - 200.0f, 1100.0f),
             std::min(io.DisplaySize.y - 100.0f, 700.0f),
@@ -414,13 +473,13 @@ void SaveDialogUi::Draw() {
         // Draw title bigger
         SetWindowFontScale(1.7f);
         switch (state->type) {
-        case DialogType::SAVE:
+        case OrbisSaveDataDialogType::SAVE:
             TextUnformatted("Save");
             break;
-        case DialogType::LOAD:
+        case OrbisSaveDataDialogType::LOAD:
             TextUnformatted("Load");
             break;
-        case DialogType::DELETE:
+        case OrbisSaveDataDialogType::DELETE:
             TextUnformatted("Delete");
             break;
         }
@@ -429,19 +488,19 @@ void SaveDialogUi::Draw() {
 
         BeginGroup();
         switch (state->GetMode()) {
-        case SaveDataDialogMode::LIST:
+        case OrbisSaveDataDialogMode::LIST:
             DrawList();
             break;
-        case SaveDataDialogMode::USER_MSG:
+        case OrbisSaveDataDialogMode::USER_MSG:
             DrawUser();
             break;
-        case SaveDataDialogMode::SYSTEM_MSG:
+        case OrbisSaveDataDialogMode::SYSTEM_MSG:
             DrawSystemMessage();
             break;
-        case SaveDataDialogMode::ERROR_CODE:
+        case OrbisSaveDataDialogMode::ERROR_CODE:
             DrawErrorCode();
             break;
-        case SaveDataDialogMode::PROGRESS_BAR:
+        case OrbisSaveDataDialogMode::PROGRESS_BAR:
             DrawProgressBar();
             break;
         default:
@@ -493,7 +552,7 @@ void SaveDialogUi::DrawItem(int _id, const SaveDialogState::Item& item, bool cli
         if (pressed) {
             result->dir_name = item.dir_name;
             result->param = item.pfo;
-            Finish(ButtonId::INVALID);
+            Finish(OrbisSaveDataDialogButtonId::INVALID);
         }
         RenderNavHighlight(bb, id);
     }
@@ -527,7 +586,7 @@ void SaveDialogUi::DrawItem(int _id, const SaveDialogState::Item& item, bool cli
         pos_y += ctx.FontSize * text_spacing * 0.8f;
     }
 
-    if (state->style == ItemStyle::TITLE_SUBTITLE_DATESIZE) {
+    if (state->style == OrbisSaveDataDialogItemStyle::TITLE_SUBTITLE_DATESIZE) {
         if (!item.subtitle.empty()) {
             const char* begin = &item.subtitle.front();
             const char* end = &item.subtitle.back() + 1;
@@ -552,7 +611,8 @@ void SaveDialogUi::DrawItem(int _id, const SaveDialogState::Item& item, bool cli
         pos_y += ctx.FontSize * text_spacing;
     }
 
-    if (state->style == ItemStyle::TITLE_DATASIZE_SUBTITLE && !item.subtitle.empty()) {
+    if (state->style == OrbisSaveDataDialogItemStyle::TITLE_DATASIZE_SUBTITLE &&
+        !item.subtitle.empty()) {
         const char* begin = &item.subtitle.front();
         const char* end = &item.subtitle.back() + 1;
         RenderText(pos + ImVec2{pos_x, pos_y}, begin, end, false);
@@ -580,16 +640,18 @@ void SaveDialogUi::DrawList() {
         DrawItem(i++, item);
     }
     if (first_render) { // Make the initial focus
-        if (std::holds_alternative<FocusPos>(state->focus_pos)) {
-            auto pos = std::get<FocusPos>(state->focus_pos);
-            if (pos == FocusPos::LISTHEAD || pos == FocusPos::DATAHEAD) {
+        if (std::holds_alternative<OrbisSaveDataDialogFocusPos>(state->focus_pos)) {
+            auto pos = std::get<OrbisSaveDataDialogFocusPos>(state->focus_pos);
+            if (pos == OrbisSaveDataDialogFocusPos::LISTHEAD ||
+                pos == OrbisSaveDataDialogFocusPos::DATAHEAD) {
                 SetItemCurrentNavFocus(GetID(0));
-            } else if (pos == FocusPos::LISTTAIL || pos == FocusPos::DATATAIL) {
+            } else if (pos == OrbisSaveDataDialogFocusPos::LISTTAIL ||
+                       pos == OrbisSaveDataDialogFocusPos::DATATAIL) {
                 SetItemCurrentNavFocus(GetID(std::max(i - 1, 0)));
             } else { // Date
                 int idx = 0;
                 int max_idx = 0;
-                bool is_min = pos == FocusPos::DATAOLDEST;
+                bool is_min = pos == OrbisSaveDataDialogFocusPos::DATAOLDEST;
                 std::chrono::system_clock::time_point max_write{};
                 if (state->new_item.has_value()) {
                     idx++;
@@ -639,7 +701,7 @@ void SaveDialogUi::DrawList() {
         SetCursorPosX(GetContentRegionAvail().x - button_size.x);
         if (Button(back, button_size)) {
             result->dir_name.clear();
-            Finish(ButtonId::INVALID, Result::USER_CANCELED);
+            Finish(OrbisSaveDataDialogButtonId::INVALID, Result::USER_CANCELED);
         }
         if (IsKeyPressed(ImGuiKey_GamepadFaceRight)) {
             SetItemCurrentNavFocus();
@@ -659,7 +721,7 @@ void SaveDialogUi::DrawUser() {
         DrawItem(0, *state->new_item, false);
     }
 
-    auto has_btn = btn_type != ButtonType::NONE;
+    auto has_btn = btn_type != OrbisSaveDataDialogButtonType::NONE;
     ImVec2 btn_space;
     if (has_btn) {
         btn_space = ImVec2{0.0f, FOOTER_HEIGHT};
@@ -669,19 +731,20 @@ void SaveDialogUi::DrawUser() {
     if (!msg.empty()) {
         const char* begin = &msg.front();
         const char* end = &msg.back() + 1;
-        if (user_state.msg_type == UserMessageType::ERROR) {
+        if (user_state.msg_type == OrbisSaveDataDialogUserMessageType::ERROR) {
             PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
             // Maybe make the text bold?
         }
         DrawCenteredText(begin, end, GetContentRegionAvail() - btn_space);
-        if (user_state.msg_type == UserMessageType::ERROR) {
+        if (user_state.msg_type == OrbisSaveDataDialogUserMessageType::ERROR) {
             PopStyleColor();
         }
     }
 
     if (has_btn) {
         int count = 1;
-        if (btn_type == ButtonType::YESNO || btn_type == ButtonType::OKCANCEL) {
+        if (btn_type == OrbisSaveDataDialogButtonType::YESNO ||
+            btn_type == OrbisSaveDataDialogButtonType::OKCANCEL) {
             ++count;
         }
 
@@ -691,16 +754,16 @@ void SaveDialogUi::DrawUser() {
         });
 
         BeginGroup();
-        if (btn_type == ButtonType::YESNO) {
+        if (btn_type == OrbisSaveDataDialogButtonType::YESNO) {
             if (Button("Yes", BUTTON_SIZE)) {
-                Finish(ButtonId::YES);
+                Finish(OrbisSaveDataDialogButtonId::YES);
             }
             SameLine();
             if (Button("No", BUTTON_SIZE)) {
-                if (ElfInfo::Instance().FirmwareVer() < ElfInfo::FW_450) {
-                    Finish(ButtonId::INVALID, Result::USER_CANCELED);
+                if (GetFirmwareVerSafe() < ElfInfo::FW_450) {
+                    Finish(OrbisSaveDataDialogButtonId::INVALID, Result::USER_CANCELED);
                 } else {
-                    Finish(ButtonId::NO);
+                    Finish(OrbisSaveDataDialogButtonId::NO);
                 }
             }
             if (first_render || IsKeyPressed(ImGuiKey_GamepadFaceRight)) {
@@ -708,20 +771,20 @@ void SaveDialogUi::DrawUser() {
             }
         } else {
             if (Button("OK", BUTTON_SIZE)) {
-                if (btn_type == ButtonType::OK &&
-                    ElfInfo::Instance().FirmwareVer() < ElfInfo::FW_450) {
-                    Finish(ButtonId::INVALID, Result::USER_CANCELED);
+                if (btn_type == OrbisSaveDataDialogButtonType::OK &&
+                    GetFirmwareVerSafe() < ElfInfo::FW_450) {
+                    Finish(OrbisSaveDataDialogButtonId::INVALID, Result::USER_CANCELED);
                 } else {
-                    Finish(ButtonId::OK);
+                    Finish(OrbisSaveDataDialogButtonId::OK);
                 }
             }
             if (first_render) {
                 SetItemCurrentNavFocus();
             }
-            if (btn_type == ButtonType::OKCANCEL) {
+            if (btn_type == OrbisSaveDataDialogButtonType::OKCANCEL) {
                 SameLine();
                 if (Button("Cancel", BUTTON_SIZE)) {
-                    Finish(ButtonId::INVALID, Result::USER_CANCELED);
+                    Finish(OrbisSaveDataDialogButtonId::INVALID, Result::USER_CANCELED);
                 }
                 if (IsKeyPressed(ImGuiKey_GamepadFaceRight)) {
                     SetItemCurrentNavFocus();
@@ -762,24 +825,24 @@ void SaveDialogUi::DrawSystemMessage() {
     });
     BeginGroup();
     if (Button(sys_state.show_no ? "Yes" : "OK", BUTTON_SIZE)) {
-        if (sys_state.return_cancel && ElfInfo::Instance().FirmwareVer() < ElfInfo::FW_450) {
-            Finish(ButtonId::INVALID, Result::USER_CANCELED);
+        if (sys_state.return_cancel && GetFirmwareVerSafe() < ElfInfo::FW_450) {
+            Finish(OrbisSaveDataDialogButtonId::INVALID, Result::USER_CANCELED);
         } else {
-            Finish(ButtonId::YES);
+            Finish(OrbisSaveDataDialogButtonId::YES);
         }
     }
     SameLine();
     if (sys_state.show_no) {
         if (Button("No", BUTTON_SIZE)) {
-            if (ElfInfo::Instance().FirmwareVer() < ElfInfo::FW_450) {
-                Finish(ButtonId::INVALID, Result::USER_CANCELED);
+            if (GetFirmwareVerSafe() < ElfInfo::FW_450) {
+                Finish(OrbisSaveDataDialogButtonId::INVALID, Result::USER_CANCELED);
             } else {
-                Finish(ButtonId::NO);
+                Finish(OrbisSaveDataDialogButtonId::NO);
             }
         }
     } else if (sys_state.show_cancel) {
         if (Button("Cancel", BUTTON_SIZE)) {
-            Finish(ButtonId::INVALID, Result::USER_CANCELED);
+            Finish(OrbisSaveDataDialogButtonId::INVALID, Result::USER_CANCELED);
         }
     }
     if (first_render || IsKeyPressed(ImGuiKey_GamepadFaceRight)) {
@@ -810,10 +873,10 @@ void SaveDialogUi::DrawErrorCode() {
         ws.y - FOOTER_HEIGHT + 5.0f,
     });
     if (Button("OK", BUTTON_SIZE)) {
-        if (ElfInfo::Instance().FirmwareVer() < ElfInfo::FW_450) {
-            Finish(ButtonId::INVALID, Result::USER_CANCELED);
+        if (GetFirmwareVerSafe() < ElfInfo::FW_450) {
+            Finish(OrbisSaveDataDialogButtonId::INVALID, Result::USER_CANCELED);
         } else {
-            Finish(ButtonId::OK);
+            Finish(OrbisSaveDataDialogButtonId::OK);
         }
     }
     if (first_render) {

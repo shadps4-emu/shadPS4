@@ -23,7 +23,7 @@ bool UserManager::AddUser(const User& user) {
     m_users.user.push_back(user);
 
     // Create user home directory and subfolders
-    const auto user_dir = EmulatorSettings.GetHomeDir() / std::to_string(user.user_id);
+    const auto user_dir = EmulatorSettings.GetHomeDir() / FormatUidHex(user.user_id);
 
     std::error_code ec;
     if (!std::filesystem::exists(user_dir)) {
@@ -43,7 +43,7 @@ bool UserManager::RemoveUser(s32 user_id) {
     if (it == m_users.user.end())
         return false; // not found
 
-    const auto user_dir = EmulatorSettings.GetHomeDir() / std::to_string(user_id);
+    const auto user_dir = EmulatorSettings.GetHomeDir() / FormatUidHex(user_id);
 
     if (std::filesystem::exists(user_dir)) {
         std::error_code ec;
@@ -146,7 +146,7 @@ static void MoveFolder(fs::path const& _from, fs::path const& _to) {
 }
 
 static void CheckAndMigrateSaves(TransferOption option) {
-    auto const new_save_dir = EmulatorSettings.GetHomeDir() / "1000" / "savedata";
+    auto const new_save_dir = EmulatorSettings.GetHomeDir() / FormatUidHex(1000) / "savedata";
     auto const old_save_dir =
         Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "savedata" / "1";
     if (fs::exists(old_save_dir) && !fs::is_empty(old_save_dir)) {
@@ -175,7 +175,7 @@ static void CheckAndMigrateSaves(TransferOption option) {
 }
 
 static void CheckAndMigrateTrophies(TransferOption option) {
-    auto const user_dir = EmulatorSettings.GetHomeDir() / "1000";
+    auto const user_dir = EmulatorSettings.GetHomeDir() / FormatUidHex(1000);
     auto const old_trophy_base_dir =
         Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "game_data";
     auto const new_trophy_global_dir = Common::FS::GetUserPath(Common::FS::PathType::TrophyDir);
@@ -289,7 +289,7 @@ Users UserManager::CreateDefaultUsers() {
     };
 
     for (auto& u : default_users.user) {
-        const auto user_dir = EmulatorSettings.GetHomeDir() / std::to_string(u.user_id);
+        const auto user_dir = EmulatorSettings.GetHomeDir() / FormatUidHex(u.user_id);
 
         if (!std::filesystem::exists(user_dir)) {
             std::filesystem::create_directory(user_dir);
@@ -338,7 +338,7 @@ std::vector<User> UserManager::GetValidUsers() const {
     const auto home_dir = EmulatorSettings.GetHomeDir();
 
     for (const auto& user : m_users.user) {
-        const auto user_dir = home_dir / std::to_string(user.user_id);
+        const auto user_dir = home_dir / FormatUidHex(user.user_id);
         if (std::filesystem::exists(user_dir)) {
             result.push_back(user);
         }

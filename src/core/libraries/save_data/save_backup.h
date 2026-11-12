@@ -6,13 +6,13 @@
 #include <filesystem>
 #include <mutex>
 #include <optional>
+#include <string>
+#include <string_view>
 
-#include <core/libraries/system/userservice.h>
-#include "common/types.h"
+#include "core/file_format/psf.h"
+#include "core/libraries/system/userservice.h"
 
-namespace Libraries::SaveData {
-
-namespace Backup {
+namespace Libraries::SaveData::Backup {
 
 enum class WorkerStatus {
     NotStarted,
@@ -26,49 +26,49 @@ enum class OrbisSaveDataEventType : u32 {
     BACKUP = 2,
     SAVE_DATA_MEMORY_SYNC = 3,
 
-    __DO_NOT_SAVE = 1000000, // This value is only for the backup thread
+    __DO_NOT_SAVE = 1000000, // Internal value for silent backup jobs
 };
 
 struct BackupRequest {
-    bool done{};
-    s32 error_code{};
-
     Libraries::UserService::OrbisUserServiceUserId user_id{};
-    std::string title_id{};
-    std::string dir_name{};
+    std::string title_id;
+    std::string dir_name;
     OrbisSaveDataEventType origin{};
-
-    std::filesystem::path save_path{};
+    std::filesystem::path save_path;
+    bool done = false;
+    s32 error_code = 0;
 };
 
-// No problem calling this function if the backup thread is already running
 void StartThread();
-
 void StopThread();
 
 bool NewRequest(Libraries::UserService::OrbisUserServiceUserId user_id, std::string_view title_id,
                 std::string_view dir_name, OrbisSaveDataEventType origin);
 
 bool Restore(const std::filesystem::path& save_path);
+bool Restore(Libraries::UserService::OrbisUserServiceUserId user_id, std::string_view title_id,
+             std::string_view dir_name);
 
 std::unique_lock<std::mutex> LockForWrite();
 
-WorkerStatus GetWorkerStatus();
+bool DeleteBackup(Libraries::UserService::OrbisUserServiceUserId user_id, std::string_view title_id,
+                  std::string_view dir_name);
 
-bool IsBackupExecutingFor(const std::filesystem::path& save_path);
+[[nodiscard]] bool HasBackup(Libraries::UserService::OrbisUserServiceUserId user_id,
+                             std::string_view title_id, std::string_view dir_name);
 
-bool HasPendingEvents();
+[[nodiscard]] bool CheckBackup(Libraries::UserService::OrbisUserServiceUserId user_id,
+                               std::string_view title_id, std::string_view dir_name, PSF& out_sfo,
+                               std::filesystem::path& out_icon_path);
 
-std::filesystem::path MakeBackupPath(const std::filesystem::path& save_path);
-
-std::optional<BackupRequest> PopLastEvent();
-
+[[nodiscard]] WorkerStatus GetWorkerStatus();
+[[nodiscard]] bool IsBackupExecutingFor(const std::filesystem::path& save_path);
+[[nodiscard]] bool HasPendingEvents();
+[[nodiscard]] std::filesystem::path MakeBackupPath(const std::filesystem::path& save_path);
+[[nodiscard]] std::optional<BackupRequest> PopLastEvent();
 void PushBackupEvent(BackupRequest&& req);
 
-float GetProgress();
-
+[[nodiscard]] float GetProgress();
 void ClearProgress();
 
-} // namespace Backup
-
-} // namespace Libraries::SaveData
+} // namespace Libraries::SaveData::Backup

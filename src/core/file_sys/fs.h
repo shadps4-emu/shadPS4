@@ -59,7 +59,7 @@ public:
 
     void Mount(const std::filesystem::path& host_folder, const std::string& guest_folder,
                bool read_only = false);
-    void Unmount(const std::string& guest_folder);
+    bool Unmount(const std::string& guest_folder);
     void UnmountAll();
 
     std::filesystem::path GetHostPath(std::string_view guest_directory,
@@ -193,6 +193,8 @@ struct File {
 };
 
 class HandleTable {
+    friend class MntPoints;
+
 public:
     HandleTable() = default;
     virtual ~HandleTable() = default;

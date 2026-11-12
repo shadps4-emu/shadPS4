@@ -19,6 +19,7 @@
 #include "core/libraries/np/trophy_ui.h"
 #include "core/libraries/system/userservice.h"
 #include "core/memory.h"
+#include "core/user_manager.h"
 
 namespace Libraries::Np::NpTrophy {
 
@@ -1018,7 +1019,7 @@ int PS4_SYSV_ABI sceNpTrophyRegisterContext(OrbisNpTrophyContext context,
 
         const auto trophy_base =
             Common::FS::GetUserPath(Common::FS::PathType::TrophyDir) / np_comm_id;
-        ctx.xml_save_file = EmulatorSettings.GetHomeDir() / std::to_string(ctx.user_id) / "trophy" /
+        ctx.xml_save_file = EmulatorSettings.GetHomeDir() / FormatUidHex(ctx.user_id) / "trophy" /
                             (np_comm_id + ".xml");
         ctx.xml_dir = trophy_base / "Xml";
         ctx.icons_dir = trophy_base / "Icons";
