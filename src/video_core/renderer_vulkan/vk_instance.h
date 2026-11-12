@@ -122,6 +122,14 @@ public:
         return maintenance_6;
     }
 
+    bool IsHostQueryResetSupported() const {
+        return vk12_features.hostQueryReset;
+    }
+
+    bool IsOcclusionQueryPreciseSupported() const {
+        return features.occlusionQueryPrecise;
+    }
+
     /// Returns true if VK_KHR_maintenance8 is supported
     bool IsMaintenance8Supported() const {
         return maintenance_8;
@@ -135,6 +143,17 @@ public:
     /// Returns true when VK_EXT_custom_border_color is supported
     bool IsCustomBorderColorSupported() const {
         return custom_border_color;
+    }
+
+    /// Returns true when VK_EXT_conditional_rendering is supported
+    bool IsConditionalRenderingSupported() const {
+        return conditional_rendering && conditional_rendering_features.conditionalRendering;
+    }
+
+    /// Returns true when inherited conditional rendering is supported
+    bool IsInheritedConditionalRenderingSupported() const {
+        return conditional_rendering &&
+               conditional_rendering_features.inheritedConditionalRendering;
     }
 
     /// Returns true when VK_EXT_shader_stencil_export is supported
@@ -510,6 +529,7 @@ private:
     vk::PhysicalDeviceVulkan12Features vk12_features;
     vk::PhysicalDeviceVulkan13Features vk13_features;
     vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT dynamic_state_3_features;
+    vk::PhysicalDeviceConditionalRenderingFeaturesEXT conditional_rendering_features;
     vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT shader_atomic_float2_features;
     vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR
         workgroup_memory_explicit_layout_features;
@@ -528,6 +548,7 @@ private:
     TracyVkCtx profiler_context{};
     u32 queue_family_index{0};
     bool custom_border_color{};
+    bool conditional_rendering{};
     bool fragment_shader_barycentric{};
     bool amd_shader_explicit_vertex_parameter{};
     bool depth_clip_control{};
