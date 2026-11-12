@@ -6,6 +6,7 @@
 #include <cstring>
 #include <memory>
 #include <fmt/format.h>
+#include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "core/emulator_settings.h"
 #include "core/libraries/error_codes.h"
@@ -879,7 +880,10 @@ int PS4_SYSV_ABI sceNpMatching2GetRoomMemberDataInternal(
     ev.context_owner = ctx;
     ev.fire_at = std::chrono::steady_clock::now();
     ev.req_id = reqId;
-    ev.req_event = ORBIS_NP_MATCHING2_REQUEST_EVENT_GET_ROOM_MEMBER_DATA_INTERNAL_A;
+    const bool use_a_event =
+        ctx->a_variant && Common::ElfInfo::Instance().CompiledSdkVer() >= Common::ElfInfo::FW_400;
+    ev.req_event = use_a_event ? ORBIS_NP_MATCHING2_REQUEST_EVENT_GET_ROOM_MEMBER_DATA_INTERNAL_A
+                               : ORBIS_NP_MATCHING2_REQUEST_EVENT_GET_ROOM_MEMBER_DATA_INTERNAL;
     ev.error_code = 0;
     const RequestCallbackInfo request_cb = ConsumeRequestCallback(ctx);
     ev.request_cb = request_cb.callback;
