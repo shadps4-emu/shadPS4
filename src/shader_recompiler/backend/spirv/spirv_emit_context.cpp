@@ -733,7 +733,8 @@ void EmitContext::DefineOutputs() {
                 continue;
             }
             const u32 num_components = info.stores.NumComponents(mrt);
-            const AmdGpu::NumberFormat num_format{runtime_info.hw.fs.color_buffers[i].num_format};
+            const u32 color_buffer_idx = runtime_info.hw.fs.dual_source_blending ? 0 : i;
+            const auto num_format = runtime_info.hw.fs.color_buffers[color_buffer_idx].num_format;
             const Id type{GetAttributeType(*this, num_format)[num_components]};
             Id id;
             if (runtime_info.hw.fs.dual_source_blending) {
@@ -1004,8 +1005,16 @@ void EmitContext::DefineImagesAndSamplers() {
 
         const u32 num_bindings = image_desc.NumBindings(info);
         Id pointee_type = image_type;
-        if (mip_fallback_mode == MipStorageFallbackMode::DynamicIndex) {
+        if (mip_fallback_mode == MipStorageFallbackMode::DynamicIndex ||
+            image_desc.descriptor_count != 0) {
             pointee_type = TypeArray(pointee_type, ConstU32(num_bindings));
+        }
+        if (image_desc.descriptor_count != 0) {
+            AddCapability(spv::Capability::ShaderNonUniform);
+            AddCapability(spv::Capability::SampledImageArrayNonUniformIndexing);
+            if (profile.supported_spirv < 0x00010500) {
+                AddExtension("SPV_EXT_descriptor_indexing");
+            }
         }
 
         const Id pointer_type{TypePointer(spv::StorageClass::UniformConstant, pointee_type)};
@@ -1022,6 +1031,7 @@ void EmitContext::DefineImagesAndSamplers() {
             .view_type = sharp.GetViewType(image_desc.is_array),
             .is_integer = is_integer,
             .is_storage = is_storage,
+            .is_descriptor_array = image_desc.descriptor_count != 0,
             .mip_fallback_mode = mip_fallback_mode,
         });
         interfaces.push_back(id);
