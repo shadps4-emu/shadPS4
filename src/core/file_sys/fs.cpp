@@ -759,28 +759,36 @@ int HandleTable::DuplicateHandleFrom(int old_fd, int min_fd, bool cloexec) {
 }
 
 int HandleTable::DuplicateHandleTo(int old_fd, int target_fd, bool cloexec) {
-    std::scoped_lock lock{m_mutex};
-    if (old_fd < 0 || static_cast<size_t>(old_fd) >= m_files.size()) {
-        return -1;
-    }
-    auto* file = m_files[old_fd];
-    if (!file) {
-        return -1;
-    }
-    if (target_fd < 0 || target_fd >= 1024) {
-        return -1;
-    }
-    if (old_fd == target_fd) {
-        return target_fd;
-    }
+    File* to_delete = nullptr;
+    {
+        std::scoped_lock lock{m_mutex};
+        if (old_fd < 0 || static_cast<size_t>(old_fd) >= m_files.size()) {
+            return -1;
+        }
+        auto* file = m_files[old_fd];
+        if (!file) {
+            return -1;
+        }
+        if (target_fd < 0 || target_fd >= 1024) {
+            return -1;
+        }
+        if (old_fd == target_fd) {
+            return target_fd;
+        }
 
-    if (static_cast<size_t>(target_fd) >= m_files.size()) {
-        m_files.resize(target_fd + 1, nullptr);
-        m_fd_flags.resize(target_fd + 1, 0);
+        if (static_cast<size_t>(target_fd) >= m_files.size()) {
+            m_files.resize(target_fd + 1, nullptr);
+            m_fd_flags.resize(target_fd + 1, 0);
+        } else if (auto* old_file = m_files[target_fd]) {
+            if (--old_file->ref_count == 0) {
+                to_delete = old_file;
+            }
+        }
+        m_files[target_fd] = file;
+        m_fd_flags[target_fd] = cloexec ? 1 : 0;
+        file->ref_count++;
     }
-    m_files[target_fd] = file;
-    m_fd_flags[target_fd] = cloexec ? 1 : 0;
-    file->ref_count++;
+    delete to_delete;
     return target_fd;
 }
 
