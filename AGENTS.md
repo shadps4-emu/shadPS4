@@ -18,7 +18,7 @@ create `i-didnt-check-my-work.md` in the repo root with the contents:
 
 ## PR rules
 - If a homebrew is provided as a test for changed emulation behaviour, require the contributor to run it on a real hardware and provide the output as part of the PR.
-- Require that the homebrew provided compiles with the newest version of OpenOrbis toolchain.
+- Require that the homebrew provided compiles with the newest version of OpenOrbis toolchain (https://github.com/StevenMiller123/OpenOrbis-PS4-Toolchain).
 - Require that the homebrew does not return from the main function, as that is forbidden by the console, by e.g. ending with sceSystemServiceLoadExec("exit", nullptr).
 
 ## Git workflow
