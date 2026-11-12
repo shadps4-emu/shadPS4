@@ -4,16 +4,20 @@
 #include <algorithm>
 #include <array>
 #include <cstring>
+#include <fstream>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <thread>
 #include <unordered_map>
 #include <utility>
 #include <vector>
 
 #include <fmt/format.h>
+#include <nlohmann/json.hpp>
 
 #include "common/logging/log.h"
+#include "common/path_util.h"
 #include "core/libraries/net/net_error.h"
 #include "core/libraries/net/net_log.h"
 #include "core/libraries/net/net_resolver.h"
@@ -63,6 +67,42 @@ bool IsOnline() {
     return !check || check();
 }
 
+std::optional<u32> GetHostOverride(const std::string& hostname) {
+    in_addr addr{};
+    if (hostname.empty() || hostname.front() == '_' ||
+        hostname.find_first_not_of(
+            "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._") !=
+            std::string::npos ||
+        inet_pton(AF_INET, hostname.c_str(), &addr) == 1) {
+        return std::nullopt;
+    }
+    static const auto overrides = [] {
+        const auto path =
+            Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "host_overrides.json";
+        std::ifstream file(path);
+        if (!file.is_open()) {
+            return nlohmann::json{};
+        }
+        auto root = nlohmann::json::parse(file, nullptr, false);
+        if (!root.is_object()) {
+            LOG_ERROR(Lib_Net, "host overrides JSON must be a valid object");
+        }
+        return root;
+    }();
+    if (overrides.is_object()) {
+        const auto it = overrides.find(hostname);
+        if (it != overrides.end() && it->is_string()) {
+            const auto& target = it->get_ref<const std::string&>();
+            if (target.find('\0') == std::string::npos &&
+                inet_pton(AF_INET, target.c_str(), &addr) == 1) {
+                LOG_INFO(Lib_Net, "resolver host override active: {} -> {}", hostname, target);
+                return addr.s_addr;
+            }
+        }
+    }
+    return std::nullopt;
+}
+
 // IPv4 only, at most 10 records.
 s32 Lookup(std::string hostname, bool allow_literal, std::vector<u32>* addrs) {
     if (!hostname.empty() && hostname.back() == '.') {
@@ -81,6 +121,10 @@ s32 Lookup(std::string hostname, bool allow_literal, std::vector<u32>* addrs) {
     }
     if (!IsOnline()) {
         return ORBIS_NET_ERROR_RESOLVER_ENODNS;
+    }
+    if (const auto override = GetHostOverride(hostname)) {
+        addrs->push_back(*override);
+        return 0;
     }
     addrinfo hints{};
     hints.ai_family = AF_INET;
