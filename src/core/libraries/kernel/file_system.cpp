@@ -1139,32 +1139,10 @@ s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
         fs::exists(path_name, ec) ? fs::last_write_time(path_name, ec) : fs::file_time_type{};
     const auto mtimestamp = now_sys + (mtime - now_file);
 
-    if (is_dir) {
-        sb->st_mode = 0000777u | 0040000u;
-        sb->st_nlink = 2;
-        sb->st_size = 65536;
-        sb->st_blksize = 65536;
-        sb->st_blocks = 128;
-        sb->st_mtim.tv_sec =
-            std::chrono::duration_cast<std::chrono::seconds>(mtimestamp.time_since_epoch()).count();
+    Core::FileSys::FileStat fst{};
+    auto const exists = mnt->Stat(path, fst);
 
-        Core::FileSys::FileStat fst{};
-        if (mnt->Stat(path, fst) && fst.inode != 0) {
-            sb->st_ino = fst.inode;
-        }
-    } else {
-        sb->st_mode = 0000777u | 0100000u;
-        sb->st_nlink = 1;
-        Core::FileSys::FileStat fst{};
-        if (!mnt->Stat(path, fst)) {
-            LOG_ERROR(Kernel_Fs, "Could not get metadata for {}", path);
-            *__Error() = POSIX_EIO;
-            return -1;
-        }
-        if (fst.inode == 0) {
-            *__Error() = POSIX_EIO;
-            return -1;
-        }
+    if (exists && fst.inode != 0) {
         sb->st_ino = fst.inode;
         sb->st_size = static_cast<s64>(fst.size);
         if (fst.mtime_sec != 0 || fst.mtime_nsec != 0) {
@@ -1178,6 +1156,27 @@ s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
             sb->st_mtim.tv_sec =
                 std::chrono::duration_cast<std::chrono::seconds>(mtimestamp.time_since_epoch())
                     .count();
+        }
+    }
+
+    if (is_dir) {
+        sb->st_mode = 0000777u | 0040000u;
+        sb->st_nlink = 2;
+        sb->st_size = 65536;
+        sb->st_blksize = 65536;
+        sb->st_blocks = 128;
+    } else {
+        sb->st_mode = 0000777u | 0100000u;
+        sb->st_nlink = 1;
+        Core::FileSys::FileStat fst{};
+        if (!mnt->Stat(path, fst)) {
+            LOG_ERROR(Kernel_Fs, "Could not get metadata for {}", path);
+            *__Error() = POSIX_EIO;
+            return -1;
+        }
+        if (fst.inode == 0) {
+            *__Error() = POSIX_EIO;
+            return -1;
         }
         sb->st_blksize = 512;
         sb->st_blocks = (sb->st_size + 511) / 512;
