@@ -94,10 +94,10 @@ static s32 PthreadSemWait(PthreadSem* sem, const OrbisKernelTimespec* abstime, u
 
             // This is the host equivalent of entering a cancellation-point umtx wait. Resetting
             // the predicate and publishing the waiter are serialized with sem_post.
-            curthread->cancel_point = true;
+            curthread->CancelPoint() = true;
             curthread->ClearWake();
             if (curthread->ShouldCancel()) {
-                curthread->cancel_point = false;
+                curthread->CancelPoint() = false;
                 cancel_before_wait = true;
             } else {
                 sem->waiters.push_back(curthread);
@@ -133,7 +133,7 @@ static s32 PthreadSemWait(PthreadSem* sem, const OrbisKernelTimespec* abstime, u
             ScopedPthreadCritical critical{curthread};
             std::scoped_lock lock{sem->wait_mutex};
             sem->waiters.remove(curthread);
-            curthread->cancel_point = false;
+            curthread->CancelPoint() = false;
         }
 
         // A post racing the timeout wins if its token is still available, as in libkernel's
@@ -245,7 +245,7 @@ public:
                 priority = g_curthread->attr.prio;
             }
 
-            thr_name = g_curthread->name;
+            thr_name = g_curthread->GetName();
         }
 
         [[nodiscard]] s32 GetResult() const {
@@ -443,7 +443,7 @@ s32 PS4_SYSV_ABI posix_sem_post(PthreadSem** sem) {
         // libkernel wakes every waiter after incrementing the value. Only waiters that win the
         // value CAS return; the rest publish themselves again and continue waiting.
         for (Pthread* waiter : (*sem)->waiters) {
-            waiter->wake_sema.release();
+            waiter->Wake();
         }
         (*sem)->waiters.clear();
     }

@@ -14,6 +14,17 @@
 namespace Libraries::Kernel {
 
 thread_local Pthread* g_curthread{};
+thread_local HostThreadContext* g_curhostthread{};
+
+HostThreadContext* GetHostThreadContext(Pthread* thread) {
+    if (thread == nullptr) {
+        return nullptr;
+    }
+    if (thread == g_curthread && g_curhostthread != nullptr) [[likely]] {
+        return g_curhostthread;
+    }
+    return ThrState::Instance()->GetHostContext(thread);
+}
 
 Core::Tcb* TcbCtor(Pthread* thread, int initial);
 void TcbDtor(Core::Tcb* oldtls);
@@ -53,16 +64,16 @@ void ThreadState::Collect(Pthread* curthread) {
 
 void ThreadState::TryCollect(Pthread* thread) {
     SCOPE_EXIT {
-        thread->lock->unlock();
+        thread->GetLock().unlock();
     };
     if (!thread->ShouldCollect()) {
         return;
     }
 
     thread->refcount++;
-    thread->lock->unlock();
+    thread->GetLock().unlock();
     std::scoped_lock lk{thread_list_lock};
-    thread->lock->lock();
+    thread->GetLock().lock();
     thread->refcount--;
     if (thread->ShouldCollect()) {
         threads.erase(thread);
@@ -108,7 +119,12 @@ Pthread* ThreadState::Alloc(Pthread* curthread) {
         std::memset(static_cast<void*>(thread), 0, sizeof(Pthread));
         std::construct_at(thread);
         thread->tcb = tcb;
-        thread->sleepqueue = new SleepQueue{};
+        auto ctx = std::make_unique<HostThreadContext>();
+        ctx->sleepqueue = new SleepQueue{};
+        {
+            std::scoped_lock lk{host_ctx_lock};
+            host_contexts[thread] = std::move(ctx);
+        }
     } else {
         thread_heap.Free(thread);
         total_threads.fetch_sub(1);
@@ -125,7 +141,15 @@ void ThreadState::Free(Pthread* curthread, Pthread* thread) {
         TcbDtor(thread->tcb);
     }
     thread->tcb = nullptr;
-    auto* sleepqueue = thread->sleepqueue;
+    SleepQueue* sleepqueue = nullptr;
+    {
+        std::scoped_lock lk{host_ctx_lock};
+        auto it = host_contexts.find(thread);
+        if (it != host_contexts.end()) {
+            sleepqueue = it->second->sleepqueue;
+            host_contexts.erase(it);
+        }
+    }
     bool should_free;
     {
         std::scoped_lock lk{free_thread_lock};
@@ -140,6 +164,8 @@ void ThreadState::Free(Pthread* curthread, Pthread* thread) {
         delete sleepqueue;
         thread_heap.Free(thread);
         total_threads.fetch_sub(1);
+    } else {
+        delete sleepqueue;
     }
 }
 
@@ -152,9 +178,9 @@ int ThreadState::FindThread(Pthread* thread, const bool include_dead) {
     if (it == threads.end()) {
         return POSIX_ESRCH;
     }
-    thread->lock->lock();
+    thread->GetLock().lock();
     if (!include_dead && thread->state == PthreadState::Dead) {
-        thread->lock->unlock();
+        thread->GetLock().unlock();
         return POSIX_ESRCH;
     }
     return 0;
@@ -171,12 +197,12 @@ int ThreadState::RefAdd(Pthread* thread, bool include_dead) {
     }
 
     thread->refcount++;
-    thread->lock->unlock();
+    thread->GetLock().unlock();
     return 0;
 }
 
 void ThreadState::RefDelete(Pthread* thread) {
-    thread->lock->lock();
+    thread->GetLock().lock();
     thread->refcount--;
     TryCollect(thread);
 }

@@ -5,9 +5,11 @@
 
 #include <atomic>
 #include <list>
+#include <memory>
 #include <mutex>
 #include <set>
 #include <stack>
+#include <unordered_map>
 #include "common/singleton.h"
 #include "common/slab_heap.h"
 #include "common/types.h"
@@ -16,6 +18,7 @@ namespace Libraries::Kernel {
 
 struct Pthread;
 struct PthreadAttr;
+struct HostThreadContext;
 
 struct Stack {
     size_t stacksize; /* Stack size (rounded up). */
@@ -67,6 +70,18 @@ struct ThreadState {
         }
         active_threads.fetch_sub(1);
     }
+
+    HostThreadContext* GetHostContext(Pthread* thread) {
+        if (!thread) {
+            return nullptr;
+        }
+        std::scoped_lock lk{host_ctx_lock};
+        auto it = host_contexts.find(thread);
+        return it != host_contexts.end() ? it->second.get() : nullptr;
+    }
+
+    std::mutex host_ctx_lock;
+    std::unordered_map<Pthread*, std::unique_ptr<HostThreadContext>> host_contexts;
 
     Common::SlabHeap<Pthread> thread_heap;
     std::set<Pthread*> threads;

@@ -32,8 +32,8 @@ PthreadAttr PthreadAttrDefault = {
     .stackaddr_attr = nullptr,
     .stacksize_attr = ThrStackDefault,
     .guardsize_attr = 0,
-    .cpusetsize = 0,
     .cpuset = nullptr,
+    .cpusetsize = 0,
 };
 
 int PS4_SYSV_ABI posix_pthread_attr_destroy(PthreadAttrT* attr) {
@@ -259,7 +259,7 @@ int PS4_SYSV_ABI posix_pthread_attr_get_np(PthreadT pthread, PthreadAttrT* dstat
     if (True(pthread->flags & ThreadFlags::Detached)) {
         attr.flags |= PthreadAttrFlags::Detached;
     }
-    pthread->lock->unlock();
+    pthread->GetLock().unlock();
     memcpy(dst, &attr, sizeof(PthreadAttr));
     return ret;
 }
