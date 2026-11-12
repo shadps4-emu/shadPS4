@@ -193,7 +193,7 @@ s32 PS4_SYSV_ABI sceKernelUuidCreate(OrbisKernelUuid* orbisUuid) {
 
 s32 PS4_SYSV_ABI kernel_ioctl(s32 fd, u64 cmd, VA_ARGS) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    auto* file = h->GetFile(fd);
+    auto file = h->GetFile(fd);
     if (file == nullptr) {
         LOG_INFO(Lib_Kernel, "ioctl: fd = {:X} cmd = {:X} file == nullptr", fd, cmd);
         g_posix_errno = POSIX_EBADF;

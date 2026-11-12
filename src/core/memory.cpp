@@ -1473,6 +1473,14 @@ void MemoryManager::InvalidateMemory(const VAddr addr, const u64 size) const {
     }
 }
 
+void MemoryManager::PrepareForDirectWrite(const VAddr addr, const u64 size) {
+    if (size == 0) {
+        return;
+    }
+    InvalidateMemory(addr, size);
+    impl.EnsureWritable(addr, size);
+}
+
 VAddr MemoryManager::SearchFree(VAddr virtual_addr, u64 size, u32 alignment) {
     // Calculate the minimum and maximum addresses present in our address space.
     auto min_search_address = impl.SystemManagedVirtualBase();
