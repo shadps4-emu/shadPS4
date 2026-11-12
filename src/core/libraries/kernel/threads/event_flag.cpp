@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <chrono>
 #include <condition_variable>
 #include <list>
 #include <mutex>
@@ -9,6 +10,7 @@
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "core/libraries/kernel/orbis_error.h"
+#include "core/libraries/kernel/sync/semaphore.h"
 #include "core/libraries/libs.h"
 #include "pthread.h"
 
@@ -32,7 +34,12 @@ public:
     enum class QueueMode { Fifo, ThreadPrio };
 
     struct Waiter {
-        std::condition_variable cv{};
+        // Waiters block on a semaphore whose Windows implementation is an alertable wait, so a
+        // guest signal queued as an APC can interrupt the wait. A std::condition_variable wait is
+        // not alertable and would never run the signal handler.
+        BinarySemaphore sem{0};
+        // Set once sem has been released, so it is never released twice.
+        bool woken = false;
 
         u64 bits{};
         WaitMode wait_mode{};
@@ -58,7 +65,7 @@ public:
 
         for (auto* w : m_waiters) {
             w->deleted = true;
-            w->cv.notify_one();
+            WakeWaiter(*w);
         }
 
         m_destroy_cv.wait(lock, [&] { return m_waiters.empty(); });
@@ -95,6 +102,14 @@ public:
             ++it;
         }
         m_waiters.insert(it, &waiter);
+    }
+
+    // Must be called with m_mutex held; the waiter re-checks its state under the lock once woken.
+    void WakeWaiter(Waiter& waiter) {
+        if (!waiter.woken) {
+            waiter.woken = true;
+            waiter.sem.release();
+        }
     }
 
     void RemoveWaiter(Waiter& waiter) {
@@ -142,19 +157,33 @@ public:
             return waiter.ready || waiter.canceled || waiter.deleted || waiter.timed_out;
         };
 
-        if (infinite) {
-            waiter.cv.wait(lock, wake);
+        bool woke;
+        if (!infinite && timeout == 0) {
+            // Poll: nothing can change while the lock is held, so there is nothing to wait for.
+            woke = wake();
         } else {
-            if (!waiter.cv.wait_for(lock, std::chrono::microseconds(timeout), wake)) {
-
-                RemoveWaiter(waiter);
-
-                if (result)
-                    *result = m_bits;
-
-                *ptr_micros = 0;
-                return ORBIS_KERNEL_ERROR_ETIMEDOUT;
+            // Block without holding the lock, so Set/Cancel can run (including from a guest signal
+            // handler that interrupts this wait).
+            lock.unlock();
+            bool signaled = true;
+            if (infinite) {
+                waiter.sem.acquire();
+            } else {
+                signaled = waiter.sem.try_acquire_for(std::chrono::microseconds(timeout));
             }
+            lock.lock();
+            // A wake-up can race with the timeout, so re-check the state under the lock.
+            woke = signaled || wake();
+        }
+
+        if (!woke) {
+            RemoveWaiter(waiter);
+
+            if (result)
+                *result = m_bits;
+
+            *ptr_micros = 0;
+            return ORBIS_KERNEL_ERROR_ETIMEDOUT;
         }
 
         RemoveWaiter(waiter);
@@ -200,7 +229,7 @@ public:
             ApplyClear(*waiter);
 
             waiter->ready = true;
-            waiter->cv.notify_one();
+            WakeWaiter(*waiter);
         }
     }
 
@@ -220,7 +249,7 @@ public:
         for (Waiter* waiter : m_waiters) {
             waiter->result = pattern;
             waiter->canceled = true;
-            waiter->cv.notify_one();
+            WakeWaiter(*waiter);
         }
     }
 
