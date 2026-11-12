@@ -42,7 +42,12 @@ s64 HostFile::Read(void* dst, u64 size) {
     if (!m_file.IsOpen()) {
         return -1;
     }
-    return static_cast<s64>(m_file.ReadRaw<u8>(dst, size));
+    const u64 read = m_file.ReadRaw<u8>(dst, size);
+    if (read < size) {
+        // Clear the sticky stdio EOF flag so the file can be read again after it grows.
+        m_file.Seek(0, Common::FS::SeekOrigin::CurrentPosition);
+    }
+    return static_cast<s64>(read);
 }
 
 s64 HostFile::Write(const void* src, u64 size) {
