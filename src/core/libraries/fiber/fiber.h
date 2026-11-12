@@ -66,12 +66,18 @@ struct OrbisFiber {
     u64 size_context;
     char name[ORBIS_FIBER_MAX_NAME_LENGTH + 1];
     OrbisFiberContext* context;
+    u64 thread_id;
     u32 flags;
+    u32 ulobjmgr_id;
+    u64 switch_count_xor;
+    void* asan_fake_stack;
+    u64 opaque_padding[15];
     void* context_start;
     void* context_end;
+    u32 pad_f8;
     u32 magic_end;
 };
-static_assert(sizeof(OrbisFiber) <= 256);
+static_assert(sizeof(OrbisFiber) == 256);
 
 struct OrbisFiberInfo {
     u64 size;
