@@ -210,7 +210,8 @@ struct HwFragmentRuntimeInfo {
     u32 dual_source_blending : 1;
     u32 clip_distance_emulation : 1;
     u32 depth_before_shader : 1;
-    u32 : 12;
+    u32 point_sprite_coords : 1;
+    u32 : 11;
     u32 alpha_to_mask_enable : 1;
     u32 coverage_to_mask_enable : 1;
     u32 alpha_to_mask_eqaa_disable : 1;
@@ -232,6 +233,7 @@ struct HwFragmentRuntimeInfo {
                dual_source_blending == other.dual_source_blending &&
                clip_distance_emulation == other.clip_distance_emulation &&
                depth_before_shader == other.depth_before_shader &&
+               point_sprite_coords == other.point_sprite_coords &&
                alpha_to_mask_enable == other.alpha_to_mask_enable &&
                coverage_to_mask_enable == other.coverage_to_mask_enable &&
                alpha_to_mask_eqaa_disable == other.alpha_to_mask_eqaa_disable &&

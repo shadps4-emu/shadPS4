@@ -172,6 +172,10 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(HwStage stage, SwStag
         info.hw.fs.num_inputs = regs.num_interp;
         info.hw.fs.front_face_all_bits = regs.barycentric_control.front_face_all_bits;
         info.hw.fs.depth_before_shader = regs.depth_shader_control.depth_before_shader;
+        // Points are rasterized as squares whose barycentric I/J run 0..1 across the sprite.
+        info.hw.fs.point_sprite_coords =
+            regs.primitive_type == AmdGpu::PrimitiveType::PointList &&
+            !regs.stage_enable.IsStageEnabled(static_cast<u32>(HwStage::Geometry));
         info.hw.fs.num_samples =
             regs.ps_input_addr.sample_coverage_ena && regs.ps_input_ena.sample_coverage_ena
                 ? regs.aa_config.NumSamples()
