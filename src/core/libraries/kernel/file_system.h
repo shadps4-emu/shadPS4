@@ -12,7 +12,8 @@ class SymbolsResolver;
 
 namespace Libraries::Kernel {
 
-constexpr int ORBIS_MAX_PATH = 255;
+constexpr int ORBIS_MAX_PATH = 1024;
+constexpr int ORBIS_MAX_NAME = 255;
 
 struct OrbisKernelIovec {
     void* iov_base;
@@ -46,7 +47,7 @@ struct OrbisKernelDirent {
     u16 d_reclen;                    /* length of this record */
     u8 d_type;                       /* file type, see below */
     u8 d_namlen;                     /* length of string in d_name */
-    char d_name[ORBIS_MAX_PATH + 1]; /* name must be no longer than this */
+    char d_name[ORBIS_MAX_NAME + 1]; /* name must be no longer than this */
 };
 
 // flags for Open
