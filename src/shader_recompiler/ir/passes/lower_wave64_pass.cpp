@@ -129,12 +129,7 @@ void LowerWave64BallotPass(IR::Program& program, const RuntimeInfo& runtime_info
             if (inst.GetOpcode() == IR::Opcode::ReadLane && inst.Arg(1).IsImmediate()) {
                 push_worklist(inst);
             } else if (inst.GetOpcode() == IR::Opcode::Ballot) {
-                const auto is_unpack = [](const IR::Use& use) {
-                    return use.user->GetOpcode() == IR::Opcode::UnpackUint2x32;
-                };
-                if (std::ranges::any_of(inst.Uses(), is_unpack)) {
-                    push_worklist(inst);
-                }
+                push_worklist(inst);
             } else if (inst.GetOpcode() == IR::Opcode::MaskedBitCount32) {
                 IR::Inst* const ballot = FindBallotForMaskedBitCount(inst);
                 if (ballot == nullptr ||
