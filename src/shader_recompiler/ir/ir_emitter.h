@@ -182,6 +182,7 @@ public:
 
     [[nodiscard]] U32 DataAppend(const U32& gds_dw_offset);
     [[nodiscard]] U32 DataConsume(const U32& gds_dw_offset);
+    [[nodiscard]] U32 DataOrderedCount(const U32& gds_dw_offset);
     [[nodiscard]] U32 LaneId();
     [[nodiscard]] U32 WaveId();
     [[nodiscard]] U32 SubgroupId();

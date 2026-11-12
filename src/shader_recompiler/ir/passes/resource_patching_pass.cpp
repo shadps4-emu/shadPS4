@@ -374,6 +374,24 @@ static IR::Use FindUniqueUser(IR::Inst* inst, auto&& pred) {
     return picked;
 }
 
+static bool HasAppendBufferLaneOffset(const IR::Inst& vx) {
+    IR::U1 exec{vx.Arg(1)};
+    for (const auto& use : vx.Uses()) {
+        const auto& [user, operand] = use;
+        if (user->GetOpcode() == IR::Opcode::MaskedBitCount32) {
+            return true;
+        }
+        if (user->GetOpcode() == IR::Opcode::IAdd32 || user->GetOpcode() == IR::Opcode::ISub32) {
+            auto vz = user->Arg(1 - operand);
+            auto [vy, is_hi] = IsMbcntWithExec(vz, exec);
+            if (!vy.IsEmpty() && !vy.IsImmediate()) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 static void RemoveAppendBufferLaneOffset(IR::Inst& vx) {
     // Attempt to detect either of the following patterns and
     // remove the lane id addition/subtraction to ds instruction.
@@ -405,7 +423,8 @@ static void RemoveAppendBufferLaneOffset(IR::Inst& vx) {
         const auto& [user, operand] = use;
         if (user->GetOpcode() == IR::Opcode::MaskedBitCount32) {
             // First pattern
-            ASSERT(vx.GetOpcode() == IR::Opcode::DataAppend);
+            ASSERT(vx.GetOpcode() == IR::Opcode::DataAppend ||
+                   vx.GetOpcode() == IR::Opcode::DataOrderedCount);
             IR::Inst* vy = user;
             auto [vx_2, is_hi_1] = IsMbcntWithExec(IR::Value{vy}, exec);
             ASSERT(!vx_2.IsEmpty() && vx_2 == IR::Value{&vx});
@@ -460,6 +479,29 @@ void PatchGlobalDataShareAccess(IR::Inst& inst, Info& info, Descriptors& descrip
                 ? ir.BufferAtomicIAdd(ir.Imm32(binding), inst.Arg(0), ir.Imm32(1u), {})
                 : ir.BufferAtomicISub(ir.Imm32(binding), inst.Arg(0), ir.Imm32(1u), {});
         inst.ReplaceUsesWithAndRemove(replacement);
+        return;
+    }
+
+    if (inst.GetOpcode() == IR::Opcode::DataOrderedCount) {
+        if (HasAppendBufferLaneOffset(inst)) {
+            RemoveAppendBufferLaneOffset(inst);
+            const IR::Value replacement =
+                ir.BufferAtomicIAdd(ir.Imm32(binding), inst.Arg(0), ir.Imm32(1u), {});
+            inst.ReplaceUsesWithAndRemove(replacement);
+            return;
+        }
+
+        // Wave-level ordered count: the first active lane atomically reserves and broadcasts
+        const IR::U64 active_mask = ir.Ballot(ir.Imm1(true));
+        const IR::U32 first_active_lane = ir.BallotFindLsb(active_mask);
+        const IR::U1 is_first_lane = ir.IEqual(ir.LaneId(), first_active_lane);
+        const IR::U32 num_lanes = ir.BitCount(active_mask);
+
+        const IR::U32 inc_amount{ir.Select(is_first_lane, num_lanes, ir.Imm32(0u))};
+        const IR::U32 prev_first{
+            ir.BufferAtomicIAdd(ir.Imm32(binding), inst.Arg(0), inc_amount, {})};
+        const IR::U32 prev = ir.ReadFirstLane(prev_first);
+        inst.ReplaceUsesWithAndRemove(prev);
         return;
     }
 
