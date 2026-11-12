@@ -5,6 +5,7 @@
 
 #include "common/types.h"
 #include "core/libraries/np/np_types.h"
+#include "core/libraries/np/np_web_api/np_web_api.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
@@ -97,6 +98,8 @@ using OrbisNpWebApi2PushEventPushContextCallback = void PS4_SYSV_ABI (*)(
     const OrbisNpOnlineId* from_online_id, const OrbisNpWebApi2PushEventDataType* data_type,
     const char* data, u64 data_len, const OrbisNpWebApi2PushEventExtdData* extd_data,
     u64 extd_data_num, void* user_arg);
+
+void EnqueuePushEvent(const NpWebApi::PushEventInput& ev);
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::Np::NpWebApi2
