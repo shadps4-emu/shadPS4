@@ -147,6 +147,7 @@ void SaveInstance::SetupAndMount(bool read_only, bool copy_icon, bool ignore_cor
     if (mounted) {
         UNREACHABLE_MSG("Save instance is already mounted");
     }
+    Backup::MoveLegacyBackup(save_path);
     this->exists = fs::exists(param_sfo_path); // check again just in case
     if (!exists) {
         CreateFiles();

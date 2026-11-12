@@ -50,6 +50,8 @@ bool NewRequest(Libraries::UserService::OrbisUserServiceUserId user_id, std::str
 
 bool Restore(const std::filesystem::path& save_path);
 
+void MoveLegacyBackup(const std::filesystem::path& save_path);
+
 WorkerStatus GetWorkerStatus();
 
 bool IsBackupExecutingFor(const std::filesystem::path& save_path);
