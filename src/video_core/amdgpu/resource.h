@@ -255,7 +255,7 @@ struct Image {
 
     u32 NumSamples() const {
         if (GetType() == ImageType::Color2DMsaa || GetType() == ImageType::Color2DMsaaArray) {
-            return 1u << last_level;
+            return std::min(1u << last_level, 8u);
         }
         return 1;
     }
