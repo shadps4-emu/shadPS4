@@ -426,6 +426,7 @@ bool Instance::CreateDevice() {
                 .fillModeNonSolid = features.fillModeNonSolid,
                 .depthBounds = features.depthBounds,
                 .wideLines = features.wideLines,
+                .largePoints = features.largePoints,
                 .multiViewport = features.multiViewport,
                 .samplerAnisotropy = features.samplerAnisotropy,
                 .vertexPipelineStoresAndAtomics = features.vertexPipelineStoresAndAtomics,
