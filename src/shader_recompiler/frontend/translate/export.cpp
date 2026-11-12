@@ -6,6 +6,7 @@
 #include "shader_recompiler/ir/reinterpret.h"
 #include "shader_recompiler/profile.h"
 #include "shader_recompiler/runtime_info.h"
+#include "video_core/amdgpu/regs_color.h"
 
 namespace Shader::Gcn {
 
@@ -116,16 +117,25 @@ void Translator::ExportAlphaToMask(const IR::U32& level) {
 
 void Translator::ExportRenderTarget(const GcnInst& inst) {
     const auto& exp = inst.control.exp;
-    const IR::Attribute mrt{exp.target};
-    info.mrt_mask |= 1u << static_cast<u8>(mrt);
+    const IR::Attribute export_target{exp.target};
+    IR::Attribute mrt = export_target;
 
     // Dual source blending uses MRT1 for exporting src1
     u32 color_buffer_idx = static_cast<u32>(mrt) - static_cast<u32>(IR::Attribute::RenderTarget0);
     if (runtime_info.hw.fs.dual_source_blending && mrt == IR::Attribute::RenderTarget1) {
         color_buffer_idx = 0;
+    } else if (const AmdGpu::ColorBufferMask shader_mask{runtime_info.hw.fs.cb_shader_mask};
+               shader_mask.raw != 0) {
+        color_buffer_idx = shader_mask.ExportTarget(color_buffer_idx);
+        if (color_buffer_idx >= AmdGpu::NUM_COLOR_BUFFERS) {
+            return;
+        }
+        mrt = static_cast<IR::Attribute>(static_cast<u32>(IR::Attribute::RenderTarget0) +
+                                         color_buffer_idx);
     }
+    info.mrt_mask |= 1u << static_cast<u8>(mrt);
 
-    if (mrt == IR::Attribute::RenderTarget0 && runtime_info.hw.fs.alpha_to_mask_enable) {
+    if (export_target == IR::Attribute::RenderTarget0 && runtime_info.hw.fs.alpha_to_mask_enable) {
         IR::U32 level = ir.Imm32(0u);
         if (exp.compr ? (exp.en & 4) : (exp.en & 8)) {
             level =
