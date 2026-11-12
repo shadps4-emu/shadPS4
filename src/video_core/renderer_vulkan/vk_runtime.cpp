@@ -379,6 +379,12 @@ void Runtime::CopyImageWithBuffer(VideoCore::Image* src, VideoCore::Image* dst,
     SetBackingSamples(dst, dst->info.num_samples, false);
     SetBackingSamples(src, src->info.num_samples);
 
+    // Clamp copy extents to the destination Vulkan image dimensions. The guest image size may
+    // differ from the Vulkan image size (e.g. when clamped by device limits), which would cause
+    // VUID-vkCmdCopyBufferToImage-imageSubresource-07971 validation errors.
+    const u32 dst_width = dst->backing->image.image_ci.extent.width;
+    const u32 dst_height = dst->backing->image.image_ci.extent.height;
+    const u32 dst_depth = dst->backing->image.image_ci.extent.depth;
     vk::BufferImageCopy buffer_copy = {
         .bufferOffset = offset,
         .bufferRowLength = 0,
@@ -390,7 +396,9 @@ void Runtime::CopyImageWithBuffer(VideoCore::Image* src, VideoCore::Image* dst,
             .layerCount = num_layers,
         },
         .imageOffset = {0, 0, 0},
-        .imageExtent = {src->info.size.width, src->info.size.height, src->info.size.depth},
+        .imageExtent = {std::min(src->info.size.width, dst_width),
+                        std::min(src->info.size.height, dst_height),
+                        std::min(src->info.size.depth, dst_depth)},
     };
     u64 copy_size = BufferImageCopySize(buffer_copy, src->info.pixel_format);
     SmallVector<vk::BufferImageCopy, 8> buffer_copies;
@@ -399,9 +407,10 @@ void Runtime::CopyImageWithBuffer(VideoCore::Image* src, VideoCore::Image* dst,
         auto mip_copy = buffer_copy;
         mip_copy.bufferOffset = Common::AlignUp(offset + copy_size, 16);
         mip_copy.imageSubresource.mipLevel = mip;
-        mip_copy.imageExtent = vk::Extent3D{std::max(src->info.size.width >> mip, 1u),
-                                            std::max(src->info.size.height >> mip, 1u),
-                                            std::max(src->info.size.depth >> mip, 1u)};
+        mip_copy.imageExtent = vk::Extent3D{
+            std::min(std::max(src->info.size.width >> mip, 1u), std::max(dst_width >> mip, 1u)),
+            std::min(std::max(src->info.size.height >> mip, 1u), std::max(dst_height >> mip, 1u)),
+            std::min(std::max(src->info.size.depth >> mip, 1u), std::max(dst_depth >> mip, 1u))};
         copy_size =
             mip_copy.bufferOffset - offset + BufferImageCopySize(mip_copy, src->info.pixel_format);
         buffer_copies.push_back(mip_copy);
