@@ -131,6 +131,14 @@ void BufferCache::UnmarkRegionAsGpuModified(VAddr device_addr, u64 size, bool is
     gpu_modified_ranges.Subtract(device_addr, size);
 }
 
+void BufferCache::UnmapMemory(VAddr device_addr, u64 size) {
+    InvalidateMemory(device_addr, size);
+    liverpool->SendCommand([this, device_addr, size] {
+        stream_promoted_ranges.erase(stream_promoted_ranges.lower_bound(device_addr),
+                                     stream_promoted_ranges.lower_bound(device_addr + size));
+    });
+}
+
 void BufferCache::ReadMemory(VAddr device_addr, u64 size, bool is_write, bool async,
                              bool assume_locks) {
     const auto flush_request = [this, device_addr, size, is_write, async] {
@@ -219,7 +227,9 @@ std::pair<const Buffer*, u64> BufferCache::ObtainBuffer(VAddr device_addr, u32 s
     const bool skip_stream_buffer = True(flags & ObtainBufferFlags::IgnoreStreamBuffer);
     // For read-only buffers use device local stream buffer to reduce renderpass breaks.
     if (!is_written && !skip_stream_buffer && size <= STREAM_THRESHOLD &&
-        !IsRegionGpuModified(device_addr, size)) {
+        !IsRegionGpuModified(device_addr, size) &&
+        (is_texel_buffer || (!memory_tracker->IsRegionUploaded(device_addr, size) &&
+                             !stream_promoted_ranges.insert(device_addr).second))) {
         const auto [data, offset] = stream_buffer.Map(size, instance.UniformMinAlignment());
         memory->CopySparseMemory(device_addr, data, size);
         stream_buffer.Commit();
