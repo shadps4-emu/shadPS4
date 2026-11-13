@@ -11,6 +11,8 @@
 #include "core/libraries/np/np_web_api2/np_web_api2_internal.h"
 #include "core/libraries/system/userservice.h"
 
+#include <cstdio>
+#include <deque>
 #include <map>
 #include <mutex>
 
@@ -20,6 +22,8 @@ std::recursive_mutex g_mutex{};
 s32 g_current_lib_context_id{};
 std::map<s32, LibraryContext*> g_lib_contexts{};
 u64 g_last_timeout_check{};
+std::mutex g_push_event_mutex{};
+std::deque<NpWebApi::PushEventInput> g_push_event_queue{};
 
 s32 createLibraryContext(s32 http_ctx_id, s32 type, u64 pool_size, const char* name) {
     std::scoped_lock lk{g_mutex};
@@ -476,8 +480,104 @@ s32 unregisterPushContextCallback(s32 user_ctx_id, s32 callback_id) {
     return result;
 }
 
+void EnqueuePushEvent(const NpWebApi::PushEventInput& ev) {
+    {
+        std::scoped_lock lk{g_mutex};
+        if (g_lib_contexts.empty()) {
+            return;
+        }
+    }
+    std::scoped_lock lk{g_push_event_mutex};
+    g_push_event_queue.push_back(ev);
+}
+
+bool canDeliverPushEvent(const PushEventDelivery& delivery) {
+    LibraryContext* lib_ctx = getLibraryContext(delivery.user_ctx_id >> 0x10);
+    if (!lib_ctx) {
+        return false;
+    }
+    UserContext* user_ctx = lib_ctx->GetUserContext(delivery.user_ctx_id);
+    if (!user_ctx) {
+        lib_ctx->RemoveUser();
+        return false;
+    }
+    bool result = user_ctx->CanDeliverPushEvent(delivery);
+    user_ctx->RemoveUser();
+    lib_ctx->RemoveUser();
+    return result;
+}
+
 void processPushEvents() {
-    // LOG_ERROR(Lib_NpWebApi2, "(STUBBED)");
+    std::deque<NpWebApi::PushEventInput> events{};
+    {
+        std::scoped_lock lk{g_push_event_mutex};
+        if (g_push_event_queue.empty()) {
+            return;
+        }
+        events.swap(g_push_event_queue);
+    }
+
+    for (const NpWebApi::PushEventInput& ev : events) {
+        std::vector<s32> lib_ctx_ids{};
+        {
+            std::scoped_lock lk{g_mutex};
+            for (auto& [lib_ctx_id, lib_ctx] : g_lib_contexts) {
+                lib_ctx_ids.push_back(lib_ctx_id);
+            }
+        }
+
+        std::vector<PushEventDelivery> deliveries{};
+        for (s32 lib_ctx_id : lib_ctx_ids) {
+            LibraryContext* lib_ctx = getLibraryContext(lib_ctx_id);
+            if (!lib_ctx) {
+                continue;
+            }
+            lib_ctx->CollectPushEventDeliveries(ev, deliveries);
+            lib_ctx->RemoveUser();
+        }
+
+        OrbisNpWebApi2PushEventDataType data_type{};
+        std::snprintf(data_type.val, sizeof(data_type.val), "%s", ev.dataType.c_str());
+        OrbisNpPeerAddressA to{};
+        to.accountId = ev.toAccountId;
+        to.platform = OrbisNpPlatformType::PS4;
+        OrbisNpPeerAddressA from{};
+        from.accountId = ev.fromAccountId;
+        from.platform = OrbisNpPlatformType::PS4;
+        const OrbisNpPeerAddressA* to_ptr = ev.toAccountId != 0 ? &to : nullptr;
+        const OrbisNpPeerAddressA* from_ptr = ev.fromAccountId != 0 ? &from : nullptr;
+        const OrbisNpOnlineId* to_online_id = ev.hasTo ? &ev.toOnlineId : nullptr;
+        const OrbisNpOnlineId* from_online_id = ev.hasFrom ? &ev.fromOnlineId : nullptr;
+        const char* data = ev.data.empty() ? nullptr : ev.data.data();
+
+        for (const PushEventDelivery& delivery : deliveries) {
+            if (!canDeliverPushEvent(delivery)) {
+                continue;
+            }
+            const char* np_service_name =
+                delivery.np_service_name.empty() ? nullptr : delivery.np_service_name.c_str();
+            const OrbisNpWebApi2PushEventExtdData* extd_data =
+                delivery.extd_data.empty() ? nullptr : delivery.extd_data.data();
+
+            LOG_DEBUG(Lib_NpWebApi2,
+                      "delivering push event, user_ctx_id = {:#x}, callback_id = {:#x}, "
+                      "data_type = {}",
+                      delivery.user_ctx_id, delivery.callback_id, ev.dataType);
+            if (delivery.push_ctx_cb_func) {
+                delivery.push_ctx_cb_func(
+                    delivery.user_ctx_id, delivery.callback_id, &delivery.push_ctx_id,
+                    OrbisNpWebApi2PushEventPushContextCallbackType::Received, np_service_name,
+                    delivery.np_service_label, to_ptr, to_online_id, from_ptr, from_online_id,
+                    &data_type, data, ev.data.size(), extd_data, delivery.extd_data.size(),
+                    delivery.user_arg);
+            } else {
+                delivery.cb_func(delivery.user_ctx_id, delivery.callback_id, np_service_name,
+                                 delivery.np_service_label, to_ptr, to_online_id, from_ptr,
+                                 from_online_id, &data_type, data, ev.data.size(), extd_data,
+                                 delivery.extd_data.size(), delivery.user_arg);
+            }
+        }
+    }
 }
 
 s32 createRequest(s32 user_ctx_id, const char* api_group, const char* path, const char* method,

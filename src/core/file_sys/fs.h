@@ -199,6 +199,7 @@ public:
 
     int CreateHandle();
     void DeleteHandle(int d);
+    File* UnrefHandle(int d);
     int DuplicateHandleFrom(int old_fd, int min_fd = 0, bool cloexec = false);
     int DuplicateHandleTo(int old_fd, int target_fd, bool cloexec = false);
     s32 GetFdFlags(int d);

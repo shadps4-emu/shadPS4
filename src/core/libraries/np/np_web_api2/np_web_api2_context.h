@@ -169,6 +169,9 @@ public:
         }
     }
 
+    void CollectPushEventDeliveries(const NpWebApi::PushEventInput& ev,
+                                    std::vector<PushEventDelivery>& deliveries);
+
     void DeleteAllUserContexts() {
         std::scoped_lock lk{lock};
         for (auto& [user_ctx_id, user_ctx] : user_contexts) {
@@ -265,6 +268,10 @@ public:
     s32 CreatePushContextCallback(s32 filter_id, OrbisNpWebApi2PushEventPushContextCallback cb_func,
                                   void* user_arg);
     s32 DeletePushContextCallback(s32 callback_id);
+
+    void CollectPushEventDeliveries(const NpWebApi::PushEventInput& ev,
+                                    std::vector<PushEventDelivery>& deliveries);
+    bool CanDeliverPushEvent(const PushEventDelivery& delivery);
 
     s32 CreateRequest(const char* api_group, const char* path, const char* method,
                       const OrbisNpWebApi2ContentParameter* content_parameter, bool multipart,
