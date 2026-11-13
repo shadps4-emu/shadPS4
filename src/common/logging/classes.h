@@ -94,6 +94,7 @@ enum class Class {
     Lib_Videodec,             ///< The LibSceVideodec implementation.
     Lib_VideoRecording,       ///< The LibSceVideoRecording implementation.
     Lib_Voice,                ///< The LibSceVoice implementation.
+    Lib_Piglet,               ///< The LibScePigletv2VSH implementation.
     Lib_RazorCpu,             ///< The LibRazorCpu implementation.
     Lib_Mouse,                ///< The LibSceMouse implementation
     Lib_Keyboard,             ///< The LibSceKeyboard implementation

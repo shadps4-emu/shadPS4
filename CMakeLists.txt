@@ -562,6 +562,15 @@ set(PAD_LIB src/core/libraries/pad/pad.cpp
             src/core/libraries/pad/pad_errors.h
 )
 
+set(PIGLET_LIB src/core/libraries/piglet/piglet.cpp
+               src/core/libraries/piglet/piglet.h
+               src/core/libraries/piglet/piglet_config.cpp
+               src/core/libraries/piglet/piglet_egl.cpp
+               src/core/libraries/piglet/piglet_gles.cpp
+               src/core/libraries/piglet/piglet_gles.h
+               src/core/libraries/piglet/piglet_internal.h
+)
+
 set(SYSTEM_GESTURE_LIB
             src/core/libraries/system_gesture/system_gesture.cpp
             src/core/libraries/system_gesture/system_gesture.h
@@ -988,6 +997,7 @@ set(CORE src/core/aerolib/stubs.cpp
          ${SYSTEM_LIBS}
          ${HLE_LIBC_INTERNAL_LIB}
          ${PAD_LIB}
+         ${PIGLET_LIB}
          ${SYSTEM_GESTURE_LIB}
          ${VIDEOOUT_LIB}
          ${NP_LIBS}
