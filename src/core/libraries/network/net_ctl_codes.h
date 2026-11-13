@@ -28,6 +28,11 @@ constexpr int ORBIS_NET_CTL_EVENT_TYPE_DISCONNECTED = 1;
 constexpr int ORBIS_SCE_NET_CTL_EVENT_TYPE_DISCONNECT_REQ_FINISHED = 2;
 constexpr int ORBIS_NET_CTL_EVENT_TYPE_IPOBTAINED = 3;
 
+// access point
+constexpr int ORBIS_NET_CTL_AP_STATE_STOPPED = 0;
+constexpr int ORBIS_NET_CTL_AP_STATE_STARTED = 1;
+constexpr int ORBIS_NET_CTL_AP_EVENT_IPOBTAINED = 4;
+
 // get info codes
 // device
 constexpr int ORBIS_NET_CTL_DEVICE_WIRED = 0;
