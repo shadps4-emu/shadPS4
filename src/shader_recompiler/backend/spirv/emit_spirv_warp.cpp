@@ -10,8 +10,14 @@ Id SubgroupScope(EmitContext& ctx) {
     return ctx.ConstU32(static_cast<u32>(spv::Scope::Subgroup));
 }
 
-Id EmitWarpId(EmitContext& ctx) {
-    UNREACHABLE();
+Id EmitWaveId(EmitContext& ctx) {
+    ASSERT_MSG(ctx.profile.subgroup_size == 64, "Unpatched WaveId for subgroup size {}",
+               ctx.profile.subgroup_size);
+    return ctx.OpLoad(ctx.U32[1], ctx.subgroup_id);
+}
+
+Id EmitSubgroupId(EmitContext& ctx) {
+    return ctx.OpLoad(ctx.U32[1], ctx.subgroup_id);
 }
 
 Id EmitLaneId(EmitContext& ctx) {
