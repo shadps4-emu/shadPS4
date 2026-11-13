@@ -119,6 +119,8 @@ ImageInfo::ImageInfo(const AmdGpu::DepthBuffer& buffer, u32 num_slices, VAddr ht
                 ImageSizeLinearAligned(pitch, size.height, 8, num_samples);
             stencil_size *= resources.layers;
         }
+        stencil_mip =
+            MipInfo(stencil_size, pitch, props.is_tiled ? buffer.Height() : size.height, 0);
     }
 
     if (buffer.z_info.format != AmdGpu::DepthBuffer::ZFormat::Invalid) {
@@ -205,6 +207,22 @@ void ImageInfo::UpdateSize() noexcept {
     ComputeImageSize(pitch, size.height, size.depth, resources.levels, resources.layers, num_bits,
                      num_samples, props.is_block, props.is_pow2, alt_tile, tile_mode, array_mode,
                      &guest_size, &micro_tiled_mips, mips_layout.data());
+}
+
+ImageInfo ImageInfo::StencilPlane() const {
+    // The stencil plane lives at its own address and shares the tiling of the depth plane,
+    // but it is always a single 8 bit surface without mips.
+    ImageInfo info = *this;
+    info.props.is_depth = false;
+    info.props.has_stencil = false;
+    info.pixel_format = vk::Format::eS8Uint;
+    info.num_bits = 8;
+    info.resources.levels = 1;
+    info.guest_address = stencil_addr;
+    info.guest_size = stencil_size;
+    info.mips_layout = {};
+    info.mips_layout[0] = stencil_mip;
+    return info;
 }
 
 s32 ImageInfo::MipOf(const ImageInfo& info) const {

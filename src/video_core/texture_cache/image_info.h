@@ -72,6 +72,9 @@ struct ImageInfo {
     }
     void UpdateSize() noexcept;
 
+    /// Returns the guest layout of the stencil plane as a standalone 8 bit surface.
+    ImageInfo StencilPlane() const;
+
     struct {
         VAddr cmask_addr;
         VAddr fmask_addr;
@@ -97,6 +100,7 @@ struct ImageInfo {
     bool alt_tile{};
     VAddr stencil_addr{};
     u32 stencil_size{};
+    MipInfo stencil_mip{};
 };
 
 } // namespace VideoCore
