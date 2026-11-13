@@ -198,7 +198,7 @@ struct AddressSpace::Impl {
 
         // Allocate backing file that represents the total physical memory.
         backing_handle = CreateFileMapping2(INVALID_HANDLE_VALUE, nullptr, FILE_MAP_ALL_ACCESS,
-                                            PAGE_EXECUTE_READWRITE, SEC_COMMIT, BackingSize,
+                                            PAGE_EXECUTE_READWRITE, SEC_RESERVE, BackingSize,
                                             nullptr, nullptr, 0);
 
         ASSERT_MSG(backing_handle, "{}", Common::GetLastErrorMsg());
@@ -232,6 +232,18 @@ struct AddressSpace::Impl {
         if (!CloseHandle(backing_handle)) {
             LOG_CRITICAL(Core, "Failed to free backing memory file handle");
         }
+    }
+
+    void CommitBacking(PAddr phys_addr, u64 size) {
+        if (size == 0) {
+            return;
+        }
+        const u64 begin = Common::AlignDown(phys_addr, 4_KB);
+        const u64 end = Common::AlignUp(phys_addr + size, 4_KB);
+        void* ret =
+            VirtualAlloc(backing_base + begin, end - begin, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+        ASSERT_MSG(ret, "Failed to commit backing memory {:#x}+{:#x}: {}", begin, end - begin,
+                   Common::GetLastErrorMsg());
     }
 
     void* MapRegion(MemoryRegion* region,
@@ -271,6 +283,9 @@ struct AddressSpace::Impl {
                 ret = VirtualProtect(ptr, size, prot, &resultvar);
                 ASSERT_MSG(ret, "VirtualProtect failed. {}", Common::GetLastErrorMsg());
             } else {
+                if (fd == -1) {
+                    CommitBacking(phys_addr, size);
+                }
                 if (prot == PAGE_NOACCESS) {
                     DWORD resultvar;
                     ptr = MapViewOfFile3(backing, process, reinterpret_cast<PVOID>(virtual_addr),
