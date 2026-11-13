@@ -5,6 +5,7 @@
 
 #include <span>
 #include <string>
+#include <thread>
 
 #include "common/types.h"
 #include "core/libraries/pad/pad.h"
@@ -93,6 +94,7 @@ private:
     SDL_Window* window{};
     bool is_shown{};
     bool is_open{true};
+    std::jthread poll_thread;
 };
 
 void SetWindowIcon(SDL_Window* window, const std::vector<u8>& png);

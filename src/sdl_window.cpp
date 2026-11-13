@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <chrono>
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_hints.h>
 #include <SDL3/SDL_init.h>
@@ -15,6 +16,7 @@
 #include "common/io_file.h"
 #include "common/logging/formatter.h"
 #include "common/scope_exit.h"
+#include "common/thread.h"
 #include "core/debug_state.h"
 #include "core/devtools/layer.h"
 #include "core/emulator_settings.h"
@@ -80,12 +82,6 @@ static OrbisPadButtonDataOffset SDLGamepadToOrbisButton(u8 button) {
     default:
         return OPBDO::None;
     }
-}
-
-static Uint32 SDLCALL PollController(void* userdata, SDL_TimerID timer_id, Uint32 interval) {
-    auto* controller = reinterpret_cast<Input::GameController*>(userdata);
-    controller->PollState();
-    return interval;
 }
 
 static Uint32 SDLCALL PollControllerLightColour(void* userdata, SDL_TimerID timer_id,
@@ -340,10 +336,27 @@ void WindowSDL::WaitEvent() {
 }
 
 void WindowSDL::InitTimers() {
-    for (int i = 0; i < 4; ++i) {
-        SDL_AddTimer(4, &PollController, controllers[i]);
-    }
-    SDL_AddTimer(33, Input::MousePolling, (void*)controllers[0]);
+    poll_thread = std::jthread([this](std::stop_token token) {
+        using namespace std::chrono_literals;
+        Common::SetCurrentThreadName("InputPoll");
+        auto next = std::chrono::steady_clock::now();
+        for (u32 tick = 0; !token.stop_requested(); ++tick) {
+            for (int i = 0; i < 4; ++i) {
+                controllers[i]->PollState();
+            }
+            if (tick % 8 == 0) {
+                Input::MousePolling(controllers[0], 0, 32);
+            }
+            next += 4ms;
+            const auto now = std::chrono::steady_clock::now();
+            if (now > next + 100ms) {
+                next = now;
+            }
+            Common::AccurateSleep(std::chrono::duration_cast<std::chrono::nanoseconds>(
+                                      next - std::chrono::steady_clock::now()),
+                                  nullptr, false);
+        }
+    });
 }
 
 void WindowSDL::RequestKeyboard() {
