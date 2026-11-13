@@ -995,6 +995,31 @@ U32 IREmitter::Pack2x16(const AmdGpu::NumberFormat number_format, const Value& v
     }
 }
 
+U32 IREmitter::PackHalf2x16RTZ(const Value& vector) {
+    const U32 packed = Pack2x16(AmdGpu::NumberFormat::Float, vector);
+    const auto convert_half = [&](size_t index) {
+        const U32 bits = BitCast<U32>(F32{CompositeExtract(vector, index)});
+        const U32 abs_bits{BitwiseAnd(bits, Imm32(0x7fffffffU))};
+        const U32 exponent{ShiftRightLogical(abs_bits, Imm32(23))};
+        const U32 normal{ISub(ShiftRightLogical(abs_bits, Imm32(13)), Imm32(0x1c000))};
+        const U32 shift{BitwiseAnd(ISub(Imm32(126), exponent), Imm32(31))};
+        const U32 significand{BitwiseOr(BitwiseAnd(abs_bits, Imm32(0x7fffff)), Imm32(0x800000))};
+        const U32 subnormal{ShiftRightLogical(significand, shift)};
+        U32 half{Select(ILessThan(exponent, Imm32(113), false), subnormal, normal)};
+        half = U32{Select(ILessThan(exponent, Imm32(103), false), Imm32(0), half)};
+        half =
+            U32{Select(IGreaterThanEqual(abs_bits, Imm32(0x477fe000), false), Imm32(0x7bff), half)};
+        const U32 sign{BitwiseAnd(ShiftRightLogical(bits, Imm32(16)), Imm32(0x8000))};
+        half = U32{BitwiseOr(half, sign)};
+        const U32 special{index == 0 ? BitwiseAnd(packed, Imm32(0xffff))
+                                     : ShiftRightLogical(packed, Imm32(16))};
+        return U32{Select(IGreaterThanEqual(abs_bits, Imm32(0x7f800000), false), special, half)};
+    };
+    const U32 lo = convert_half(0);
+    const U32 hi = convert_half(1);
+    return U32{BitwiseOr(lo, ShiftLeftLogical(hi, Imm32(16)))};
+}
+
 Value IREmitter::Unpack2x16(const AmdGpu::NumberFormat number_format, const U32& value) {
     switch (number_format) {
     case AmdGpu::NumberFormat::Unorm:
@@ -2151,6 +2176,14 @@ Value IREmitter::ImageAtomicCmpSwap(const Value& handle, const Value& coords, co
 
 Value IREmitter::ImageHandle(const Value& tsharp_low, const Value& tsharp_high) {
     return Inst(Opcode::ImageHandle, tsharp_low, tsharp_high);
+}
+
+Value IREmitter::ImageDescriptorHandle(const U32& binding, const U32& index) {
+    return Inst(Opcode::ImageDescriptorHandle, binding, index);
+}
+
+U32 IREmitter::ReadConstArray(const U32& base, const U32& offset) {
+    return Inst<U32>(Opcode::ReadConstArray, base, offset);
 }
 
 Value IREmitter::ImageSampleRaw(const Value& image_handle, const Value& sampler_handle,

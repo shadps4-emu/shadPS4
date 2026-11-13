@@ -100,6 +100,7 @@ struct Info : InfoPersistent {
     };
 
     std::span<const u32> user_data;
+    std::optional<ShaderParams> params;
     std::vector<u32> flattened_ud_buf;
     PersistentSrtInfo srt_info;
 
@@ -162,7 +163,7 @@ struct Info : InfoPersistent {
     Info() = default;
     Info(HwStage stage_, SwStage l_stage_, ShaderParams params)
         : InfoPersistent(stage_, l_stage_, params.hash), pgm_base{params.Base()},
-          user_data{params.user_data} {}
+          user_data{params.user_data}, params{params} {}
 
     template <typename T>
     inline T ReadUdSharp(u32 sharp_idx) const noexcept {
@@ -183,7 +184,10 @@ struct Info : InfoPersistent {
 
     void AddBindings(Backend::Bindings& bnd) const {
         bnd.buffer += buffers.size();
-        bnd.unified += buffers.size() + images.size() + samplers.size();
+        bnd.unified += buffers.size() + samplers.size();
+        for (const auto& image : images) {
+            bnd.unified += image.NumBindings(*this);
+        }
     }
 
     void RefreshFlatBuf() {
