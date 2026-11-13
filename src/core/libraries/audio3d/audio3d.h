@@ -4,8 +4,10 @@
 #pragma once
 
 #include <algorithm>
+#include <condition_variable>
 #include <mutex>
 #include <optional>
+#include <thread>
 #include <vector>
 #include <queue>
 
@@ -126,8 +128,13 @@ struct Port {
     OrbisAudio3dObjectId next_object_id{0};
     // Bed audio queue
     std::deque<AudioData> bed_queue;
-    // Mixed stereo frames ready to be consumed by sceAudio3dPortPush.
+    // Mixed stereo frames, played out by the feeder once pushed.
     std::deque<AudioData> mixed_queue;
+    // Pushed frames at the front of mixed_queue
+    size_t push_ready{0};
+    std::condition_variable_any feed_cv;
+    // Last, so it stops before the queues go away
+    std::jthread feeder;
 };
 
 struct Audio3dState {
