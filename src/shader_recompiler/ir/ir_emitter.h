@@ -12,6 +12,7 @@
 #include "shader_recompiler/ir/patch.h"
 #include "shader_recompiler/ir/shared_memory.h"
 #include "shader_recompiler/ir/value.h"
+#include "shader_recompiler/ordered_count.h"
 
 namespace Shader::IR {
 
@@ -104,6 +105,8 @@ public:
     [[nodiscard]] U32 LoadSharedU32Scratch(const U32& offset);
     [[nodiscard]] U64 LoadSharedU64Scratch(const U32& offset);
     void WriteSharedU32Scratch(const U32& value, const U32& offset);
+    void PredicatedWriteSharedU32(const Value& value, const U32& offset, const U1& cond,
+                                  bool is_scratch);
 
     [[nodiscard]] U32U64 SharedAtomicIAdd(const U32& address, const U32U64& data, bool is_gds);
     [[nodiscard]] U32U64 SharedAtomicISub(const U32& address, const U32U64& data, bool is_gds);
@@ -182,13 +185,18 @@ public:
 
     [[nodiscard]] U32 DataAppend(const U32& gds_dw_offset);
     [[nodiscard]] U32 DataConsume(const U32& gds_dw_offset);
+    [[nodiscard]] U32 OrderedCount(const U32& value, const U32& gds_offset, const U32& append_term,
+                                   const U1& elected, const U1& is_active,
+                                   OrderedCount::Flags flags);
     [[nodiscard]] U32 LaneId();
     [[nodiscard]] U32 WaveId();
     [[nodiscard]] U32 SubgroupId();
     [[nodiscard]] U32 QuadBroadcast(const U32& value, const U32& index);
     [[nodiscard]] U32 Shuffle(const U32& value, const U32& index);
     [[nodiscard]] U32 ShuffleXor(const U32& value, const U32& mask);
+    [[nodiscard]] U1 ElectOrLane0(const U1& exec);
     [[nodiscard]] U32 ReadFirstLane(const U32& value);
+    [[nodiscard]] U32 OrderedCountEpilogue(const U32& value, const U1& elected);
     [[nodiscard]] U32 ReadLane(const U32& value, const U32& lane);
     [[nodiscard]] U32 WriteLane(const U32& value, const U32& write_value, const U32& lane);
     [[nodiscard]] U64 Ballot(const U1& bit);

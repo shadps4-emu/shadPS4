@@ -28,8 +28,20 @@ Id EmitQuadBroadcast(EmitContext& ctx, Id value, Id index) {
     return ctx.OpGroupNonUniformQuadBroadcast(ctx.U32[1], SubgroupScope(ctx), value, index);
 }
 
+Id EmitElectOrLane0(EmitContext& ctx, Id exec) {
+    const Id any = EmitGroupAny(ctx, exec);
+    const Id first_lane = ctx.OpSelect(
+        ctx.U32[1], any, EmitBallotFindLsb(ctx, EmitBallot(ctx, exec)), ctx.u32_zero_value);
+    return ctx.OpIEqual(ctx.U1[1], first_lane, EmitLaneId(ctx));
+}
+
 Id EmitReadFirstLane(EmitContext& ctx, Id value) {
     return ctx.OpGroupNonUniformBroadcastFirst(ctx.U32[1], SubgroupScope(ctx), value);
+}
+
+Id EmitOrderedCountEpilogue(EmitContext& ctx, Id value, Id elected) {
+    const Id first_lane = EmitBallotFindLsb(ctx, EmitBallot(ctx, elected));
+    return ctx.OpGroupNonUniformBroadcast(ctx.U32[1], SubgroupScope(ctx), value, first_lane);
 }
 
 Id EmitShuffle(EmitContext& ctx, Id value, Id index) {

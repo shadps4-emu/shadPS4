@@ -143,6 +143,7 @@ Id EmitLoadSharedU64(EmitContext& ctx, IR::Inst* inst, Id offset);
 void EmitWriteSharedU16(EmitContext& ctx, IR::Inst* inst, Id offset, Id value);
 void EmitWriteSharedU32(EmitContext& ctx, IR::Inst* inst, Id offset, Id value);
 void EmitWriteSharedU64(EmitContext& ctx, IR::Inst* inst, Id offset, Id value);
+void EmitPredicatedWriteSharedU32(EmitContext& ctx, IR::Inst* inst, Id offset, Id value, Id cond);
 Id EmitSharedAtomicIAdd32(EmitContext& ctx, Id offset, Id value);
 Id EmitSharedAtomicIAdd64(EmitContext& ctx, Id offset, Id value);
 Id EmitSharedAtomicUMax32(EmitContext& ctx, Id offset, Id value);
@@ -484,7 +485,9 @@ Id EmitSubgroupId(EmitContext& ctx);
 Id EmitQuadBroadcast(EmitContext& ctx, Id value, Id index);
 Id EmitShuffle(EmitContext& ctx, Id value, Id index);
 Id EmitShuffleXor(EmitContext& ctx, Id value, Id mask);
+Id EmitElectOrLane0(EmitContext& ctx, Id exec);
 Id EmitReadFirstLane(EmitContext& ctx, Id value);
+Id EmitOrderedCountEpilogue(EmitContext& ctx, Id value, Id elected);
 Id EmitReadLane(EmitContext& ctx, Id value, Id lane);
 Id EmitWriteLane(EmitContext& ctx, Id value, Id write_value, u32 lane);
 Id EmitBallot(EmitContext& ctx, Id bit);
@@ -493,6 +496,8 @@ Id EmitInverseBallot(EmitContext& ctx, Id mask);
 Id EmitGroupAny(EmitContext& ctx, Id bit);
 Id EmitDataAppend(EmitContext& ctx, Id gds_dw_offset, Id exec);
 Id EmitDataConsume(EmitContext& ctx, Id gds_dw_offset, Id exec);
+Id EmitOrderedCount(EmitContext& ctx, IR::Inst* inst, Id value, Id gds_offset, Id append_term,
+                    Id elected, Id is_active);
 
 void EmitEmitVertex(EmitContext& ctx);
 void EmitEmitPrimitive(EmitContext& ctx);

@@ -16,7 +16,12 @@ void EmitPrologue(EmitContext& ctx) {
                         ctx.ConstU32(0xFFFFFFFFu));
         }
     }
-    if (ctx.info.loads.Get(IR::Attribute::WorkgroupIndex)) {
+    if (ctx.info.uses_ordered_count) {
+        ctx.InitEmulatedWorkgroupIndex();
+        if (ctx.info.loads.Get(IR::Attribute::WorkgroupId)) {
+            ctx.InitEmulatedWorkgroupId();
+        }
+    } else if (ctx.info.loads.Get(IR::Attribute::WorkgroupIndex)) {
         ctx.DefineWorkgroupIndex();
     }
     ctx.DefineBufferProperties();
