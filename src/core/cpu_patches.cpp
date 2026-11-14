@@ -27,6 +27,7 @@
 #include "common/native_clock.h"
 #include "common/signal_context.h"
 #include "common/types.h"
+#include "common/uint128.h"
 #include "core/libraries/kernel/time.h"
 #include "core/signals.h"
 #include "core/tls.h"
@@ -1332,17 +1333,21 @@ static void TryPatchAot(void* code_address, u64 code_size) {
     }
 }
 
-static u64 s_guest_tsc_multiplier = u64{1} << 32;
+static u64 s_guest_tsc_multiplier = u64{1} << GuestTscMultiplierShift;
 
 void UpdateGuestTscMultiplier() {
     const u64 guest_freq = Libraries::Kernel::sceKernelGetTscFrequency();
     const u64 host_freq = Common::NativeClock{}.GetTscFrequency();
     if (host_freq != 0 && guest_freq != 0) {
-        const long double ratio =
-            static_cast<long double>(guest_freq) / static_cast<long double>(host_freq);
-        s_guest_tsc_multiplier = static_cast<u64>(ratio * 4294967296.0L);
+#ifdef __SIZEOF_INT128__
+        const auto scaled = static_cast<unsigned __int128>(guest_freq) << GuestTscMultiplierShift;
+        s_guest_tsc_multiplier = static_cast<u64>(scaled / host_freq);
+#else
+        s_guest_tsc_multiplier =
+            Common::MultiplyAndDivide64(guest_freq, u64{1} << GuestTscMultiplierShift, host_freq);
+#endif
     } else {
-        s_guest_tsc_multiplier = u64{1} << 32;
+        s_guest_tsc_multiplier = u64{1} << GuestTscMultiplierShift;
     }
 }
 
@@ -1420,7 +1425,7 @@ static void GenerateScaledGuestRdtsc(Xbyak::CodeGenerator& gen, uintptr_t multip
     gen.or_(rax, rdx);
     gen.mov(rdx, multiplier_addr);
     gen.mul(qword[rdx]);
-    gen.shrd(rax, rdx, 32);
+    gen.shrd(rax, rdx, GuestTscMultiplierShift);
     gen.mov(rdx, rax);
     gen.shr(rdx, 32);
     gen.mov(eax, eax);

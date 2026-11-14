@@ -69,9 +69,16 @@ u64 PS4_SYSV_ABI sceKernelGetProcessTimeCounterFrequency() {
 }
 
 u64 PS4_SYSV_ABI sceKernelReadTsc() {
+#ifdef __SIZEOF_INT128__
+    const auto product = static_cast<unsigned __int128>(clock->GetUptime()) *
+                         static_cast<unsigned __int128>(Core::GetGuestTscMultiplier());
+    return static_cast<u64>(product >> Core::GuestTscMultiplierShift);
+#else
     const u128 product =
         Common::Multiply64Into128(clock->GetUptime(), Core::GetGuestTscMultiplier());
-    return (product[1] << 32) | (product[0] >> 32);
+    return (product[1] << (64 - Core::GuestTscMultiplierShift)) |
+           (product[0] >> Core::GuestTscMultiplierShift);
+#endif
 }
 
 static s32 posix_nanosleep_impl(const OrbisKernelTimespec* rqtp, OrbisKernelTimespec* rmtp,
