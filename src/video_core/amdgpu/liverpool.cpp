@@ -651,6 +651,12 @@ Liverpool::Task Liverpool::ProcessGraphics(std::span<const u32> dcb) {
                 if (!rasterizer || (cs_program.dispatch_initiator & 1) == 0) {
                     break;
                 }
+
+                const bool ordered_append_enable = (cs_program.dispatch_initiator & (1 << 3));
+                if (ordered_append_enable) {
+                    const bool is_per_workgroup = (cs_program.dispatch_initiator & (1 << 4));
+                    ASSERT_MSG(!is_per_workgroup, "ORDERED_APPEND_MODE is per-workgroup");
+                }
                 const auto cmd_address = reinterpret_cast<const void*>(header);
                 rasterizer->ScopeMarker("gfx:{}:DispatchDirect", fmt::make_format_args(cmd_address),
                                         [&] { rasterizer->DispatchDirect(); });

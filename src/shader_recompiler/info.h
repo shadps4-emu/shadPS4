@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <set>
 #include <span>
 #include <vector>
 #include <boost/container/static_vector.hpp>
@@ -15,6 +16,7 @@
 #include "shader_recompiler/ir/passes/srt.h"
 #include "shader_recompiler/ir/reg.h"
 #include "shader_recompiler/ir/type.h"
+#include "shader_recompiler/ordered_count.h"
 #include "shader_recompiler/params.h"
 #include "shader_recompiler/resource.h"
 #include "shader_recompiler/runtime_info.h"
@@ -146,6 +148,7 @@ struct Info : InfoPersistent {
     bool uses_group_quad{};
     bool uses_group_shuffle{};
     bool uses_group_ballot{};
+    bool uses_group_vote{};
     bool uses_fp16{};
     bool uses_fp64{};
     bool uses_pack_10_11_11{};
@@ -154,6 +157,9 @@ struct Info : InfoPersistent {
     bool uses_shared_int64_atomics{};
     bool stores_tess_level_outer{};
     bool stores_tess_level_inner{};
+    bool uses_ordered_count{};
+    std::set<std::pair<OrderedCount::Op, bool>> ordered_count_permutations;
+    bool uses_ordered_count_acquire_only{};
     bool translation_failed{};
     bool has_movrel{};
 

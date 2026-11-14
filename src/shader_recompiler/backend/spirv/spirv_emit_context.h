@@ -48,6 +48,9 @@ public:
     void DefineAmdPerVertexAttribs();
     void DefineWorkgroupIndex();
 
+    void InitEmulatedWorkgroupIndex();
+    void InitEmulatedWorkgroupId();
+
     [[nodiscard]] Id DefineInput(Id type, std::optional<u32> location = std::nullopt,
                                  std::optional<spv::BuiltIn> builtin = std::nullopt) {
         const Id input_id{DefineVariable(type, builtin, spv::StorageClass::Input)};
@@ -421,12 +424,24 @@ public:
     Id read_const{};
     Id read_const_dynamic{};
 
+    // For ordered count
+    Id emulated_workgroup_id{};
+    Id current_counter_var{};
+    // used only when the shader contains any ds_ordered_count with release==0
+    Id holding_ordered_counter_flag{};
+    // generate permutations based on instruction flags: [add, swap] x release -> function id
+    std::map<std::pair<OrderedCount::Op, bool>, Id> ordered_count_functions;
+
+    u32 ordered_count_utility_buffer_binding{};
+    u32 gds_buffer_binding{};
+
 private:
     void DefineArithmeticTypes();
     void DefineInterfaces();
     void DefineInputs();
     void DefineVertexBlock();
     void DefineOutputs();
+    void DefinePrivateVars();
     void DefinePushDataBlock();
     void DefineBuffers();
     void DefineImagesAndSamplers();
@@ -447,6 +462,8 @@ private:
     Id DefineReadConst(bool dynamic);
 
     Id GetBufferSize(u32 sharp_idx);
+
+    void DefineOrderedCountFunction(OrderedCount::Op op, bool acquire_only);
 };
 
 } // namespace Shader::Backend::SPIRV

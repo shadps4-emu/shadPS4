@@ -222,6 +222,9 @@ void Visit(Info& info, const IR::Inst& inst, Profile const& profile) {
     case IR::Opcode::SubgroupId:
         info.uses_subgroup_id = true;
         break;
+    case IR::Opcode::GroupAny:
+        info.uses_group_vote = true;
+        break;
     case IR::Opcode::Memtime:
         info.uses_shader_clock = true;
         break;
@@ -239,6 +242,16 @@ void Visit(Info& info, const IR::Inst& inst, Profile const& profile) {
     case IR::Opcode::UnpackUfloat10_11_11:
         info.uses_unpack_10_11_11 = true;
         break;
+    case IR::Opcode::OrderedCount: {
+        auto flags = inst.Flags<OrderedCount::Flags>();
+        info.uses_ordered_count = true;
+        if (flags.wave_release.Value() == 0) {
+            info.uses_ordered_count_acquire_only = true;
+        }
+        info.ordered_count_permutations.emplace(
+            std::make_pair(flags.instruction_type.Value(), bool(flags.wave_release.Value())));
+        break;
+    }
     default:
         break;
     }
@@ -275,6 +288,22 @@ void CollectShaderInfoPass(IR::Program& program, const Profile& profile) {
         if (std::popcount(static_cast<u64>(segment.used_types)) > 1) {
             info.uses_aliased_shared_memory = true;
         }
+    }
+    if (info.uses_ordered_count) {
+        info.buffers.push_back({
+            .used_types = IR::Type::U32,
+            .buffer_type = BufferType::OrderedCountUtility,
+            .is_written = true,
+        });
+        info.buffers.push_back({
+            .used_types = IR::Type::U32,
+            .buffer_type = BufferType::GdsBuffer,
+            .is_written = true,
+        });
+        // For sharing emulated workgroup ID in prologue
+        info.shared_scratch_segment.UseType(IR::Type::U32);
+        info.shared_scratch_segment.SetMinAlignment(sizeof(u32));
+        info.shared_scratch_segment.SetMinSize(sizeof(u32));
     }
 }
 
