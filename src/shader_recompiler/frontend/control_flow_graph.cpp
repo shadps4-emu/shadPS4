@@ -64,6 +64,7 @@ static bool IgnoresExecMask(const GcnInst& inst) {
     case Opcode::V_READLANE_B32:
     case Opcode::V_WRITELANE_B32:
     case Opcode::V_READFIRSTLANE_B32:
+    case Opcode::DS_ORDERED_COUNT:
         return true;
     default:
         break;

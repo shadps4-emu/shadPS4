@@ -178,10 +178,26 @@ void EmitContext::DefineArithmeticTypes() {
     }
 }
 
+void EmitContext::DefinePrivateVars() {
+    if (info.uses_ordered_count) {
+        current_counter_var = DefineVar(U32[1], spv::StorageClass::Private, u32_zero_value);
+        Name(current_counter_var, "current_counter");
+        interfaces.push_back(current_counter_var);
+
+        if (info.uses_ordered_count_acquire_only) {
+            holding_ordered_counter_flag =
+                DefineVar(U1[1], spv::StorageClass::Private, false_value);
+            Name(holding_ordered_counter_flag, "holding_ordered_counter");
+            interfaces.push_back(holding_ordered_counter_flag);
+        }
+    }
+}
+
 void EmitContext::DefineInterfaces() {
     DefinePushDataBlock();
     DefineInputs();
     DefineOutputs();
+    DefinePrivateVars();
 }
 
 const VectorIds& GetAttributeType(EmitContext& ctx, AmdGpu::NumberFormat fmt) {
@@ -296,6 +312,7 @@ void EmitContext::DefineAmdPerVertexAttribs() {
 }
 
 void EmitContext::DefineWorkgroupIndex() {
+    ASSERT(!info.uses_ordered_count);
     const Id workgroup_id_val{OpLoad(U32[3], workgroup_id)};
     const Id workgroup_x{OpCompositeExtract(U32[1], workgroup_id_val, 0)};
     const Id workgroup_y{OpCompositeExtract(U32[1], workgroup_id_val, 1)};
@@ -494,12 +511,13 @@ void EmitContext::DefineInputs() {
         break;
     }
     case SwStage::Compute:
-        if (info.loads.GetAny(IR::Attribute::WorkgroupIndex) ||
-            info.loads.GetAny(IR::Attribute::WorkgroupId)) {
+        if ((info.loads.GetAny(IR::Attribute::WorkgroupIndex) ||
+             info.loads.GetAny(IR::Attribute::WorkgroupId)) &&
+            !info.uses_ordered_count) {
             workgroup_id =
                 DefineVariable(U32[3], spv::BuiltIn::WorkgroupId, spv::StorageClass::Input);
         }
-        if (info.loads.GetAny(IR::Attribute::WorkgroupIndex)) {
+        if (info.loads.GetAny(IR::Attribute::WorkgroupIndex) || info.uses_ordered_count) {
             num_workgroups_id =
                 DefineVariable(U32[3], spv::BuiltIn::NumWorkgroups, spv::StorageClass::Input);
         }
@@ -824,6 +842,7 @@ EmitContext::BufferSpv EmitContext::DefineBuffer(bool is_written, bool is_cohere
     switch (buffer_type) {
     case BufferType::GdsBuffer:
         Name(id, "gds_buffer");
+        gds_buffer_binding = binding.unified;
         break;
     case BufferType::Flatbuf:
         Name(id, "srt_flatbuf");
@@ -839,6 +858,10 @@ EmitContext::BufferSpv EmitContext::DefineBuffer(bool is_written, bool is_cohere
         break;
     case BufferType::SharedMemory:
         Name(id, "ssbo_shmem");
+        break;
+    case BufferType::OrderedCountUtility:
+        ordered_count_utility_buffer_binding = binding.unified;
+        Name(id, "ordered_count_utility");
         break;
     default:
         Name(id, fmt::format("ssbo_{}", binding.buffer));
@@ -1326,6 +1349,11 @@ void EmitContext::DefineFunctions() {
     if (True(info.readconst_types & Info::ReadConstType::Dynamic)) {
         LOG_DEBUG(Render_Recompiler, "Shader {:#x} uses dynamic ReadConst", info.pgm_hash);
         read_const_dynamic = DefineReadConst(true);
+    }
+    if (info.uses_ordered_count) {
+        for (auto [op, release] : info.ordered_count_permutations) {
+            DefineOrderedCountFunction(op, release);
+        }
     }
 }
 

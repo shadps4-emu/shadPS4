@@ -200,8 +200,10 @@ struct ComputeProgram {
         u32 scratch_en : 1;
         u32 num_user_regs : 5;
         u32 : 1;
-        u32 tgid_enable : 3;
-        u32 : 5;
+        u64 tgid_enable : 3;
+        u64 tg_size_enable : 1;
+        u64 tigid_comp_count : 2;
+        u64 : 2;
         u32 lds_dwords : 9;
     } settings;
     u32 pad2;

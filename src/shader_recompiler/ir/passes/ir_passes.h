@@ -25,8 +25,7 @@ void LowerMovRelPass(IR::Program& program, const RuntimeInfo& runtime_info,
 void SsaRepairPass(IR::Program& program);
 void PhiSimplificationPass(IR::Program& program);
 void InverseBallotEliminationPass(IR::Program& program);
-void LowerWave64BallotPass(IR::Program& program, const RuntimeInfo& runtime_info,
-                           const Profile& profile);
+void LowerWave64Pass(IR::Program& program, const RuntimeInfo& runtime_info, const Profile& profile);
 void LowerHardwareIntrinsics(IR::Program& program);
 void LowerPhisToRegsPass(IR::Program& program);
 void DeadCodeEliminationPass(IR::Program& program);

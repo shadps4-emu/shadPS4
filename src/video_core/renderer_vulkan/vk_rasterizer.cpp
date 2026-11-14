@@ -832,6 +832,13 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
                 std::memset(data, 0, lds_size);
                 lds_buffer.Commit();
                 buffer_infos.emplace_back(lds_buffer.Handle(), offset, lds_size);
+            } else if (desc.buffer_type == Shader::BufferType::OrderedCountUtility) {
+                auto& ordered_count_buffer = buffer_cache.GetStreamBuffer();
+                const u32 scratch_size = OrderedCount::UtilityBufferSize;
+                const auto [data, offset] = ordered_count_buffer.Map(scratch_size, alignment);
+                std::memset(data, 0, scratch_size);
+                ordered_count_buffer.Commit();
+                buffer_infos.emplace_back(ordered_count_buffer.Handle(), offset, scratch_size);
             } else {
                 UNREACHABLE_MSG("Unexpected buffer type {}", u32(desc.buffer_type));
             }
