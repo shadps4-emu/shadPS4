@@ -6,6 +6,7 @@
 #include <cstring>
 #include <memory>
 #include <fmt/format.h>
+#include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "core/emulator_settings.h"
 #include "core/libraries/error_codes.h"
@@ -92,6 +93,7 @@ int PS4_SYSV_ABI sceNpMatching2CreateJoinRoom(OrbisNpMatching2ContextId ctxId,
     StoreRequestCallback(ctx, requestOpt);
     const OrbisNpMatching2RequestId reqId = AllocRequestId();
     *requestId = reqId;
+    const DispatchHold dispatch_hold;
     MmCreateJoinRoom(ctxId, reqId, *request);
     return ORBIS_OK;
 }
@@ -118,6 +120,7 @@ int PS4_SYSV_ABI sceNpMatching2JoinRoom(OrbisNpMatching2ContextId ctxId,
     StoreRequestCallback(ctx, requestOpt);
     const OrbisNpMatching2RequestId reqId = AllocRequestId();
     *requestId = reqId;
+    const DispatchHold dispatch_hold;
     MmJoinRoom(ctxId, reqId, *request);
     return ORBIS_OK;
 }
@@ -146,6 +149,7 @@ int PS4_SYSV_ABI sceNpMatching2CreateJoinRoomA(OrbisNpMatching2ContextId ctxId,
     StoreRequestCallback(ctx, requestOpt);
     const OrbisNpMatching2RequestId reqId = AllocRequestId();
     *requestId = reqId;
+    const DispatchHold dispatch_hold;
     MmCreateJoinRoomA(ctxId, reqId, *request);
     return ORBIS_OK;
 }
@@ -242,6 +246,7 @@ int PS4_SYSV_ABI sceNpMatching2ContextStart(OrbisNpMatching2ContextId ctxId, u64
         return rc;
     }
 
+    const DispatchHold dispatch_hold;
     MmContextStart(ctxId);
     return ORBIS_OK;
 }
@@ -264,6 +269,7 @@ int PS4_SYSV_ABI sceNpMatching2ContextStop(OrbisNpMatching2ContextId ctxId) {
                                         ORBIS_NP_MATCHING2_SIGNALING_ERROR_TERMINATED_BY_MYSELF);
     }
 
+    const DispatchHold dispatch_hold;
     const s32 submit_rc = MmContextStop(ctxId);
     if (submit_rc != ORBIS_OK) {
         NpHandler::GetInstance().GetMatching2ContextManager().CompleteStop(ctxId, ctx);
@@ -396,6 +402,7 @@ int PS4_SYSV_ABI sceNpMatching2GetWorldInfoList(OrbisNpMatching2ContextId ctxId,
     StoreRequestCallback(ctx, requestOpt);
     const OrbisNpMatching2RequestId reqId = AllocRequestId();
     *requestId = reqId;
+    const DispatchHold dispatch_hold;
     MmGetWorldInfoList(ctxId, reqId, *request);
     return ORBIS_OK;
 }
@@ -423,6 +430,7 @@ int PS4_SYSV_ABI sceNpMatching2LeaveRoom(OrbisNpMatching2ContextId ctxId,
     StoreRequestCallback(ctx, requestOpt);
     const OrbisNpMatching2RequestId reqId = AllocRequestId();
     *requestId = reqId;
+    const DispatchHold dispatch_hold;
     MmLeaveRoom(ctxId, reqId, *request);
     return ORBIS_OK;
 }
@@ -451,6 +459,7 @@ int PS4_SYSV_ABI sceNpMatching2SearchRoom(OrbisNpMatching2ContextId ctxId,
     StoreRequestCallback(ctx, requestOpt);
     const OrbisNpMatching2RequestId reqId = AllocRequestId();
     *requestId = reqId;
+    const DispatchHold dispatch_hold;
     MmSearchRoom(ctxId, reqId, *request, ctx->a_variant);
     return ORBIS_OK;
 }
@@ -479,6 +488,7 @@ int PS4_SYSV_ABI sceNpMatching2SetUserInfo(OrbisNpMatching2ContextId ctxId,
     StoreRequestCallback(ctx, requestOpt);
     const OrbisNpMatching2RequestId reqId = AllocRequestId();
     *requestId = reqId;
+    const DispatchHold dispatch_hold;
     MmSetUserInfo(ctxId, reqId, *request);
     return ORBIS_OK;
 }
@@ -506,6 +516,7 @@ int PS4_SYSV_ABI sceNpMatching2SendRoomMessage(OrbisNpMatching2ContextId ctxId, 
     StoreRequestCallback(ctx, requestOpt);
     const OrbisNpMatching2RequestId reqId = AllocRequestId();
     *requestId = reqId;
+    const DispatchHold dispatch_hold;
     return MmSendRoomMessage(ctxId, reqId,
                              *static_cast<OrbisNpMatching2SendRoomMessageRequest*>(request));
 }
@@ -534,6 +545,7 @@ int PS4_SYSV_ABI sceNpMatching2SetRoomDataExternal(
     StoreRequestCallback(ctx, requestOpt);
     const OrbisNpMatching2RequestId reqId = AllocRequestId();
     *requestId = reqId;
+    const DispatchHold dispatch_hold;
     MmSetRoomDataExternal(ctxId, reqId, *request);
     return ORBIS_OK;
 }
@@ -562,6 +574,7 @@ int PS4_SYSV_ABI sceNpMatching2SetRoomDataInternal(
     StoreRequestCallback(ctx, requestOpt);
     const OrbisNpMatching2RequestId reqId = AllocRequestId();
     *requestId = reqId;
+    const DispatchHold dispatch_hold;
     MmSetRoomDataInternal(ctxId, reqId, *request);
     return ORBIS_OK;
 }
@@ -754,6 +767,7 @@ int PS4_SYSV_ABI sceNpMatching2GetRoomDataExternalList(
     StoreRequestCallback(ctx, requestOpt);
     const OrbisNpMatching2RequestId reqId = AllocRequestId();
     *requestId = reqId;
+    const DispatchHold dispatch_hold;
     MmGetRoomDataExternalList(ctxId, reqId, *request, ctx->a_variant);
     return ORBIS_OK;
 }
@@ -826,6 +840,7 @@ int PS4_SYSV_ABI sceNpMatching2GetRoomMemberDataExternalList(
     StoreRequestCallback(ctx, requestOpt);
     const OrbisNpMatching2RequestId reqId = AllocRequestId();
     *requestId = reqId;
+    const DispatchHold dispatch_hold;
     MmGetRoomMemberDataExternalList(ctxId, reqId, *request, ctx->a_variant);
     return ORBIS_OK;
 }
@@ -865,7 +880,10 @@ int PS4_SYSV_ABI sceNpMatching2GetRoomMemberDataInternal(
     ev.context_owner = ctx;
     ev.fire_at = std::chrono::steady_clock::now();
     ev.req_id = reqId;
-    ev.req_event = ORBIS_NP_MATCHING2_REQUEST_EVENT_GET_ROOM_MEMBER_DATA_INTERNAL_A;
+    const bool use_a_event =
+        ctx->a_variant && Common::ElfInfo::Instance().CompiledSdkVer() >= Common::ElfInfo::FW_400;
+    ev.req_event = use_a_event ? ORBIS_NP_MATCHING2_REQUEST_EVENT_GET_ROOM_MEMBER_DATA_INTERNAL_A
+                               : ORBIS_NP_MATCHING2_REQUEST_EVENT_GET_ROOM_MEMBER_DATA_INTERNAL;
     ev.error_code = 0;
     const RequestCallbackInfo request_cb = ConsumeRequestCallback(ctx);
     ev.request_cb = request_cb.callback;
@@ -900,6 +918,7 @@ int PS4_SYSV_ABI sceNpMatching2GetUserInfoListA(OrbisNpMatching2ContextId ctxId,
     StoreRequestCallback(ctx, requestOpt);
     const OrbisNpMatching2RequestId reqId = AllocRequestId();
     *requestId = reqId;
+    const DispatchHold dispatch_hold;
     MmGetUserInfoList(ctxId, reqId, *request, true);
     return ORBIS_OK;
 }
@@ -928,6 +947,7 @@ int PS4_SYSV_ABI sceNpMatching2GetUserInfoList(OrbisNpMatching2ContextId ctxId,
     StoreRequestCallback(ctx, requestOpt);
     const OrbisNpMatching2RequestId reqId = AllocRequestId();
     *requestId = reqId;
+    const DispatchHold dispatch_hold;
     MmGetUserInfoList(ctxId, reqId, *request, ctx->a_variant);
     return ORBIS_OK;
 }
@@ -966,6 +986,7 @@ int PS4_SYSV_ABI sceNpMatching2JoinRoomA(OrbisNpMatching2ContextId ctxId,
     StoreRequestCallback(ctx, requestOpt);
     const OrbisNpMatching2RequestId reqId = AllocRequestId();
     *requestId = reqId;
+    const DispatchHold dispatch_hold;
     MmJoinRoomA(ctxId, reqId, *request);
     return ORBIS_OK;
 }
@@ -994,6 +1015,7 @@ int PS4_SYSV_ABI sceNpMatching2KickoutRoomMember(OrbisNpMatching2ContextId ctxId
     StoreRequestCallback(ctx, requestOpt);
     const OrbisNpMatching2RequestId reqId = AllocRequestId();
     *requestId = reqId;
+    const DispatchHold dispatch_hold;
     MmKickoutRoomMember(ctxId, reqId, *request);
     return ORBIS_OK;
 }
@@ -1044,6 +1066,7 @@ int PS4_SYSV_ABI sceNpMatching2SetRoomMemberDataInternal(
     StoreRequestCallback(ctx, requestOpt);
     const OrbisNpMatching2RequestId reqId = AllocRequestId();
     *requestId = reqId;
+    const DispatchHold dispatch_hold;
     MmSetRoomMemberDataInternal(ctxId, reqId, *request);
     return ORBIS_OK;
 }
