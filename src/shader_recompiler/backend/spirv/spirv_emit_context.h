@@ -432,9 +432,6 @@ public:
     // generate permutations based on instruction flags: [add, swap] x release -> function id
     std::map<std::pair<OrderedCount::Op, bool>, Id> ordered_count_functions;
 
-    Id buffer_atomic_float_min_function{};
-    Id buffer_atomic_float_max_function{};
-
     u32 ordered_count_utility_buffer_binding{};
     u32 gds_buffer_binding{};
 

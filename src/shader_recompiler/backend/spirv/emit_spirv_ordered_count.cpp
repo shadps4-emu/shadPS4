@@ -106,7 +106,9 @@ uint ordered_count(uint value, uint gds_offset, uint append_term, bool elected, 
         }
     }
     holding_ordered_counter = !release;
-    ++current_counter;
+    if (release) {
+        ++current_counter;
+    }
     return prev_count;
 }
 */
