@@ -8,6 +8,7 @@
 #include <numbers>
 
 #include "common/singleton.h"
+#include "core/emulator_settings.h"
 #include "input/controller.h"
 
 namespace Libraries::Ime {
@@ -523,6 +524,11 @@ VirtualPadSnapshot ReadVirtualPadSnapshot(Libraries::UserService::OrbisUserServi
     Input::State state{};
     if (UiShared::ReadControllerState(user_id, &state)) {
         buttons = static_cast<u32>(state.buttonsState);
+        const bool cross_down = (buttons & kMaskCross) != 0;
+        const bool circle_down = (buttons & kMaskCircle) != 0;
+        if (EmulatorSettings.IsCircleEnter() && cross_down != circle_down) {
+            buttons ^= kMaskCross | kMaskCircle;
+        }
         lx = ApplyAxisDeadzone(
             UiShared::ToAxisUnit(state.axes[static_cast<std::size_t>(Input::Axis::LeftX)]));
         ly = ApplyAxisDeadzone(
