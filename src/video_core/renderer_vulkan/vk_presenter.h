@@ -4,6 +4,7 @@
 #pragma once
 
 #include <condition_variable>
+#include <span>
 
 #include "core/libraries/videoout/buffer.h"
 #include "imgui/imgui_texture.h"
@@ -94,7 +95,8 @@ public:
     bool IsVideoOutSurface(const AmdGpu::ColorBuffer& color_buffer) const;
 
     Frame* PrepareFrame(const Libraries::VideoOut::BufferAttributeGroup& attribute,
-                        VAddr cpu_address);
+                        VAddr cpu_address,
+                        std::span<const Libraries::VideoOut::CompositeOverlay> overlays = {});
 
     Frame* PrepareBlankFrame(bool present_thread);
 

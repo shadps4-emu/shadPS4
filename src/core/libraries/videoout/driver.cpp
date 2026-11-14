@@ -315,6 +315,19 @@ bool VideoOutDriver::SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg,
     return true;
 }
 
+void VideoOutDriver::SetFlipOverlays(s64 flip_arg, std::vector<CompositeOverlay> overlays) {
+    constexpr size_t MaxPendingOverlayFlips = 32;
+    std::scoped_lock lock{overlay_mutex};
+    if (overlays.empty()) {
+        flip_overlays.erase(flip_arg);
+        return;
+    }
+    flip_overlays[flip_arg] = std::move(overlays);
+    while (flip_overlays.size() > MaxPendingOverlayFlips) {
+        flip_overlays.erase(flip_overlays.begin());
+    }
+}
+
 void VideoOutDriver::SubmitFlipInternal(VideoOutPort* port, s32 index, s64 flip_arg, bool is_eop) {
     Vulkan::Frame* frame;
     if (index == -1) {
@@ -323,7 +336,15 @@ void VideoOutDriver::SubmitFlipInternal(VideoOutPort* port, s32 index, s64 flip_
         const auto& buffer = port->buffer_slots[index];
         ASSERT_MSG(buffer.group_index >= 0, "Trying to flip an unregistered buffer!");
         const auto& group = port->groups[buffer.group_index];
-        frame = presenter->PrepareFrame(group, buffer.address_left);
+        std::vector<CompositeOverlay> overlays;
+        {
+            std::scoped_lock overlay_lock{overlay_mutex};
+            if (const auto it = flip_overlays.find(flip_arg); it != flip_overlays.end()) {
+                overlays = std::move(it->second);
+                flip_overlays.erase(it);
+            }
+        }
+        frame = presenter->PrepareFrame(group, buffer.address_left, overlays);
     }
 
     std::scoped_lock lock{mutex};
