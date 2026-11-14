@@ -525,7 +525,7 @@ void EmitContext::DefineInputs() {
             local_invocation_id =
                 DefineVariable(U32[3], spv::BuiltIn::LocalInvocationId, spv::StorageClass::Input);
         }
-        if (info.loads.Get(IR::Attribute::LocalInvocationIndex)) {
+        if (info.loads.Get(IR::Attribute::LocalInvocationIndex) || info.uses_ordered_count) {
             local_invocation_index = DefineVariable(U32[1], spv::BuiltIn::LocalInvocationIndex,
                                                     spv::StorageClass::Input);
         }
