@@ -182,12 +182,12 @@ void MntPoints::UnmountAll() {
 // /app0//game.kpf) and directory traversal (e.g. /app0/../savedata0/) per POSIX pathname resolution
 // standards.
 std::optional<std::string> MntPoints::SanitizeGuestPath(std::string_view path) {
-    if (path.empty() || path.length() > 255) {
+    if (path.empty() || path.length() >= 1024) {
         return std::nullopt;
     }
     std::filesystem::path p(path);
     std::string normalized = p.lexically_normal().generic_string();
-    if (normalized.length() > 255) {
+    if (normalized.length() >= 1024) {
         return std::nullopt;
     }
     return normalized;
@@ -687,16 +687,16 @@ int HandleTable::CreateHandle() {
     return m_files.size() - 1;
 }
 
-void HandleTable::DeleteHandle(int d) {
+File* HandleTable::UnrefHandle(int d) {
     File* to_delete = nullptr;
     {
         std::scoped_lock lock{m_mutex};
         if (d < 0 || static_cast<size_t>(d) >= m_files.size()) {
-            return;
+            return nullptr;
         }
         auto* file = m_files[d];
         if (!file) {
-            return;
+            return nullptr;
         }
         m_files[d] = nullptr;
         if (static_cast<size_t>(d) < m_fd_flags.size()) {
@@ -706,7 +706,11 @@ void HandleTable::DeleteHandle(int d) {
             to_delete = file;
         }
     }
-    delete to_delete;
+    return to_delete;
+}
+
+void HandleTable::DeleteHandle(int d) {
+    delete UnrefHandle(d);
 }
 
 int HandleTable::DuplicateHandleFrom(int old_fd, int min_fd, bool cloexec) {
@@ -755,28 +759,36 @@ int HandleTable::DuplicateHandleFrom(int old_fd, int min_fd, bool cloexec) {
 }
 
 int HandleTable::DuplicateHandleTo(int old_fd, int target_fd, bool cloexec) {
-    std::scoped_lock lock{m_mutex};
-    if (old_fd < 0 || static_cast<size_t>(old_fd) >= m_files.size()) {
-        return -1;
-    }
-    auto* file = m_files[old_fd];
-    if (!file) {
-        return -1;
-    }
-    if (target_fd < 0 || target_fd >= 1024) {
-        return -1;
-    }
-    if (old_fd == target_fd) {
-        return target_fd;
-    }
+    File* to_delete = nullptr;
+    {
+        std::scoped_lock lock{m_mutex};
+        if (old_fd < 0 || static_cast<size_t>(old_fd) >= m_files.size()) {
+            return -1;
+        }
+        auto* file = m_files[old_fd];
+        if (!file) {
+            return -1;
+        }
+        if (target_fd < 0 || target_fd >= 1024) {
+            return -1;
+        }
+        if (old_fd == target_fd) {
+            return target_fd;
+        }
 
-    if (static_cast<size_t>(target_fd) >= m_files.size()) {
-        m_files.resize(target_fd + 1, nullptr);
-        m_fd_flags.resize(target_fd + 1, 0);
+        if (static_cast<size_t>(target_fd) >= m_files.size()) {
+            m_files.resize(target_fd + 1, nullptr);
+            m_fd_flags.resize(target_fd + 1, 0);
+        } else if (auto* old_file = m_files[target_fd]) {
+            if (--old_file->ref_count == 0) {
+                to_delete = old_file;
+            }
+        }
+        m_files[target_fd] = file;
+        m_fd_flags[target_fd] = cloexec ? 1 : 0;
+        file->ref_count++;
     }
-    m_files[target_fd] = file;
-    m_fd_flags[target_fd] = cloexec ? 1 : 0;
-    file->ref_count++;
+    delete to_delete;
     return target_fd;
 }
 
