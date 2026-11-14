@@ -7,6 +7,7 @@
 #include "common/logging/log.h"
 #include "core/libraries/np/np_handler/np_handler.h"
 #include "core/libraries/np/np_web_api/np_web_api.h"
+#include "core/libraries/np/np_web_api2/np_web_api2.h"
 #include "imgui/invitation_prompt_layer.h"
 
 namespace Libraries::Np {
@@ -51,6 +52,7 @@ void NpHandler::OnWebApiPushEvent(s32 user_id, const ShadNet::NotifyWebApiPushEv
         }
     }
     NpWebApi::EnqueuePushEvent(ev);
+    NpWebApi2::EnqueuePushEvent(ev);
 
     // Also surface a SESSION_INVITATION system-service event for titles that watch it instead of
     // (or in addition to) the WebAPI push callback
