@@ -300,9 +300,10 @@ void CollectShaderInfoPass(IR::Program& program, const Profile& profile) {
             .buffer_type = BufferType::GdsBuffer,
             .is_written = true,
         });
-        info.shared_guest_segment.UseType(IR::Type::U32);
-        info.shared_guest_segment.SetMinAlignment(sizeof(u32));
-        info.shared_guest_segment.SetMinSize(sizeof(u32));
+        // For sharing emulated workgroup ID in prologue
+        info.shared_scratch_segment.UseType(IR::Type::U32);
+        info.shared_scratch_segment.SetMinAlignment(sizeof(u32));
+        info.shared_scratch_segment.SetMinSize(sizeof(u32));
     }
 }
 
