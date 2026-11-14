@@ -1399,7 +1399,7 @@ static bool VetoRdtscWindowInstruction(const u8* code, u64 length) {
             instruction, operands, const_cast<u8*>(code), length))) {
         return true;
     }
-    if (instruction.attributes & ZYDIS_ATTRIB_HAS_SEGMENT_FS) {
+    if (instruction.attributes & (ZYDIS_ATTRIB_HAS_SEGMENT_FS | ZYDIS_ATTRIB_HAS_SEGMENT_GS)) {
         return true;
     }
     if (const auto it = Patches.find(instruction.mnemonic); it != Patches.end()) {
@@ -1470,20 +1470,8 @@ static bool EmitTscWindow(Xbyak::CodeGenerator& gen, const TscWindowInsn* w, int
             gen.jmp(target);
             return true;
         }
+        case TscInsnKind::Call:
         case TscInsnKind::Ret:
-            gen.db(i.address, length);
-            return true;
-        case TscInsnKind::Call: {
-            const u8* target = i.address + length + i.info.raw.imm[0].value.s;
-            const u64 ret = static_cast<u64>(reinterpret_cast<uintptr_t>(i.address + length));
-            gen.lea(rsp, ptr[rsp - 8]);
-            gen.push(rax);
-            gen.mov(rax, ret);
-            gen.mov(ptr[rsp + 8], rax);
-            gen.pop(rax);
-            gen.jmp(target);
-            return true;
-        }
         case TscInsnKind::Unsupported:
             return false;
         }
@@ -1525,7 +1513,8 @@ static void PatchGuestRdtsc(u8* code, u64 code_size) {
         }
         out->kind = ClassifyTscInsn(out->info);
         out->address = p;
-        if (apply_veto && VetoRdtscWindowInstruction(p, out->info.length)) {
+        if (apply_veto && (out->kind == TscInsnKind::Call || out->kind == TscInsnKind::Ret ||
+                           VetoRdtscWindowInstruction(p, out->info.length))) {
             out->kind = TscInsnKind::Unsupported;
         }
         return true;
@@ -1601,7 +1590,8 @@ static void PatchGuestRdtsc(u8* code, u64 code_size) {
             closed = closed || next.kind == TscInsnKind::Jmp || next.kind == TscInsnKind::Ret;
         }
 
-        while (hi - lo < NearJumpSize && lo > next_free && n < MaxInsns && !test_bit(targets, lo)) {
+        while (hi - lo < NearJumpSize && lo > next_free && n < MaxInsns && !test_bit(targets, lo) &&
+               !test_bit(targets, rdtsc)) {
             u64 prev = lo - 1;
             while (prev > next_free && lo - prev < 15 && !test_bit(starts, prev)) {
                 --prev;
@@ -1651,11 +1641,13 @@ static void PatchGuestRdtsc(u8* code, u64 code_size) {
         }
 
         auto& patch_gen = module->patch_gen;
+        const size_t patch_offset = static_cast<size_t>((begin + lo) - patch_gen.getCode());
         patch_gen.reset();
-        patch_gen.setSize(lo);
+        patch_gen.setSize(patch_offset);
         patch_gen.jmp(trampoline_ptr, Xbyak::CodeGenerator::LabelType::T_NEAR);
         patch_gen.nop(hi - lo - NearJumpSize);
 
+        module->patched.insert(const_cast<u8*>(begin + lo));
         patched_windows++;
         next_free = hi;
     }

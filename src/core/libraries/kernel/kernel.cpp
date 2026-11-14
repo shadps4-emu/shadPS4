@@ -543,69 +543,237 @@ s32 PS4_SYSV_ABI posix_sysctlbyname(const char* name, void* oldp, size_t* oldlen
         return CopyOutSysctl(oldp, oldlenp, &usermem, sizeof(usermem));
     }
 
+    if (name_view == "hw.realmem") {
+        static constexpr u64 realmem = 8ULL * 1024 * 1024 * 1024;
+        return CopyOutSysctl(oldp, oldlenp, &realmem, sizeof(realmem));
+    }
+
+    if (name_view == "hw.byteorder") {
+        static constexpr s32 byteorder = 1234;
+        return CopyOutSysctl(oldp, oldlenp, &byteorder, sizeof(byteorder));
+    }
+
+    if (name_view == "hw.machine") {
+        static constexpr char machine[] = "amd64";
+        return CopyOutSysctl(oldp, oldlenp, machine, sizeof(machine));
+    }
+
+    if (name_view == "hw.machine_arch") {
+        static constexpr char arch[] = "amd64";
+        return CopyOutSysctl(oldp, oldlenp, arch, sizeof(arch));
+    }
+
+    if (name_view == "hw.floatingpoint") {
+        static constexpr s32 floatingpt = 1;
+        return CopyOutSysctl(oldp, oldlenp, &floatingpt, sizeof(floatingpt));
+    }
+
     LOG_WARNING(Lib_Kernel, "sysctlbyname: unknown name '{}'", name);
     SetPosixErrno(ENOENT);
     return -1;
 }
 
-static const std::unordered_map<std::string_view, s32> s_sysctl_name_to_mib = {
-    {"machdep.tsc_freq", 1},
-    {"dev.cpu.0.freq", 2},
-    {"kern.proc.ptc", 3},
-    {"kern.neomode", 4},
-    {"machdep.bootparams.base_ps4_mode", 5},
-    {"hw.model", 6},
-    {"hw.ncpu", 7},
-    {"hw.pagesize", 8},
-    {"hw.physmem", 9},
-    {"hw.usermem", 10},
-    {"kern.neomode_switch", 11},
-};
+namespace {
+// FreeBSD standard top-level MIB identifiers
+constexpr s32 CTL_KERN = 1;
+constexpr s32 CTL_HW = 6;
+constexpr s32 CTL_MACHDEP = 7;
 
-static const std::unordered_map<s32, const char*> s_sysctl_mib_to_name = {
-    {1, "machdep.tsc_freq"},
-    {2, "dev.cpu.0.freq"},
-    {3, "kern.proc.ptc"},
-    {4, "kern.neomode"},
-    {5, "machdep.bootparams.base_ps4_mode"},
-    {6, "hw.model"},
-    {7, "hw.ncpu"},
-    {8, "hw.pagesize"},
-    {9, "hw.physmem"},
-    {10, "hw.usermem"},
-    {11, "kern.neomode_switch"},
-};
+// CTL_HW identifiers
+constexpr s32 HW_MACHINE = 1;
+constexpr s32 HW_MODEL = 2;
+constexpr s32 HW_NCPU = 3;
+constexpr s32 HW_BYTEORDER = 4;
+constexpr s32 HW_PHYSMEM = 5;
+constexpr s32 HW_USERMEM = 6;
+constexpr s32 HW_PAGESIZE = 7;
+constexpr s32 HW_FLOATINGPT = 9;
+constexpr s32 HW_MACHINE_ARCH = 10;
+constexpr s32 HW_REALMEM = 11;
+
+// CTL_MACHDEP identifiers
+constexpr s32 CPU_TSC_FREQ = 1;
+constexpr s32 CPU_FREQ = 2;
+constexpr s32 BOOTPARAMS_BASE_PS4_MODE = 3;
+
+// CTL_KERN identifiers
+constexpr s32 KERN_NEOMODE = 100;
+constexpr s32 KERN_NEOMODE_SWITCH = 101;
+constexpr s32 KERN_PROC_PTC = 102;
+} // namespace
 
 s32 PS4_SYSV_ABI posix_sysctlnametomib(const char* name, s32* mibp, size_t* sizep) {
     if (name == nullptr || mibp == nullptr || sizep == nullptr) {
         SetPosixErrno(EFAULT);
         return -1;
     }
-    if (*sizep < 1) {
+    if (*sizep < 2) {
         SetPosixErrno(ENOMEM);
         return -1;
     }
-    const auto it = s_sysctl_name_to_mib.find(name);
-    if (it != s_sysctl_name_to_mib.end()) {
-        mibp[0] = it->second;
-        *sizep = 1;
-        return 0;
+
+    const std::string_view s{name};
+    if (s == "machdep.tsc_freq") {
+        mibp[0] = CTL_MACHDEP;
+        mibp[1] = CPU_TSC_FREQ;
+    } else if (s == "dev.cpu.0.freq") {
+        mibp[0] = CTL_MACHDEP;
+        mibp[1] = CPU_FREQ;
+    } else if (s == "machdep.bootparams.base_ps4_mode") {
+        mibp[0] = CTL_MACHDEP;
+        mibp[1] = BOOTPARAMS_BASE_PS4_MODE;
+    } else if (s == "kern.neomode") {
+        mibp[0] = CTL_KERN;
+        mibp[1] = KERN_NEOMODE;
+    } else if (s == "kern.neomode_switch") {
+        mibp[0] = CTL_KERN;
+        mibp[1] = KERN_NEOMODE_SWITCH;
+    } else if (s == "kern.proc.ptc") {
+        mibp[0] = CTL_KERN;
+        mibp[1] = KERN_PROC_PTC;
+    } else if (s == "hw.model") {
+        mibp[0] = CTL_HW;
+        mibp[1] = HW_MODEL;
+    } else if (s == "hw.ncpu") {
+        mibp[0] = CTL_HW;
+        mibp[1] = HW_NCPU;
+    } else if (s == "hw.pagesize") {
+        mibp[0] = CTL_HW;
+        mibp[1] = HW_PAGESIZE;
+    } else if (s == "hw.physmem") {
+        mibp[0] = CTL_HW;
+        mibp[1] = HW_PHYSMEM;
+    } else if (s == "hw.usermem") {
+        mibp[0] = CTL_HW;
+        mibp[1] = HW_USERMEM;
+    } else if (s == "hw.realmem") {
+        mibp[0] = CTL_HW;
+        mibp[1] = HW_REALMEM;
+    } else if (s == "hw.byteorder") {
+        mibp[0] = CTL_HW;
+        mibp[1] = HW_BYTEORDER;
+    } else if (s == "hw.machine") {
+        mibp[0] = CTL_HW;
+        mibp[1] = HW_MACHINE;
+    } else if (s == "hw.machine_arch") {
+        mibp[0] = CTL_HW;
+        mibp[1] = HW_MACHINE_ARCH;
+    } else if (s == "hw.floatingpoint") {
+        mibp[0] = CTL_HW;
+        mibp[1] = HW_FLOATINGPT;
+    } else {
+        LOG_WARNING(Lib_Kernel, "sysctlnametomib: unknown name '{}'", name);
+        SetPosixErrno(ENOENT);
+        return -1;
     }
-    SetPosixErrno(ENOENT);
-    return -1;
+
+    *sizep = 2;
+    return 0;
 }
 
 s32 PS4_SYSV_ABI posix_sysctl(const s32* name, u32 namelen, void* oldp, size_t* oldlenp,
                               const void* newp, size_t newlen) {
-    if (name == nullptr || namelen < 1) {
+    if (name == nullptr || namelen < 2) {
         SetPosixErrno(EINVAL);
         return -1;
     }
-    const auto it = s_sysctl_mib_to_name.find(name[0]);
-    if (it != s_sysctl_mib_to_name.end()) {
-        return posix_sysctlbyname(it->second, oldp, oldlenp, newp, newlen);
+
+    if (name[0] == CTL_HW) {
+        switch (name[1]) {
+        case HW_MACHINE: {
+            static constexpr char machine[] = "amd64";
+            return CopyOutSysctl(oldp, oldlenp, machine, sizeof(machine));
+        }
+        case HW_MODEL: {
+            static constexpr char model[] = "PlayStation 4";
+            return CopyOutSysctl(oldp, oldlenp, model, sizeof(model));
+        }
+        case HW_NCPU: {
+            static constexpr s32 ncpu = 8;
+            return CopyOutSysctl(oldp, oldlenp, &ncpu, sizeof(ncpu));
+        }
+        case HW_BYTEORDER: {
+            static constexpr s32 byteorder = 1234;
+            return CopyOutSysctl(oldp, oldlenp, &byteorder, sizeof(byteorder));
+        }
+        case HW_PHYSMEM: {
+            static constexpr u64 physmem = 8ULL * 1024 * 1024 * 1024;
+            return CopyOutSysctl(oldp, oldlenp, &physmem, sizeof(physmem));
+        }
+        case HW_USERMEM: {
+            static constexpr u64 usermem = 5ULL * 1024 * 1024 * 1024;
+            return CopyOutSysctl(oldp, oldlenp, &usermem, sizeof(usermem));
+        }
+        case HW_PAGESIZE: {
+            static constexpr s32 pagesize = 16384;
+            return CopyOutSysctl(oldp, oldlenp, &pagesize, sizeof(pagesize));
+        }
+        case HW_FLOATINGPT: {
+            static constexpr s32 floatingpt = 1;
+            return CopyOutSysctl(oldp, oldlenp, &floatingpt, sizeof(floatingpt));
+        }
+        case HW_MACHINE_ARCH: {
+            static constexpr char arch[] = "amd64";
+            return CopyOutSysctl(oldp, oldlenp, arch, sizeof(arch));
+        }
+        case HW_REALMEM: {
+            static constexpr u64 realmem = 8ULL * 1024 * 1024 * 1024;
+            return CopyOutSysctl(oldp, oldlenp, &realmem, sizeof(realmem));
+        }
+        default:
+            LOG_WARNING(Lib_Kernel, "sysctl: unhandled CTL_HW mib {}", name[1]);
+            SetPosixErrno(ENOENT);
+            return -1;
+        }
     }
-    LOG_WARNING(Lib_Kernel, "sysctl: unhandled MIB name[0]={}", name[0]);
+
+    if (name[0] == CTL_MACHDEP) {
+        switch (name[1]) {
+        case CPU_TSC_FREQ: {
+            const u64 freq =
+                Libraries::Kernel::sceKernelIsNeoMode() ? 2'133'000'000ULL : 1'594'000'000ULL;
+            return CopyOutSysctl(oldp, oldlenp, &freq, sizeof(freq));
+        }
+        case CPU_FREQ: {
+            const s32 freq = Libraries::Kernel::sceKernelIsNeoMode() ? 2133 : 1594;
+            return CopyOutSysctl(oldp, oldlenp, &freq, sizeof(freq));
+        }
+        case BOOTPARAMS_BASE_PS4_MODE: {
+            const s32 base_ps4_mode = Libraries::Kernel::sceKernelIsNeoMode() ? 0 : 1;
+            return CopyOutSysctl(oldp, oldlenp, &base_ps4_mode, sizeof(base_ps4_mode));
+        }
+        default:
+            LOG_WARNING(Lib_Kernel, "sysctl: unhandled CTL_MACHDEP mib {}", name[1]);
+            SetPosixErrno(ENOENT);
+            return -1;
+        }
+    }
+
+    if (name[0] == CTL_KERN) {
+        switch (name[1]) {
+        case KERN_NEOMODE: {
+            const s32 neomode = Libraries::Kernel::sceKernelIsNeoMode();
+            return CopyOutSysctl(oldp, oldlenp, &neomode, sizeof(neomode));
+        }
+        case KERN_NEOMODE_SWITCH: {
+            if (newp != nullptr) {
+                Libraries::Kernel::sceKernelSwitchToNeoMode(0);
+            }
+            const s32 neomode = Libraries::Kernel::sceKernelIsNeoMode();
+            return CopyOutSysctl(oldp, oldlenp, &neomode, sizeof(neomode));
+        }
+        case KERN_PROC_PTC: {
+            const u64 ptc = Dev::GetInitialPtc();
+            return CopyOutSysctl(oldp, oldlenp, &ptc, sizeof(ptc));
+        }
+        default:
+            LOG_WARNING(Lib_Kernel, "sysctl: unhandled CTL_KERN mib {}", name[1]);
+            SetPosixErrno(ENOENT);
+            return -1;
+        }
+    }
+
+    LOG_WARNING(Lib_Kernel, "sysctl: unhandled MIB name[0]={}, name[1]={}", name[0], name[1]);
     SetPosixErrno(ENOENT);
     return -1;
 }
