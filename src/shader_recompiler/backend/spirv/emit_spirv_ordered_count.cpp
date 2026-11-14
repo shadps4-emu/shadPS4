@@ -27,14 +27,9 @@ void EmitContext::InitEmulatedWorkgroupIndex() {
 
     AddLabel(if_label);
 
-    const auto& utility_buffer = buffers[ordered_count_utility_buffer_binding];
-    const Id offset = utility_buffer.Offset(PointerSize::B32);
     Id index = ConstU32(u32(UtilityBufferOffsets::NextWorkgroupIndex) >> 2);
-    if (Sirit::ValidId(offset)) { // TODO necessary?
-        index = OpIAdd(U32[1], index, offset);
-    }
-    const auto [id, buffer_ptr_type] = utility_buffer.Alias(PointerType::U32);
-    const auto buffer_ptr = OpAccessChain(buffer_ptr_type, id, u32_zero_value, index);
+    const auto buffer_ptr{
+        EmitBufferAccess(ordered_count_utility_buffer_binding, index, PointerType::U32)};
     const Id scope{ConstU32(static_cast<u32>(spv::Scope::Device))};
     const Id semantics{u32_zero_value};
     const Id workgroup_index_val = OpAtomicIIncrement(U32[1], buffer_ptr, scope, semantics);
