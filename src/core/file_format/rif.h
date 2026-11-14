@@ -4,6 +4,7 @@
 #pragma once
 
 #include <filesystem>
+#include <span>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -23,8 +24,8 @@ struct RIFData {
     u16_le version;
     u16_le license_flags;
     u64_le np_account_id;
-    u64_le start_timestamp;
-    u64_le end_timestamp;
+    u64_be start_timestamp;
+    u64_be end_timestamp;
     char content_id[0x30];
     u16_le type;
     u16_le drm_type;
@@ -96,7 +97,15 @@ public:
         return license_only_entitlements;
     }
 
+    const std::unordered_map<std::string, RIFData>& GetAllEntitlements() const {
+        return all_entitlements;
+    }
+
+    std::optional<u32> GetSkuFlag() const;
+    bool GetEntitlementKey(std::string_view label, std::span<u8, 16> out_key) const;
+
 private:
     std::string service_id;
     std::unordered_map<std::string, RIFEntitlementKey> license_only_entitlements;
+    std::unordered_map<std::string, RIFData> all_entitlements;
 };
