@@ -664,10 +664,21 @@ static vk::Format GetFrameViewFormat(const Libraries::VideoOut::PixelFormat form
 }
 
 Frame* Presenter::PrepareFrame(const Libraries::VideoOut::BufferAttributeGroup& attribute,
-                               VAddr cpu_address) {
+                               VAddr cpu_address,
+                               std::span<const Libraries::VideoOut::CompositeOverlay> overlays) {
     auto desc = VideoCore::TextureCache::ImageDesc{attribute, cpu_address};
     const auto image_id = texture_cache.FindImage(desc);
     texture_cache.UpdateImage(image_id);
+
+    std::vector<VideoCore::ImageId> overlay_ids;
+    overlay_ids.reserve(overlays.size());
+    for (const auto& overlay : overlays) {
+        const Libraries::VideoOut::BufferAttributeGroup overlay_group{true, overlay.attrib};
+        auto overlay_desc = VideoCore::TextureCache::ImageDesc{overlay_group, overlay.address};
+        const auto overlay_id = texture_cache.FindImage(overlay_desc);
+        texture_cache.UpdateImage(overlay_id);
+        overlay_ids.push_back(overlay_id);
+    }
 
     Frame* frame = GetRenderFrame();
 
@@ -738,6 +749,18 @@ Frame* Presenter::PrepareFrame(const Libraries::VideoOut::BufferAttributeGroup& 
 
     runtime.Transit(&image, vk::ImageLayout::eShaderReadOnlyOptimal,
                     vk::PipelineStageFlagBits2::eFragmentShader, vk::AccessFlagBits2::eShaderRead);
+
+    std::vector<vk::ImageView> overlay_views;
+    overlay_views.reserve(overlays.size());
+    for (size_t i = 0; i < overlays.size(); i++) {
+        auto& overlay_image = texture_cache.GetImage(overlay_ids[i]);
+        VideoCore::ImageViewInfo overlay_view_info{};
+        overlay_view_info.format = GetFrameViewFormat(overlays[i].attrib.pixel_format);
+        overlay_views.push_back(*overlay_image.FindView(overlay_view_info).image_view);
+        runtime.Transit(&overlay_image, vk::ImageLayout::eShaderReadOnlyOptimal,
+                        vk::PipelineStageFlagBits2::eFragmentShader,
+                        vk::AccessFlagBits2::eShaderRead);
+    }
     runtime.FlushBarriers();
 
     image_view = fsr_pass.Render(cmdbuf, image_view, image_size, {frame->width, frame->height},
@@ -747,7 +770,7 @@ Frame* Presenter::PrepareFrame(const Libraries::VideoOut::BufferAttributeGroup& 
     // the post process pass still sRGB encoded and has to be decoded there instead.
     pp_settings.srgb_input =
         attribute.attrib.pixel_format == Libraries::VideoOut::PixelFormat::A2R10G10B10Srgb;
-    pp_pass.Render(cmdbuf, image_view, image_size, *frame, pp_settings);
+    pp_pass.Render(cmdbuf, image_view, image_size, *frame, pp_settings, overlay_views);
 
     DebugState.game_resolution = {image_size.width, image_size.height};
     DebugState.output_resolution = {frame->width, frame->height};

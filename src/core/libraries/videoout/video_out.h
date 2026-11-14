@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <vector>
+
 #include <core/libraries/system/userservice.h>
 #include "core/libraries/kernel/equeue.h"
 #include "core/libraries/videoout/buffer.h"
@@ -133,6 +135,7 @@ s32 PS4_SYSV_ABI sceVideoOutGetResolutionStatus(s32 handle, SceVideoOutResolutio
 s32 PS4_SYSV_ABI sceVideoOutOpen(Libraries::UserService::OrbisUserServiceUserId userId, s32 busType,
                                  s32 index, const void* param);
 s32 PS4_SYSV_ABI sceVideoOutClose(s32 handle);
+void SetFlipOverlays(s64 flip_arg, std::vector<CompositeOverlay> overlays);
 s32 PS4_SYSV_ABI sceVideoOutGetEventId(const Kernel::OrbisKernelEvent* ev);
 s32 PS4_SYSV_ABI sceVideoOutGetEventData(const Kernel::OrbisKernelEvent* ev, s64* data);
 s32 PS4_SYSV_ABI sceVideoOutColorSettingsSetGamma(SceVideoOutColorSettings* settings, float gamma);

@@ -322,6 +322,10 @@ s32 PS4_SYSV_ABI sceVideoOutClose(s32 handle) {
     return ORBIS_OK;
 }
 
+void SetFlipOverlays(s64 flip_arg, std::vector<CompositeOverlay> overlays) {
+    driver->SetFlipOverlays(flip_arg, std::move(overlays));
+}
+
 s32 PS4_SYSV_ABI sceVideoOutUnregisterBuffers(s32 handle, s32 attributeIndex) {
     auto* port = driver->GetPort(handle);
     if (!port || !port->is_open) {

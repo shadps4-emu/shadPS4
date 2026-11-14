@@ -166,6 +166,27 @@ void PostProcessingPass::Create(vk::Device device, const vk::Format surface_form
     pipeline = Check<"create post process pipeline">(device.createGraphicsPipelineUnique(
         /*pipeline_cache*/ {}, pipeline_info));
 
+    const std::array overlay_attachments{
+        vk::PipelineColorBlendAttachmentState{
+            .blendEnable = true,
+            .srcColorBlendFactor = vk::BlendFactor::eSrcAlpha,
+            .dstColorBlendFactor = vk::BlendFactor::eOneMinusSrcAlpha,
+            .colorBlendOp = vk::BlendOp::eAdd,
+            .srcAlphaBlendFactor = vk::BlendFactor::eOne,
+            .dstAlphaBlendFactor = vk::BlendFactor::eOneMinusSrcAlpha,
+            .alphaBlendOp = vk::BlendOp::eAdd,
+            .colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
+                              vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA,
+        },
+    };
+    vk::PipelineColorBlendStateCreateInfo overlay_blending = color_blending;
+    overlay_blending.attachmentCount = overlay_attachments.size();
+    overlay_blending.pAttachments = overlay_attachments.data();
+    vk::GraphicsPipelineCreateInfo overlay_pipeline_info = pipeline_info;
+    overlay_pipeline_info.pColorBlendState = &overlay_blending;
+    overlay_pipeline = Check<"create post process overlay pipeline">(
+        device.createGraphicsPipelineUnique(/*pipeline_cache*/ {}, overlay_pipeline_info));
+
     // Once pipeline is compiled, we don't need the shader module anymore
     device.destroyShaderModule(vs_module);
     device.destroyShaderModule(fs_module);
@@ -182,7 +203,8 @@ void PostProcessingPass::Create(vk::Device device, const vk::Format surface_form
 }
 
 void PostProcessingPass::Render(vk::CommandBuffer cmdbuf, vk::ImageView input,
-                                vk::Extent2D input_size, Frame& frame, Settings settings) {
+                                vk::Extent2D input_size, Frame& frame, Settings settings,
+                                std::span<const vk::ImageView> overlays) {
     if (EmulatorSettings.IsVkHostMarkersEnabled()) {
         cmdbuf.beginDebugUtilsLabelEXT(vk::DebugUtilsLabelEXT{
             .pLabelName = "Host/Post processing",
@@ -256,6 +278,31 @@ void PostProcessingPass::Render(vk::CommandBuffer cmdbuf, vk::ImageView input,
 
     cmdbuf.beginRendering(rendering_info);
     cmdbuf.draw(3, 1, 0, 0);
+
+    if (!overlays.empty()) {
+        cmdbuf.bindPipeline(vk::PipelineBindPoint::eGraphics, *overlay_pipeline);
+        for (const auto overlay : overlays) {
+            const vk::DescriptorImageInfo overlay_info{
+                .sampler = *sampler,
+                .imageView = overlay,
+                .imageLayout = vk::ImageLayout::eShaderReadOnlyOptimal,
+            };
+            const std::array overlay_writes{
+                vk::WriteDescriptorSet{
+                    .dstSet = VK_NULL_HANDLE,
+                    .dstBinding = 0,
+                    .dstArrayElement = 0,
+                    .descriptorCount = 1,
+                    .descriptorType = vk::DescriptorType::eCombinedImageSampler,
+                    .pImageInfo = &overlay_info,
+                },
+            };
+            cmdbuf.pushDescriptorSetKHR(vk::PipelineBindPoint::eGraphics, *pipeline_layout, 0,
+                                        overlay_writes);
+            cmdbuf.draw(3, 1, 0, 0);
+        }
+    }
+
     cmdbuf.endRendering();
 
     const auto post_barrier = vk::ImageMemoryBarrier2{

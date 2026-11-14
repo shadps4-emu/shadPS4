@@ -8,7 +8,9 @@
 #include "core/libraries/videoout/video_out.h"
 
 #include <condition_variable>
+#include <map>
 #include <mutex>
+#include <vector>
 #include <queue>
 
 namespace Vulkan {
@@ -91,6 +93,7 @@ public:
                               const BufferAttribute* attribute);
 
     bool SubmitFlip(VideoOutPort* port, s32 index, s64 flip_arg, bool is_eop = false);
+    void SetFlipOverlays(s64 flip_arg, std::vector<CompositeOverlay> overlays);
 
 private:
     struct Request {
@@ -112,6 +115,8 @@ private:
     void PresentThread(std::stop_token token);
 
     std::mutex mutex;
+    std::mutex overlay_mutex;
+    std::map<s64, std::vector<CompositeOverlay>> flip_overlays;
     VideoOutPort main_port{};
     std::jthread present_thread;
     std::queue<Request> requests;
