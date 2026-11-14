@@ -23,6 +23,11 @@ using Libraries::Pad::OrbisPadButtonDataOffset;
 
 namespace {
 
+bool SameDigitalState(const State& a, const State& b) {
+    return a.buttonsState == b.buttonsState && a.touchpad[0].state == b.touchpad[0].state &&
+           a.touchpad[1].state == b.touchpad[1].state;
+}
+
 void CalculateOrientation(const Libraries::Pad::OrbisFVector3& angular_velocity, float delta_time,
                           const Libraries::Pad::OrbisFQuaternion& last_orientation,
                           Libraries::Pad::OrbisFQuaternion& orientation) {
@@ -84,12 +89,25 @@ int GameController::ReadStates(State* states, int states_num) {
     }
 
     int read_count = 0;
-    while (read_count < states_num) {
-        auto state = m_states_queue.Pop();
-        if (!state) {
-            break;
+    std::optional<State> unchanged;
+    while (auto state = m_states_queue.Pop()) {
+        if (read_count > 0 && SameDigitalState(states[read_count - 1], *state)) {
+            states[read_count - 1] = std::move(*state);
+        } else if (read_count == 0 && SameDigitalState(m_last_read_state, *state)) {
+            unchanged = std::move(*state);
+        } else {
+            if (read_count == states_num) {
+                std::move(states + 1, states + read_count, states);
+                --read_count;
+            }
+            states[read_count++] = std::move(*state);
         }
-        states[read_count++] = std::move(*state);
+    }
+    if (read_count == 0 && unchanged) {
+        states[read_count++] = std::move(*unchanged);
+    }
+    if (read_count > 0) {
+        m_last_read_state = states[read_count - 1];
     }
     return read_count;
 }
