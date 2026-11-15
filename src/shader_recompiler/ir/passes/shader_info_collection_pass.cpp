@@ -172,6 +172,13 @@ void Visit(Info& info, const IR::Inst& inst, Profile const& profile) {
     case IR::Opcode::WriteLane:
         info.uses_group_ballot = true;
         break;
+    case IR::Opcode::ElectOrLane0:
+        info.uses_group_ballot = true;
+        info.uses_group_vote = true;
+        break;
+    case IR::Opcode::OrderedCountEpilogue:
+        info.uses_group_ballot = true;
+        break;
     case IR::Opcode::Discard:
     case IR::Opcode::DiscardCond:
         info.has_discard = true;
