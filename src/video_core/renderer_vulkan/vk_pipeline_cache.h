@@ -42,25 +42,22 @@ struct Program {
     struct Module {
         vk::ShaderModule module;
         Shader::StageSpecialization spec;
+        std::unique_ptr<Shader::Info> info;
     };
     static constexpr size_t MaxPermutations = 8;
     using ModuleList = boost::container::small_vector<Module, MaxPermutations>;
 
-    Shader::Info info;
     ModuleList modules{};
 
-    Program() = default;
-    Program(Shader::HwStage stage, Shader::SwStage l_stage, Shader::ShaderParams params)
-        : info{stage, l_stage, params} {}
-
-    void AddPermut(vk::ShaderModule module, Shader::StageSpecialization&& spec) {
-        modules.emplace_back(module, std::move(spec));
+    void AddPermut(vk::ShaderModule module, Shader::StageSpecialization&& spec,
+                   std::unique_ptr<Shader::Info> info) {
+        modules.emplace_back(module, std::move(spec), std::move(info));
     }
 
     void InsertPermut(vk::ShaderModule module, Shader::StageSpecialization&& spec,
-                      size_t perm_idx) {
+                      std::unique_ptr<Shader::Info> info, size_t perm_idx) {
         modules.resize(std::max(modules.size(), perm_idx + 1)); // <-- beware of realloc
-        modules[perm_idx] = {module, std::move(spec)};
+        modules[perm_idx] = {module, std::move(spec), std::move(info)};
     }
 };
 

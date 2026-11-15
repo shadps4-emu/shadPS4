@@ -210,6 +210,11 @@ struct StageSpecialization {
             return false;
         }
 
+        if (buffers.size() != other.buffers.size() || images.size() != other.images.size() ||
+            samplers.size() != other.samplers.size()) {
+            return false;
+        }
+
         // For VS which only generates geometry and doesn't have any inputs, its start
         // bindings still may change as they depend on previously processed FS. The check below
         // handles this case and prevents generation of redundant permutations. This is also safe
