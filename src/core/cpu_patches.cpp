@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
@@ -24,8 +24,11 @@
 #include "common/arch.h"
 #include "common/assert.h"
 #include "common/decoder.h"
+#include "common/native_clock.h"
 #include "common/signal_context.h"
 #include "common/types.h"
+#include "common/uint128.h"
+#include "core/libraries/kernel/time.h"
 #include "core/signals.h"
 #include "core/tls.h"
 #include "cpu_patches.h"
@@ -1329,6 +1332,336 @@ static void TryPatchAot(void* code_address, u64 code_size) {
         code += TryPatch(code, module, false).second;
     }
 }
+
+static u64 s_guest_tsc_multiplier = u64{1} << GuestTscMultiplierShift;
+
+void UpdateGuestTscMultiplier() {
+    const u64 guest_freq = Libraries::Kernel::sceKernelGetTscFrequency();
+    const u64 host_freq = Common::NativeClock{}.GetTscFrequency();
+    if (host_freq != 0 && guest_freq != 0) {
+#ifdef __SIZEOF_INT128__
+        const auto scaled = static_cast<unsigned __int128>(guest_freq) << GuestTscMultiplierShift;
+        s_guest_tsc_multiplier = static_cast<u64>(scaled / host_freq);
+#else
+        s_guest_tsc_multiplier =
+            Common::MultiplyAndDivide64(guest_freq, u64{1} << GuestTscMultiplierShift, host_freq);
+#endif
+    } else {
+        s_guest_tsc_multiplier = u64{1} << GuestTscMultiplierShift;
+    }
+}
+
+const u64* GetGuestTscMultiplierPtr() {
+    static std::once_flag flag;
+    std::call_once(flag, [] { UpdateGuestTscMultiplier(); });
+    return &s_guest_tsc_multiplier;
+}
+
+u64 GetGuestTscMultiplier() {
+    return *GetGuestTscMultiplierPtr();
+}
+
+namespace {
+
+enum class TscInsnKind { Unsupported, Plain, Jcc, Jmp, Call, Ret };
+
+struct TscWindowInsn {
+    ZydisDecodedInstruction info;
+    TscInsnKind kind;
+    const u8* address;
+};
+
+static TscInsnKind ClassifyTscInsn(const ZydisDecodedInstruction& i) {
+    const bool relative = i.raw.imm[0].is_relative;
+    switch (i.meta.category) {
+    case ZYDIS_CATEGORY_COND_BR:
+        return (i.opcode_map == ZYDIS_OPCODE_MAP_DEFAULT && (i.opcode & 0xF0) == 0x70) ||
+                       (i.opcode_map == ZYDIS_OPCODE_MAP_0F && (i.opcode & 0xF0) == 0x80)
+                   ? TscInsnKind::Jcc
+                   : TscInsnKind::Unsupported;
+    case ZYDIS_CATEGORY_UNCOND_BR:
+        return relative ? TscInsnKind::Jmp : TscInsnKind::Unsupported;
+    case ZYDIS_CATEGORY_CALL:
+        return relative ? TscInsnKind::Call : TscInsnKind::Unsupported;
+    case ZYDIS_CATEGORY_RET:
+        return TscInsnKind::Ret;
+    case ZYDIS_CATEGORY_SYSCALL:
+        return TscInsnKind::Unsupported;
+    default:
+        if (i.meta.branch_type != ZYDIS_BRANCH_TYPE_NONE) {
+            return TscInsnKind::Unsupported;
+        }
+        return (i.attributes & ZYDIS_ATTRIB_IS_RELATIVE) && i.raw.disp.size != 32
+                   ? TscInsnKind::Unsupported
+                   : TscInsnKind::Plain;
+    }
+}
+
+static bool VetoRdtscWindowInstruction(const u8* code, u64 length) {
+    ZydisDecodedInstruction instruction;
+    ZydisDecodedOperand operands[ZYDIS_MAX_OPERAND_COUNT];
+    if (!ZYAN_SUCCESS(Common::Decoder::Instance()->decodeInstruction(
+            instruction, operands, const_cast<u8*>(code), length))) {
+        return true;
+    }
+    if (instruction.attributes & (ZYDIS_ATTRIB_HAS_SEGMENT_FS | ZYDIS_ATTRIB_HAS_SEGMENT_GS)) {
+        return true;
+    }
+    if (const auto it = Patches.find(instruction.mnemonic); it != Patches.end()) {
+        for (const auto& patch_info : it->second) {
+            if (patch_info.filter(operands)) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+static void GenerateScaledGuestRdtsc(Xbyak::CodeGenerator& gen, uintptr_t multiplier_addr) {
+    gen.lea(rsp, ptr[rsp - 128]);
+    gen.pushfq();
+    gen.rdtsc();
+    gen.shl(rdx, 32);
+    gen.or_(rax, rdx);
+    gen.mov(rdx, multiplier_addr);
+    gen.mul(qword[rdx]);
+    gen.shrd(rax, rdx, GuestTscMultiplierShift);
+    gen.mov(rdx, rax);
+    gen.shr(rdx, 32);
+    gen.mov(eax, eax);
+    gen.popfq();
+    gen.lea(rsp, ptr[rsp + 128]);
+}
+
+static bool EmitTscWindow(Xbyak::CodeGenerator& gen, const TscWindowInsn* w, int n, const u8* back,
+                          uintptr_t multiplier_addr) {
+    for (int k = 0; k < n; ++k) {
+        const auto& i = w[k];
+        const u8 length = i.info.length;
+        switch (i.kind) {
+        case TscInsnKind::Plain:
+            if (i.info.mnemonic == ZYDIS_MNEMONIC_RDTSC) {
+                GenerateScaledGuestRdtsc(gen, multiplier_addr);
+            } else if (i.info.attributes & ZYDIS_ATTRIB_IS_RELATIVE) {
+                const u8 disp_offset = i.info.raw.disp.offset;
+                const u8* target = i.address + length + i.info.raw.disp.value;
+                const s64 delta =
+                    static_cast<s64>(reinterpret_cast<intptr_t>(target) -
+                                     reinterpret_cast<intptr_t>(gen.getCurr() + length));
+                if (delta < INT32_MIN || delta > INT32_MAX) {
+                    return false;
+                }
+                gen.db(i.address, disp_offset);
+                gen.dd(static_cast<u32>(static_cast<s32>(delta)));
+                gen.db(i.address + disp_offset + 4, length - disp_offset - 4);
+            } else {
+                gen.db(i.address, length);
+            }
+            break;
+        case TscInsnKind::Jcc: {
+            const u8* target = i.address + length + i.info.raw.imm[0].value.s;
+            const s64 delta = static_cast<s64>(reinterpret_cast<intptr_t>(target) -
+                                               reinterpret_cast<intptr_t>(gen.getCurr() + 6));
+            if (delta < INT32_MIN || delta > INT32_MAX) {
+                return false;
+            }
+            gen.db(0x0F);
+            gen.db(static_cast<u8>(0x80 | (i.info.opcode & 0x0F)));
+            gen.dd(static_cast<u32>(static_cast<s32>(delta)));
+            break;
+        }
+        case TscInsnKind::Jmp: {
+            const u8* target = i.address + length + i.info.raw.imm[0].value.s;
+            gen.jmp(target);
+            return true;
+        }
+        case TscInsnKind::Call:
+        case TscInsnKind::Ret:
+        case TscInsnKind::Unsupported:
+            return false;
+        }
+    }
+    gen.jmp(back);
+    return true;
+}
+
+static void PatchGuestRdtsc(u8* code, u64 code_size) {
+    auto* module = GetModule(code);
+    if (module == nullptr) {
+        return;
+    }
+
+    std::unique_lock lock{module->mutex};
+
+    ZydisDecoder decoder;
+    ZydisDecoderInit(&decoder, ZYDIS_MACHINE_MODE_LONG_64, ZYDIS_STACK_WIDTH_64);
+
+    const u8* begin = code;
+    const u8* end = code + code_size;
+
+    std::vector<u8> starts(code_size / 8 + 1), targets(code_size / 8 + 1);
+    std::vector<u64> rdtscs, invalid;
+
+    auto test_bit = [](const std::vector<u8>& bits, u64 i) {
+        return (bits[i >> 3] >> (i & 7)) & 1;
+    };
+    auto set_bit = [](std::vector<u8>& bits, u64 i) {
+        bits[i >> 3] |= static_cast<u8>(1u << (i & 7));
+    };
+
+    auto decode_insn = [&](const u8* p, TscWindowInsn* out, bool apply_veto) {
+        ZydisDecoderContext context;
+        const u64 avail = static_cast<u64>(end - p);
+        if (!ZYAN_SUCCESS(ZydisDecoderDecodeInstruction(&decoder, &context, p,
+                                                        avail < 15 ? avail : 15, &out->info))) {
+            return false;
+        }
+        out->kind = ClassifyTscInsn(out->info);
+        out->address = p;
+        if (apply_veto && (out->kind == TscInsnKind::Call || out->kind == TscInsnKind::Ret ||
+                           VetoRdtscWindowInstruction(p, out->info.length))) {
+            out->kind = TscInsnKind::Unsupported;
+        }
+        return true;
+    };
+
+    for (u64 at = 0; at < code_size;) {
+        TscWindowInsn i;
+        if (!decode_insn(begin + at, &i, false)) {
+            invalid.push_back(at++);
+            continue;
+        }
+        set_bit(starts, at);
+        if (i.info.mnemonic == ZYDIS_MNEMONIC_RDTSC) {
+            rdtscs.push_back(at);
+        }
+        if (i.kind == TscInsnKind::Jcc || i.kind == TscInsnKind::Jmp ||
+            i.kind == TscInsnKind::Call) {
+            const u8* t = i.address + i.info.length + i.info.raw.imm[0].value.s;
+            if (t >= begin && t < end) {
+                set_bit(targets, static_cast<u64>(t - begin));
+            }
+        }
+        at += i.info.length;
+    }
+
+    if (rdtscs.empty()) {
+        return;
+    }
+
+    constexpr int MaxInsns = 16;
+    constexpr u64 MaxWindow = 32;
+    constexpr u64 DataMargin = 32;
+
+    u32 patched_windows = 0;
+    u32 merged_rdtsc = 0;
+    u32 skipped_rdtsc = 0;
+    u64 next_free = 0;
+
+    const uintptr_t multiplier_addr = reinterpret_cast<uintptr_t>(GetGuestTscMultiplierPtr());
+
+    for (const u64 rdtsc : rdtscs) {
+        if (rdtsc < next_free) {
+            merged_rdtsc++;
+            continue;
+        }
+
+        TscWindowInsn w[MaxInsns];
+        int n = 1;
+        if (!decode_insn(begin + rdtsc, &w[0], false)) {
+            continue;
+        }
+
+        u64 lo = rdtsc;
+        u64 hi = rdtsc + w[0].info.length;
+
+        bool closed = false;
+        while (hi - lo < NearJumpSize && hi < code_size && n < MaxInsns && test_bit(starts, hi) &&
+               !test_bit(targets, hi)) {
+            TscWindowInsn next;
+            const auto is_padding = [](const TscWindowInsn& insn) {
+                return insn.info.mnemonic == ZYDIS_MNEMONIC_NOP ||
+                       insn.info.mnemonic == ZYDIS_MNEMONIC_INT3;
+            };
+            if (!decode_insn(begin + hi, &next, true) ||
+                (closed ? !is_padding(next) : next.kind == TscInsnKind::Unsupported)) {
+                break;
+            }
+            w[n++] = next;
+            hi += next.info.length;
+            if (next.kind == TscInsnKind::Call) {
+                break;
+            }
+            closed = closed || next.kind == TscInsnKind::Jmp || next.kind == TscInsnKind::Ret;
+        }
+
+        while (hi - lo < NearJumpSize && lo > next_free && n < MaxInsns && !test_bit(targets, lo) &&
+               !test_bit(targets, rdtsc)) {
+            u64 prev = lo - 1;
+            while (prev > next_free && lo - prev < 15 && !test_bit(starts, prev)) {
+                --prev;
+            }
+            TscWindowInsn insn;
+            if (!test_bit(starts, prev) || prev < next_free ||
+                !decode_insn(begin + prev, &insn, true) || prev + insn.info.length != lo ||
+                (insn.kind != TscInsnKind::Plain && insn.kind != TscInsnKind::Jcc)) {
+                break;
+            }
+            std::memmove(&w[1], &w[0], static_cast<size_t>(n) * sizeof(TscWindowInsn));
+            w[0] = insn;
+            ++n;
+            lo = prev;
+        }
+
+        size_t k = 0;
+        while (k < invalid.size() && invalid[k] + DataMargin < lo) {
+            ++k;
+        }
+        const bool near_data = k < invalid.size() && invalid[k] < hi + DataMargin;
+
+        if (hi - lo < NearJumpSize || hi - lo > MaxWindow || near_data ||
+            module->trampoline_exhausted) {
+            skipped_rdtsc++;
+            continue;
+        }
+
+        auto& trampoline_gen = module->trampoline_gen;
+        const size_t trampoline_offset = trampoline_gen.getSize();
+        const auto trampoline_ptr = trampoline_gen.getCurr();
+
+        bool success = false;
+        try {
+            success = EmitTscWindow(trampoline_gen, w, n, begin + hi, multiplier_addr);
+        } catch (const Xbyak::Error& error) {
+            trampoline_gen.setSize(trampoline_offset);
+            HandleTrampolineError(module, error);
+            skipped_rdtsc++;
+            continue;
+        }
+
+        if (!success) {
+            trampoline_gen.setSize(trampoline_offset);
+            skipped_rdtsc++;
+            continue;
+        }
+
+        auto& patch_gen = module->patch_gen;
+        const size_t patch_offset = static_cast<size_t>((begin + lo) - patch_gen.getCode());
+        patch_gen.reset();
+        patch_gen.setSize(patch_offset);
+        patch_gen.jmp(trampoline_ptr, Xbyak::CodeGenerator::LabelType::T_NEAR);
+        patch_gen.nop(hi - lo - NearJumpSize);
+
+        module->patched.insert(const_cast<u8*>(begin + lo));
+        patched_windows++;
+        next_free = hi;
+    }
+
+    LOG_INFO(Core, "Guest TSC: {} rdtsc at {}: {} patched, {} merged, {} skipped", rdtscs.size(),
+             fmt::ptr(code), patched_windows, merged_rdtsc, skipped_rdtsc);
+}
+
+} // namespace
 
 // ============================================================================
 // Windows static guest red-zone protection
@@ -2719,6 +3052,7 @@ void PrePatchInstructions(u64 segment_addr, u64 segment_size) {
         TryPatchAot(reinterpret_cast<void*>(segment_addr), segment_size);
     }
 #endif
+    PatchGuestRdtsc(reinterpret_cast<u8*>(segment_addr), segment_size);
 }
 
 } // namespace Core

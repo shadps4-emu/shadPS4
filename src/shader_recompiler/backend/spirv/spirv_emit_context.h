@@ -378,6 +378,16 @@ public:
         }
     };
 
+    Id EmitBufferAccess(u32 handle, Id address, PointerType pointer_type) {
+        const auto& buffer = buffers[handle];
+        const PointerSize pointer_size = EmitContext::GetPointerSize(pointer_type);
+        if (const Id offset = buffer.Offset(pointer_size); Sirit::ValidId(offset)) {
+            address = OpIAdd(U32[1], address, offset);
+        }
+        const auto [id, spv_pointer_type] = buffer.Alias(pointer_type);
+        return OpAccessChain(spv_pointer_type, id, u32_zero_value, address);
+    }
+
     Bindings& binding;
     boost::container::small_vector<Id, 16> buf_type_ids;
     boost::container::small_vector<BufferDefinition, 16> buffers;
