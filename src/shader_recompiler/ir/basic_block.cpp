@@ -166,6 +166,7 @@ std::string DumpBlock(const Block& block, const std::map<const Block*, size_t>& 
             case IR::Opcode::LoadSharedU16:
             case IR::Opcode::LoadSharedU32:
             case IR::Opcode::LoadSharedU64:
+            case IR::Opcode::PredicatedWriteSharedU32:
             case IR::Opcode::WriteSharedU16:
             case IR::Opcode::WriteSharedU32:
             case IR::Opcode::WriteSharedU64:
