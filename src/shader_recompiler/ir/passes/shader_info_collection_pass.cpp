@@ -230,11 +230,12 @@ void Visit(Info& info, const IR::Inst& inst, const Profile& profile) {
         const bool is_touched = IR::IsReadConstAddressTouched(&inst);
         if (is_touched) {
             info.readconst_types |= InfoPersistent::ReadConstType::Unchecked;
-        } else if (EmulatorSettings.IsFullDmaSyncEnabled()) {
-            info.readconst_types |= InfoPersistent::ReadConstType::Checked;
-        } else if (inst.Flags<IR::ReadConstInstInfo>().loop_touch) {
+        } else if (!EmulatorSettings.IsFullDmaSyncEnabled() &&
+                   inst.Flags<IR::ReadConstInstInfo>().range_touch) {
             AddFlatbuf(info);
             info.readconst_types |= InfoPersistent::ReadConstType::Bounded;
+        } else {
+            info.readconst_types |= InfoPersistent::ReadConstType::Checked;
         }
         break;
     }
@@ -264,13 +265,13 @@ void CollectShaderInfoPass(IR::Program& program, const Profile& profile) {
             .is_written = true,
         });
 
-        if (True(info.readconst_types & InfoPersistent::ReadConstType::Checked)) {
+        if (True(info.readconst_types & (InfoPersistent::ReadConstType::Checked |
+                                         InfoPersistent::ReadConstType::Bounded))) {
             info.buffers.push_back({
                 .used_types = IR::Type::U32,
                 .buffer_type = BufferType::FaultBuffer,
                 .is_written = true,
             });
-            LOG_ERROR(Render, "Enabling full sync DMA for shader {:#x}", info.pgm_hash);
         }
     }
 

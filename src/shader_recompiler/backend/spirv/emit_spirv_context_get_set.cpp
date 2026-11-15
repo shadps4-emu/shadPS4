@@ -62,14 +62,26 @@ Id EmitReadConst(EmitContext& ctx, IR::Inst* inst, Id addr, Id offset) {
         return ctx.OpFunctionCall(ctx.U32[1], ctx.read_const_checked, addr, offset);
     }
     const auto flags = inst->Flags<IR::ReadConstInstInfo>();
-    if (flags.loop_touch) {
-        return ctx.OpFunctionCall(ctx.U32[1], ctx.read_const_in_range, addr, offset,
-                                  ctx.ConstU32(flags.flatbuf_off_dw.Value()));
-    } else {
-        LOG_WARNING(Render_Recompiler, "Shader {:#x} ReadConst with untouched address.",
-                    ctx.info.pgm_hash);
-        return ctx.u32_zero_value;
+    if (!flags.range_touch) {
+        return ctx.OpFunctionCall(ctx.U32[1], ctx.read_const_checked, addr, offset);
     }
+
+    const auto size = ctx.EmitFlatbufferLoad(ctx.ConstU32(flags.flatbuf_off_dw.Value() + 2u));
+    const auto prepared = ctx.OpINotEqual(ctx.U1[1], size, ctx.u32_zero_value);
+    const auto touched_label = ctx.OpLabel();
+    const auto checked_label = ctx.OpLabel();
+    const auto merge_label = ctx.OpLabel();
+    ctx.OpSelectionMerge(merge_label, spv::SelectionControlMask::MaskNone);
+    ctx.OpBranchConditional(prepared, touched_label, checked_label);
+
+    ctx.AddLabel(touched_label);
+    const auto touched = ctx.OpFunctionCall(ctx.U32[1], ctx.read_const, addr, offset);
+    ctx.OpBranch(merge_label);
+    ctx.AddLabel(checked_label);
+    const auto checked = ctx.OpFunctionCall(ctx.U32[1], ctx.read_const_checked, addr, offset);
+    ctx.OpBranch(merge_label);
+    ctx.AddLabel(merge_label);
+    return ctx.OpPhi(ctx.U32[1], touched, touched_label, checked, checked_label);
 }
 
 Id EmitReadConstBuffer(EmitContext& ctx, u32 handle, Id index) {

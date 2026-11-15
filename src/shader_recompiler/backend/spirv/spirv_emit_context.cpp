@@ -3,6 +3,7 @@
 
 #include "common/assert.h"
 #include "common/div_ceil.h"
+#include "core/address_space.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
 #include "shader_recompiler/frontend/fetch_shader.h"
 #include "shader_recompiler/ir/attribute.h"
@@ -1211,6 +1212,20 @@ Id EmitContext::DefineGetBdaPointer(bool faulting) {
 
     Id fault_label{}, available_label{}, merge_label{};
     if (faulting) {
+        const auto valid_range =
+            OpULessThan(U1[1], address,
+                        Constant(U64, u64{1} << Core::AddressSpace::Traits::ADDRESS_SPACE_BITS));
+        const auto aligned =
+            OpIEqual(U1[1], OpBitwiseAnd(U64, address, Constant(U64, u64{3})), u64_zero_value);
+        const auto valid = OpLogicalAnd(U1[1], valid_range, aligned);
+        const auto access_label = OpLabel();
+        const auto invalid_label = OpLabel();
+        OpSelectionMerge(access_label, spv::SelectionControlMask::MaskNone);
+        OpBranchConditional(valid, access_label, invalid_label);
+        AddLabel(invalid_label);
+        OpReturnValue(u64_zero_value);
+        AddLabel(access_label);
+
         fault_label = OpLabel();
         available_label = OpLabel();
         merge_label = OpLabel();
@@ -1239,9 +1254,7 @@ Id EmitContext::DefineGetBdaPointer(bool faulting) {
         const auto page_mask{OpShiftLeftLogical(U32[1], u32_one_value, page_mod32)};
         const auto fault_ptr{
             OpAccessChain(fault_pointer_type, fault_buffer_id, u32_zero_value, page_div32)};
-        const auto fault_value{OpLoad(U32[1], fault_ptr)};
-        const auto fault_value_masked{OpBitwiseOr(U32[1], fault_value, page_mask)};
-        OpStore(fault_ptr, fault_value_masked);
+        OpAtomicOr(U32[1], fault_ptr, ConstU32(u32(spv::Scope::Device)), u32_zero_value, page_mask);
 
         // Return null pointer
         OpBranch(merge_label);
@@ -1289,36 +1302,6 @@ Id EmitContext::DefineReadConst(bool checked) {
     return func;
 }
 
-Id EmitContext::DefineReadConstInRange() {
-    const auto func_type{TypeFunction(U32[1], U32[2], U32[1], U32[1])};
-    const auto func{OpFunction(U32[1], spv::FunctionControlMask::MaskNone, func_type)};
-    const auto base{OpFunctionParameter(U32[2])};
-    const auto offset{OpFunctionParameter(U32[1])};
-    const auto range_offset{OpFunctionParameter(U32[1])};
-    Name(func, "read_const_in_range");
-    AddLabel();
-
-    const auto size = EmitFlatbufferLoad(OpIAdd(U32[1], range_offset, ConstU32(2u)));
-    const auto can_read = OpINotEqual(U1[1], size, u32_zero_value);
-    const auto load_label = OpLabel();
-    const auto skip_label = OpLabel();
-    const auto merge_label = OpLabel();
-    OpSelectionMerge(merge_label, spv::SelectionControlMask::MaskNone);
-    OpBranchConditional(can_read, load_label, skip_label);
-
-    AddLabel(load_label);
-    const auto addr = ReadConstAddress(base, offset);
-    const auto value = EmitDwordMemoryRead(addr);
-    OpBranch(merge_label);
-    AddLabel(skip_label);
-    OpBranch(merge_label);
-    AddLabel(merge_label);
-
-    OpReturnValue(OpPhi(U32[1], value, load_label, u32_zero_value, skip_label));
-    OpFunctionEnd();
-    return func;
-}
-
 void EmitContext::DefineFunctions() {
     if (info.uses_pack_10_11_11) {
         f32_to_uf11 = DefineFloat32ToUfloatM5(6, "f32_to_uf11");
@@ -1331,15 +1314,11 @@ void EmitContext::DefineFunctions() {
     if (True(info.readconst_types &
              (Info::ReadConstType::Unchecked | Info::ReadConstType::Bounded))) {
         get_bda_pointer = DefineGetBdaPointer(false);
-    }
-    if (True(info.readconst_types & Info::ReadConstType::Unchecked)) {
         LOG_DEBUG(Render_Recompiler, "Shader {:#x} uses unchecked ReadConst", info.pgm_hash);
         read_const = DefineReadConst(false);
     }
-    if (True(info.readconst_types & Info::ReadConstType::Bounded)) {
-        read_const_in_range = DefineReadConstInRange();
-    }
-    if (True(info.readconst_types & Info::ReadConstType::Checked)) {
+    if (True(info.readconst_types &
+             (Info::ReadConstType::Checked | Info::ReadConstType::Bounded))) {
         LOG_DEBUG(Render_Recompiler, "Shader {:#x} uses checked ReadConst", info.pgm_hash);
         get_bda_pointer_faulting = DefineGetBdaPointer(true);
         read_const_checked = DefineReadConst(true);
