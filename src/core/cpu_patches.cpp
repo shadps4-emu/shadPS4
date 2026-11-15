@@ -1022,7 +1022,7 @@ static PatchModule* GetContainingModule(const void* ptr) {
 
 /// Returns a boolean indicating whether the instruction was patched, and the offset to advance past
 /// whatever is at the current code pointer.
-static std::pair<bool, u64> TryPatch(u8* code, PatchModule* module, bool allow_trampoline = true) {
+static std::pair<bool, u64> TryPatch(u8* code, PatchModule* module) {
     ZydisDecodedInstruction instruction;
     ZydisDecodedOperand operands[ZYDIS_MAX_OPERAND_COUNT];
     const auto status = Common::Decoder::Instance()->decodeInstruction(instruction, operands, code,
@@ -1045,7 +1045,7 @@ static std::pair<bool, u64> TryPatch(u8* code, PatchModule* module, bool allow_t
                     return std::make_pair(false, instruction.length);
                 }
 
-                if (needs_trampoline && (!allow_trampoline || module->trampoline_exhausted)) {
+                if (needs_trampoline && module->trampoline_exhausted) {
                     return std::make_pair(false, instruction.length);
                 }
 
@@ -1313,21 +1313,6 @@ static bool TryPatchJit(void* code_address) {
     }
 
     return TryPatch(code, module).first;
-}
-
-static void TryPatchAot(void* code_address, u64 code_size) {
-    auto* code = static_cast<u8*>(code_address);
-    auto* module = GetModule(code);
-    if (module == nullptr) {
-        return;
-    }
-
-    std::unique_lock lock{module->mutex};
-
-    const auto* end = code + code_size;
-    while (code < end) {
-        code += TryPatch(code, module, false).second;
-    }
 }
 
 // ============================================================================
@@ -2547,46 +2532,11 @@ static RedZonePatchResult PatchSegmentStatically(u64 segment_addr, u64 segment_s
     return result;
 }
 
-/// Returns the start of the SSE4a instruction whose opcode is at the given address, or null if
-/// the bytes before it are not the prefixes of one.
-static u8* FindSSE4aInstructionStart(u8* opcode, const u8* lower_bound) {
-    if (opcode[0] != 0x0F || (opcode[1] != 0x78 && opcode[1] != 0x79 && opcode[1] != 0x2B)) {
-        return nullptr;
-    }
-    u8* start = opcode - 1;
-    if (start >= lower_bound && (*start & 0xF0) == 0x40) {
-        // REX prefix
-        --start;
-    }
-    if (start < lower_bound || (*start != 0x66 && *start != 0xF2 && *start != 0xF3)) {
-        return nullptr;
-    }
-    return start;
-}
-
-#if defined(__APPLE__)
-/// Returns the start of the VEX encoded VCMPSS whose opcode is at the given address, or null if
-/// the bytes before it are not its VEX prefix.
-static u8* FindScalarCompareInstructionStart(u8* opcode, const u8* lower_bound) {
-    if (opcode[0] != 0xC2) {
-        return nullptr;
-    }
-    // Two byte VEX with L = 0 and the F3 implied prefix.
-    if (opcode - 2 >= lower_bound && opcode[-2] == 0xC5 && (opcode[-1] & 0x7) == 0x2) {
-        return opcode - 2;
-    }
-    // Three byte VEX in the 0F map with L = 0 and the F3 implied prefix.
-    if (opcode - 3 >= lower_bound && opcode[-3] == 0xC4 && (opcode[-2] & 0x1F) == 0x1 &&
-        (opcode[-1] & 0x7) == 0x2) {
-        return opcode - 3;
-    }
-    return nullptr;
-}
-#endif
-
-/// Patches the CPU instructions between covered_ranges in place, without relocating any.
-/// The bytes after the last range are skipped, as they hold read-only data.
-static void PatchUncoveredCpuInstructions(u64 segment_addr, const AddressRanges& covered_ranges,
+/// Applies the CPU patches between covered_ranges, without relocating any instruction. Where FS
+/// reads do not fault, the patches that need no trampoline are also applied after the last range,
+/// whose bytes mostly hold read-only data.
+static void PatchUncoveredCpuInstructions(u64 segment_addr, u64 segment_size,
+                                          const AddressRanges& covered_ranges,
                                           RedZonePatchResult& result) {
     auto* module = GetContainingModule(reinterpret_cast<void*>(segment_addr));
     if (module == nullptr) {
@@ -2594,39 +2544,36 @@ static void PatchUncoveredCpuInstructions(u64 segment_addr, const AddressRanges&
     }
     std::unique_lock lock{module->mutex};
 
-    const auto patch_gap = [&](uintptr_t gap_start, uintptr_t gap_end) {
-        auto* const lower_bound = reinterpret_cast<u8*>(gap_start);
-        for (uintptr_t address = gap_start; address + 2 <= gap_end; ++address) {
-            u8* start = FindSSE4aInstructionStart(reinterpret_cast<u8*>(address), lower_bound);
-#if defined(__APPLE__)
-            if (start == nullptr) {
-                start =
-                    FindScalarCompareInstructionStart(reinterpret_cast<u8*>(address), lower_bound);
-            }
-#endif
-            if (start == nullptr) {
+    const auto patch_gap = [&](uintptr_t gap_start, uintptr_t gap_end, bool allow_trampoline) {
+        uintptr_t address = gap_start;
+        while (address < gap_end) {
+            const auto decoded = DecodeCodeInstruction(address, gap_end);
+            if (decoded.instruction.length == 0) {
+                ++address;
                 continue;
             }
-            const auto decoded = DecodeCodeInstruction(reinterpret_cast<uintptr_t>(start), gap_end);
-            if (decoded.instruction.length == 0 || FindMatchingPatch(decoded) == nullptr) {
-                continue;
+            const PatchInfo* patch = FindMatchingPatch(decoded);
+            if (patch != nullptr && (allow_trampoline || !patch->trampoline)) {
+                if (TryPatch(reinterpret_cast<u8*>(address), module).first) {
+                    ++result.uncovered_inplace_cpu_patch_instruction_count;
+                } else if (!IsInPlaceMemoryPatch(decoded.instruction.mnemonic)) {
+                    ++result.uncovered_unsupported_cpu_patch_instruction_count;
+                }
             }
-            if (TryPatch(start, module).first) {
-                ++result.uncovered_inplace_cpu_patch_instruction_count;
-            } else if (!IsInPlaceMemoryPatch(decoded.instruction.mnemonic)) {
-                ++result.uncovered_unsupported_cpu_patch_instruction_count;
-            }
-            address = decoded.address + decoded.instruction.length - 1;
+            address += decoded.instruction.length;
         }
     };
 
     uintptr_t cursor = segment_addr;
     for (const auto& [range_start, range_end] : covered_ranges) {
         if (range_start > cursor) {
-            patch_gap(cursor, range_start);
+            patch_gap(cursor, range_start, true);
         }
         cursor = std::max(cursor, range_end);
     }
+#if !defined(_WIN32) && !defined(__APPLE__)
+    patch_gap(cursor, segment_addr + segment_size, false);
+#endif
 }
 
 RedZonePatchResult PatchRedZoneMemoryInstructions(u64 segment_addr, u64 segment_size,
@@ -2640,7 +2587,7 @@ RedZonePatchResult PatchCpuInstructionsStatically(u64 segment_addr, u64 segment_
     auto result =
         PatchSegmentStatically(segment_addr, segment_size, function_starts, false, &covered_ranges);
     // The EH frame search table does not list every function of every module.
-    PatchUncoveredCpuInstructions(segment_addr, covered_ranges, result);
+    PatchUncoveredCpuInstructions(segment_addr, segment_size, covered_ranges, result);
     return result;
 }
 
@@ -2709,16 +2656,6 @@ void RegisterPatchModule(void* module_ptr, u64 module_size, void* trampoline_are
                     std::forward_as_tuple(static_cast<u8*>(module_ptr), module_size,
                                           static_cast<u8*>(trampoline_area_ptr),
                                           trampoline_area_size));
-}
-
-void PrePatchInstructions(u64 segment_addr, u64 segment_size) {
-#if !defined(_WIN32) && !defined(__APPLE__)
-    // Linux and others have an FS segment pointing to valid memory, so continue to do full
-    // ahead-of-time patching for now until a better solution is worked out.
-    if (!Patches.empty()) {
-        TryPatchAot(reinterpret_cast<void*>(segment_addr), segment_size);
-    }
-#endif
 }
 
 } // namespace Core
