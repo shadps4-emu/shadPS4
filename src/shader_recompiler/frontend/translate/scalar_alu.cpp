@@ -78,6 +78,8 @@ void Translator::EmitScalarAlu(const GcnInst& inst) {
             return S_LSHL_B64(inst);
         case Opcode::S_LSHR_B32:
             return S_LSHR_B32(inst);
+        case Opcode::S_LSHR_B64:
+            return S_LSHR_B64(inst);
         case Opcode::S_ASHR_I32:
             return S_ASHR_I32(inst);
         case Opcode::S_ASHR_I64:
@@ -417,6 +419,15 @@ void Translator::S_LSHR_B32(const GcnInst& inst) {
     const IR::U32 result = ir.ShiftRightLogical(src0, shift_amt);
     SetDst(inst.dst[0], result);
     ir.SetScc(ir.INotEqual(result, ir.Imm32(0)));
+}
+
+void Translator::S_LSHR_B64(const GcnInst& inst) {
+    const IR::U64 src0{GetSrc64(inst.src[0])};
+    const IR::U64 src1{GetSrc64(inst.src[1])};
+    const IR::U32 shift_amt = ir.BitwiseAnd(src1, ir.Imm64(u64(0x3F)));
+    const IR::U64 result = ir.ShiftRightLogical(src0, shift_amt);
+    SetDst64(inst.dst[0], result);
+    ir.SetScc(ir.INotEqual(result, ir.Imm64(u64(0))));
 }
 
 void Translator::S_ASHR_I32(const GcnInst& inst) {
