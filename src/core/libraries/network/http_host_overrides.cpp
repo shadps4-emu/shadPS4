@@ -5,6 +5,7 @@
 
 #include <cctype>
 #include <fstream>
+#include <mutex>
 #include <sstream>
 #include <string>
 #include <system_error>
@@ -69,6 +70,23 @@ void RemoveIfExists(const std::filesystem::path& path) {
 }
 
 } // namespace
+
+namespace {
+std::mutex g_title_id_mutex;
+std::string g_title_id;
+} // namespace
+
+// Set by the emulator at boot. Kept here instead of reading Common::ElfInfo, whose
+// accessors assert when no game is loaded (e.g. in the HTTP unit tests).
+void SetHostOverridesTitleId(std::string_view title_id) {
+    std::scoped_lock lock{g_title_id_mutex};
+    g_title_id = title_id;
+}
+
+std::string GetHostOverridesTitleId() {
+    std::scoped_lock lock{g_title_id_mutex};
+    return g_title_id;
+}
 
 std::filesystem::path HostOverridesDir() {
     return Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "host_overrides";

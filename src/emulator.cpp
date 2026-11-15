@@ -714,6 +714,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
             Libraries::Net::DiscoveryResponder::Instance().Start();
         }
 
+        Libraries::Http::SetHostOverridesTitleId(id);
         // Fetch/refresh this game's published host overrides before it can issue any HTTP
         // request
         if (EmulatorSettings.IsShadNetEnabled() && EmulatorSettings.IsHostOverridesAutoDownload()) {

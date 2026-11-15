@@ -353,7 +353,7 @@ static HostOverrideState LoadHostOverrideState() {
 
     // A per-game file (host_overrides/<TITLE_ID>.json) takes the place of the global one.
     std::filesystem::path path;
-    const std::string title_id(Common::ElfInfo::Instance().GameSerial());
+    const std::string title_id = GetHostOverridesTitleId();
     if (IsValidHostOverridesTitleId(title_id)) {
         const auto title_path = HostOverridesDir() / (title_id + ".json");
         std::error_code ec;

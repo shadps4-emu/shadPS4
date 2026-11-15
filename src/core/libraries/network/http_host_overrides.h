@@ -4,11 +4,14 @@
 #pragma once
 
 #include <filesystem>
+#include <string>
 #include <string_view>
 
 namespace Libraries::Http {
 std::filesystem::path HostOverridesDir();
 bool IsValidHostOverridesTitleId(std::string_view title_id);
 void UpdateHostOverridesFromRepo(std::string_view title_id);
+void SetHostOverridesTitleId(std::string_view title_id);
+std::string GetHostOverridesTitleId();
 
 } // namespace Libraries::Http
