@@ -6,7 +6,8 @@
 #include <filesystem>
 #include <string_view>
 
-namespace Libraries::Http std::filesystem::path HostOverridesDir();
+namespace Libraries::Http {
+std::filesystem::path HostOverridesDir();
 bool IsValidHostOverridesTitleId(std::string_view title_id);
 void UpdateHostOverridesFromRepo(std::string_view title_id);
 
