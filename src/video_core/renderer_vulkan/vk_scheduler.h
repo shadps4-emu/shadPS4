@@ -379,6 +379,16 @@ public:
     /// Ends current rendering scope.
     void EndRendering();
 
+    /// Binds a pipeline to the current command buffer, skipping the call when that pipeline is
+    /// already bound to the same bind point. Only graphics and compute pipelines are supported.
+    void BindPipeline(vk::PipelineBindPoint bind_point, vk::Pipeline pipeline);
+
+    /// Forgets the tracked pipelines. Must be called after anything other than BindPipeline binds
+    /// a pipeline to the current command buffer.
+    void InvalidateBoundPipelines() {
+        bound_pipelines.fill(vk::Pipeline{});
+    }
+
     /// Starts a new session.
     void BeginSession();
 
@@ -481,6 +491,8 @@ private:
     std::condition_variable_any priority_pending_ops_cv;
     std::jthread priority_pending_ops_thread;
     RenderState render_state;
+    /// Pipelines bound to the current command buffer, indexed by graphics (0) and compute (1).
+    std::array<vk::Pipeline, 2> bound_pipelines{};
     bool is_rendering = false;
     tracy::VkCtxScope* profiler_scope{};
 };

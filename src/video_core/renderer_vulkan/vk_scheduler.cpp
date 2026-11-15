@@ -91,6 +91,17 @@ void Scheduler::EndRendering() {
     CommandBuffer().endRendering();
 }
 
+void Scheduler::BindPipeline(vk::PipelineBindPoint bind_point, vk::Pipeline pipeline) {
+    ASSERT(bind_point == vk::PipelineBindPoint::eGraphics ||
+           bind_point == vk::PipelineBindPoint::eCompute);
+    vk::Pipeline& bound = bound_pipelines[bind_point == vk::PipelineBindPoint::eCompute ? 1 : 0];
+    if (bound == pipeline) {
+        return;
+    }
+    bound = pipeline;
+    CommandBuffer().bindPipeline(bind_point, pipeline);
+}
+
 vk::CommandBuffer Scheduler::UploadCommandBuffer() {
     auto& upload_cmdbuf = sessions.back().upload;
     if (upload_cmdbuf) {
@@ -157,6 +168,9 @@ void Scheduler::BeginSession() {
 
     // Invalidate dynamic state so it gets applied to the new command buffer.
     dynamic_state.Invalidate();
+
+    // A new command buffer starts without any pipeline bound.
+    InvalidateBoundPipelines();
 
 #if TRACY_GPU_ENABLED
     auto* profiler_ctx = instance.GetProfilerContext();
