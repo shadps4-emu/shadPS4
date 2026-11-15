@@ -323,6 +323,11 @@ void Translator::EmitPrologue(IR::Block* first_block) {
             threadgroup_info =
                 ir.BitFieldInsert(threadgroup_info, append_term, ir.Imm32(6), ir.Imm32(11));
 
+            const IR::U32 first_wave{
+                ir.Select(ir.IEqual(ir.WaveId(), ir.Imm32(0u)), ir.Imm32(1), ir.Imm32(0))};
+            threadgroup_info =
+                ir.BitFieldInsert(threadgroup_info, first_wave, ir.Imm32(31), ir.Imm32(1));
+
             ir.SetScalarReg(dst_sreg++, threadgroup_info);
         }
         break;
