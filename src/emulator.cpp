@@ -39,6 +39,7 @@
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/net/net_discovery.h"
+#include "core/libraries/network/http_host_overrides.h"
 #include "core/libraries/np/np_handler/np_handler.h"
 #include "core/libraries/np/np_trophy.h"
 #include "core/libraries/save_data/save_backup.h"
@@ -490,6 +491,8 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
              EmulatorSettings.IsRedZonePatchingEnabled());
 #endif
     LOG_INFO(Config, "General p2pPort: {}", EmulatorSettings.GetP2PPort());
+    LOG_INFO(Config, "Network hostOverridesAutoDownload: {}",
+             EmulatorSettings.IsHostOverridesAutoDownload());
     LOG_INFO(Config, "Log sync: {}", EmulatorSettings.IsLogSync());
     LOG_INFO(Config, "Log skipDuplicate: {}", EmulatorSettings.IsLogSkipDuplicate());
 #ifdef _WIN32
@@ -709,6 +712,12 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
         if (EmulatorSettings.IsConnectedToNetwork() &&
             EmulatorSettings.IsDeviceDiscoveryEnabled()) {
             Libraries::Net::DiscoveryResponder::Instance().Start();
+        }
+
+        // Fetch/refresh this game's published host overrides before it can issue any HTTP
+        // request
+        if (EmulatorSettings.IsShadNetEnabled() && EmulatorSettings.IsHostOverridesAutoDownload()) {
+            Libraries::Http::UpdateHostOverridesFromRepo(id);
         }
 
         if (!id.empty()) {

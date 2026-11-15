@@ -162,6 +162,7 @@ private:
     bool neoModeSetting;
     bool shadnetEnabledSetting;
     bool connectedNetworkSetting;
+    bool hostOverridesAutoDownloadSetting;
     bool pipelineCacheEnabledSetting;
     bool pipelineCacheArchiveSetting;
     int extraDmemSetting;

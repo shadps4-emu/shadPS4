@@ -242,6 +242,7 @@ struct NetworkSettings {
                                  // enabled it is forwarded on the router.
     Setting<bool> disable_https{false};
     Setting<bool> enable_device_discovery{false};
+    Setting<bool> auto_download_host_overrides{true};
 
     std::vector<OverrideItem> GetOverrideableFields() const {
         return std::vector<OverrideItem>{
@@ -255,13 +256,16 @@ struct NetworkSettings {
             make_override<NetworkSettings>("p2p_port", &NetworkSettings::p2p_port),
             make_override<NetworkSettings>("disable_https", &NetworkSettings::disable_https),
             make_override<NetworkSettings>("enable_device_discovery",
-                                           &NetworkSettings::enable_device_discovery)};
+                                           &NetworkSettings::enable_device_discovery),
+            make_override<NetworkSettings>("auto_download_host_overrides",
+                                           &NetworkSettings::auto_download_host_overrides)};
     }
 };
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(NetworkSettings, connected_to_network, shad_net_enabled,
                                    shadnet_server, shadnet_webapi_server, enable_upnp, p2p_port,
-                                   disable_https, enable_device_discovery)
+                                   disable_https, enable_device_discovery,
+                                   auto_download_host_overrides)
 
 // -------------------------------
 // Log settings
@@ -726,6 +730,7 @@ public:
     SETTING_FORWARD(m_network, P2PPort, p2p_port)
     SETTING_FORWARD_BOOL(m_network, ForcedHttpsDisabled, disable_https)
     SETTING_FORWARD_BOOL(m_network, DeviceDiscoveryEnabled, enable_device_discovery)
+    SETTING_FORWARD_BOOL(m_network, HostOverridesAutoDownload, auto_download_host_overrides)
 
     // Log settings
     SETTING_FORWARD_BOOL(m_log, LogAppend, append)
