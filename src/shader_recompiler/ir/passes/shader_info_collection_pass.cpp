@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "core/emulator_settings.h"
+#include "shader_recompiler/ir/passes/resource_pass.h"
 #include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/ir/shared_memory.h"
 #include "shader_recompiler/profile.h"
@@ -157,9 +158,6 @@ void Visit(Info& info, const IR::Inst& inst, Profile const& profile) {
     case IR::Opcode::ConvertF64U32:
         info.uses_fp64 = true;
         break;
-    case IR::Opcode::ImageWrite:
-        info.has_storage_images = true;
-        break;
     case IR::Opcode::QuadBroadcast:
         info.uses_group_quad = true;
         break;
@@ -262,6 +260,10 @@ void Visit(Info& info, const IR::Inst& inst, Profile const& profile) {
     }
     default:
         break;
+    }
+
+    if (IsImageInstruction(inst)) {
+        info.has_storage_images = true;
     }
 }
 
