@@ -472,6 +472,7 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
                 VAddr(stage->flattened_ud_buf[dw]) | (VAddr(stage->flattened_ud_buf[dw + 1]) << 32);
             const u32 size = loop.SizeInBytes(stage->user_data);
             if (!size || !buffer_cache.IsDmaTouchRangeMapped(address, size)) {
+                sync_all_buffers |= has_bounded_read_consts;
                 continue;
             }
             loop_ranges.push_back({address, size});

@@ -671,7 +671,7 @@ static void VisitPointer(const IR::Value& off_dw, IR::Inst* subtree, PassInfo& p
 
                 auto flags = use->Flags<IR::ReadConstInstInfo>();
                 flags.flatbuf_off_dw.Assign(loop->range_offset_dw);
-                flags.loop_touch.Assign(true);
+                flags.range_touch.Assign(true);
                 use->SetFlags(flags);
                 continue;
             }
@@ -931,7 +931,7 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
         if (IR::IsReadConstAddressTouched(original)) {
             IR::TouchReadConstAddress(readconst, IR::GetFlatBufferOffset(original));
         } else if (original->GetOpcode() == IR::Opcode::ReadConst &&
-                   original->Flags<IR::ReadConstInstInfo>().loop_touch) {
+                   original->Flags<IR::ReadConstInstInfo>().range_touch) {
             readconst->SetFlags(original->Flags<IR::ReadConstInstInfo>());
         }
     }
