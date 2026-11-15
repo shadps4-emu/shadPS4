@@ -387,7 +387,7 @@ BufferCache::DmaBufferRangeList BufferCache::SynchronizeAllDmaBuffers(
 
 BufferCache::DmaBufferRangeList BufferCache::SynchronizeDmaBuffers(
     std::span<const VAddr> addresses, std::span<const DmaTouchRange> loop_ranges) {
-    constexpr u32 read_size = sizeof(u32);
+    constexpr u32 read_size = BYTES_PER_PAGE;
     auto ranges = MakeDmaTouchRangesResident(loop_ranges);
     for (const auto& [buffer, offset, size] : ranges) {
         SynchronizeMemory(buffer, buffer->CpuAddr() + offset, size, false, false);
@@ -408,7 +408,8 @@ BufferCache::DmaBufferRangeList BufferCache::SynchronizeDmaBuffers(
         }
     };
 
-    for (const auto addr : addresses) {
+    for (const auto address : addresses) {
+        const VAddr addr = Common::AlignDown(address, BYTES_PER_PAGE);
         if (addr < range_end) {
             continue;
         }
