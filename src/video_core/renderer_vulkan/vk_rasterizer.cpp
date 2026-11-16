@@ -1352,6 +1352,7 @@ void Rasterizer::MapMemory(VAddr addr, u64 size) {
         std::scoped_lock lock{mapped_ranges_mutex};
         mapped_ranges += decltype(mapped_ranges)::interval_type::right_open(addr, addr + size);
     }
+    buffer_cache.MapMemory(addr, size);
 }
 
 void Rasterizer::RegisterMemory(VAddr addr, u64 size) {
@@ -1360,6 +1361,7 @@ void Rasterizer::RegisterMemory(VAddr addr, u64 size) {
 
 void Rasterizer::UnmapMemory(VAddr addr, u64 size) {
     buffer_cache.InvalidateMemory(addr, size);
+    buffer_cache.UnmapMemory(addr, size);
     texture_cache.UnmapMemory(addr, size);
     {
         std::scoped_lock lock{mapped_ranges_mutex};

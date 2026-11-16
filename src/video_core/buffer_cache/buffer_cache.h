@@ -4,6 +4,8 @@
 #pragma once
 
 #include <deque>
+#include <mutex>
+#include <unordered_map>
 #include <boost/container/small_vector.hpp>
 
 #include "common/enum.h"
@@ -126,6 +128,12 @@ public:
     /// Commits pending sparse buffer memory binds. Must be called before every scheduler submit.
     void SubmitPendingArenaBinds(Vulkan::SubmitInfo& info);
 
+    /// Cancels the pending residency release of a range that was mapped again.
+    void MapMemory(VAddr device_addr, u64 size);
+
+    /// Schedules the sparse residency backing an unmapped range to be released.
+    void UnmapMemory(VAddr device_addr, u64 size);
+
 private:
     struct ArenaBinds {
         const Buffer* arena;
@@ -143,6 +151,10 @@ private:
     const Buffer* GetArena(u64 first_block, u64 last_block);
 
     void EnsureResident(const Buffer* arena, u64 first_block, u64 last_block);
+
+    void ReleaseUnmappedMemory();
+
+    void FreeReleasedMemory();
 
     void DownloadMemory(const Buffer* arena, VAddr device_addr, u64 size, bool async);
 
@@ -185,6 +197,11 @@ private:
         }
     };
     IntervalList<Backing> resident_ranges;
+    std::unordered_map<VkDeviceMemory, u64> backing_blocks;
+    std::deque<std::pair<u64, std::vector<vk::DeviceMemory>>> released_memory;
+    u64 unbind_tick{};
+    std::mutex unmap_mutex;
+    RangeSet unmapped_ranges;
 
     u32 arena_memory_type_index{};
     u32 block_size{};
