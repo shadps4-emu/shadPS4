@@ -84,21 +84,69 @@ static std::vector<IR::Block*> FindUniformBlocks(const IR::Program& program) {
     return blocks;
 }
 
-static IR::Inst* FindBallotForMaskedBitCount(const IR::Inst& mbcnt) {
-    IR::Value value = mbcnt.Arg(0);
-    if (value.IsImmediate()) {
-        return nullptr;
+/// Moves subgroup ballots to the position of their subgroup inside the wave64 mask and makes the
+/// instructions that consume lane masks index them by wave64 lane.
+static void LowerLaneMasksToWave64Layout(IR::Program& program, const Profile& profile,
+                                         const std::vector<IR::Inst*>& lowered) {
+    std::vector<IR::Inst*> ballots;
+    std::vector<IR::Inst*> mask_users;
+    for (IR::Block* block : program.blocks) {
+        for (IR::Inst& inst : block->Instructions()) {
+            switch (inst.GetOpcode()) {
+            case IR::Opcode::Ballot:
+                if (!std::ranges::contains(lowered, &inst)) {
+                    ballots.push_back(&inst);
+                }
+                break;
+            case IR::Opcode::InverseBallot:
+            case IR::Opcode::BallotFindLsb:
+                mask_users.push_back(&inst);
+                break;
+            case IR::Opcode::ReadLane:
+                if (!std::ranges::contains(lowered, &inst)) {
+                    mask_users.push_back(&inst);
+                }
+                break;
+            default:
+                break;
+            }
+        }
     }
-    IR::Inst* inst = value.Inst();
-    if (inst->GetOpcode() != IR::Opcode::CompositeExtractU32x2 || inst->Arg(0).IsImmediate()) {
-        return nullptr;
+
+    const u32 subgroup_size = profile.subgroup_size;
+    const u32 subgroups_per_wave = 64 / subgroup_size;
+    for (IR::Inst* inst : ballots) {
+        IR::IREmitter ir{*inst->GetParent(), IR::Block::InstructionList::s_iterator_to(*inst)};
+        const IR::U32 subgroup_in_wave =
+            ir.BitwiseAnd(ir.SubgroupId(), ir.Imm32(subgroups_per_wave - 1));
+        const IR::U32 shift = ir.IMul(subgroup_in_wave, ir.Imm32(subgroup_size));
+        const IR::U64 mask = ir.Ballot(IR::U1{inst->Arg(0)});
+        inst->ReplaceUsesWithAndRemove(ir.ShiftLeftLogical(mask, shift));
     }
-    inst = inst->Arg(0).Inst();
-    if (inst->GetOpcode() != IR::Opcode::UnpackUint2x32 || inst->Arg(0).IsImmediate()) {
-        return nullptr;
+    for (IR::Inst* inst : mask_users) {
+        IR::IREmitter ir{*inst->GetParent(), IR::Block::InstructionList::s_iterator_to(*inst)};
+        switch (inst->GetOpcode()) {
+        case IR::Opcode::InverseBallot: {
+            const IR::U32 lane = ir.BitwiseAnd(
+                ir.GetAttributeU32(IR::Attribute::LocalInvocationIndex), ir.Imm32(63));
+            const IR::U64 shifted = ir.ShiftRightLogical(IR::U64{inst->Arg(0)}, lane);
+            const IR::U32 low{ir.CompositeExtract(ir.UnpackUint2x32(shifted), 0)};
+            inst->ReplaceUsesWithAndRemove(
+                ir.INotEqual(ir.BitwiseAnd(low, ir.Imm32(1)), ir.Imm32(0)));
+            break;
+        }
+        case IR::Opcode::BallotFindLsb:
+            inst->ReplaceUsesWithAndRemove(ir.FindILsb(IR::U64{inst->Arg(0)}));
+            break;
+        case IR::Opcode::ReadLane: {
+            const IR::U32 lane = ir.BitwiseAnd(IR::U32{inst->Arg(1)}, ir.Imm32(subgroup_size - 1));
+            inst->ReplaceUsesWithAndRemove(ir.ReadLane(IR::U32{inst->Arg(0)}, lane));
+            break;
+        }
+        default:
+            UNREACHABLE();
+        }
     }
-    inst = inst->Arg(0).Inst();
-    return inst->GetOpcode() == IR::Opcode::Ballot ? inst : nullptr;
 }
 
 void LowerWave64BallotPass(IR::Program& program, const RuntimeInfo& runtime_info,
@@ -136,14 +184,11 @@ void LowerWave64BallotPass(IR::Program& program, const RuntimeInfo& runtime_info
                     push_worklist(inst);
                 }
             } else if (inst.GetOpcode() == IR::Opcode::MaskedBitCount32) {
-                IR::Inst* const ballot = FindBallotForMaskedBitCount(inst);
-                if (ballot == nullptr ||
-                    std::ranges::contains(uniform_blocks, ballot->GetParent())) {
-                    worklist.push_back(&inst);
-                }
+                worklist.push_back(&inst);
             }
         }
     }
+    LowerLaneMasksToWave64Layout(program, profile, worklist);
     if (worklist.empty()) {
         return;
     }
