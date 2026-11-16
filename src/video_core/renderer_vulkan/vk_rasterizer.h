@@ -120,7 +120,7 @@ private:
 
     void BindBuffers(const Shader::Info& stage, Shader::Backend::Bindings& binding,
                      Shader::PushData& push_data);
-    void BindTextures(const Shader::Info& stage, Shader::Backend::Bindings& binding);
+    void BindTextures(const Shader::Info& stage);
     bool BindResources(const Pipeline* pipeline);
 
     void BindVertexBuffers(const GraphicsPipeline* pipeline);
@@ -162,8 +162,9 @@ private:
     std::array<ImageBinding, AmdGpu::NUM_COLOR_BUFFERS> cb_descs;
     ImageBinding db_desc;
 
-    boost::container::static_vector<vk::DescriptorImageInfo, Shader::NUM_IMAGES> image_infos;
-    boost::container::static_vector<vk::DescriptorBufferInfo, Shader::NUM_BUFFERS> buffer_infos;
+    boost::container::static_vector<DescriptorPayload,
+                                    Shader::NUM_BUFFERS + Shader::NUM_IMAGES + Shader::NUM_SAMPLERS>
+        descriptor_payload;
 
     struct BoundBuffer {
         const VideoCore::Buffer* buffer;
@@ -174,8 +175,6 @@ private:
     std::vector<BoundBuffer> bound_buffers;
     std::vector<VideoCore::ImageId> bound_images;
 
-    u32 set_write_index{};
-    Pipeline::DescriptorWrites set_writes;
     Shader::PushData push_data;
 
     bool attachment_feedback_loop{};
