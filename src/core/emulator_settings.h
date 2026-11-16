@@ -581,6 +581,7 @@ private:
     // Runtime-only override: when true, IsShadNetEnabled() reports false for the
     // rest of this run regardless of the persisted setting
     std::atomic<bool> m_shadnet_session_disabled{false};
+    bool m_circle_enter_region_default{false};
 
     static std::shared_ptr<EmulatorSettingsImpl> s_instance;
     static std::mutex s_mutex;
@@ -618,6 +619,7 @@ public:
     EmulatorSettingsImpl& operator=(const EmulatorSettingsImpl& other) {
         if (this != &other) {
             m_shadnet_session_disabled.store(other.m_shadnet_session_disabled.load());
+            m_circle_enter_region_default = other.m_circle_enter_region_default;
             m_general = other.m_general;
             m_network = other.m_network;
             m_log = other.m_log;
@@ -809,7 +811,19 @@ public:
     SETTING_FORWARD(m_input, SpecialPadClass, special_pad_class)
     SETTING_FORWARD_BOOL(m_input, UseUnifiedInputConfig, use_unified_input_config)
     SETTING_FORWARD(m_input, CameraId, camera_id)
-    SETTING_FORWARD_BOOL(m_input, CircleEnter, is_circle_enter)
+    bool IsCircleEnter() const {
+        const auto& setting = m_input.is_circle_enter;
+        if (m_configMode == ConfigMode::Default && setting.game_specific_value) {
+            return *setting.game_specific_value;
+        }
+        return m_circle_enter_region_default || setting.get(m_configMode);
+    }
+    void SetCircleEnter(bool v, bool specific = false) {
+        m_input.is_circle_enter.set(v, specific);
+    }
+    void SetCircleEnterRegionDefault(bool v) {
+        m_circle_enter_region_default = v;
+    }
     SETTING_FORWARD_BOOL(m_input, MiceUsedAsMice, use_mice_as_mice)
     SETTING_FORWARD_BOOL(m_input, KeyboardUsedAsKeyboard, use_keyboard_as_keyboard)
 

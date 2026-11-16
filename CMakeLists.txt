@@ -6,6 +6,7 @@ cmake_minimum_required(VERSION 3.24)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
+set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 
 if(APPLE)
     list(APPEND ADDITIONAL_LANGUAGES OBJC)
@@ -672,6 +673,7 @@ set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/np_handler/np_handler_auth.cpp
             src/core/libraries/np/np_handler/np_handler_invitation.cpp
             src/core/libraries/np/np_handler/np_handler_game_custom_data.cpp
+            src/core/libraries/np/np_handler/np_handler_profile.cpp
             src/core/libraries/np/np_handler/np_handler_score.cpp
             src/core/libraries/np/np_handler/np_handler_trophy.cpp
             src/core/libraries/np/np_handler/np_handler_tus.cpp
@@ -682,6 +684,9 @@ set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/np_commerce/np_commerce.h
             src/core/libraries/np/np_commerce/np_commerce_ui.cpp
             src/core/libraries/np/np_commerce/np_commerce_ui.h
+            src/core/libraries/np/np_entitlement_access.cpp
+            src/core/libraries/np/np_entitlement_access.h
+            src/core/libraries/np/np_entitlement_access_error.h
             src/core/libraries/np/np_profile_dialog/np_profile_dialog.cpp
             src/core/libraries/np/np_profile_dialog/np_profile_dialog.h
             src/core/libraries/np/np_profile_dialog/np_profile_dialog_ui.cpp
