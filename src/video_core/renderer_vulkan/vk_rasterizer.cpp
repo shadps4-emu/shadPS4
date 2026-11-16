@@ -10,6 +10,7 @@
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/buffer_cache/buffer.h"
 #include "video_core/buffer_cache/buffer_cache.h"
+#include "video_core/buffer_cache/region_definitions.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_pipeline_cache.h"
@@ -503,6 +504,10 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
         if (sync_all_buffers) {
             return buffer_cache.SynchronizeAllDmaBuffers(touch_addresses, loop_ranges);
         } else if (!touch_addresses.empty() || !loop_ranges.empty()) {
+            const auto duplicate_pages = std::ranges::unique(touch_addresses, {}, [](VAddr addr) {
+                return Common::AlignDown(addr, VideoCore::BYTES_PER_PAGE);
+            });
+            touch_addresses.erase(duplicate_pages.begin(), duplicate_pages.end());
             std::ranges::sort(touch_addresses);
             return buffer_cache.SynchronizeDmaBuffers(touch_addresses, loop_ranges);
         }
