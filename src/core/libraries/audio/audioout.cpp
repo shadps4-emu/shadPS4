@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
 #include <memory>
 #include <mutex>
 #include <shared_mutex>
@@ -168,33 +169,44 @@ static void AudioOutputThread(std::shared_ptr<PortOut> port, const std::stop_tok
         Common::SetCurrentThreadName(thread_name.c_str());
     }
 
-    Common::AccurateTimer timer(
-        std::chrono::nanoseconds(1000000000ULL * port->buffer_frames / port->sample_rate));
+    const auto period =
+        std::chrono::nanoseconds(1000000000ULL * port->buffer_frames / port->sample_rate);
+    auto next_output = std::chrono::steady_clock::now();
 
     while (true) {
-        timer.Start();
-
         {
             std::unique_lock lock{port->mutex};
-            if (!port->impl || stop.stop_requested()) {
+            const bool received = port->output_cv.wait_for(lock, stop, period, [&] {
+                return port->output_ready || port->closing || !port->impl;
+            });
+            if (!received) {
+                port->output_cv.wait(
+                    lock, stop, [&] { return port->output_ready || port->closing || !port->impl; });
+                next_output = std::chrono::steady_clock::now();
+            }
+            if (!port->impl || port->closing || stop.stop_requested()) {
                 break;
             }
 
-            if (port->output_ready) {
-                port->impl->Output(port->output_buffer);
-                port->output_ready = false;
-                port->last_output_time =
-                    Kernel::sceKernelGetProcessTime(); // moved from sceAudioOutOutput TOOD recheck
+            const auto now = std::chrono::steady_clock::now();
+            next_output = std::max(next_output, now - 3 * period);
+            if (now < next_output) {
+                lock.unlock();
+                if (!Common::AccurateSleep(next_output - now, nullptr, false)) {
+                    std::this_thread::sleep_until(next_output);
+                }
+                lock.lock();
             }
-        }
+            if (!port->impl || port->closing || stop.stop_requested()) {
+                break;
+            }
 
+            port->impl->Output(port->output_buffer);
+            port->output_ready = false;
+            port->last_output_time = Kernel::sceKernelGetProcessTime();
+            next_output += period;
+        }
         port->output_cv.notify_all();
-
-        if (stop.stop_requested()) {
-            break;
-        }
-
-        timer.End();
     }
 
     {
@@ -586,6 +598,7 @@ s32 PS4_SYSV_ABI sceAudioOutOutput(s32 handle, void* ptr) {
         }
     }
 
+    port->output_cv.notify_all();
     return samples_sent;
 }
 
@@ -688,6 +701,7 @@ s32 PS4_SYSV_ABI sceAudioOutOutputs(OrbisAudioOutOutputParam* param, u32 num) {
         if (param[i].ptr != nullptr) {
             std::memcpy(ports[i]->output_buffer, param[i].ptr, ports[i]->BufferSize());
             ports[i]->output_ready = true;
+            ports[i]->output_cv.notify_all();
         }
     }
 
