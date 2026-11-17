@@ -124,7 +124,7 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(HwStage stage, SwStag
         info.hw.gs.output_vertices = regs.vgt_gs_max_vert_out;
         info.hw.gs.num_invocations =
             regs.vgt_gs_instance_cnt.IsEnabled() ? regs.vgt_gs_instance_cnt.count : 1;
-        if (regs.stage_enable.raw == AmdGpu::ShaderStageEnable::LsHsEsGs) {
+        if (regs.stage_enable.Stages() == AmdGpu::ShaderStageEnable::LsHsEsGs) {
             info.hw.gs.in_primitive = [&]() {
                 switch (regs.tess_config.topology) {
                 case AmdGpu::TessellationTopology::Point:
@@ -580,7 +580,7 @@ bool PipelineCache::RefreshGraphicsStages() {
     key.mrt_mask = fs_info ? fs_info->mrt_mask : 0u;
     key.num_color_attachments = std::bit_width(key.mrt_mask);
 
-    switch (regs.stage_enable.raw) {
+    switch (regs.stage_enable.Stages()) {
     case AmdGpu::ShaderStageEnable::VgtStages::EsGs:
         if (!instance.IsGeometryStageSupported()) {
             LOG_WARNING(Render_Vulkan, "Geometry shader stage unsupported, skipping");

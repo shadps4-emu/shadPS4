@@ -100,6 +100,10 @@ union ShaderStageEnable {
         u32 dynamic_hs : 1;
     };
 
+    VgtStages Stages() const {
+        return static_cast<VgtStages>(static_cast<u32>(raw) & 0xFFu);
+    }
+
     bool IsStageEnabled(u32 stage) const {
         switch (stage) {
         case 0:
