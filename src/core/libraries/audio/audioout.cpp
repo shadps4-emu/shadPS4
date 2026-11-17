@@ -436,8 +436,8 @@ s32 PS4_SYSV_ABI sceAudioOutOpen(UserService::OrbisUserServiceUserId user_id,
         return ORBIS_AUDIO_OUT_ERROR_INVALID_FORMAT;
     }
     const bool is_user_port = port_type == OrbisAudioOutPort::Voice ||
-                               port_type == OrbisAudioOutPort::Personal ||
-                               port_type == OrbisAudioOutPort::PadSpk;
+                              port_type == OrbisAudioOutPort::Personal ||
+                              port_type == OrbisAudioOutPort::PadSpk;
     const bool is_shared_port = port_type == OrbisAudioOutPort::Main ||
                                 port_type == OrbisAudioOutPort::Bgm ||
                                 port_type == OrbisAudioOutPort::Aux;
