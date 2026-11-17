@@ -298,6 +298,8 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(HwStage stage, SwStag
         info.sw.tes.tess_type = regs.tess_config.type;
         info.sw.tes.tess_topology = regs.tess_config.topology;
         info.sw.tes.tess_partitioning = regs.tess_config.partitioning;
+        info.sw.tes.offchip_lds_enable =
+            (stage == HwStage::Vertex ? regs.vs_program : regs.es_program).settings.oc_lds_en;
         break;
     }
     default:

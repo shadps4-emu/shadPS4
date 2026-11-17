@@ -133,6 +133,7 @@ struct SwTessEvalRuntimeInfo {
     AmdGpu::TessellationType tess_type;
     AmdGpu::TessellationTopology tess_topology;
     AmdGpu::TessellationPartitioning tess_partitioning;
+    bool offchip_lds_enable;
 
     bool operator==(const SwTessEvalRuntimeInfo&) const noexcept = default;
 };
