@@ -292,6 +292,7 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(HwStage stage, SwStag
         info.sw.tcs.num_threads = regs.ls_hs_config.hs_output_control_points;
         info.sw.tcs.tess_type = regs.tess_config.type;
         info.sw.tcs.offchip_lds_enable = regs.hs_program.settings.oc_lds_en;
+        info.sw.tcs.dynamic_hs = regs.stage_enable.dynamic_hs;
         break;
     }
     case SwStage::TessellationEval: {

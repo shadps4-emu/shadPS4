@@ -109,6 +109,7 @@ struct SwTessControlRuntimeInfo {
     bool offchip_lds_enable;
     u32 ls_stride;
     u32 hs_output_base;
+    bool dynamic_hs;
 
     bool operator==(const SwTessControlRuntimeInfo&) const = default;
 

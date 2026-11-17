@@ -407,7 +407,10 @@ void HullShaderTransform(IR::Program& program, const RuntimeInfo& runtime_info) 
                     return ir.BitCast<IR::F32, IR::U32>(IR::U32{data});
                 };
 
-                auto get_factor_attr = [&](u32 gcn_factor_idx) -> IR::Patch {
+                const u32 first_factor = runtime_info.sw.tcs.dynamic_hs ? 1u : 0u;
+
+                auto get_factor_attr = [&](u32 dword_idx) -> IR::Patch {
+                    const u32 factor_idx = dword_idx - first_factor;
                     // The hull outputs tess factors in different formats depending on the shader.
                     // For triangle domains, it seems to pack the entries into 4 consecutive floats,
                     // with the 3 edge factors followed by the 1 interior factor.
@@ -418,23 +421,26 @@ void HullShaderTransform(IR::Program& program, const RuntimeInfo& runtime_info) 
                     // The layout seems to be implied by the type of the abstract domain.
                     switch (runtime_info.sw.tcs.tess_type) {
                     case AmdGpu::TessellationType::Isoline:
-                        ASSERT(gcn_factor_idx < 2);
-                        return IR::PatchFactor(gcn_factor_idx);
+                        ASSERT(factor_idx < 2);
+                        return IR::PatchFactor(factor_idx);
                     case AmdGpu::TessellationType::Triangle:
-                        ASSERT(gcn_factor_idx < 4);
-                        if (gcn_factor_idx == 3) {
+                        ASSERT(factor_idx < 4);
+                        if (factor_idx == 3) {
                             return IR::Patch::TessellationLodInteriorU;
                         }
-                        return IR::PatchFactor(gcn_factor_idx);
+                        return IR::PatchFactor(factor_idx);
                     case AmdGpu::TessellationType::Quad:
-                        ASSERT(gcn_factor_idx < 6);
-                        return IR::PatchFactor(gcn_factor_idx);
+                        ASSERT(factor_idx < 6);
+                        return IR::PatchFactor(factor_idx);
                     default:
                         UNREACHABLE();
                     }
                 };
 
                 inst.Invalidate();
+                if (num_dwords == 1 && gcn_factor_idx < first_factor) {
+                    break;
+                }
                 if (num_dwords == 1) {
                     ir.SetPatch(get_factor_attr(gcn_factor_idx), GetValue(data));
                     break;
@@ -444,6 +450,9 @@ void HullShaderTransform(IR::Program& program, const RuntimeInfo& runtime_info) 
                                 inst->GetOpcode() == IR::Opcode::CompositeConstructU32x3 ||
                                 inst->GetOpcode() == IR::Opcode::CompositeConstructU32x4));
                 for (s32 i = 0; i < num_dwords; i++) {
+                    if (gcn_factor_idx + i < first_factor) {
+                        continue;
+                    }
                     ir.SetPatch(get_factor_attr(gcn_factor_idx + i), GetValue(inst->Arg(i)));
                 }
                 break;
