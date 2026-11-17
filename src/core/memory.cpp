@@ -677,6 +677,8 @@ s32 MemoryManager::MapMemory(void** out_addr, VAddr virtual_addr, u64 size, Memo
             dmem_area = FindDmemArea(current_phys_addr);
         }
         ASSERT_MSG(remaining_size == 0, "Failed to map physical memory");
+        direct_mapping_counts.add(
+            {boost::icl::interval<PAddr>::right_open(phys_addr, phys_addr + size), 1});
     }
 
     if (new_vma.type != VMAType::Direct || sdk_version >= Common::ElfInfo::FW_200) {
@@ -950,6 +952,31 @@ s32 MemoryManager::UnmapMemory(VAddr virtual_addr, u64 size) {
     return UnmapMemoryImpl(virtual_addr, size);
 }
 
+void MemoryManager::RemoveDirectMapping(PAddr phys_addr, u64 size) {
+    const PAddr end = phys_addr + size;
+    const auto interval = boost::icl::interval<PAddr>::right_open(phys_addr, end);
+    direct_mapping_counts.subtract({interval, 1});
+
+    auto mark_allocated = [&](PAddr start, PAddr limit) {
+        while (start < limit) {
+            const u64 chunk = std::min(limit, FindDmemArea(start)->second.GetEnd()) - start;
+            const auto handle = CarvePhysArea(dmem_map, start, chunk);
+            handle->second.dma_type = PhysicalMemoryType::Allocated;
+            MergeAdjacent(dmem_map, handle);
+            start += chunk;
+        }
+    };
+
+    // Only gaps in the remaining references have lost their last virtual mapping.
+    auto [live, last] = direct_mapping_counts.equal_range(interval);
+    PAddr cursor = phys_addr;
+    for (; live != last; ++live) {
+        mark_allocated(cursor, boost::icl::first(live->first));
+        cursor = boost::icl::last_next(live->first);
+    }
+    mark_allocated(cursor, end);
+}
+
 u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma_base, u64 size) {
     const auto start_in_vma = virtual_addr - vma_base.base;
     const auto size_in_vma = std::min<u64>(vma_base.size - start_in_vma, size);
@@ -968,22 +995,8 @@ u64 MemoryManager::UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma
             PAddr phys_addr = phys_handle->second.base + dma_offset;
             u64 size_in_dma = std::min<u64>(size_to_free, phys_handle->second.size - dma_offset);
 
-            // Create a new dmem area reflecting the pooled region
             if (vma_type == VMAType::Direct) {
-                // The range can span several dmem areas if another mapping of the same memory
-                // split it after this VMA cached its areas.
-                PAddr chunk_addr = phys_addr;
-                const PAddr chunk_end = phys_addr + size_in_dma;
-                while (chunk_addr < chunk_end) {
-                    const PAddr area_end = FindDmemArea(chunk_addr)->second.GetEnd();
-                    const u64 chunk = std::min<u64>(chunk_end, area_end) - chunk_addr;
-                    const auto new_dmem_handle = CarvePhysArea(dmem_map, chunk_addr, chunk);
-                    new_dmem_handle->second.dma_type = PhysicalMemoryType::Allocated;
-
-                    // Coalesce with nearby direct memory areas.
-                    MergeAdjacent(dmem_map, new_dmem_handle);
-                    chunk_addr += chunk;
-                }
+                RemoveDirectMapping(phys_addr, size_in_dma);
             } else if (vma_type == VMAType::Flexible) {
                 // Update fmem_map
                 PAddr chunk_addr = phys_addr;
