@@ -607,8 +607,63 @@ void DomainShaderTransform(const IR::Program& program, const RuntimeInfo& runtim
     }
 }
 
+static void LowerOffChipBufferAccess(IR::Program& program) {
+    for (IR::Block* block : program.blocks) {
+        for (IR::Inst& inst : block->Instructions()) {
+            const auto opcode = inst.GetOpcode();
+            const bool is_store =
+                opcode >= IR::Opcode::StoreBufferU32 && opcode <= IR::Opcode::StoreBufferU32x4;
+            const bool is_load =
+                opcode >= IR::Opcode::LoadBufferU32 && opcode <= IR::Opcode::LoadBufferU32x4;
+            if (!is_store && !is_load) {
+                continue;
+            }
+            if (!M_GETATTRIBUTEU32(MatchAttribute(IR::Attribute::OffChipLdsBase), MatchIgnore())
+                     .Match(IR::GetBufferSOffsetArg(&inst))) {
+                continue;
+            }
+            const auto first = is_store ? IR::Opcode::StoreBufferU32 : IR::Opcode::LoadBufferU32;
+            const u32 num_dwords = u32(opcode) - u32(first) + 1;
+            const auto buf_info = inst.Flags<IR::BufferInstInfo>();
+            if (buf_info.index_enable) {
+                const IR::U32 index = IR::GetBufferIndexArg(&inst);
+                ASSERT_MSG(index.IsImmediate() && index.U32() == 0,
+                           "Indexed off-chip tessellation access");
+            }
+
+            IR::IREmitter ir{*block, IR::Block::InstructionList::s_iterator_to(inst)};
+            IR::U32 addr = buf_info.voffset_enable ? IR::GetBufferVOffsetArg(&inst) : ir.Imm32(0u);
+            if (const u32 inst_offset = buf_info.inst_offset.Value(); inst_offset != 0) {
+                addr = ir.IAdd(addr, ir.Imm32(inst_offset));
+            }
+            const auto dword_addr = [&](u32 i) {
+                return i == 0 ? addr : IR::U32{ir.IAdd(addr, ir.Imm32(i * 4))};
+            };
+
+            if (is_store) {
+                const IR::Value data = inst.Arg(IR::StoreBufferArgs::Data);
+                for (u32 i = 0; i < num_dwords; i++) {
+                    const IR::Value value = num_dwords == 1 ? data : ir.CompositeExtract(data, i);
+                    ir.WriteShared(32, value, dword_addr(i));
+                }
+                inst.Invalidate();
+            } else {
+                boost::container::static_vector<IR::Value, 4> values;
+                for (u32 i = 0; i < num_dwords; i++) {
+                    values.push_back(ir.LoadShared(32, false, dword_addr(i)));
+                }
+                const IR::Value result =
+                    num_dwords == 1 ? values[0] : ir.CompositeConstruct(values);
+                inst.ReplaceUsesWithAndRemove(result);
+            }
+        }
+    }
+}
+
 // Run before either hull or domain transform
 void TessellationPreprocess(IR::Program& program, RuntimeInfo& runtime_info) {
+    LowerOffChipBufferAccess(program);
+
     TessellationDataConstantBuffer tess_constants;
     Shader::Info& info = program.info;
     // Find the TessellationDataConstantBuffer V#

@@ -271,8 +271,6 @@ void Translator::EmitPrologue(IR::Block* first_block) {
                         ir.GetAttributeU32(IR::Attribute::PackedHullInvocationInfo));
 
         if (runtime_info.sw.tcs.offchip_lds_enable) {
-            // No off-chip tessellation has been observed yet. If this survives dead code elim,
-            // revisit
             ir.SetScalarReg(dst_sreg++, ir.GetAttributeU32(IR::Attribute::OffChipLdsBase));
         }
         ir.SetScalarReg(dst_sreg++, ir.GetAttributeU32(IR::Attribute::TessFactorsBufferBase));
