@@ -850,12 +850,21 @@ void PatchImageArgs(IR::Inst& inst, Info& info) {
     const auto& image_res = info.images[binding_index];
     auto image = image_res.GetSharp(info);
 
+    // The view type picks which address registers get used below. Keep all of them alive so the
+    // resources the shader needs, like the flatbuf, are the same for every view type.
+    IR::IREmitter ir{*inst.GetParent(), IR::Block::InstructionList::s_iterator_to(inst)};
+    const bool is_sample = inst.GetOpcode() == IR::Opcode::ImageSampleRaw;
+    for (u32 arg = is_sample ? 2 : 1; arg <= (is_sample ? 5 : 1); ++arg) {
+        if (inst.Arg(arg).TryInst()) {
+            ir.KeepAlive(inst.Arg(arg));
+        }
+    }
+
     // Sample instructions must be handled separately using address register data.
-    if (inst.GetOpcode() == IR::Opcode::ImageSampleRaw) {
+    if (is_sample) {
         return PatchImageSampleArgs(inst, info, image_res, image);
     }
 
-    IR::IREmitter ir{*inst.GetParent(), IR::Block::InstructionList::s_iterator_to(inst)};
     auto inst_info = inst.Flags<IR::TextureInstInfo>();
     const auto view_type = image.GetViewType(image_res.is_array);
 
