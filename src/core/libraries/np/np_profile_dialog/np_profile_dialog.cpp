@@ -7,6 +7,7 @@
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/np/np_handler/np_handler.h"
 #include "core/libraries/system/commondialog.h"
 #include "np_profile_dialog.h"
 #include "np_profile_dialog_ui.h"
@@ -18,15 +19,45 @@ static NpProfileDialogState g_state{};
 static OrbisNpProfileDialogResult g_result{};
 static NpProfileDialogUi g_profile_dialog_ui;
 
-Libraries::CommonDialog::Error sceNpProfileDialogOpen(OrbisNpProfileDialogParam* param) {
-    if (g_status != Libraries::CommonDialog::Status::INITIALIZED &&
-        g_status != Libraries::CommonDialog::Status::FINISHED) {
+using Libraries::CommonDialog::Error;
+using Libraries::CommonDialog::Status;
+
+static Error CheckCanOpen() {
+    if (g_status == Status::NONE) {
         LOG_ERROR(Lib_NpProfileDialog, "called without initialize");
-        return Libraries::CommonDialog::Error::INVALID_STATE;
+        return Error::NOT_INITIALIZED;
+    }
+    if (g_status != Status::INITIALIZED && g_status != Status::FINISHED) {
+        LOG_ERROR(Lib_NpProfileDialog, "called while the dialog is already open");
+        return Error::INVALID_STATE;
+    }
+    return Error::OK;
+}
+
+static bool IsValidMode(OrbisNpProfileDialogMode mode) {
+    return mode >= OrbisNpProfileDialogMode::ORBIS_NP_PROFILE_DIALOG_MODE_NORMAL &&
+           mode <= OrbisNpProfileDialogMode::ORBIS_NP_PROFILE_DIALOG_MODE_GRIEF_REPORT;
+}
+
+Libraries::CommonDialog::Error PS4_SYSV_ABI
+sceNpProfileDialogOpen(OrbisNpProfileDialogParam* param) {
+    if (const Error err = CheckCanOpen(); err != Error::OK) {
+        return err;
     }
     if (param == nullptr) {
         LOG_ERROR(Lib_NpProfileDialog, "param is nullptr");
-        return Libraries::CommonDialog::Error::ARG_NULL;
+        return Error::ARG_NULL;
+    }
+    if (!IsValidMode(param->mode)) {
+        LOG_ERROR(Lib_NpProfileDialog, "invalid mode {}", static_cast<int>(param->mode));
+        return Error::PARAM_INVALID;
+    }
+    if (param->mode == OrbisNpProfileDialogMode::ORBIS_NP_PROFILE_DIALOG_MODE_GRIEF_REPORT &&
+        std::strncmp(param->targetOnlineId.data,
+                     NpHandler::GetInstance().GetOnlineId(param->userId).data,
+                     sizeof(param->targetOnlineId.data)) == 0) {
+        LOG_ERROR(Lib_NpProfileDialog, "grief report targets the operating user");
+        return Error::PARAM_INVALID;
     }
 
     LOG_DEBUG(Lib_NpProfileDialog,
@@ -38,6 +69,10 @@ Libraries::CommonDialog::Error sceNpProfileDialogOpen(OrbisNpProfileDialogParam*
     state.onlineId = std::string(param->targetOnlineId.data);
     state.hasAccountId = false;
     state.mode = param->mode;
+    state.griefReportItems = ORBIS_NP_PROFILE_DIALOG_MENU_GRIEF_REPORT_ITEM_ONLINE_ID |
+                             ORBIS_NP_PROFILE_DIALOG_MENU_GRIEF_REPORT_ITEM_NAME |
+                             ORBIS_NP_PROFILE_DIALOG_MENU_GRIEF_REPORT_ITEM_PICTURE |
+                             ORBIS_NP_PROFILE_DIALOG_MENU_GRIEF_REPORT_ITEM_ABOUT_ME;
     state.userId = param->userId;
     g_state = state;
     g_result = {};
@@ -55,11 +90,14 @@ Libraries::CommonDialog::Error sceNpProfileDialogOpen(OrbisNpProfileDialogParam*
 
 Libraries::CommonDialog::Error PS4_SYSV_ABI sceNpProfileDialogClose() {
     LOG_DEBUG(Lib_NpProfileDialog, "called");
-    if (g_status == Libraries::CommonDialog::Status::NONE) {
-        return Libraries::CommonDialog::Error::NOT_INITIALIZED;
+    if (g_status == Status::NONE) {
+        return Error::NOT_INITIALIZED;
     }
-    if (g_status != Libraries::CommonDialog::Status::RUNNING) {
-        return Libraries::CommonDialog::Error::NOT_RUNNING;
+    if (g_status == Status::FINISHED) {
+        return Error::ALREADY_CLOSE;
+    }
+    if (g_status != Status::RUNNING) {
+        return Error::NOT_RUNNING;
     }
     g_profile_dialog_ui.Finish(Libraries::CommonDialog::Result::OK);
     return Libraries::CommonDialog::Error::OK;
@@ -81,6 +119,12 @@ sceNpProfileDialogGetResult(OrbisNpProfileDialogResult* result) {
         LOG_ERROR(Lib_NpProfileDialog, "failed: dialog not finished (g_status={})",
                   static_cast<int>(g_status));
         return Libraries::CommonDialog::Error::NOT_FINISHED;
+    }
+    for (const u8 b : result->reserved) {
+        if (b != 0) {
+            LOG_ERROR(Lib_NpProfileDialog, "failed: result reserved area is not zero-filled");
+            return Libraries::CommonDialog::Error::PARAM_INVALID;
+        }
     }
 
     *result = g_result;
@@ -118,26 +162,33 @@ Libraries::CommonDialog::Error PS4_SYSV_ABI sceNpProfileDialogInitialize() {
 
 Libraries::CommonDialog::Error PS4_SYSV_ABI
 sceNpProfileDialogOpenA(OrbisNpProfileDialogParamA* param) {
-    if (g_status != Libraries::CommonDialog::Status::INITIALIZED &&
-        g_status != Libraries::CommonDialog::Status::FINISHED) {
-        LOG_ERROR(Lib_NpProfileDialog, "called without initialize");
-        return Libraries::CommonDialog::Error::INVALID_STATE;
+    if (const Error err = CheckCanOpen(); err != Error::OK) {
+        return err;
     }
     if (param == nullptr) {
         LOG_ERROR(Lib_NpProfileDialog, "failed: param is nullptr");
-        return Libraries::CommonDialog::Error::ARG_NULL;
+        return Error::ARG_NULL;
+    }
+    if (!IsValidMode(param->mode)) {
+        LOG_ERROR(Lib_NpProfileDialog, "invalid mode {}", static_cast<int>(param->mode));
+        return Error::PARAM_INVALID;
+    }
+    if (param->mode == OrbisNpProfileDialogMode::ORBIS_NP_PROFILE_DIALOG_MODE_GRIEF_REPORT &&
+        param->targetAccountId == NpHandler::GetInstance().GetAccountId(param->userId)) {
+        LOG_ERROR(Lib_NpProfileDialog, "grief report targets the operating user");
+        return Error::PARAM_INVALID;
     }
 
     LOG_DEBUG(Lib_NpProfileDialog,
               "param details: mode={}, userId={}, targetAccountId='{}', userData={}",
               static_cast<int>(param->mode), param->userId, param->targetAccountId,
               fmt::ptr(param->userData));
-    LOG_ERROR(Lib_NpProfileDialog, "(STUBBED) called");
 
     NpProfileDialogState state{};
     state.accountId = param->targetAccountId;
     state.hasAccountId = true;
     state.mode = param->mode;
+    state.griefReportItems = param->griefReportParam.reportItem;
     state.userId = param->userId;
     g_state = state;
     g_result = {};

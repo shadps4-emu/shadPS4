@@ -407,6 +407,8 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
 
         const auto content_id = param_sfo->GetString("CONTENT_ID");
         const auto title_id = param_sfo->GetString("TITLE_ID");
+        EmulatorSettings.SetCircleEnterRegionDefault(content_id.has_value() &&
+                                                     content_id->starts_with('J'));
         if (content_id.has_value() && !content_id->empty()) {
             id = std::string(*content_id, 7, 9);
         } else if (title_id.has_value()) {
