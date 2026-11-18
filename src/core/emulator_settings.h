@@ -787,7 +787,7 @@ public:
         if (m_gpu.vblank_frequency.value < 30) {
             return 30;
         }
-        return m_gpu.vblank_frequency.get();
+        return m_gpu.vblank_frequency.get(m_configMode);
     }
     void SetVblankFrequency(const u32& v, bool is_specific = false) {
         u32 val = v < 30 ? 30 : v;
