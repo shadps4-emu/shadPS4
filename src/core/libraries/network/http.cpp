@@ -31,6 +31,7 @@
 #include "core/libraries/kernel/process.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/network/http.h"
+#include "core/libraries/network/http_host_overrides.h"
 #include "http_error.h"
 
 #if __has_include(<httplib.h>)
@@ -235,6 +236,10 @@ static std::string HttpStatusLabel(int sc);
 // Replacement value is a URL with scheme + host + optional port. When port is
 // omitted the default for the scheme is used (80 for http, 443 for https).
 // When scheme is omitted the connection's original scheme is preserved.
+//
+// Files (user dir); the per-game file, when present, replaces the global one entirely:
+//   host_overrides/<TITLE_ID>.json  per game (written by the user or a launcher)
+//   host_overrides.json             global (or SHADPS4_HTTP_HOST_OVERRIDES_JSON)
 struct HostOverrideTarget {
     std::string scheme; // "http", "https", or "" to mean "preserve original"
     std::string host;
@@ -337,18 +342,32 @@ std::unordered_map<std::string, HostOverrideTarget> ParseHostOverridesJson(
 struct HostOverrideState {
     bool loaded = false;
     std::unordered_map<std::string, HostOverrideTarget> entries;
+    std::string source;
 };
 
 static HostOverrideState LoadHostOverrideState() {
     HostOverrideState s;
     s.loaded = true;
+    const auto user_dir = Common::FS::GetUserPath(Common::FS::PathType::UserDir);
+
+    // A per-game file (host_overrides/<TITLE_ID>.json) takes the place of the global one.
     std::filesystem::path path;
-    if (const char* path_env = std::getenv("SHADPS4_HTTP_HOST_OVERRIDES_JSON");
-        path_env && path_env[0]) {
-        // Explicit override path - useful for dev / testing.
-        path = path_env;
-    } else {
-        path = Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "host_overrides.json";
+    const std::string title_id = GetHostOverridesTitleId();
+    if (IsValidHostOverridesTitleId(title_id)) {
+        const auto title_path = HostOverridesDir() / (title_id + ".json");
+        std::error_code ec;
+        if (std::filesystem::is_regular_file(title_path, ec)) {
+            path = title_path;
+        }
+    }
+    if (path.empty()) {
+        if (const char* path_env = std::getenv("SHADPS4_HTTP_HOST_OVERRIDES_JSON");
+            path_env && path_env[0]) {
+            // Explicit override path - useful for dev / testing.
+            path = path_env;
+        } else {
+            path = user_dir / "host_overrides.json";
+        }
     }
     std::ifstream f(path);
     if (!f.is_open()) {
@@ -357,6 +376,7 @@ static HostOverrideState LoadHostOverrideState() {
     std::stringstream buf;
     buf << f.rdbuf();
     s.entries = ParseHostOverridesJson(buf.str());
+    s.source = path.filename().string();
     LOG_INFO(Lib_Http, "loaded {} host override entries from {}", s.entries.size(), path.string());
     return s;
 }
@@ -416,8 +436,8 @@ bool ApplyHostOverride(std::string& scheme, std::string& host, u16& port, bool& 
         }
     }
 
-    LOG_INFO(Lib_Http, "host override active: {}://{}:{} -> {}://{}:{} (matched key '{}')",
-             orig_scheme, orig_host, orig_port, scheme, host, port, it->first);
+    LOG_INFO(Lib_Http, "host override active: {}://{}:{} -> {}://{}:{} (matched key '{}' in {})",
+             orig_scheme, orig_host, orig_port, scheme, host, port, it->first, state.source);
     return true;
 }
 
