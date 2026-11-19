@@ -833,7 +833,8 @@ ImageView& TextureCache::FindDepthTarget(ImageId image_id, const ImageDesc& desc
 }
 
 void TextureCache::AssociateStencil(ImageId depth_id, const ImageInfo& depth_info) {
-    if (depth_info.stencil_addr == 0 || depth_info.stencil_addr == depth_info.guest_address) {
+    if (depth_info.stencil_addr == 0 || depth_info.stencil_addr == depth_info.guest_address ||
+        !depth_info.props.has_stencil || depth_info.stencil_size == 0) {
         return;
     }
     ImageId stencil_id{};
