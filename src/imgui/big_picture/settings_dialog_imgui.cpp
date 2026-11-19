@@ -86,7 +86,7 @@ void SettingsWindow::LoadSettings(std::string profile) {
     if (isSpecific) {
         readbacksModeSetting = EmulatorSettings.GetReadbacksMode();
         readbackLinearImagesSetting = EmulatorSettings.IsReadbackLinearImagesEnabled();
-        directMemoryAccessSetting = EmulatorSettings.IsDirectMemoryAccessEnabled();
+        fullDmaSyncSetting = EmulatorSettings.IsFullDmaSyncEnabled();
         windowsGuestRedZoneProtectionModeSetting = EmulatorSettings.IsRedZonePatchingEnabled();
         devkitConsoleSetting = EmulatorSettings.IsDevKit();
         neoModeSetting = EmulatorSettings.IsNeo();
@@ -142,7 +142,7 @@ void SettingsWindow::SaveSettings(std::string profile) {
     if (isSpecific) {
         EmulatorSettings.SetReadbacksMode(readbacksModeSetting, true);
         EmulatorSettings.SetReadbackLinearImagesEnabled(readbackLinearImagesSetting, true);
-        EmulatorSettings.SetDirectMemoryAccessEnabled(directMemoryAccessSetting, true);
+        EmulatorSettings.SetFullDmaSyncEnabled(fullDmaSyncSetting, true);
         // Windows static guest red-zone protection
         EmulatorSettings.SetRedZonePatchingEnabled(windowsGuestRedZoneProtectionModeSetting, true);
         EmulatorSettings.SetDevKit(devkitConsoleSetting, true);
@@ -786,7 +786,7 @@ void SettingsWindow::DrawSettingsTable(SettingsCategory category) {
             AddSettingSliderInt("Vblank Frequency", vblankFrequencySetting, 30, 360);
             AddSettingCombo("Readbacks Mode", readbacksModeSetting, readbacksModeOptions);
             AddSettingCheckbox("Enable Readback Linear Images", readbackLinearImagesSetting);
-            AddSettingCheckbox("Enable Direct Memory Access", directMemoryAccessSetting);
+            AddSettingCheckbox("Full DMA Synchronization", fullDmaSyncSetting);
 #ifdef _WIN32
             // Windows static guest red-zone protection
             AddSettingCheckbox("Windows Guest Red Zone Protection (Requires Restart)",

@@ -17,12 +17,14 @@
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/ir_emitter.h"
 #include "shader_recompiler/ir/opcodes.h"
+#include "shader_recompiler/ir/operand_helper.h"
 #include "shader_recompiler/ir/passes/srt.h"
 #include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/ir/reg.h"
 #include "shader_recompiler/ir/srt_gvn_table.h"
 #include "shader_recompiler/ir/value.h"
 #include "shader_recompiler/profile.h"
+#include "video_core/buffer_cache/region_definitions.h"
 
 #ifdef ARCH_X86_64
 
@@ -157,7 +159,7 @@ struct PassInfo {
 
     // map offset to inst
     using PtrUserList =
-        boost::container::flat_map<IR::Value, Shader::IR::Inst*, PointerListCompare>;
+        boost::container::flat_multimap<IR::Value, Shader::IR::Inst*, PointerListCompare>;
 
     Optimization::SrtGvnTable gvn_table;
     // keys are GetUserData, ReadConst or ReadConstBuffer instructions that are used as pointers
@@ -167,9 +169,13 @@ struct PassInfo {
 
     // pick a single inst for a given value number
     std::unordered_map<u32, IR::Inst*> vn_to_inst;
+    std::unordered_map<IR::Inst*, u16> touchbuf_offsets;
+    std::vector<Info::SrtLoopTouch> loop_touches;
+    bool compact_touches{};
 
     // Bumped during codegen to assign offsets to readconsts
-    u16 dst_off_dw;
+    u16 flatbuf_dst_off_dw;
+    u16 touchbuf_dst_off_qw;
 
     PtrUserList* GetUsesAsPointer(IR::Inst* inst) {
         auto it = pointer_uses.find(inst);
@@ -193,27 +199,14 @@ namespace Shader::Optimization {
 
 namespace {
 
-static inline u16 GetFlatbufOffset(const IR::Inst* inst) {
+static inline bool IsSharpSource(const IR::Inst* inst) {
     if (inst->GetOpcode() == IR::Opcode::ReadConstBuffer) {
         auto inst_info = inst->Flags<IR::BufferInstInfo>();
-        return inst_info.flatbuf_off_dw;
+        return inst_info.sharp_source;
     }
     if (inst->GetOpcode() == IR::Opcode::ReadConst) {
-        return inst->Flags<u16>();
-    }
-    UNREACHABLE_MSG("Instruction not supported");
-}
-
-static inline void SetFlatbufOffset(IR::Inst* inst, u16 offset) {
-    if (inst->GetOpcode() == IR::Opcode::ReadConstBuffer) {
-        auto inst_info = inst->Flags<IR::BufferInstInfo>();
-        inst_info.flatbuf_off_dw.Assign(offset);
-        inst->SetFlags(inst_info);
-        return;
-    }
-    if (inst->GetOpcode() == IR::Opcode::ReadConst) {
-        inst->SetFlags(offset);
-        return;
+        auto inst_info = inst->Flags<IR::ReadConstInstInfo>();
+        return inst_info.sharp_source;
     }
     UNREACHABLE_MSG("Instruction not supported");
 }
@@ -477,10 +470,10 @@ static bool EmitComputeOffsetBitFieldUExtract(Xbyak::CodeGenerator& c, Xbyak::Re
         }
         POP_ABORT_ON_FAILURE(ComputeOffset(c, reg, pass_info, inst->Arg(2)));
         c.mov(ecx, reg);
-        c.mov(edx, 1);
-        c.shl(edx, cl);
-        c.dec(edx);
-        c.and_(dword[rsp], edx);
+        c.mov(r11d, 1);
+        c.shl(r11d, cl);
+        c.dec(r11d);
+        c.and_(dword[rsp], r11d);
         c.pop(reg.cvt64());
     }
     return true;
@@ -511,19 +504,22 @@ static bool IsAllowedOffsetInstruction(const IR::Inst* inst) {
 
 static bool ComputeOffset(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, PassInfo& pass_info,
                           const IR::Value& off_dw) {
-    ASSERT(reg != ecx && reg != edx);
+    ASSERT(reg != ecx && reg != r11d);
     auto inst = off_dw.Inst();
     switch (inst->GetOpcode()) {
     case IR::Opcode::GetUserData:
         c.mov(reg, ptr[rsi + (static_cast<u32>(inst->Arg(0).ScalarReg()) << 2)]);
         return true;
     case IR::Opcode::ReadConst:
-    case IR::Opcode::ReadConstBuffer:
-        if (u16 offset = GetFlatbufOffset(pass_info.DeduplicateInstruction(inst)); offset != 0) {
-            c.mov(reg, ptr[rsi + (offset << 2)]);
-            return true;
+    case IR::Opcode::ReadConstBuffer: {
+        const auto it = pass_info.touchbuf_offsets.find(pass_info.DeduplicateInstruction(inst));
+        if (it == pass_info.touchbuf_offsets.end()) {
+            return false;
         }
-        return false;
+        c.mov(reg.cvt64(), ptr[rdx + (it->second << 3)]);
+        c.mov(reg, dword[reg.cvt64()]);
+        return true;
+    }
     case IR::Opcode::IAdd32:
         ABORT_ON_FAILURE(EmitComputeOffsetIAdd32(c, reg, pass_info, inst));
         return true;
@@ -586,12 +582,67 @@ static inline void PopPtr(Xbyak::CodeGenerator& c) {
     c.pop(rdi);
 }
 
+//     s_mov_b32 s8, 0
+// loop:
+//     s_load_dword s12, s[10:11], s8
+//     s_add_u32 s8, s8, 4
+//     s_cmp_lt_u32 s8, s6
+//     s_cbranch_scc1 loop
+static std::optional<Info::SrtLoopTouch> FindReadConstLoop(const IR::Inst& read) {
+    if (read.GetOpcode() != IR::Opcode::ReadConst || IsSharpSource(&read)) {
+        return std::nullopt;
+    }
+    const auto* offset = read.Arg(1).TryInst();
+    if (!offset || offset->GetOpcode() != IR::Opcode::ShiftRightLogical32 ||
+        !offset->Arg(1).IsImmediate() || offset->Arg(1).U32() != 2) {
+        return std::nullopt;
+    }
+    const auto* counter = offset->Arg(0).TryInst();
+    const auto* block = read.GetParent();
+    const auto successors = block->ImmSuccessors();
+    if (!counter || counter->GetOpcode() != IR::Opcode::Phi || counter->NumArgs() != 2 ||
+        counter->GetParent() != block || successors.size() != 2 || successors[0] != block ||
+        successors[1] == block || block->back().GetOpcode() != IR::Opcode::ConditionRef) {
+        return std::nullopt;
+    }
+
+    const size_t backedge = counter->PhiBlock(0) == block ? 0 : 1;
+    if (counter->PhiBlock(backedge) != block || counter->PhiBlock(1 - backedge) == block) {
+        return std::nullopt;
+    }
+    const auto initial = counter->Arg(1 - backedge);
+    const auto* next = counter->Arg(backedge).TryInst();
+    const auto* condition = block->back().Arg(0).TryInst();
+    if (!initial.IsImmediate() || !next || next->GetOpcode() != IR::Opcode::IAdd32 ||
+        next->Arg(0).TryInst() != counter || !next->Arg(1).IsImmediate() || !condition ||
+        condition->GetOpcode() != IR::Opcode::ULessThan32 || condition->Arg(0).TryInst() != next) {
+        return std::nullopt;
+    }
+
+    const u32 first_offset = initial.U32();
+    const u32 step = next->Arg(1).U32();
+    if (!step || ((first_offset | step) & (sizeof(u32) - 1))) {
+        return std::nullopt;
+    }
+    const auto limit = condition->Arg(1);
+    if (limit.IsImmediate()) {
+        return Info::SrtLoopTouch{first_offset, step, limit.U32(), NUM_USER_DATA_REGS};
+    }
+    const auto* limit_inst = limit.TryInst();
+    if (!limit_inst || limit_inst->GetOpcode() != IR::Opcode::GetUserData ||
+        u32(limit_inst->Arg(0).ScalarReg()) >= NUM_USER_DATA_REGS) {
+        return std::nullopt;
+    }
+    return Info::SrtLoopTouch{first_offset, step, 0, u16(limit_inst->Arg(0).ScalarReg())};
+}
+
 static void VisitPointer(const IR::Value& off_dw, IR::Inst* subtree, PassInfo& pass_info,
                          Xbyak::CodeGenerator& c) {
-    if (subtree->GetOpcode() == IR::Opcode::ReadConst && subtree->Flags<u16>() == 0 ||
-        subtree->GetOpcode() == IR::Opcode::ReadConstBuffer &&
-            subtree->Flags<IR::BufferInstInfo>().flatbuf_off_dw == 0) {
-        return;
+    if (subtree->GetOpcode() == IR::Opcode::ReadConst ||
+        subtree->GetOpcode() == IR::Opcode::ReadConstBuffer) {
+        if (!IR::IsReadConstAddressTouched(subtree)) {
+            return;
+        }
     }
 
     if (!PushPtr(c, pass_info, off_dw)) {
@@ -606,22 +657,70 @@ static void VisitPointer(const IR::Value& off_dw, IR::Inst* subtree, PassInfo& p
     // flattened buffer.
     // TODO src and dst are contiguous. Optimize with wider loads/stores
     // TODO if this subtree is dynamically indexed, don't compact it (keep it sparse)
-    for (auto [src_off_dw, use] : *use_list) {
+    auto range_end = use_list->begin();
+    for (auto it = use_list->begin(); it != use_list->end(); ++it) {
+        const auto [src_off_dw, use] = *it;
+        const bool sharp = IsSharpSource(use);
+        bool record_touch = true;
+        constexpr u32 max_lea_dword = std::numeric_limits<s32>::max() / sizeof(u32);
+        constexpr u32 page_dwords = VideoCore::BYTES_PER_PAGE / sizeof(u32);
+        if (pass_info.compact_touches && src_off_dw.U32() <= max_lea_dword) {
+            if (it == range_end) {
+                range_end = std::find_if(std::next(it), use_list->end(), [&](const auto& entry) {
+                    const u32 dword = entry.first.U32();
+                    return dword > max_lea_dword || dword - src_off_dw.U32() >= page_dwords;
+                });
+            } else {
+                record_touch = std::next(it) == range_end;
+            }
+        }
+        if (!record_touch && !sharp) {
+            IR::TouchReadConstAddress(use, 0);
+            continue;
+        }
         if (src_off_dw.IsImmediate()) {
-            c.mov(r10d, ptr[rdi + (src_off_dw.U32() << 2)]);
+            c.lea(r10, ptr[rdi + (src_off_dw.U32() << 2)]);
         } else {
+            if (auto loop = FindReadConstLoop(*use)) {
+                if (pass_info.flatbuf_dst_off_dw > std::numeric_limits<u16>::max() - 3) {
+                    continue;
+                }
+                loop->range_offset_dw = pass_info.flatbuf_dst_off_dw;
+                pass_info.flatbuf_dst_off_dw += 3;
+                c.mov(r10d, loop->first_offset);
+                c.lea(r10, ptr[rdi + r10]);
+                c.mov(ptr[rsi + (loop->range_offset_dw << 2)], r10);
+                pass_info.loop_touches.push_back(*loop);
+
+                auto flags = use->Flags<IR::ReadConstInstInfo>();
+                flags.flatbuf_off_dw.Assign(loop->range_offset_dw);
+                flags.range_touch.Assign(true);
+                use->SetFlags(flags);
+                continue;
+            }
             if (!ComputeOffset(c, r10d, pass_info, src_off_dw)) {
                 LOG_ERROR(Render_Recompiler, "Failed to compute offset for SRT walker");
                 continue;
             }
             c.shl(r10d, 2);
             c.mov(r10d, r10d);
-            c.mov(r10d, dword[rdi + r10]);
+            c.lea(r10, ptr[rdi + r10]);
         }
-        c.mov(ptr[rsi + (pass_info.dst_off_dw << 2)], r10d);
+        if (record_touch) {
+            const u16 touch_offset = pass_info.touchbuf_dst_off_qw++;
+            c.mov(ptr[rdx + (touch_offset << 3)], r10);
+            if (!pass_info.compact_touches) {
+                pass_info.touchbuf_offsets.emplace(use, touch_offset);
+            }
+        }
 
-        SetFlatbufOffset(use, pass_info.dst_off_dw);
-        pass_info.dst_off_dw++;
+        u16 flatbuf_offset = 0;
+        if (sharp) {
+            flatbuf_offset = pass_info.flatbuf_dst_off_dw++;
+            c.mov(r10d, dword[r10]);
+            c.mov(ptr[rsi + (flatbuf_offset << 2)], r10d);
+        }
+        IR::TouchReadConstAddress(use, flatbuf_offset);
     }
 
     // Then visit any children used as pointers
@@ -651,8 +750,14 @@ static void GenerateSrtProgram(Info& info, PassInfo& pass_info) {
     }
 
     info.srt_info.walker_func = c.getCurr<PFN_SrtWalker>();
-    pass_info.dst_off_dw = NUM_USER_DATA_REGS;
-    ASSERT(pass_info.dst_off_dw == info.srt_info.flattened_bufsize_dw);
+    pass_info.flatbuf_dst_off_dw = NUM_USER_DATA_REGS;
+    pass_info.touchbuf_dst_off_qw = 0;
+    ASSERT(pass_info.flatbuf_dst_off_dw == info.srt_info.flattened_bufsize_dw);
+
+    pass_info.compact_touches = std::ranges::all_of(pass_info.pointer_uses, [](const auto& entry) {
+        return std::ranges::all_of(entry.second,
+                                   [](const auto& use) { return use.first.IsImmediate(); });
+    });
 
     for (const auto& [sgpr_base, root] : pass_info.srt_roots) {
         VisitPointer(IR::Value(static_cast<u32>(sgpr_base)), root, pass_info, c);
@@ -669,7 +774,9 @@ static void GenerateSrtProgram(Info& info, PassInfo& pass_info) {
                        info.srt_info.walker_func_size);
     }
 
-    info.srt_info.flattened_bufsize_dw = pass_info.dst_off_dw;
+    info.srt_info.flattened_bufsize_dw = pass_info.flatbuf_dst_off_dw;
+    info.srt_info.touch_addr_bufsize_qw = pass_info.touchbuf_dst_off_qw;
+    info.srt_loop_touches = std::move(pass_info.loop_touches);
 }
 
 static bool IsReadConstSource(const IR::Value base) {
@@ -788,8 +895,7 @@ static std::optional<SrtReadSource> FindSrtReadSource(IR::Value value) {
 static std::vector<ReadConstArray> PrepareSrtReadArrays(IR::Program& program,
                                                         const Profile& profile) {
     std::vector<ReadConstArray> arrays;
-    if (!program.info.params ||
-        (EmulatorSettings.IsDirectMemoryAccessEnabled() && profile.support_bda)) {
+    if (!program.info.params || (EmulatorSettings.IsFullDmaSyncEnabled() && profile.support_bda)) {
         return arrays;
     }
     std::vector<IR::Inst*> reads;
@@ -808,7 +914,7 @@ static std::vector<ReadConstArray> PrepareSrtReadArrays(IR::Program& program,
     };
     std::vector<Snapshot> snapshots;
     for (auto* read : reads) {
-        if (read->Arg(1).IsImmediate()) {
+        if (read->Arg(1).IsImmediate() || (profile.support_bda && FindReadConstLoop(*read))) {
             continue;
         }
         const auto source = FindSrtReadSource(read->Arg(0));
@@ -831,6 +937,9 @@ static std::vector<ReadConstArray> PrepareSrtReadArrays(IR::Program& program,
             IR::Inst* first_dword{};
             for (u32 dw = 0; dw < pointer->size_in_dwords; ++dw) {
                 auto value = ir.ReadConst(read->Arg(0), ir.Imm32(dw));
+                IR::ReadConstInstInfo snapshot_flags{};
+                snapshot_flags.sharp_source.Assign(1);
+                value.Inst()->SetFlags(snapshot_flags);
                 if (dw == 0) {
                     first_dword = value.Inst();
                 }
@@ -944,7 +1053,7 @@ void FlattenExtendedUserdataPass(IR::Program& program, const Profile& profile) {
         auto ptr_uses_kv = pass_info.pointer_uses.try_emplace(ptr_lo, PassInfo::PtrUserList{});
         PassInfo::PtrUserList& user_list = ptr_uses_kv.first->second;
 
-        user_list[inst->Arg(1)] = inst;
+        user_list.emplace(inst->Arg(1), inst);
 
         if (ptr_lo->GetOpcode() == IR::Opcode::GetUserData) {
             IR::ScalarReg ud_reg = ptr_lo->Arg(0).ScalarReg();
@@ -958,12 +1067,17 @@ void FlattenExtendedUserdataPass(IR::Program& program, const Profile& profile) {
     for (IR::Inst* readconst : all_readconsts) {
         ASSERT(pass_info.vn_to_inst.contains(pass_info.gvn_table.GetValueNumber(readconst)));
         IR::Inst* original = pass_info.DeduplicateInstruction(readconst);
-        SetFlatbufOffset(readconst, GetFlatbufOffset(original));
+        if (IR::IsReadConstAddressTouched(original)) {
+            IR::TouchReadConstAddress(readconst, IR::GetFlatBufferOffset(original));
+        } else if (original->GetOpcode() == IR::Opcode::ReadConst &&
+                   original->Flags<IR::ReadConstInstInfo>().range_touch) {
+            readconst->SetFlags(original->Flags<IR::ReadConstInstInfo>());
+        }
     }
 
     for (const auto& array : arrays) {
         array.user->ReplaceOpcode(IR::Opcode::ReadConstArray);
-        array.user->SetArg(0, IR::Value{u32(GetFlatbufOffset(array.first_dword))});
+        array.user->SetArg(0, IR::Value{u32(IR::GetFlatBufferOffset(array.first_dword))});
         array.user->SetFlags(0u);
     }
 

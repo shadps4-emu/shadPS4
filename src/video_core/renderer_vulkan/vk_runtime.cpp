@@ -109,7 +109,7 @@ void Runtime::TickFrame() {
 }
 
 void Runtime::CopyBuffer(const VideoCore::Buffer* src, const VideoCore::Buffer* dst,
-                         std::span<const vk::BufferCopy> copies) {
+                         std::span<const vk::BufferCopy> copies, CopyUsage usage) {
     scheduler.EndRendering();
 
     bool needs_flush{};
@@ -127,8 +127,12 @@ void Runtime::CopyBuffer(const VideoCore::Buffer* src, const VideoCore::Buffer* 
     for (const auto& copy : copies) {
         AccessBuffer(src, copy.srcOffset, copy.size, vk::PipelineStageFlagBits2::eCopy,
                      vk::AccessFlagBits2::eTransferRead);
-        AccessBuffer(dst, copy.dstOffset, copy.size, vk::PipelineStageFlagBits2::eCopy,
-                     vk::AccessFlagBits2::eTransferWrite);
+        if (usage == CopyUsage::ShaderDmaUpload) {
+            dma_uploads.push_back({dst, {copy.dstOffset, copy.dstOffset + copy.size}});
+        } else {
+            AccessBuffer(dst, copy.dstOffset, copy.size, vk::PipelineStageFlagBits2::eCopy,
+                         vk::AccessFlagBits2::eTransferWrite);
+        }
     }
 }
 
@@ -768,7 +772,16 @@ bool Runtime::IsBufferAccessed(const VideoCore::Buffer* handle, u64 offset, u64 
     if (check_read_access && !has_access) {
         has_access |= resource->read_ranges.Overlaps(offset, offset + size);
     }
-    return has_access;
+    return has_access ||
+           (size != 0 && std::ranges::any_of(dma_uploads, [&](const DmaUpload& upload) {
+                return upload.buffer == handle && offset < upload.range.end &&
+                       upload.range.start < offset + size;
+            }));
+}
+
+bool Runtime::HasGeneralBufferWrite(const VideoCore::Buffer* handle, u64 offset, u64 size) {
+    MakeCurrent(handle);
+    return resource->write_ranges.Overlaps(offset, offset + size);
 }
 
 void Runtime::AccessBuffer(const VideoCore::Buffer* handle, u64 offset, u64 size,
@@ -803,7 +816,35 @@ void Runtime::AccessBuffer(const VideoCore::Buffer* handle, u64 offset, u64 size
     memory_barrier.srcAccessMask |= src_access & WRITE_MASK;
 }
 
+void Runtime::FlushDrawBarriers(bool needs_barrier) {
+    if (needs_barrier || (!dma_uploads.empty() && !image_barriers.empty())) {
+        FlushBarriers();
+        return;
+    }
+    if (dma_uploads.empty()) {
+        return;
+    }
+
+    const vk::MemoryBarrier2 barrier{
+        .srcStageMask = vk::PipelineStageFlagBits2::eCopy,
+        .srcAccessMask = vk::AccessFlagBits2::eTransferWrite,
+        .dstStageMask = memory_barrier.dstStageMask,
+        .dstAccessMask = memory_barrier.dstAccessMask,
+    };
+    scheduler.EndRendering();
+    scheduler.CommandBuffer().pipelineBarrier2(vk::DependencyInfo{
+        .memoryBarrierCount = 1,
+        .pMemoryBarriers = &barrier,
+    });
+    dma_uploads.clear();
+}
+
 void Runtime::FlushBarriers() {
+    if (!dma_uploads.empty()) {
+        memory_barrier.srcStageMask |= vk::PipelineStageFlagBits2::eCopy;
+        memory_barrier.srcAccessMask |= vk::AccessFlagBits2::eTransferWrite;
+        dma_uploads.clear();
+    }
     vk::DependencyInfo dep_info{};
 
     if (memory_barrier.srcStageMask) {
