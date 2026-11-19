@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <memory>
 #include <string>
 #include <variant>
 #include "common/fixed_value.h"
@@ -19,7 +20,10 @@ struct NpProfileDialogState {
     bool hasAccountId{false};
     OrbisNpProfileDialogMode mode{OrbisNpProfileDialogMode::ORBIS_NP_PROFILE_DIALOG_MODE_INVALID};
     int userId{};
+    s32 griefReportItems{};
 };
+
+struct DialogRuntime;
 
 class NpProfileDialogUi : public ImGui::Layer {
 public:
@@ -42,6 +46,10 @@ private:
     OrbisNpProfileDialogResult* result{};
     bool first_render{false};
     float open_alpha{0.0f};
+    std::unique_ptr<DialogRuntime> rt;
+
+    void DrawBody(float top);
+    void DrawFooter();
 };
 
 } // namespace Libraries::Np::NpProfileDialog
