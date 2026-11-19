@@ -168,10 +168,8 @@ SharpLocation SharpLocationFromSource(const IR::Inst* inst) {
     SharpLocation location{};
     if (inst->GetOpcode() == IR::Opcode::GetUserData) {
         return static_cast<SharpLocation>(inst->Arg(0).ScalarReg());
-    } else if (inst->GetOpcode() == IR::Opcode::ReadConstBuffer) {
-        location = inst->Flags<IR::BufferInstInfo>().flatbuf_off_dw;
     } else {
-        location = inst->Flags<SharpLocation>();
+        location = IR::GetFlatBufferOffset(inst);
     }
     if (location == 0) {
         LOG_WARNING(Render_Recompiler, "Sharp source was not flatenned");
