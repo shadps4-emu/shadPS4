@@ -154,6 +154,12 @@ struct OrbisKernelAppInfo {
 
 void RegisterLib(Core::Loader::SymbolsResolver* sym);
 
+s32 PS4_SYSV_ABI posix_sysctl(const s32* name, u32 namelen, void* oldp, size_t* oldlenp,
+                              const void* newp, size_t newlen);
+s32 PS4_SYSV_ABI posix_sysctlbyname(const char* name, void* oldp, size_t* oldlenp, const void* newp,
+                                    size_t newlen);
+s32 PS4_SYSV_ABI posix_sysctlnametomib(const char* name, s32* mibp, size_t* sizep);
+
 constexpr u32 POSIX_SC_ARG_MAX = 1;
 constexpr u32 POSIX_SC_CHILD_MAX = 2;
 constexpr u32 POSIX_SC_CLK_TCK = 3;
