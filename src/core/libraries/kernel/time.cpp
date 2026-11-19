@@ -7,9 +7,12 @@
 #include "common/assert.h"
 #include "common/native_clock.h"
 #include "common/thread.h"
+#include "common/uint128.h"
+#include "core/cpu_patches.h"
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/kernel/posix_error.h"
+#include "core/libraries/kernel/process.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/libs.h"
 
@@ -29,29 +32,53 @@
 namespace Libraries::Kernel {
 
 static u64 initial_ptc;
+static u64 initial_host_uptime;
 static std::chrono::system_clock::time_point network_boottime;
 static std::chrono::steady_clock::time_point initial_uptime;
 static std::unique_ptr<Common::NativeClock> clock;
 
 u64 PS4_SYSV_ABI sceKernelGetTscFrequency() {
-    return clock->GetTscFrequency();
+    u64 freq = 0;
+    size_t size = sizeof(freq);
+    if (posix_sysctlbyname("machdep.tsc_freq", &freq, &size, nullptr, 0) == 0 && freq != 0) {
+        return freq;
+    }
+    return sceKernelIsNeoMode() ? 2'133'000'000ULL : 1'594'000'000ULL;
+}
+
+u64 PS4_SYSV_ABI sceKernelGetCpuFrequency() {
+    s32 mhz = 0;
+    size_t size = sizeof(mhz);
+    if (posix_sysctlbyname("dev.cpu.0.freq", &mhz, &size, nullptr, 0) == 0 && mhz > 0) {
+        return static_cast<u64>(mhz) * 1'000'000ULL;
+    }
+    return sceKernelIsNeoMode() ? 2'133'000'000ULL : 1'594'000'000ULL;
 }
 
 u64 PS4_SYSV_ABI sceKernelGetProcessTime() {
     // TODO: this timer should support suspends, so initial ptc needs to be updated on wake up
-    return clock->GetTimeUS(initial_ptc);
+    return clock->GetTimeUS(initial_host_uptime);
 }
 
 u64 PS4_SYSV_ABI sceKernelGetProcessTimeCounter() {
-    return clock->GetUptime() - initial_ptc;
+    return sceKernelReadTsc() - initial_ptc;
 }
 
 u64 PS4_SYSV_ABI sceKernelGetProcessTimeCounterFrequency() {
-    return clock->GetTscFrequency();
+    return sceKernelGetTscFrequency();
 }
 
 u64 PS4_SYSV_ABI sceKernelReadTsc() {
-    return clock->GetUptime();
+#ifdef __SIZEOF_INT128__
+    const auto product = static_cast<unsigned __int128>(clock->GetUptime()) *
+                         static_cast<unsigned __int128>(Core::GetGuestTscMultiplier());
+    return static_cast<u64>(product >> Core::GuestTscMultiplierShift);
+#else
+    const u128 product =
+        Common::Multiply64Into128(clock->GetUptime(), Core::GetGuestTscMultiplier());
+    return (product[1] << (64 - Core::GuestTscMultiplierShift)) |
+           (product[0] >> Core::GuestTscMultiplierShift);
+#endif
 }
 
 static s32 posix_nanosleep_impl(const OrbisKernelTimespec* rqtp, OrbisKernelTimespec* rmtp,
@@ -572,7 +599,8 @@ s32 PS4_SYSV_ABI sceKernelSettimeofday(OrbisKernelTimeval* _tv, OrbisKernelTimez
 
 void RegisterTime(Core::Loader::SymbolsResolver* sym) {
     clock = std::make_unique<Common::NativeClock>();
-    initial_ptc = clock->GetUptime();
+    initial_host_uptime = clock->GetUptime();
+    initial_ptc = sceKernelReadTsc();
     network_boottime = std::chrono::system_clock::now();
     initial_uptime = std::chrono::steady_clock::now();
 
@@ -602,6 +630,7 @@ void RegisterTime(Core::Loader::SymbolsResolver* sym) {
                  sceKernelGetProcessTimeCounterFrequency);
     LIB_FUNCTION("-2IRUCO--PM", "libkernel", 1, "libkernel", sceKernelReadTsc);
     LIB_FUNCTION("1j3S3n-tTW4", "libkernel", 1, "libkernel", sceKernelGetTscFrequency);
+    LIB_FUNCTION("iUohlUDiGac", "libkernel", 1, "libkernel", sceKernelGetCpuFrequency);
     LIB_FUNCTION("QvsZxomvUHs", "libkernel", 1, "libkernel", sceKernelNanosleep);
     LIB_FUNCTION("1jfXLRVzisc", "libkernel", 1, "libkernel", sceKernelUsleep);
     LIB_FUNCTION("-ZR+hG7aDHw", "libkernel", 1, "libkernel", sceKernelSleep);
