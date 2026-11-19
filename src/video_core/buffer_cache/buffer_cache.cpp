@@ -219,7 +219,8 @@ std::pair<const Buffer*, u64> BufferCache::ObtainBuffer(VAddr device_addr, u32 s
     const bool skip_stream_buffer = True(flags & ObtainBufferFlags::IgnoreStreamBuffer);
     // For read-only buffers use device local stream buffer to reduce renderpass breaks.
     if (!is_written && !skip_stream_buffer && size <= STREAM_THRESHOLD &&
-        !IsRegionGpuModified(device_addr, size)) {
+        !IsRegionGpuModified(device_addr, size) &&
+        (!is_texel_buffer || !texture_cache.FindImageFromRange(device_addr, size))) {
         const auto [data, offset] = stream_buffer.Map(size, instance.UniformMinAlignment());
         memory->CopySparseMemory(device_addr, data, size);
         stream_buffer.Commit();
@@ -499,9 +500,11 @@ bool BufferCache::SynchronizeMemoryFromImage(const Buffer* arena, VAddr device_a
         return false;
     }
     Image& image = texture_cache.GetImage(image_id);
-    ASSERT_MSG(device_addr == image.info.guest_address,
-               "Texel buffer aliases image subresources {:x} : {:x}", device_addr,
-               image.info.guest_address);
+    const bool is_subrange = device_addr != image.info.guest_address;
+    const auto staging =
+        is_subrange
+            ? staging_pool.Request(image.info.guest_size, MemoryType::DeviceLocal, 256, false, true)
+            : Vulkan::StagingBufferRef{};
     const u64 arena_offset = arena->Offset(device_addr);
     boost::container::small_vector<vk::BufferImageCopy, 8> buffer_copies;
     for (u32 mip = 0; mip < image.info.resources.levels; mip++) {
@@ -509,7 +512,7 @@ bool BufferCache::SynchronizeMemoryFromImage(const Buffer* arena, VAddr device_a
         const u32 width = std::max(image.info.size.width >> mip, 1u);
         const u32 height = std::max(image.info.size.height >> mip, 1u);
         const u32 depth = std::max(image.info.size.depth >> mip, 1u);
-        if (arena_offset + mip_info.offset + mip_info.size > arena->size_bytes) {
+        if (!is_subrange && arena_offset + mip_info.offset + mip_info.size > arena->size_bytes) {
             break;
         }
         buffer_copies.push_back(vk::BufferImageCopy{
@@ -530,7 +533,18 @@ bool BufferCache::SynchronizeMemoryFromImage(const Buffer* arena, VAddr device_a
         return false;
     }
     auto& tile_manager = texture_cache.GetTileManager();
-    tile_manager.TileImage(image, buffer_copies, arena, arena_offset);
+    if (is_subrange) {
+        tile_manager.TileImage(image, buffer_copies, staging.buffer, staging.offset);
+        const u64 image_offset = device_addr - image.info.guest_address;
+        const vk::BufferCopy copy{
+            .srcOffset = staging.offset + image_offset,
+            .dstOffset = arena_offset,
+            .size = std::min<u64>(size, image.info.guest_size - image_offset),
+        };
+        runtime.CopyBuffer(staging.buffer, arena, std::span{&copy, 1});
+    } else {
+        tile_manager.TileImage(image, buffer_copies, arena, arena_offset);
+    }
     return true;
 }
 
