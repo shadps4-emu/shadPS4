@@ -3,6 +3,11 @@
 
 #pragma once
 
+#include <array>
+#include <memory>
+
+#include "common/types.h"
+
 namespace Libraries::AudioOut {
 
 struct PortOut;
@@ -16,6 +21,14 @@ public:
     virtual void Output(void* ptr) = 0;
 
     virtual void SetVolume(const std::array<int, 8>& ch_volumes) = 0;
+
+    /// Number of channels actually delivered to the host device for a multi-channel port
+    /// (2, 6 or 8), after any downmix done by the backend. Returns 0 when unknown.
+    virtual u32 GetOutputChannels() const = 0;
+
+    /// True when a PADSPK port has no dedicated (controller speaker) device and its stream
+    /// plays on the same host device as the MAIN output. Always false for other port types.
+    virtual bool SharesMainDevice() const = 0;
 };
 
 class AudioOutBackend {
