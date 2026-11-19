@@ -1107,11 +1107,10 @@ void EmitContext::DefineSharedMemory() {
 
     auto define_segment = [&](const Info::SharedMemorySegment& segment_info, SharedDefinition& def,
                               std::string_view segment_name) {
-        if (segment_info.size == 0) {
+        if (segment_info.size == 0 || segment_info.used_types == IR::Type::Void) {
             return;
         }
         ASSERT(segment_info.alignment != 0);
-        ASSERT(static_cast<u64>(segment_info.used_types) != 0);
 
         offset = Common::AlignUp(offset, segment_info.alignment);
         IR::Type remaining_types = segment_info.used_types;
