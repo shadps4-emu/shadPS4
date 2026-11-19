@@ -6,6 +6,7 @@ cmake_minimum_required(VERSION 3.24)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
+set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 
 if(APPLE)
     list(APPEND ADDITIONAL_LANGUAGES OBJC)
@@ -303,6 +304,8 @@ set(AUDIO_LIB src/core/libraries/audio/audioin.cpp
               src/core/libraries/audio/audioout.h
               src/core/libraries/audio/audioout_backend.h
               src/core/libraries/audio/audioout_error.h
+              src/core/libraries/audio/audioout_mastering.cpp
+              src/core/libraries/audio/audioout_mastering.h
               src/core/libraries/audio/sdl_audio_out.cpp
               src/core/libraries/audio/openal_audio_out.cpp
               src/core/libraries/audio/openal_manager.h
@@ -672,6 +675,7 @@ set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/np_handler/np_handler_auth.cpp
             src/core/libraries/np/np_handler/np_handler_invitation.cpp
             src/core/libraries/np/np_handler/np_handler_game_custom_data.cpp
+            src/core/libraries/np/np_handler/np_handler_profile.cpp
             src/core/libraries/np/np_handler/np_handler_score.cpp
             src/core/libraries/np/np_handler/np_handler_trophy.cpp
             src/core/libraries/np/np_handler/np_handler_tus.cpp
