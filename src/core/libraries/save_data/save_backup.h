@@ -54,6 +54,8 @@ WorkerStatus GetWorkerStatus();
 
 bool IsBackupExecutingFor(const std::filesystem::path& save_path);
 
+bool HasPendingEvents();
+
 std::filesystem::path MakeBackupPath(const std::filesystem::path& save_path);
 
 std::optional<BackupRequest> PopLastEvent();
