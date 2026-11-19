@@ -304,6 +304,17 @@ struct NpMatching2State {
     std::condition_variable queue_cv;
     std::vector<PendingEvent> pending_events;
     std::atomic<bool> dispatch_running{false};
+    u32 dispatch_holds = 0;
+};
+
+// Holds back event dispatch while alive. Guest callbacks must not run before the
+// request function that queued them returns.
+class DispatchHold {
+public:
+    DispatchHold();
+    ~DispatchHold();
+    DispatchHold(const DispatchHold&) = delete;
+    DispatchHold& operator=(const DispatchHold&) = delete;
 };
 
 OrbisNpMatching2RequestId AllocRequestId();

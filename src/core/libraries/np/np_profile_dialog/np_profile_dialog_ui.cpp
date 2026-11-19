@@ -1,13 +1,21 @@
 // SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <array>
+#include <atomic>
 #include <cinttypes>
 #include <cmath>
+#include <mutex>
+#include <string>
 #include <thread>
 #include <utility>
+#include <vector>
 
 #include <imgui.h>
 #include <imgui/imgui_std.h>
+#include "core/libraries/np/np_error.h"
+#include "core/libraries/np/np_handler/np_handler.h"
+#include "imgui/imgui_texture.h"
 #include "np_profile_dialog_ui.h"
 
 using namespace ImGui;
@@ -29,9 +37,11 @@ static constexpr ImVec4 COL_BUTTON_NORMAL = {0.18f, 0.18f, 0.20f, 1.00f};
 static constexpr ImVec4 COL_BUTTON_HOVERED = {0.00f, 0.44f, 0.75f, 1.00f};
 static constexpr ImVec4 COL_BUTTON_ACTIVE = {0.00f, 0.33f, 0.60f, 1.00f};
 static constexpr ImVec4 COL_BUTTON_BORDER = {0.32f, 0.32f, 0.35f, 1.00f};
+static constexpr ImVec4 COL_TEXT_GOOD = {0.45f, 0.80f, 0.50f, 1.00f};
+static constexpr ImVec4 COL_TEXT_BAD = {0.95f, 0.45f, 0.40f, 1.00f};
 
 static constexpr float CARD_WIDTH = 480.0f;
-static constexpr float CARD_HEIGHT = 330.0f;
+static constexpr float CARD_HEIGHT = 350.0f;
 static constexpr float HEADER_HEIGHT = 44.0f;
 static constexpr float FOOTER_HEIGHT = 56.0f;
 static constexpr float AVATAR_RADIUS = 44.0f;
@@ -39,6 +49,71 @@ static constexpr float AVATAR_REL_X = CARD_WIDTH * 0.5f;
 static constexpr float AVATAR_REL_Y = HEADER_HEIGHT + AVATAR_RADIUS + 16.0f;
 static constexpr float FADE_SPEED = 8.0f;
 static constexpr ImVec2 CLOSE_BUTTON_SIZE = {110.0f, 34.0f};
+static constexpr ImVec2 ACTION_BUTTON_SIZE = {210.0f, 34.0f};
+
+using NpHandler = Libraries::Np::NpHandler;
+
+struct ReportItem {
+    s32 bit;
+    const char* label;
+    const char* name;
+};
+static constexpr std::array<ReportItem, 4> REPORT_ITEMS = {{
+    {ORBIS_NP_PROFILE_DIALOG_MENU_GRIEF_REPORT_ITEM_ONLINE_ID, "Online ID", "onlineId"},
+    {ORBIS_NP_PROFILE_DIALOG_MENU_GRIEF_REPORT_ITEM_NAME, "Name", "name"},
+    {ORBIS_NP_PROFILE_DIALOG_MENU_GRIEF_REPORT_ITEM_PICTURE, "Picture", "picture"},
+    {ORBIS_NP_PROFILE_DIALOG_MENU_GRIEF_REPORT_ITEM_ABOUT_ME, "About Me", "aboutMe"},
+}};
+
+struct ProfileFetch {
+    std::mutex mutex;
+    NpHandler::ProfileCard card;
+    std::atomic<bool> done{false};
+};
+struct ReportTask {
+    std::atomic<int> state{0}; // 0 running, 1 sent, 2 failed
+};
+
+struct DialogRuntime {
+    std::shared_ptr<ProfileFetch> fetch;
+    bool loaded{false};
+    NpHandler::ProfileCard card;
+    ImGui::RefCountedTexture avatar;
+
+    bool action_done{false};
+    std::string message;
+    bool message_bad{false};
+
+    std::array<bool, REPORT_ITEMS.size()> report_picked{};
+    std::shared_ptr<ReportTask> report;
+};
+
+static bool ProfileHasItem(const NpHandler::ProfileCard& card, s32 bit) {
+    switch (bit) {
+    case ORBIS_NP_PROFILE_DIALOG_MENU_GRIEF_REPORT_ITEM_ONLINE_ID:
+        return true;
+    case ORBIS_NP_PROFILE_DIALOG_MENU_GRIEF_REPORT_ITEM_PICTURE:
+        return card.custom_picture;
+    default:
+        return false;
+    }
+}
+
+static const char* RelationLabel(const std::string& relation) {
+    if (relation == "me")
+        return "This is you";
+    if (relation == "friend")
+        return "Friend";
+    if (relation == "requesting friend")
+        return "Friend request sent";
+    if (relation == "requested friend")
+        return "Sent you a friend request";
+    if (relation == "blocked")
+        return "Blocked";
+    if (relation == "friend of friends")
+        return "Friend of a friend";
+    return "";
+}
 
 static ImU32 AlphaScale(ImVec4 col, float alpha) {
     col.w *= alpha;
@@ -54,6 +129,16 @@ static void DrawCardShadow(ImDrawList* dl, ImVec2 min, ImVec2 max, float alpha) 
         dl->AddRectFilled({min.x - spread, min.y + spread}, {max.x + spread, max.y + spread * 1.5f},
                           IM_COL32(0, 0, 0, (int)(a * 255.0f)), 8.0f + spread);
     }
+}
+
+// The avatar image, clipped to the same circle as the placeholder.
+static void DrawAvatarImage(ImDrawList* dl, ImVec2 center, float radius, float alpha,
+                            ImTextureID texture) {
+    dl->AddCircleFilled(center, radius, AlphaScale(COL_AVATAR_BG, alpha), 64);
+    dl->AddImageRounded(texture, {center.x - radius, center.y - radius},
+                        {center.x + radius, center.y + radius}, {0.0f, 0.0f}, {1.0f, 1.0f},
+                        IM_COL32(255, 255, 255, (int)(alpha * 255.0f)), radius);
+    dl->AddCircle(center, radius, AlphaScale(COL_AVATAR_OUTLINE, alpha), 64, 2.5f);
 }
 
 static void DrawAvatarPlaceholder(ImDrawList* dl, ImVec2 center, float radius, float alpha) {
@@ -117,7 +202,7 @@ NpProfileDialogUi::~NpProfileDialogUi() {
 
 NpProfileDialogUi::NpProfileDialogUi(NpProfileDialogUi&& other) noexcept
     : Layer(other), state(other.state), status(other.status), result(other.result),
-      open_alpha(other.open_alpha) {
+      open_alpha(other.open_alpha), rt(std::move(other.rt)) {
     other.state = nullptr;
     other.status = nullptr;
     other.result = nullptr;
@@ -130,6 +215,7 @@ NpProfileDialogUi& NpProfileDialogUi::operator=(NpProfileDialogUi other) {
     swap(status, other.status);
     swap(result, other.result);
     swap(open_alpha, other.open_alpha);
+    swap(rt, other.rt);
     if (status && *status == Status::RUNNING) {
         first_render = true;
         open_alpha = 0.0f;
@@ -155,6 +241,63 @@ void NpProfileDialogUi::Finish(Result user_action) {
 void NpProfileDialogUi::Draw() {
     if (status == nullptr || *status != Status::RUNNING) {
         return;
+    }
+
+    if (!rt) {
+        rt = std::make_unique<DialogRuntime>();
+        std::string target = state->onlineId;
+        if (state->hasAccountId) {
+            target = std::to_string(state->accountId);
+        }
+        auto fetch = std::make_shared<ProfileFetch>();
+        rt->fetch = fetch;
+        const s32 user_id = state->userId;
+        std::thread([fetch, user_id, target = std::move(target)] {
+            NpHandler::ProfileCard card =
+                NpHandler::GetInstance().FetchProfileCard(user_id, target);
+            {
+                std::scoped_lock lk{fetch->mutex};
+                fetch->card = std::move(card);
+            }
+            fetch->done = true;
+        }).detach();
+    }
+    if (rt->fetch && rt->fetch->done) {
+        {
+            std::scoped_lock lk{rt->fetch->mutex};
+            rt->card = std::move(rt->fetch->card);
+        }
+        rt->fetch.reset();
+        rt->loaded = true;
+        if (!rt->card.avatar_png.empty()) {
+            rt->avatar = ImGui::RefCountedTexture::DecodePngTexture(std::move(rt->card.avatar_png));
+        }
+        if (!rt->card.ok) {
+            rt->message = "This player's profile could not be loaded.";
+            rt->message_bad = true;
+        } else if (state->mode ==
+                   OrbisNpProfileDialogMode::ORBIS_NP_PROFILE_DIALOG_MODE_GRIEF_REPORT) {
+            int available = 0;
+            for (size_t i = 0; i < REPORT_ITEMS.size(); ++i) {
+                available += (state->griefReportItems & REPORT_ITEMS[i].bit) &&
+                             ProfileHasItem(rt->card, REPORT_ITEMS[i].bit);
+            }
+            if (available == 0) {
+                rt->message = "There is nothing in this player's profile to report.";
+                rt->message_bad = true;
+            } else if (available == 1) {
+                for (size_t i = 0; i < REPORT_ITEMS.size(); ++i) {
+                    rt->report_picked[i] = (state->griefReportItems & REPORT_ITEMS[i].bit) &&
+                                           ProfileHasItem(rt->card, REPORT_ITEMS[i].bit);
+                }
+            }
+        }
+    }
+    if (rt->report && rt->report->state != 0 && !rt->action_done) {
+        rt->action_done = true;
+        const bool sent = rt->report->state == 1;
+        rt->message = sent ? "Report sent. Thank you." : "The report could not be sent.";
+        rt->message_bad = !sent;
     }
 
     const auto& io = GetIO();
@@ -224,7 +367,12 @@ void NpProfileDialogUi::Draw() {
 
         // Avatar
         const ImVec2 avatar_screen = {win_pos.x + AVATAR_REL_X, win_pos.y + AVATAR_REL_Y};
-        DrawAvatarPlaceholder(dl, avatar_screen, AVATAR_RADIUS, open_alpha);
+        if (rt->avatar) {
+            DrawAvatarImage(dl, avatar_screen, AVATAR_RADIUS, open_alpha,
+                            rt->avatar.GetTexture().im_id);
+        } else {
+            DrawAvatarPlaceholder(dl, avatar_screen, AVATAR_RADIUS, open_alpha);
+        }
 
         // Header title
         const char* title = GetModeTitle(state->mode);
@@ -235,7 +383,9 @@ void NpProfileDialogUi::Draw() {
         // Online ID / Account ID
         char id_buf[32]{};
         const char* id_str = state->onlineId.c_str();
-        if (state->hasAccountId) {
+        if (rt->card.ok) {
+            id_str = rt->card.online_id.c_str(); // the name, once the profile has loaded
+        } else if (state->hasAccountId) {
             snprintf(id_buf, sizeof(id_buf), "%" PRIu64, state->accountId);
             id_str = id_buf;
         }
@@ -252,20 +402,9 @@ void NpProfileDialogUi::Draw() {
         TextUnformatted(subtitle);
         PopStyleColor();
 
-        const float footer_y_local = CARD_HEIGHT - FOOTER_HEIGHT;
-
-        PushStyleColor(ImGuiCol_Border, AlphaScale(COL_BUTTON_BORDER, open_alpha));
-        PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
-        SetCursorPos({CARD_WIDTH - CLOSE_BUTTON_SIZE.x - 16.0f,
-                      footer_y_local + (FOOTER_HEIGHT - CLOSE_BUTTON_SIZE.y) * 0.5f});
-        if (Button("Close##btn", CLOSE_BUTTON_SIZE)) {
-            Finish(Result::USER_CANCELED);
-        }
-        PopStyleVar();
-        PopStyleColor();
-
-        if (first_render) {
-            SetItemCurrentNavFocus();
+        DrawBody(id_y + id_sz.y + sub_sz.y + 16.0f);
+        if (status != nullptr) {
+            DrawFooter();
         }
     }
     End();
@@ -274,6 +413,172 @@ void NpProfileDialogUi::Draw() {
     PopStyleColor(6);
 
     first_render = false;
+}
+
+void NpProfileDialogUi::DrawBody(float top) {
+    const auto centered = [&](const char* text, float y, ImVec4 color) {
+        PushStyleColor(ImGuiCol_Text, AlphaScale(color, open_alpha));
+        const ImVec2 sz = CalcTextSize(text);
+        SetCursorPos({(CARD_WIDTH - sz.x) * 0.5f, y});
+        TextUnformatted(text);
+        PopStyleColor();
+    };
+    const float message_y = CARD_HEIGHT - FOOTER_HEIGHT - 26.0f;
+
+    if (!rt->loaded) {
+        centered("Loading profile...", top, COL_TEXT_SECONDARY);
+        return;
+    }
+
+    if (rt->card.ok &&
+        state->mode != OrbisNpProfileDialogMode::ORBIS_NP_PROFILE_DIALOG_MODE_GRIEF_REPORT) {
+        if (const char* rel = RelationLabel(rt->card.relation); *rel != '\0') {
+            centered(rel, top, COL_TEXT_SECONDARY);
+        }
+    }
+
+    if (rt->card.ok &&
+        state->mode == OrbisNpProfileDialogMode::ORBIS_NP_PROFILE_DIALOG_MODE_GRIEF_REPORT &&
+        !rt->action_done && !rt->report) {
+        int shown = 0;
+        for (size_t i = 0; i < REPORT_ITEMS.size(); ++i) {
+            const ReportItem& item = REPORT_ITEMS[i];
+            if (!(state->griefReportItems & item.bit) || !ProfileHasItem(rt->card, item.bit)) {
+                continue;
+            }
+            const float col_x = shown % 2 == 0 ? 96.0f : CARD_WIDTH * 0.5f + 24.0f;
+            SetCursorPos({col_x, top + (float)(shown / 2) * 28.0f});
+            Checkbox(item.label, &rt->report_picked[i]);
+            ++shown;
+        }
+    }
+
+    if (!rt->message.empty()) {
+        centered(rt->message.c_str(), message_y, rt->message_bad ? COL_TEXT_BAD : COL_TEXT_GOOD);
+    }
+}
+
+void NpProfileDialogUi::DrawFooter() {
+    const float footer_y_local = CARD_HEIGHT - FOOTER_HEIGHT;
+    const float button_y = footer_y_local + (FOOTER_HEIGHT - CLOSE_BUTTON_SIZE.y) * 0.5f;
+
+    // The action for this mode, if there is one to take.
+    const char* action = nullptr;
+    bool action_enabled = false;
+    const auto& card = rt->card;
+    if (rt->loaded && card.ok && !rt->action_done) {
+        switch (state->mode) {
+        case OrbisNpProfileDialogMode::ORBIS_NP_PROFILE_DIALOG_MODE_FRIEND_REQUEST:
+            if (card.relation == "requested friend") {
+                action = "Accept Friend Request";
+                action_enabled = true;
+            } else if (card.relation == "me" || card.relation == "friend" ||
+                       card.relation == "requesting friend" || card.relation == "blocked") {
+                if (rt->message.empty()) {
+                    rt->message = card.relation == "me"        ? "You cannot add yourself."
+                                  : card.relation == "friend"  ? "You are already friends."
+                                  : card.relation == "blocked" ? "Unblock this player first."
+                                                               : "Your friend request is pending.";
+                    rt->message_bad = false;
+                }
+            } else {
+                action = "Send Friend Request";
+                action_enabled = true;
+            }
+            break;
+        case OrbisNpProfileDialogMode::ORBIS_NP_PROFILE_DIALOG_MODE_ADD_TO_BLOCK_LIST:
+            if (card.relation == "me" || card.relation == "blocked") {
+                if (rt->message.empty()) {
+                    rt->message = card.relation == "me" ? "You cannot block yourself."
+                                                        : "This player is already blocked.";
+                    rt->message_bad = false;
+                }
+            } else {
+                action = "Block";
+                action_enabled = true;
+                if (rt->message.empty()) {
+                    rt->message = "They will no longer be your friend or able to contact you.";
+                    rt->message_bad = false;
+                }
+            }
+            break;
+        case OrbisNpProfileDialogMode::ORBIS_NP_PROFILE_DIALOG_MODE_GRIEF_REPORT: {
+            if (!rt->report && !rt->message_bad) {
+                action = "Send Report";
+                for (const bool picked : rt->report_picked) {
+                    action_enabled |= picked;
+                }
+            }
+            break;
+        }
+        default:
+            break;
+        }
+    }
+
+    PushStyleColor(ImGuiCol_Border, AlphaScale(COL_BUTTON_BORDER, open_alpha));
+    PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);
+
+    if (action != nullptr) {
+        SetCursorPos({16.0f, button_y});
+        BeginDisabled(!action_enabled);
+        if (Button(action, ACTION_BUTTON_SIZE)) {
+            const s32 user_id = state->userId;
+            auto& np = NpHandler::GetInstance();
+            switch (state->mode) {
+            case OrbisNpProfileDialogMode::ORBIS_NP_PROFILE_DIALOG_MODE_FRIEND_REQUEST: {
+                const bool accepting = card.relation == "requested friend";
+                const s32 rc = np.SendFriendRequest(user_id, card.online_id);
+                rt->action_done = true;
+                rt->message_bad = rc != ORBIS_OK;
+                rt->message = rc != ORBIS_OK ? "You are not signed in to shadNet."
+                              : accepting    ? "You are now friends."
+                                             : "Friend request sent.";
+                break;
+            }
+            case OrbisNpProfileDialogMode::ORBIS_NP_PROFILE_DIALOG_MODE_ADD_TO_BLOCK_LIST: {
+                const s32 rc = np.BlockUser(user_id, card.online_id);
+                rt->action_done = true;
+                rt->message_bad = rc != ORBIS_OK;
+                rt->message =
+                    rc != ORBIS_OK ? "You are not signed in to shadNet." : "Player blocked.";
+                break;
+            }
+            case OrbisNpProfileDialogMode::ORBIS_NP_PROFILE_DIALOG_MODE_GRIEF_REPORT: {
+                std::vector<std::string> items;
+                for (size_t i = 0; i < REPORT_ITEMS.size(); ++i) {
+                    if (rt->report_picked[i]) {
+                        items.emplace_back(REPORT_ITEMS[i].name);
+                    }
+                }
+                auto task = std::make_shared<ReportTask>();
+                rt->report = task;
+                rt->message = "Sending report...";
+                rt->message_bad = false;
+                std::thread([task, user_id, account_id = card.account_id,
+                             items = std::move(items)] {
+                    task->state =
+                        NpHandler::GetInstance().SendGriefReport(user_id, account_id, items) ? 1
+                                                                                             : 2;
+                }).detach();
+                break;
+            }
+            default:
+                break;
+            }
+        }
+        EndDisabled();
+    }
+
+    SetCursorPos({CARD_WIDTH - CLOSE_BUTTON_SIZE.x - 16.0f, button_y});
+    if (Button("Close##btn", CLOSE_BUTTON_SIZE)) {
+        Finish(Result::USER_CANCELED);
+    }
+    if (first_render) {
+        SetItemCurrentNavFocus();
+    }
+    PopStyleVar();
+    PopStyleColor();
 }
 
 } // namespace Libraries::Np::NpProfileDialog

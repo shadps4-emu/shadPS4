@@ -49,6 +49,7 @@ bool RIF::Open(const std::vector<u8>& ridx_buffer, const std::vector<u8>& rifa_b
 
     service_id = "";
     license_only_entitlements.clear();
+    all_entitlements.clear();
 
     RIDXHeader ridx_header{};
     std::memcpy(&ridx_header, ridx_data, sizeof(ridx_header));
@@ -89,12 +90,40 @@ bool RIF::Open(const std::vector<u8>& ridx_buffer, const std::vector<u8>& rifa_b
             continue;
         }
 
+        std::string entitlement_id(
+            entry.entitlement_label,
+            strnlen(entry.entitlement_label, sizeof(entry.entitlement_label)));
+        all_entitlements.emplace(entitlement_id, rif);
+
         // License-only content has a specific type ID. Ignore anything else.
         if (rif.content_type == RIF_CONTENT_TYPE_PS4AL) {
-            std::string entitlement_id(entry.entitlement_label, sizeof(entry.entitlement_label));
             license_only_entitlements.emplace(entitlement_id, rif);
         }
     }
 
     return true;
+}
+
+std::optional<u32> RIF::GetSkuFlag() const {
+    for (const auto& [label, rif] : all_entitlements) {
+        if (rif.content_type == 0x1a00 || rif.content_type == 0x001a) {
+            u16 val_le = static_cast<u16>(rif.sku_flag);
+            u16 val_be = std::byteswap(val_le);
+            u16 flag = (val_be != 0 && val_be < 0x100) ? val_be : val_le;
+            if (flag != 0) {
+                return flag;
+            }
+        }
+    }
+    return std::nullopt;
+}
+
+bool RIF::GetEntitlementKey(std::string_view label, std::span<u8, 16> out_key) const {
+    auto it = all_entitlements.find(std::string(label));
+    if (it != all_entitlements.end()) {
+        std::memcpy(out_key.data(), &it->second.encrypted_secret[RIF_SECRET_ENTITLEMENT_KEY_OFFSET],
+                    16);
+        return true;
+    }
+    return false;
 }

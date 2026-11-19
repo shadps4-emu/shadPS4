@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -75,6 +75,14 @@ struct RedZonePatchResult {
 /// Registers a module for patching, providing an area to generate trampoline code.
 void RegisterPatchModule(void* module_ptr, u64 module_size, void* trampoline_area_ptr,
                          u64 trampoline_area_size);
+
+/// Fixed-point bit shift for guest TSC frequency scaling factor (4.60 fixed-point).
+constexpr u32 GuestTscMultiplierShift = 60;
+
+/// Updates the guest TSC scaling factor when CPU/TSC frequency changes.
+void UpdateGuestTscMultiplier();
+const u64* GetGuestTscMultiplierPtr();
+u64 GetGuestTscMultiplier();
 
 /// Applies CPU patches that need to be done before beginning executions.
 void PrePatchInstructions(u64 segment_addr, u64 segment_size);
