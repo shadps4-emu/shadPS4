@@ -108,6 +108,21 @@ public:
     // Avatar URL returned by the server.
     std::string GetAvatarUrl(s32 user_id) const;
 
+    // What the profile dialog shows about a player.
+    struct ProfileCard {
+        bool ok = false; // the profile was found and loaded
+        std::string online_id;
+        std::string account_id;      // decimal
+        std::string relation;        // "me", "friend", "requesting friend", "requested friend",
+                                     // "blocked", "friend of friends" or "no relationship"
+        bool custom_picture = false; // the player picked their avatar (not a stock default)
+        std::vector<u8> avatar_png;  // empty when there is none or it could not be loaded
+    };
+
+    ProfileCard FetchProfileCard(s32 user_id, const std::string& target) const;
+    bool SendGriefReport(s32 user_id, const std::string& account_id,
+                         const std::vector<std::string>& items) const;
+
     // 64-bit account ID assigned by the server.
     OrbisNpAccountId GetAccountId(s32 user_id) const;
 
