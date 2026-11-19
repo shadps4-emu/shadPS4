@@ -9,6 +9,9 @@ namespace Shader::IR {
 // https://hexrat.cc/data/pdf/optimization/opt3.pdf
 
 void ComputeDominators(const IR::BlockList& post_order) {
+    for (IR::Block* block : post_order) {
+        block->immediate_dominator = nullptr;
+    }
     IR::Block* const entry = post_order.back();
     entry->immediate_dominator = entry;
 
