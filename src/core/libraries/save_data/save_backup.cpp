@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
@@ -302,6 +302,11 @@ bool IsBackupExecutingFor(const std::filesystem::path& save_path) {
     const auto& it =
         std::ranges::find(g_backup_queue, save_path, [](const auto& v) { return v.save_path; });
     return it != g_backup_queue.end() && !it->done;
+}
+
+bool HasPendingEvents() {
+    std::scoped_lock lk{g_backup_queue_mutex};
+    return !g_backup_queue.empty() || g_backup_status == WorkerStatus::Running;
 }
 
 std::filesystem::path MakeBackupPath(const std::filesystem::path& save_path) {

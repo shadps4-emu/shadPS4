@@ -17,6 +17,9 @@ s32 PS4_SYSV_ABI internal__Mtxinit(Libraries::Kernel::PthreadMutexT* mtx, const 
 s32 PS4_SYSV_ABI internal__Mtxlock(Libraries::Kernel::PthreadMutexT* mtx);
 s32 PS4_SYSV_ABI internal__Mtxunlock(Libraries::Kernel::PthreadMutexT* mtx);
 s32 PS4_SYSV_ABI internal__Mtxdst(Libraries::Kernel::PthreadMutexT* mtx);
+s32 PS4_SYSV_ABI internal__cxa_guard_acquire(u64* guard);
+void PS4_SYSV_ABI internal__cxa_guard_release(u64* guard);
+void PS4_SYSV_ABI internal__cxa_guard_abort(u64* guard);
 
 void RegisterlibSceLibcInternalThreads(Core::Loader::SymbolsResolver* sym);
 } // namespace Libraries::LibcInternal
