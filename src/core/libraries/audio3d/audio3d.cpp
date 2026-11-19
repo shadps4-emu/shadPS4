@@ -762,12 +762,12 @@ s32 PS4_SYSV_ABI sceAudio3dPortClose(const OrbisAudio3dPortId port_id) {
         std::scoped_lock lock{port.mutex};
 
         if (port.audio_out_handle >= 0) {
-            AudioOut::sceAudioOutClose(port.audio_out_handle);
+            AudioOut::ForceClosePort(port.audio_out_handle);
             port.audio_out_handle = -1;
         }
 
         for (const auto& aout : port.audioout_ports) {
-            AudioOut::sceAudioOutClose(aout.handle);
+            AudioOut::ForceClosePort(aout.handle);
         }
         port.audioout_ports.clear();
 
