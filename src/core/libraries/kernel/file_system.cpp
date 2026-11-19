@@ -1246,7 +1246,11 @@ s32 PS4_SYSV_ABI posix_lstat(const char* path, OrbisKernelStat* sb) {
 s32 PS4_SYSV_ABI sceKernelStat(const char* path, OrbisKernelStat* sb) {
     s32 result = posix_stat(path, sb);
     if (result < 0) {
-        LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
+        if (*__Error() == POSIX_ENOENT) {
+            LOG_INFO(Kernel_Fs, "no entry for {}", path);
+        } else {
+            LOG_ERROR(Kernel_Fs, "error = {} for {}", *__Error(), path);
+        }
         return ErrnoToSceKernelError(*__Error());
     }
     return result;
