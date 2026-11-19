@@ -11,6 +11,7 @@
 #include <imgui.h>
 
 #include "common/types.h"
+#include "core/emulator_settings.h"
 #include "core/libraries/np/np_handler/np_handler.h"
 #include "imgui/imgui_layer.h"
 #include "imgui/invitation_prompt_layer.h"
@@ -168,7 +169,7 @@ void InvitationPromptUI::Draw() {
             g_back_held_secs = 0.0f;
         }
     } else {
-        // Stage 2 -> 1: Circle (nav cancel) or Escape returns control to the game.
+        // Stage 2 -> 1: nav cancel or Escape returns control to the game.
         if (ImGui::IsKeyPressed(ImGuiKey_GamepadFaceRight, false) ||
             ImGui::IsKeyPressed(ImGuiKey_Escape, false)) {
             SetFocused(false);
@@ -225,8 +226,11 @@ void InvitationPromptUI::Draw() {
         }
 
         ImGui::Spacing();
-        ImGui::TextDisabled(g_focused ? "D-Pad: select   Cross: confirm   Circle/Esc: back to game"
-                                      : "Hold Share/Back to respond, or click");
+        const char* focused_hint = EmulatorSettings.IsCircleEnter()
+                                       ? "D-Pad: select   ○: confirm   ✕/Esc: back to game"
+                                       : "D-Pad: select   ✕: confirm   ○/Esc: back to game";
+        ImGui::TextDisabled("%s",
+                            g_focused ? focused_hint : "Hold Share/Back to respond, or click");
     }
     ImGui::End();
 }
