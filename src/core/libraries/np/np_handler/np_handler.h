@@ -108,6 +108,21 @@ public:
     // Avatar URL returned by the server.
     std::string GetAvatarUrl(s32 user_id) const;
 
+    // What the profile dialog shows about a player.
+    struct ProfileCard {
+        bool ok = false; // the profile was found and loaded
+        std::string online_id;
+        std::string account_id;      // decimal
+        std::string relation;        // "me", "friend", "requesting friend", "requested friend",
+                                     // "blocked", "friend of friends" or "no relationship"
+        bool custom_picture = false; // the player picked their avatar (not a stock default)
+        std::vector<u8> avatar_png;  // empty when there is none or it could not be loaded
+    };
+
+    ProfileCard FetchProfileCard(s32 user_id, const std::string& target) const;
+    bool SendGriefReport(s32 user_id, const std::string& account_id,
+                         const std::vector<std::string>& items) const;
+
     // 64-bit account ID assigned by the server.
     OrbisNpAccountId GetAccountId(s32 user_id) const;
 
@@ -149,6 +164,55 @@ public:
     // Dismisses an invitation locally by dropping it from the stash. No server call (a declined
     // invite is left unconsumed and simply ages out server-side).
     void DeclineSessionInvitation(s32 user_id, const std::string& invitation_id);
+
+    // Game custom data (Game Custom Data Web API on shadNet), used by the GameCustomDataDialog.
+    struct GameCustomDataToSend {
+        std::vector<std::string> to; // decimal account IDs or online IDs, 1..16
+        std::string message;
+        std::string data_name;
+        std::string data_description;
+        std::vector<std::pair<std::string, std::string>> localized_names; // (npLanguage, text)
+        std::vector<std::pair<std::string, std::string>> localized_descriptions;
+        s32 expire_minutes = 0; // 0 = never expires
+        std::vector<std::string> platforms;
+        bool is_url = false;
+        std::string url;
+        bool with_item_id = false;
+        std::vector<u8> game_data;
+        std::vector<u8> thumbnail;
+    };
+    struct GameCustomDataResult {
+        bool ok = false;
+        int http_status = 0;
+        s64 error_code = 0;  // Web API error code from the response, when there was one
+        std::string message; // what went wrong, for the dialog and the log
+    };
+    // POST /v1/gameCustomData/items. Blocking, call it off the render thread.
+    GameCustomDataResult SendGameCustomData(s32 user_id, const GameCustomDataToSend& item);
+
+    struct ReceivedGameCustomData {
+        s64 item_id = 0;
+        std::string from_online_id;
+        OrbisNpAccountId from_account_id = 0;
+        std::string received_date;
+        std::string expired_date;
+        bool used = false;
+        bool is_url = false;
+        std::string url; // empty once expired
+        std::string message;
+        std::string data_name;
+        std::string data_description;
+        std::vector<std::string> platforms;
+        std::vector<u8> thumbnail;
+    };
+    // Lists what the user received in the running game (newest first), with the message, name,
+    // description and thumbnail of each. Blocking; call it off the render thread.
+    GameCustomDataResult ListReceivedGameCustomData(s32 user_id, const std::string& np_language,
+                                                    std::vector<ReceivedGameCustomData>& out);
+
+    // Raises ORBIS_SYSTEM_SERVICE_EVENT_GAME_CUSTOM_DATA (0x10000004): the user chose to use the
+    // received item, which the game then reads through the Game Custom Data Web API.
+    void PostGameCustomDataEvent(s32 user_id, s64 item_id);
 
     // Local IP address (network byte order) as seen at connect time.
     u32 GetLocalIpAddr(s32 user_id) const;

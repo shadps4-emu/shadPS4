@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cstring>
@@ -32,19 +32,24 @@ void Regs::SetDefaults() {
 
     // Individual context regs values
     reg_array[ContextRegWordOffset + 0x000d] = 0x40004000u;
+    reg_array[ContextRegWordOffset + 0x0083] = 0x0000ffffu;
+    reg_array[ContextRegWordOffset + 0x008e] = 0xffffffffu;
+    reg_array[ContextRegWordOffset + 0x008f] = 0xffffffffu;
     reg_array[ContextRegWordOffset + 0x01b6] = 0x00000002u;
     reg_array[ContextRegWordOffset + 0x0204] = 0x00090000u;
     reg_array[ContextRegWordOffset + 0x0205] = 0x00000004u;
     reg_array[ContextRegWordOffset + 0x0295] = 0x00000100u;
     reg_array[ContextRegWordOffset + 0x0296] = 0x00000080u;
     reg_array[ContextRegWordOffset + 0x0297] = 0x00000002u;
-    reg_array[ContextRegWordOffset + 0x02aa] = 0x00001000u;
+    reg_array[ContextRegWordOffset + 0x02aa] = 0x000000ffu;
     reg_array[ContextRegWordOffset + 0x02f7] = 0x00001000u;
     reg_array[ContextRegWordOffset + 0x02f9] = 0x00000005u;
     reg_array[ContextRegWordOffset + 0x02fa] = 0x3f800000u;
     reg_array[ContextRegWordOffset + 0x02fb] = 0x3f800000u;
     reg_array[ContextRegWordOffset + 0x02fc] = 0x3f800000u;
     reg_array[ContextRegWordOffset + 0x02fd] = 0x3f800000u;
+    reg_array[ContextRegWordOffset + 0x030e] = 0xffffffffu;
+    reg_array[ContextRegWordOffset + 0x030f] = 0xffffffffu;
     reg_array[ContextRegWordOffset + 0x0316] = 0x0000000eu;
     reg_array[ContextRegWordOffset + 0x0317] = 0x00000010u;
 }
@@ -90,6 +95,7 @@ static_assert(GFX6_3D_REG_INDEX(blend_control) == 0xA1E0);
 static_assert(GFX6_3D_REG_INDEX(index_base_address) == 0xA1F9);
 static_assert(GFX6_3D_REG_INDEX(draw_initiator) == 0xA1FC);
 static_assert(GFX6_3D_REG_INDEX(depth_control) == 0xA200);
+static_assert(GFX6_3D_REG_INDEX(depth_eqaa) == 0xA201);
 static_assert(GFX6_3D_REG_INDEX(color_control) == 0xA202);
 static_assert(GFX6_3D_REG_INDEX(clipper_control) == 0xA204);
 static_assert(GFX6_3D_REG_INDEX(viewport_control) == 0xA206);
@@ -114,11 +120,13 @@ static_assert(GFX6_3D_REG_INDEX(vgt_gsvs_ring_itemsize) == 0xA2AC);
 static_assert(GFX6_3D_REG_INDEX(stage_enable) == 0xA2D5);
 static_assert(GFX6_3D_REG_INDEX(vgt_gs_vert_itemsize[0]) == 0xA2D7);
 static_assert(GFX6_3D_REG_INDEX(tess_config) == 0xA2DB);
+static_assert(GFX6_3D_REG_INDEX(alpha_to_mask) == 0xA2DC);
 static_assert(GFX6_3D_REG_INDEX(poly_offset) == 0xA2DF);
 static_assert(GFX6_3D_REG_INDEX(vgt_gs_instance_cnt) == 0xA2E4);
 static_assert(GFX6_3D_REG_INDEX(vgt_strmout_config) == 0xA2E5);
 static_assert(GFX6_3D_REG_INDEX(vgt_strmout_buffer_config) == 0xA2E6);
 static_assert(GFX6_3D_REG_INDEX(aa_config) == 0xA2F8);
+static_assert(GFX6_3D_REG_INDEX(aa_mask) == 0xA30E);
 static_assert(GFX6_3D_REG_INDEX(color_buffers[0].base_address) == 0xA318);
 static_assert(GFX6_3D_REG_INDEX(color_buffers[0].pitch) == 0xA319);
 static_assert(GFX6_3D_REG_INDEX(color_buffers[0].slice) == 0xA31A);

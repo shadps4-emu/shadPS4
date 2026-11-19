@@ -984,13 +984,13 @@ int PS4_SYSV_ABI sceSaveDataGetEventInfo() {
     return ORBIS_OK;
 }
 
-Error PS4_SYSV_ABI sceSaveDataGetEventResult(const OrbisSaveDataEventParam*,
+Error PS4_SYSV_ABI sceSaveDataGetEventResult(const OrbisSaveDataEventParam* param,
                                              OrbisSaveDataEvent* event) {
     if (!g_initialized) {
         LOG_INFO(Lib_SaveData, "called without initialize");
         return setNotInitializedError();
     }
-    if (event == nullptr) {
+    if (event == nullptr || param != nullptr) {
         LOG_INFO(Lib_SaveData, "called with invalid parameter");
         return Error::PARAMETER;
     }
@@ -998,7 +998,10 @@ Error PS4_SYSV_ABI sceSaveDataGetEventResult(const OrbisSaveDataEventParam*,
 
     auto last_event = Backup::PopLastEvent();
     if (!last_event.has_value()) {
-        return Error::NO_EVENT;
+        if (Backup::HasPendingEvents()) {
+            return Error::EVENT_BUSY;
+        }
+        return Error::NOT_FOUND;
     }
 
     event->type = last_event->origin;
