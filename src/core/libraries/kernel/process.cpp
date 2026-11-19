@@ -3,6 +3,7 @@
 
 #include "common/elf_info.h"
 #include "common/logging/log.h"
+#include "core/cpu_patches.h"
 #include "core/emulator_settings.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/kernel/orbis_error.h"
@@ -40,6 +41,7 @@ s32 PS4_SYSV_ABI sceKernelSwitchToNeoMode(u32 flags) {
         return ORBIS_KERNEL_ERROR_ENODEV;
     }
     g_neo_mode = 1;
+    Core::UpdateGuestTscMultiplier();
     return 0;
 }
 
