@@ -170,8 +170,9 @@ private:
 
     void DownloadMemory(const Buffer* arena, VAddr device_addr, u64 size, bool async);
 
+    enum class UploadUsage { General, ShaderDma };
     bool SynchronizeMemory(const Buffer* arena, VAddr device_addr, u32 size, bool is_written,
-                           bool is_texel_buffer);
+                           bool is_texel_buffer, UploadUsage usage = UploadUsage::General);
 
     bool SynchronizeMemoryFromImage(const Buffer* arena, VAddr device_addr, u32 size);
 

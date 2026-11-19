@@ -213,9 +213,7 @@ void Rasterizer::Draw(bool is_indexed, u32 index_offset) {
         BindIndexBuffer(index_offset);
     }
 
-    if (needs_barrier) {
-        runtime.FlushBarriers();
-    }
+    runtime.FlushDrawBarriers(needs_barrier);
 
     pipeline->BindResources(set_writes, push_data);
     UpdateDynamicState(pipeline, is_indexed);
@@ -287,9 +285,7 @@ void Rasterizer::DrawIndirect(bool is_indexed, VAddr arg_address, u32 offset, u3
                                    vk::AccessFlagBits2::eIndirectCommandRead);
     }
 
-    if (needs_barrier) {
-        runtime.FlushBarriers();
-    }
+    runtime.FlushDrawBarriers(needs_barrier);
 
     pipeline->BindResources(set_writes, push_data);
     UpdateDynamicState(pipeline, is_indexed);
@@ -344,9 +340,7 @@ void Rasterizer::DispatchDirect() {
         return;
     }
 
-    if (needs_barrier) {
-        runtime.FlushBarriers();
-    }
+    runtime.FlushDrawBarriers(needs_barrier);
 
     scheduler.EndRendering();
     pipeline->BindResources(set_writes, push_data);
@@ -379,9 +373,7 @@ void Rasterizer::DispatchIndirect(VAddr address, u32 offset, u32 size) {
     needs_barrier |= runtime.IsBufferAccessed(buffer, base, size);
     bound_buffers.emplace_back(buffer, base, size, vk::AccessFlagBits2::eIndirectCommandRead);
 
-    if (needs_barrier) {
-        runtime.FlushBarriers();
-    }
+    runtime.FlushDrawBarriers(needs_barrier);
 
     scheduler.EndRendering();
     pipeline->BindResources(set_writes, push_data);
@@ -515,7 +507,7 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
     })();
 
     for (const auto& [buffer, offset, size] : dma_ranges) {
-        needs_barrier |= runtime.IsBufferAccessed(buffer, offset, size);
+        needs_barrier |= runtime.HasGeneralBufferWrite(buffer, offset, size);
         bound_buffers.emplace_back(buffer, offset, size, vk::AccessFlagBits2::eShaderRead);
     }
 
