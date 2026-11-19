@@ -397,7 +397,8 @@ BufferCache::DmaBufferRangeList BufferCache::SynchronizeDmaBuffers(
             const u64 first_block = range_start >> block_shift;
             const u64 last_block = (range_start + range_size - 1) >> block_shift;
             EnsureResident(current_arena, first_block, last_block);
-            SynchronizeMemory(current_arena, range_start, range_size, false, false);
+            SynchronizeMemory(current_arena, range_start, range_size, false, false,
+                              UploadUsage::ShaderDma);
             ranges.push_back({current_arena, current_arena->Offset(range_start), range_size});
             current_arena = nullptr;
         }
@@ -559,7 +560,7 @@ void BufferCache::EnsureResident(const Buffer* arena, u64 first_block, u64 last_
 }
 
 bool BufferCache::SynchronizeMemory(const Buffer* arena, VAddr device_addr, u32 size,
-                                    bool is_written, bool is_texel_buffer) {
+                                    bool is_written, bool is_texel_buffer, UploadUsage usage) {
     boost::container::small_vector<vk::BufferCopy, 4> copies;
     size_t total_size_bytes{};
     memory_tracker->ForEachUploadRange(device_addr, size, is_written, [&](u64 addr, u64 size) {
@@ -574,7 +575,10 @@ bool BufferCache::SynchronizeMemory(const Buffer* arena, VAddr device_addr, u32 
             copy.dstOffset -= arena->cpu_addr;
         }
         staging.Flush();
-        runtime.CopyBuffer(staging.buffer, arena, copies);
+        const auto copy_usage = usage == UploadUsage::ShaderDma
+                                    ? Vulkan::Runtime::CopyUsage::ShaderDmaUpload
+                                    : Vulkan::Runtime::CopyUsage::General;
+        runtime.CopyBuffer(staging.buffer, arena, copies, copy_usage);
     }
     if (is_texel_buffer && !is_written) {
         return SynchronizeMemoryFromImage(arena, device_addr, size);

@@ -34,8 +34,10 @@ public:
 
     void TickFrame();
 
+    enum class CopyUsage { General, ShaderDmaUpload };
+
     void CopyBuffer(const VideoCore::Buffer* src, const VideoCore::Buffer* dst,
-                    std::span<const vk::BufferCopy> copies);
+                    std::span<const vk::BufferCopy> copies, CopyUsage usage = CopyUsage::General);
 
     void FillBuffer(const VideoCore::Buffer* dst, u64 offset, u64 size, u32 value);
 
@@ -76,6 +78,9 @@ public:
     bool IsBufferAccessed(const VideoCore::Buffer* handle, u64 offset, u64 size,
                           bool check_read_access = false);
 
+    bool HasGeneralBufferWrite(const VideoCore::Buffer* handle, u64 offset, u64 size);
+
+    void FlushDrawBarriers(bool needs_barrier);
     void FlushBarriers();
 
 private:
@@ -94,6 +99,11 @@ private:
     };
     BufferBarriers* resource{};
     std::vector<BufferBarriers> resources;
+    struct DmaUpload {
+        const VideoCore::Buffer* buffer;
+        Interval range;
+    };
+    std::vector<DmaUpload> dma_uploads;
     VideoCore::Image::Barriers image_barriers;
     vk::MemoryBarrier2 memory_barrier{};
 };
