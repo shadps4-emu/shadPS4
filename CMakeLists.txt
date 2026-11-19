@@ -304,6 +304,8 @@ set(AUDIO_LIB src/core/libraries/audio/audioin.cpp
               src/core/libraries/audio/audioout.h
               src/core/libraries/audio/audioout_backend.h
               src/core/libraries/audio/audioout_error.h
+              src/core/libraries/audio/audioout_mastering.cpp
+              src/core/libraries/audio/audioout_mastering.h
               src/core/libraries/audio/sdl_audio_out.cpp
               src/core/libraries/audio/openal_audio_out.cpp
               src/core/libraries/audio/openal_manager.h
