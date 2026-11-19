@@ -1,6 +1,11 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
+#include <atomic>
+#include <cmath>
+#include <cstring>
+#include <iterator>
 #include <memory>
 #include <mutex>
 #include <shared_mutex>
@@ -18,6 +23,9 @@
 #include "core/libraries/audio/audioout_error.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/libs.h"
+#include "core/libraries/pad/pad_errors.h"
+#include "core/libraries/system/userservice.h"
+#include "core/user_settings.h"
 
 namespace Libraries::AudioOut {
 
@@ -28,6 +36,29 @@ std::mutex port_allocation_mutex;
 
 static std::unique_ptr<AudioOutBackend> audio;
 static std::atomic<int> lazy_init{0};
+
+// Mastering library state.
+struct MasteringState {
+    std::mutex mutex;
+    std::atomic<u32> generation{0};
+    bool initialized = false;
+    bool swap_eq_compressor = false;
+    u32 params_id = ORBIS_AUDIO_OUT_MASTERING_PARAMS_ID_DEFAULT;
+    OrbisAudioOutMasteringParamsV2 params{};
+};
+static MasteringState mastering;
+
+static void ResetMasteringParams() {
+    // Default setting after init: all modules bypassed (ORBIS_AUDIO_OUT_MASTERING_PRESET_OFF).
+    mastering.params = {};
+    mastering.params.paramsHeader.paramsId = ORBIS_AUDIO_OUT_MASTERING_PARAMS_ID_DEFAULT;
+    mastering.params.moduleBypassFlags = ORBIS_AUDIO_OUT_MASTERING_BYPASSED_PARAM_EQ |
+                                         ORBIS_AUDIO_OUT_MASTERING_BYPASSED_COMPRESSOR |
+                                         ORBIS_AUDIO_OUT_MASTERING_BYPASSED_MASTER_VOLUME |
+                                         ORBIS_AUDIO_OUT_MASTERING_BYPASSED_LIMITER;
+    mastering.params_id = ORBIS_AUDIO_OUT_MASTERING_PARAMS_ID_DEFAULT;
+    mastering.swap_eq_compressor = false;
+}
 
 // Port allocation ranges
 constexpr struct PortRange {
@@ -47,6 +78,8 @@ constexpr struct PortRange {
     {23, 23}, // AUX (127)
     {24, 24}, // Type 125
 };
+
+static std::atomic<u32> loudness_measurement{ORBIS_AUDIO_OUT_DEBUG_STATE_LOUDNESS_STOP};
 
 static AudioFormatInfo GetFormatInfo(const OrbisAudioOutParamFormat format) {
     static constexpr std::array<AudioFormatInfo, 8> format_infos = {{
@@ -130,6 +163,12 @@ static s32 GetPortType(s32 handle) {
     return (handle >> 16) & 0xFF;
 }
 
+static bool IsValidHandlePortType(s32 handle) {
+    const s32 port_type = GetPortType(handle);
+    return (port_type >= 0 && port_type <= 4) || port_type == 14 || port_type == 126 ||
+           port_type == 127;
+}
+
 static int AllocatePort(OrbisAudioOutPort type) {
     int range_idx = GetPortRange(type);
     if (range_idx < 0) {
@@ -162,6 +201,98 @@ void AdjustVol() {
     }
 }
 
+static void ApplyChannelBalance(void* buffer, u32 frames, const AudioFormatInfo& format,
+                                const std::array<s32, 8>& volume) {
+    const u32 num_channels = std::min<u32>(format.num_channels, ORBIS_AUDIO_OUT_CHANNEL_MAX);
+    if (buffer == nullptr || num_channels < 2) {
+        return;
+    }
+
+    const auto first = volume.begin();
+    const auto last = first + num_channels;
+    const s32 max_volume = *std::max_element(first, last);
+    if (max_volume <= 0 || std::all_of(first, last, [&](s32 v) { return v == max_volume; })) {
+        return;
+    }
+
+    std::array<float, ORBIS_AUDIO_OUT_CHANNEL_MAX> gain{};
+    for (u32 pos = 0; pos < num_channels; pos++) {
+        const u32 channel = (format.is_std && pos >= ORBIS_AUDIO_OUT_CHANNEL_LS) ? (pos ^ 2) : pos;
+        gain[pos] = static_cast<float>(std::max(volume[channel], 0)) / max_volume;
+    }
+
+    if (format.is_float) {
+        auto* samples = static_cast<float*>(buffer);
+        for (u32 frame = 0; frame < frames; frame++) {
+            for (u32 pos = 0; pos < num_channels; pos++) {
+                *samples++ *= gain[pos];
+            }
+        }
+    } else {
+        auto* samples = static_cast<s16*>(buffer);
+        for (u32 frame = 0; frame < frames; frame++) {
+            for (u32 pos = 0; pos < num_channels; pos++) {
+                *samples = static_cast<s16>(*samples * gain[pos]);
+                samples++;
+            }
+        }
+    }
+}
+
+static bool IsMasteredPort(OrbisAudioOutPort type) {
+    return type == OrbisAudioOutPort::Main || type == OrbisAudioOutPort::Bgm ||
+           type == OrbisAudioOutPort::Audio3d;
+}
+
+static void ApplyMastering(PortOut& port) {
+    if (!IsMasteredPort(port.type)) {
+        return;
+    }
+
+    const u32 generation = mastering.generation.load(std::memory_order_acquire);
+    if (generation != port.mastering_generation) {
+        std::scoped_lock lock{mastering.mutex};
+        if (mastering.initialized) {
+            port.mastering.SetParams(&mastering.params, mastering.params_id,
+                                     mastering.swap_eq_compressor);
+        } else {
+            port.mastering.Disable();
+        }
+        port.mastering_generation = mastering.generation.load(std::memory_order_acquire);
+    }
+
+    if (!port.mastering.IsActive()) {
+        return;
+    }
+
+    const u32 num_channels =
+        std::min<u32>(port.format_info.num_channels, ORBIS_AUDIO_OUT_CHANNEL_MAX);
+    const s32 max_volume =
+        *std::max_element(port.volume.begin(), port.volume.begin() + num_channels);
+    const float pre_gain = static_cast<float>(max_volume) / ORBIS_AUDIO_OUT_VOLUME_0DB;
+
+    port.mastering.Process(port.output_buffer, port.buffer_frames, num_channels,
+                           port.format_info.is_float, port.format_info.is_std, pre_gain);
+}
+
+static void ApplyGain(void* buffer, u32 frames, const AudioFormatInfo& format, float gain) {
+    if (buffer == nullptr || gain == 1.0f) {
+        return;
+    }
+    const u32 num_samples = frames * format.num_channels;
+    if (format.is_float) {
+        auto* samples = static_cast<float*>(buffer);
+        for (u32 i = 0; i < num_samples; i++) {
+            samples[i] *= gain;
+        }
+    } else {
+        auto* samples = static_cast<s16*>(buffer);
+        for (u32 i = 0; i < num_samples; i++) {
+            samples[i] = static_cast<s16>(samples[i] * gain);
+        }
+    }
+}
+
 static void AudioOutputThread(std::shared_ptr<PortOut> port, const std::stop_token& stop) {
     {
         const auto thread_name = fmt::format("shadPS4:AudioOutputThread:{}", fmt::ptr(port.get()));
@@ -181,6 +312,17 @@ static void AudioOutputThread(std::shared_ptr<PortOut> port, const std::stop_tok
             }
 
             if (port->output_ready) {
+                ApplyChannelBalance(port->output_buffer, port->buffer_frames, port->format_info,
+                                    port->volume);
+                ApplyMastering(*port);
+                if (port->padspk_mixed_to_main) {
+                    // PADSPK audio mixed with MAIN is attenuated by the mix level.
+                    const float mix_gain =
+                        std::clamp(port->mixLevelPadSpk, 0, ORBIS_AUDIO_OUT_MIXLEVEL_PADSPK_0DB) /
+                        static_cast<float>(ORBIS_AUDIO_OUT_MIXLEVEL_PADSPK_0DB);
+                    ApplyGain(port->output_buffer, port->buffer_frames, port->format_info,
+                              mix_gain);
+                }
                 port->impl->Output(port->output_buffer);
                 port->output_ready = false;
                 port->last_output_time =
@@ -286,11 +428,32 @@ s32 PS4_SYSV_ABI sceAudioOutOpen(UserService::OrbisUserServiceUserId user_id,
         LOG_ERROR(Lib_AudioOut, "Invalid format");
         return ORBIS_AUDIO_OUT_ERROR_INVALID_FORMAT;
     }
-    const auto attr = param_type.attributes;
-    if (attr < OrbisAudioOutParamAttr::None || attr > OrbisAudioOutParamAttr::MixToMain) {
+    constexpr u32 known_attrs =
+        ORBIS_AUDIO_OUT_PARAM_ATTR_RESTRICTED | ORBIS_AUDIO_OUT_PARAM_ATTR_MIX_TO_MAIN;
+    if ((param_raw & ORBIS_AUDIO_OUT_PARAM_ATTR_MASK & ~known_attrs) != 0) {
         // TODO Handle attributes in output audio device
         LOG_ERROR(Lib_AudioOut, "Invalid format attribute");
         return ORBIS_AUDIO_OUT_ERROR_INVALID_FORMAT;
+    }
+    const bool is_user_port = port_type == OrbisAudioOutPort::Voice ||
+                              port_type == OrbisAudioOutPort::Personal ||
+                              port_type == OrbisAudioOutPort::PadSpk;
+    const bool is_shared_port = port_type == OrbisAudioOutPort::Main ||
+                                port_type == OrbisAudioOutPort::Bgm ||
+                                port_type == OrbisAudioOutPort::Aux;
+    if (is_user_port) {
+        if (user_id < 0 || user_id == UserService::ORBIS_USER_SERVICE_USER_ID_SYSTEM) {
+            LOG_ERROR(Lib_AudioOut, "Invalid user id {} for per-user port type {}", user_id,
+                      magic_enum::enum_name(port_type));
+            return ORBIS_DEVICE_SERVICE_ERROR_INVALID_USER;
+        }
+        if (UserManagement.GetUserByID(user_id) == nullptr) {
+            LOG_ERROR(Lib_AudioOut, "User {} is not logged in", user_id);
+            return ORBIS_DEVICE_SERVICE_ERROR_USER_NOT_LOGIN;
+        }
+    } else if (is_shared_port && user_id != UserService::ORBIS_USER_SERVICE_USER_ID_SYSTEM) {
+        LOG_WARNING(Lib_AudioOut, "Shared port type {} opened with user id {} instead of SYSTEM",
+                    magic_enum::enum_name(port_type), user_id);
     }
 
     std::unique_lock lock{port_allocation_mutex};
@@ -333,6 +496,13 @@ s32 PS4_SYSV_ABI sceAudioOutOpen(UserService::OrbisUserServiceUserId user_id,
             throw std::runtime_error("Failed to create audio backend");
         }
 
+        // A PADSPK port without a dedicated controller speaker device is mixed with MAIN.
+        port->padspk_mixed_to_main =
+            port->type == OrbisAudioOutPort::PadSpk && port->impl->SharesMainDevice();
+        if (port->padspk_mixed_to_main) {
+            LOG_INFO(Lib_AudioOut, "PADSPK port has no dedicated device: mixing with MAIN");
+        }
+
         // Allocate buffer
         port->output_buffer = std::malloc(port->BufferSize());
         if (!port->output_buffer) {
@@ -346,7 +516,7 @@ s32 PS4_SYSV_ABI sceAudioOutOpen(UserService::OrbisUserServiceUserId user_id,
         port->impl->SetVolume(port->volume);
 
     } catch (const std::bad_alloc&) {
-        return ORBIS_AUDIO_OUT_ERROR_OUT_OF_MEMORY;
+        return ORBIS_AUDIO_OUT_ERROR_MEMORY;
     } catch (const std::exception& e) {
         LOG_ERROR(Lib_AudioOut, "Failed to open audio port: {}", e.what());
         return ORBIS_AUDIO_OUT_ERROR_TRANS_EVENT;
@@ -364,9 +534,7 @@ s32 PS4_SYSV_ABI sceAudioOutOpen(UserService::OrbisUserServiceUserId user_id,
     return handle;
 }
 
-s32 PS4_SYSV_ABI sceAudioOutClose(s32 handle) {
-    LOG_INFO(Lib_AudioOut, "handle = {:#x}", handle);
-
+static s32 ClosePort(s32 handle, bool force) {
     if (lazy_init.load(std::memory_order_relaxed) == 0 || audio == nullptr) {
         LOG_ERROR(Lib_AudioOut, "Audio out not initialized");
         return ORBIS_AUDIO_OUT_ERROR_NOT_INIT;
@@ -395,9 +563,8 @@ s32 PS4_SYSV_ABI sceAudioOutClose(s32 handle) {
 
     std::shared_ptr<PortOut> port;
     {
-        std::unique_lock write_lock{port_table_mutex};
-        port = std::move(port_table[port_id]);
-        port_table[port_id].reset();
+        std::shared_lock read_lock{port_table_mutex};
+        port = port_table[port_id];
     }
 
     if (!port) {
@@ -405,13 +572,21 @@ s32 PS4_SYSV_ABI sceAudioOutClose(s32 handle) {
         return ORBIS_AUDIO_OUT_ERROR_NOT_OPENED;
     }
 
-    // Kick out any guest thread blocked in sceAudioOutOutput before joining.
     {
         std::unique_lock port_lock{port->mutex};
+        if (!force && port->output_waiters > 0) {
+            LOG_ERROR(Lib_AudioOut, "Port {} is busy outputting, cannot close", port_id);
+            return ORBIS_AUDIO_OUT_ERROR_BUSY;
+        }
         port->closing = true;
         port->output_ready = false;
     }
     port->output_cv.notify_all();
+
+    {
+        std::unique_lock write_lock{port_table_mutex};
+        port_table[port_id].reset();
+    }
 
     // Stop the output thread.
     port->output_thread.Stop();
@@ -426,6 +601,16 @@ s32 PS4_SYSV_ABI sceAudioOutClose(s32 handle) {
     return ORBIS_OK;
 }
 
+s32 PS4_SYSV_ABI sceAudioOutClose(s32 handle) {
+    LOG_INFO(Lib_AudioOut, "handle = {:#x}", handle);
+    return ClosePort(handle, false);
+}
+
+s32 ForceClosePort(s32 handle) {
+    LOG_INFO(Lib_AudioOut, "handle = {:#x}", handle);
+    return ClosePort(handle, true);
+}
+
 s32 PS4_SYSV_ABI sceAudioOutGetLastOutputTime(s32 handle, u64* output_time) {
     if (lazy_init.load(std::memory_order_relaxed) == 0 || audio == nullptr) {
         LOG_ERROR(Lib_AudioOut, "audio is not init");
@@ -436,6 +621,11 @@ s32 PS4_SYSV_ABI sceAudioOutGetLastOutputTime(s32 handle, u64* output_time) {
     if (port_id < 0) {
         LOG_DEBUG(Lib_AudioOut, "Invalid port id for handle {:#x}", handle);
         return port_id;
+    }
+
+    if (!IsValidHandlePortType(handle)) {
+        LOG_ERROR(Lib_AudioOut, "Invalid port type");
+        return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT_TYPE;
     }
 
     if (!output_time) {
@@ -472,6 +662,11 @@ s32 PS4_SYSV_ABI sceAudioOutGetPortState(s32 handle, OrbisAudioOutPortState* sta
         return port_id;
     }
 
+    if (!IsValidHandlePortType(handle)) {
+        LOG_ERROR(Lib_AudioOut, "Invalid port type");
+        return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT_TYPE;
+    }
+
     if (!state) {
         LOG_ERROR(Lib_AudioOut, "Invalid pointer");
         return ORBIS_AUDIO_OUT_ERROR_INVALID_POINTER;
@@ -490,26 +685,50 @@ s32 PS4_SYSV_ABI sceAudioOutGetPortState(s32 handle, OrbisAudioOutPortState* sta
 
     std::unique_lock lock{port->mutex};
 
+    const u8 format_channels = port->format_info.num_channels;
+
+    const auto shared_device_channels = [&]() -> u8 {
+        if (format_channels <= 2) {
+            return format_channels;
+        }
+        const u32 out = port->impl ? port->impl->GetOutputChannels() : 0;
+        return (out == 6 || out == 8) ? static_cast<u8>(out) : u8{2};
+    };
+
+    bool reports_external = false;
+
+    state->volume = -1; // only meaningful for PADSPK
+
     switch (port->type) {
     case OrbisAudioOutPort::Main:
     case OrbisAudioOutPort::Bgm:
+        state->output = ORBIS_AUDIO_OUT_STATE_OUTPUT_CONNECTED_PRIMARY;
+        state->channel = shared_device_channels();
+        reports_external = true;
+        break;
     case OrbisAudioOutPort::Audio3d:
         state->output = ORBIS_AUDIO_OUT_STATE_OUTPUT_CONNECTED_PRIMARY;
-        state->channel = port->format_info.num_channels > 2 ? 2 : port->format_info.num_channels;
+        state->channel = shared_device_channels();
         break;
     case OrbisAudioOutPort::Voice:
     case OrbisAudioOutPort::Personal:
         state->output = ORBIS_AUDIO_OUT_STATE_OUTPUT_CONNECTED_HEADPHONE;
-        state->channel = 1;
+        state->channel = format_channels;
+        reports_external = true;
         break;
     case OrbisAudioOutPort::PadSpk:
-        state->output = ORBIS_AUDIO_OUT_STATE_OUTPUT_CONNECTED_TERTIARY;
+        if (port->padspk_mixed_to_main) {
+            state->output = ORBIS_AUDIO_OUT_STATE_OUTPUT_CONNECTED_PRIMARY;
+        } else {
+            state->output = ORBIS_AUDIO_OUT_STATE_OUTPUT_CONNECTED_TERTIARY;
+            state->volume = 127; // max
+        }
         state->channel = 1;
-        state->volume = 127; // max
+        reports_external = true;
         break;
     case OrbisAudioOutPort::Aux:
-        state->output = ORBIS_AUDIO_OUT_STATE_OUTPUT_CONNECTED_EXTERNAL;
-        state->channel = 0;
+        state->output = ORBIS_AUDIO_OUT_STATE_OUTPUT_UNKNOWN;
+        state->channel = 0; // ORBIS_AUDIO_OUT_STATE_CHANNEL_UNKNOWN
         break;
     default:
         state->output = ORBIS_AUDIO_OUT_STATE_OUTPUT_UNKNOWN;
@@ -517,10 +736,13 @@ s32 PS4_SYSV_ABI sceAudioOutGetPortState(s32 handle, OrbisAudioOutPortState* sta
         break;
     }
 
-    if (port->type != OrbisAudioOutPort::PadSpk) {
-        state->volume = -1; // invalid
+    if (reports_external && !port->is_restricted) {
+        state->output |= ORBIS_AUDIO_OUT_STATE_OUTPUT_CONNECTED_EXTERNAL;
     }
 
+    state->reserved8_1[0] = 0;
+    state->reserved64[0] = 0;
+    state->reserved64[1] = 0;
     state->rerouteCounter = 0;
     state->flag = 0;
     LOG_DEBUG(Lib_AudioOut,
@@ -532,7 +754,7 @@ s32 PS4_SYSV_ABI sceAudioOutGetPortState(s32 handle, OrbisAudioOutPortState* sta
 }
 
 s32 PS4_SYSV_ABI sceAudioOutOutput(s32 handle, void* ptr) {
-    LOG_TRACE(Lib_AudioOut, "(STUBBED) called, handle={:#x}, ptr={}", handle, fmt::ptr(ptr));
+    LOG_TRACE(Lib_AudioOut, "called, handle={:#x}, ptr={}", handle, fmt::ptr(ptr));
 
     if (lazy_init.load(std::memory_order_relaxed) == 0 || audio == nullptr) {
         LOG_ERROR(Lib_AudioOut, "audio is not init");
@@ -572,7 +794,9 @@ s32 PS4_SYSV_ABI sceAudioOutOutput(s32 handle, void* ptr) {
     s32 samples_sent = 0;
     {
         std::unique_lock lock{port->mutex};
+        port->output_waiters++;
         port->output_cv.wait(lock, [&] { return !port->output_ready || port->closing; });
+        port->output_waiters--;
 
         if (port->closing) {
             LOG_DEBUG(Lib_AudioOut, "Port {} closed while waiting for drain", port_id);
@@ -582,7 +806,7 @@ s32 PS4_SYSV_ABI sceAudioOutOutput(s32 handle, void* ptr) {
         if (ptr != nullptr) {
             std::memcpy(port->output_buffer, ptr, port->BufferSize());
             port->output_ready = true;
-            samples_sent = port->buffer_frames * port->format_info.num_channels;
+            samples_sent = port->buffer_frames;
         }
     }
 
@@ -591,13 +815,13 @@ s32 PS4_SYSV_ABI sceAudioOutOutput(s32 handle, void* ptr) {
 
 s32 PS4_SYSV_ABI sceAudioOutOutputs(OrbisAudioOutOutputParam* param, u32 num) {
     if (param) {
-        LOG_TRACE(Lib_AudioOut, "(STUBBED) called, param={}, num={}", fmt::ptr(param), num);
+        LOG_TRACE(Lib_AudioOut, "called, param={}, num={}", fmt::ptr(param), num);
         for (u32 i = 0; i < num; i++) {
             LOG_TRACE(Lib_AudioOut, "  [{}] handle={:#x}, ptr={}", i, param[i].handle,
                       fmt::ptr(param[i].ptr));
         }
     } else {
-        LOG_TRACE(Lib_AudioOut, "(STUBBED) called, param=nullptr, num={}", num);
+        LOG_TRACE(Lib_AudioOut, "called, param=nullptr, num={}", num);
     }
     if (lazy_init.load(std::memory_order_relaxed) == 0 || audio == nullptr) {
         LOG_ERROR(Lib_AudioOut, "audio is not init");
@@ -674,8 +898,10 @@ s32 PS4_SYSV_ABI sceAudioOutOutputs(OrbisAudioOutOutputParam* param, u32 num) {
 
     // Wait for all ports to be ready
     for (u32 i = 0; i < num; i++) {
+        ports[i]->output_waiters++;
         ports[i]->output_cv.wait(locks[i],
                                  [&] { return !ports[i]->output_ready || ports[i]->closing; });
+        ports[i]->output_waiters--;
 
         if (ports[i]->closing) {
             LOG_DEBUG(Lib_AudioOut, "Port closed while waiting for drain");
@@ -724,11 +950,6 @@ s32 PS4_SYSV_ABI sceAudioOutSetVolume(s32 handle, s32 flag, s32* vol) {
         return ORBIS_AUDIO_OUT_ERROR_INVALID_POINTER;
     }
 
-    if (*vol > ORBIS_AUDIO_OUT_VOLUME_0DB) {
-        LOG_ERROR(Lib_AudioOut, "Invalid volume");
-        return ORBIS_AUDIO_OUT_ERROR_INVALID_VOLUME;
-    }
-
     // Get port with shared lock (read-only access to table)
     std::shared_ptr<PortOut> port;
     {
@@ -743,23 +964,35 @@ s32 PS4_SYSV_ABI sceAudioOutSetVolume(s32 handle, s32 flag, s32* vol) {
 
     std::unique_lock lock{port->mutex};
 
-    // Set volumes based on flags
-    if (flag & ORBIS_AUDIO_VOLUME_FLAG_L_CH)
-        port->volume[0] = *vol;
-    if (flag & ORBIS_AUDIO_VOLUME_FLAG_R_CH)
-        port->volume[1] = *vol;
-    if (flag & ORBIS_AUDIO_VOLUME_FLAG_C_CH)
-        port->volume[2] = *vol;
-    if (flag & ORBIS_AUDIO_VOLUME_FLAG_LFE_CH)
-        port->volume[3] = *vol;
-    if (flag & ORBIS_AUDIO_VOLUME_FLAG_LS_CH)
-        port->volume[4] = *vol;
-    if (flag & ORBIS_AUDIO_VOLUME_FLAG_RS_CH)
-        port->volume[5] = *vol;
-    if (flag & ORBIS_AUDIO_VOLUME_FLAG_LE_CH)
-        port->volume[6] = *vol;
-    if (flag & ORBIS_AUDIO_VOLUME_FLAG_RE_CH)
-        port->volume[7] = *vol;
+    const u32 num_channels =
+        std::min<u32>(port->format_info.num_channels, ORBIS_AUDIO_OUT_CHANNEL_MAX);
+    const bool is_std = port->format_info.is_std;
+    const auto channel_for_bit = [is_std](u32 bit) -> u32 {
+        if (is_std && bit >= ORBIS_AUDIO_OUT_CHANNEL_LS) {
+            return bit ^ 2; // 4<->6, 5<->7
+        }
+        return bit;
+    };
+
+    for (u32 bit = 0; bit < num_channels; bit++) {
+        if ((flag & (1u << bit)) == 0) {
+            continue;
+        }
+        const s32 value = vol[channel_for_bit(bit)];
+        if (value < 0 || value > ORBIS_AUDIO_OUT_VOLUME_0DB) {
+            LOG_ERROR(Lib_AudioOut, "Invalid volume {} for channel {}", value,
+                      channel_for_bit(bit));
+            return ORBIS_AUDIO_OUT_ERROR_INVALID_VOLUME;
+        }
+    }
+
+    for (u32 bit = 0; bit < num_channels; bit++) {
+        if ((flag & (1u << bit)) == 0) {
+            continue;
+        }
+        const u32 channel = channel_for_bit(bit);
+        port->volume[channel] = vol[channel];
+    }
 
     port->impl->SetVolume(port->volume);
 
@@ -767,7 +1000,7 @@ s32 PS4_SYSV_ABI sceAudioOutSetVolume(s32 handle, s32 flag, s32* vol) {
 }
 
 s32 PS4_SYSV_ABI sceAudioOutSetMixLevelPadSpk(s32 handle, s32 mixLevel) {
-    LOG_INFO(Lib_AudioOut, "(STUBBED) called");
+    LOG_INFO(Lib_AudioOut, "called, handle = {:#x}, mixLevel = {}", handle, mixLevel);
     if (lazy_init.load(std::memory_order_relaxed) == 0 || audio == nullptr) {
         LOG_ERROR(Lib_AudioOut, "audio is not init");
         return ORBIS_AUDIO_OUT_ERROR_NOT_INIT;
@@ -784,7 +1017,7 @@ s32 PS4_SYSV_ABI sceAudioOutSetMixLevelPadSpk(s32 handle, s32 mixLevel) {
         return ORBIS_AUDIO_OUT_ERROR_INVALID_PORT_TYPE;
     }
 
-    if (mixLevel > ORBIS_AUDIO_OUT_VOLUME_0DB) {
+    if (mixLevel < 0 || mixLevel > ORBIS_AUDIO_OUT_MIXLEVEL_PADSPK_0DB) {
         LOG_ERROR(Lib_AudioOut, "Invalid mix level");
         return ORBIS_AUDIO_OUT_ERROR_INVALID_MIXLEVEL;
     }
@@ -801,8 +1034,8 @@ s32 PS4_SYSV_ABI sceAudioOutSetMixLevelPadSpk(s32 handle, s32 mixLevel) {
     }
 
     std::unique_lock lock{port->mutex};
+    // Applied by the output thread whenever the port is mixed with MAIN.
     port->mixLevelPadSpk = mixLevel;
-    // TODO: Apply mix level to backend
 
     return ORBIS_OK;
 }
@@ -816,6 +1049,10 @@ s32 PS4_SYSV_ABI sceAudioOutGetSystemState(OrbisAudioOutSystemState* state) {
         return ORBIS_AUDIO_OUT_ERROR_INVALID_POINTER;
     }
     memset(state, 0, sizeof(*state));
+    if (loudness_measurement.load(std::memory_order_relaxed) !=
+        ORBIS_AUDIO_OUT_DEBUG_STATE_LOUDNESS_STOP) {
+        state->loudness = ORBIS_AUDIO_OUT_STATE_LOUDNESS_MIN;
+    }
     LOG_DEBUG(Lib_AudioOut, "called");
     return ORBIS_OK;
 }
@@ -948,26 +1185,136 @@ s32 PS4_SYSV_ABI sceAudioOutInitIpmiGetSession() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceAudioOutMasteringGetState() {
-    LOG_ERROR(Lib_AudioOut, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceAudioOutMasteringGetState(OrbisAudioOutMasteringStatesHeader* state) {
+    LOG_DEBUG(Lib_AudioOut, "called, state = {}", fmt::ptr(state));
+
+    if (state == nullptr) {
+        LOG_ERROR(Lib_AudioOut, "Invalid state pointer");
+        return ORBIS_AUDIO_OUT_ERROR_MASTERING_INVALID_API_PARAM;
+    }
+
+    {
+        std::scoped_lock lock{mastering.mutex};
+        if (!mastering.initialized) {
+            LOG_ERROR(Lib_AudioOut, "Mastering library is not initialized");
+            return ORBIS_AUDIO_OUT_ERROR_MASTERING_NOT_INITIALIZED;
+        }
+    }
+
+    if (state->statesId != ORBIS_AUDIO_OUT_MASTERING_STATES_ID_DEFAULT) {
+        LOG_ERROR(Lib_AudioOut, "Invalid states id {}", state->statesId);
+        return ORBIS_AUDIO_OUT_ERROR_MASTERING_INVALID_STATES_ID;
+    }
+
+    auto* states = reinterpret_cast<OrbisAudioOutMasteringStates*>(state);
+    std::memset(states->reserved, 0, sizeof(states->reserved));
+
+    // Start from an idle chain: no measured signal and unity gain everywhere.
+    auto& compressor = states->compressorStates;
+    compressor = {};
+    compressor.descriptor.id = ORBIS_AUDIO_OUT_MASTERING_STATES_STRUCT_ID_COMPRESSOR_DEFAULT;
+    compressor.descriptor.size = sizeof(OrbisAudioOutMasteringCompressorStates);
+    for (auto& band : compressor.compressionCoeff) {
+        std::fill(std::begin(band), std::end(band), 1.0f);
+    }
+
+    auto& limiter = states->limiterStates;
+    limiter = {};
+    limiter.descriptor.id = ORBIS_AUDIO_OUT_MASTERING_STATES_STRUCT_ID_LIMITER_DEFAULT;
+    limiter.descriptor.size = sizeof(OrbisAudioOutMasteringLimiterStates);
+    std::fill(std::begin(limiter.gainPeak), std::end(limiter.gainPeak), 1.0f);
+
+    std::array<std::shared_ptr<PortOut>, ORBIS_AUDIO_OUT_NUM_PORTS> ports;
+    {
+        std::shared_lock read_lock{port_table_mutex};
+        ports = port_table;
+    }
+    for (const auto& port : ports) {
+        if (!port || !IsMasteredPort(port->type)) {
+            continue;
+        }
+        const auto meters = port->mastering.GetMeters();
+        if (!meters.valid) {
+            continue;
+        }
+        for (u32 band = 0; band < MasteringProcessor::MaxCompressorBands; band++) {
+            for (u32 ch = 0; ch < MasteringProcessor::MaxChannels; ch++) {
+                compressor.inputRms[band][ch] =
+                    std::hypot(compressor.inputRms[band][ch], meters.input_rms[band][ch]);
+                compressor.compressionCoeff[band][ch] = std::min(
+                    compressor.compressionCoeff[band][ch], meters.compression_coeff[band][ch]);
+            }
+        }
+        for (u32 ch = 0; ch < MasteringProcessor::MaxChannels; ch++) {
+            limiter.inputPeak[ch] = std::max(limiter.inputPeak[ch], meters.input_peak[ch]);
+            limiter.outputPeak[ch] = std::max(limiter.outputPeak[ch], meters.output_peak[ch]);
+            limiter.gainPeak[ch] = std::min(limiter.gainPeak[ch], meters.gain_peak[ch]);
+        }
+    }
+
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceAudioOutMasteringInit(u32 flags) {
-    LOG_ERROR(Lib_AudioOut, "(STUBBED) called");
+    LOG_INFO(Lib_AudioOut, "called, flags = {:#x}", flags);
     if (flags != 0) {
         return ORBIS_AUDIO_OUT_ERROR_MASTERING_INVALID_API_PARAM;
     }
+
+    std::scoped_lock lock{mastering.mutex};
+    mastering.initialized = true;
+    ResetMasteringParams();
+    mastering.generation.fetch_add(1, std::memory_order_release);
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceAudioOutMasteringSetParam() {
-    LOG_ERROR(Lib_AudioOut, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceAudioOutMasteringSetParam(const OrbisAudioOutMasteringParamsHeader* param,
+                                              u32 flags) {
+    LOG_INFO(Lib_AudioOut, "called, param = {}, flags = {:#x}", fmt::ptr(param), flags);
+
+    if (param == nullptr || (flags & ~ORBIS_AUDIO_OUT_MASTERING_MODULE_FLAG_SWAP_EQ_COMPRESSOR)) {
+        LOG_ERROR(Lib_AudioOut, "Invalid param pointer or flags");
+        return ORBIS_AUDIO_OUT_ERROR_MASTERING_INVALID_API_PARAM;
+    }
+
+    std::scoped_lock lock{mastering.mutex};
+    if (!mastering.initialized) {
+        LOG_ERROR(Lib_AudioOut, "Mastering library is not initialized");
+        return ORBIS_AUDIO_OUT_ERROR_MASTERING_NOT_INITIALIZED;
+    }
+
+    size_t size = 0;
+    switch (param->paramsId) {
+    case ORBIS_AUDIO_OUT_MASTERING_PARAMS_ID_DEFAULT:
+        size = sizeof(OrbisAudioOutMasteringParams);
+        break;
+    case ORBIS_AUDIO_OUT_MASTERING_PARAMS_ID_V2:
+        size = sizeof(OrbisAudioOutMasteringParamsV2);
+        break;
+    default:
+        LOG_ERROR(Lib_AudioOut, "Invalid params id {}", param->paramsId);
+        return ORBIS_AUDIO_OUT_ERROR_MASTERING_INVALID_CONFIG;
+    }
+
+    mastering.params = {};
+    std::memcpy(&mastering.params, param, size);
+    mastering.params_id = param->paramsId;
+    mastering.swap_eq_compressor =
+        (flags & ORBIS_AUDIO_OUT_MASTERING_MODULE_FLAG_SWAP_EQ_COMPRESSOR) != 0;
+
+    mastering.generation.fetch_add(1, std::memory_order_release);
+
+    // Both versions share the layout up to and including moduleBypassFlags.
+    LOG_INFO(Lib_AudioOut, "Mastering params set (id = {}, bypass = {:#x}, swap = {})",
+             param->paramsId, mastering.params.moduleBypassFlags, mastering.swap_eq_compressor);
     return ORBIS_OK;
 }
 
 s32 PS4_SYSV_ABI sceAudioOutMasteringTerm() {
-    LOG_ERROR(Lib_AudioOut, "(STUBBED) called");
+    LOG_INFO(Lib_AudioOut, "called");
+    std::scoped_lock lock{mastering.mutex};
+    mastering.initialized = false;
+    mastering.generation.fetch_add(1, std::memory_order_release);
     return ORBIS_OK;
 }
 
@@ -1126,8 +1473,32 @@ s32 PS4_SYSV_ABI sceAudioOutSparkControlSetEqCoef() {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI sceAudioOutSetSystemDebugState() {
-    LOG_ERROR(Lib_AudioOut, "(STUBBED) called");
+s32 PS4_SYSV_ABI sceAudioOutSetSystemDebugState(OrbisAudioOutSystemDebugStateElement element,
+                                                OrbisAudioOutSystemDebugStateParam* param) {
+    LOG_INFO(Lib_AudioOut, "called, element = {}, param = {}", static_cast<u32>(element),
+             fmt::ptr(param));
+
+    if (lazy_init.load(std::memory_order_relaxed) == 0 || audio == nullptr) {
+        LOG_ERROR(Lib_AudioOut, "audio is not init");
+        return ORBIS_AUDIO_OUT_ERROR_NOT_INIT;
+    }
+
+    if (param == nullptr) {
+        LOG_ERROR(Lib_AudioOut, "Invalid pointer");
+        return ORBIS_AUDIO_OUT_ERROR_INVALID_POINTER;
+    }
+
+    if (element != OrbisAudioOutSystemDebugStateElement::Loudness) {
+        LOG_ERROR(Lib_AudioOut, "Invalid debug state element {}", static_cast<u32>(element));
+        return ORBIS_AUDIO_OUT_ERROR_INVALID_ARG;
+    }
+
+    if (param->value > ORBIS_AUDIO_OUT_DEBUG_STATE_LOUDNESS_START_QUIET) {
+        LOG_ERROR(Lib_AudioOut, "Invalid loudness debug state {}", param->value);
+        return ORBIS_AUDIO_OUT_ERROR_INVALID_PARAM;
+    }
+
+    loudness_measurement.store(param->value, std::memory_order_relaxed);
     return ORBIS_OK;
 }
 

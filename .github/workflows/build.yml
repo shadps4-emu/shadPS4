@@ -106,6 +106,20 @@ jobs:
         with:
           arch: x64
 
+      - name: Use Visual Studio's own clang-cl
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -property installationPath
+          $bin = Join-Path $vs 'VC\Tools\Llvm\x64\bin'
+          if (-not (Test-Path (Join-Path $bin 'clang-cl.exe'))) {
+            Write-Error "Visual Studio's C++ Clang tools are not installed ($bin)"
+            exit 1
+          }
+          & (Join-Path $bin 'clang-cl.exe') --version
+          $bin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          "CLANG_CL=$((Join-Path $bin 'clang-cl.exe') -replace '\\','/')" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
       - name: Install dependencies (Linux)
         if: runner.os == 'Linux'
         run: |
@@ -120,8 +134,8 @@ jobs:
       - name: Configure CMake
         run: |
           cmake -B build -G Ninja \
-            -DCMAKE_CXX_COMPILER="${{ matrix.compiler_cxx }}" \
-            -DCMAKE_C_COMPILER="${{ matrix.compiler_c }}" \
+            -DCMAKE_CXX_COMPILER="${CLANG_CL:-${{ matrix.compiler_cxx }}}" \
+            -DCMAKE_C_COMPILER="${CLANG_CL:-${{ matrix.compiler_c }}}" \
             -DCMAKE_BUILD_TYPE=Debug \
             -DENABLE_TESTS=ON \
             ${{ runner.os == 'Linux' && '-DCMAKE_CXX_FLAGS=-stdlib=libc++' || '' }} \
@@ -168,8 +182,21 @@ jobs:
     - name: Print CPU Info
       run: bash -c "cat /proc/cpuinfo"
 
+    - name: Use Visual Studio's own clang-cl
+      shell: pwsh
+      run: |
+        $vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -property installationPath
+        $bin = Join-Path $vs 'VC\Tools\Llvm\x64\bin'
+        if (-not (Test-Path (Join-Path $bin 'clang-cl.exe'))) {
+          Write-Error "Visual Studio's C++ Clang tools are not installed ($bin)"
+          exit 1
+        }
+        & (Join-Path $bin 'clang-cl.exe') --version
+        $bin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        "CLANG_CL=$((Join-Path $bin 'clang-cl.exe') -replace '\\','/')" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
     - name: Configure CMake
-      run: cmake --fresh -G Ninja -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE=ON -DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+      run: cmake --fresh -G Ninja -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE=ON -DCMAKE_C_COMPILER="$env:CLANG_CL" -DCMAKE_CXX_COMPILER="$env:CLANG_CL" -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel $env:NUMBER_OF_PROCESSORS
