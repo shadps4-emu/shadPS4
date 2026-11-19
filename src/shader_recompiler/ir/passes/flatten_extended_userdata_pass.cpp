@@ -24,6 +24,7 @@
 #include "shader_recompiler/ir/srt_gvn_table.h"
 #include "shader_recompiler/ir/value.h"
 #include "shader_recompiler/profile.h"
+#include "video_core/buffer_cache/region_definitions.h"
 
 #ifdef ARCH_X86_64
 
@@ -170,6 +171,7 @@ struct PassInfo {
     std::unordered_map<u32, IR::Inst*> vn_to_inst;
     std::unordered_map<IR::Inst*, u16> touchbuf_offsets;
     std::vector<Info::SrtLoopTouch> loop_touches;
+    bool compact_touches{};
 
     // Bumped during codegen to assign offsets to readconsts
     u16 flatbuf_dst_off_dw;
@@ -655,7 +657,27 @@ static void VisitPointer(const IR::Value& off_dw, IR::Inst* subtree, PassInfo& p
     // flattened buffer.
     // TODO src and dst are contiguous. Optimize with wider loads/stores
     // TODO if this subtree is dynamically indexed, don't compact it (keep it sparse)
-    for (auto [src_off_dw, use] : *use_list) {
+    auto range_end = use_list->begin();
+    for (auto it = use_list->begin(); it != use_list->end(); ++it) {
+        const auto [src_off_dw, use] = *it;
+        const bool sharp = IsSharpSource(use);
+        bool record_touch = true;
+        constexpr u32 max_lea_dword = std::numeric_limits<s32>::max() / sizeof(u32);
+        constexpr u32 page_dwords = VideoCore::BYTES_PER_PAGE / sizeof(u32);
+        if (pass_info.compact_touches && src_off_dw.U32() <= max_lea_dword) {
+            if (it == range_end) {
+                range_end = std::find_if(std::next(it), use_list->end(), [&](const auto& entry) {
+                    const u32 dword = entry.first.U32();
+                    return dword > max_lea_dword || dword - src_off_dw.U32() >= page_dwords;
+                });
+            } else {
+                record_touch = std::next(it) == range_end;
+            }
+        }
+        if (!record_touch && !sharp) {
+            IR::TouchReadConstAddress(use, 0);
+            continue;
+        }
         if (src_off_dw.IsImmediate()) {
             c.lea(r10, ptr[rdi + (src_off_dw.U32() << 2)]);
         } else {
@@ -684,12 +706,16 @@ static void VisitPointer(const IR::Value& off_dw, IR::Inst* subtree, PassInfo& p
             c.mov(r10d, r10d);
             c.lea(r10, ptr[rdi + r10]);
         }
-        const u16 touch_offset = pass_info.touchbuf_dst_off_qw++;
-        c.mov(ptr[rdx + (touch_offset << 3)], r10);
-        pass_info.touchbuf_offsets.emplace(use, touch_offset);
+        if (record_touch) {
+            const u16 touch_offset = pass_info.touchbuf_dst_off_qw++;
+            c.mov(ptr[rdx + (touch_offset << 3)], r10);
+            if (!pass_info.compact_touches) {
+                pass_info.touchbuf_offsets.emplace(use, touch_offset);
+            }
+        }
 
         u16 flatbuf_offset = 0;
-        if (IsSharpSource(use)) {
+        if (sharp) {
             flatbuf_offset = pass_info.flatbuf_dst_off_dw++;
             c.mov(r10d, dword[r10]);
             c.mov(ptr[rsi + (flatbuf_offset << 2)], r10d);
@@ -727,6 +753,11 @@ static void GenerateSrtProgram(Info& info, PassInfo& pass_info) {
     pass_info.flatbuf_dst_off_dw = NUM_USER_DATA_REGS;
     pass_info.touchbuf_dst_off_qw = 0;
     ASSERT(pass_info.flatbuf_dst_off_dw == info.srt_info.flattened_bufsize_dw);
+
+    pass_info.compact_touches = std::ranges::all_of(pass_info.pointer_uses, [](const auto& entry) {
+        return std::ranges::all_of(entry.second,
+                                   [](const auto& use) { return use.first.IsImmediate(); });
+    });
 
     for (const auto& [sgpr_base, root] : pass_info.srt_roots) {
         VisitPointer(IR::Value(static_cast<u32>(sgpr_base)), root, pass_info, c);
