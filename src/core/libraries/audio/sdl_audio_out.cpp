@@ -130,6 +130,14 @@ public:
         }
     }
 
+    u32 GetOutputChannels() const override {
+        return output_channels;
+    }
+
+    bool SharesMainDevice() const override {
+        return shares_main_device;
+    }
+
     u64 GetLastOutputTime() const {
         return last_output_time.load(std::memory_order_acquire);
     }
@@ -264,6 +272,12 @@ private:
             return false;
         }
 
+        if (type == OrbisAudioOutPort::PadSpk) {
+            const SDL_AudioDeviceID main_dev_id =
+                SelectAudioDevice(GetDeviceName(OrbisAudioOutPort::Main), type, false);
+            shares_main_device = dev_id == main_dev_id;
+        }
+
         const SDL_AudioSpec fmt = {
             .format = SDL_AUDIO_F32LE,
             .channels = static_cast<u8>(num_channels),
@@ -278,29 +292,42 @@ private:
         }
 
         SDL_AudioSpec dev_spec{};
-        if (num_channels >= 6 &&
-            SDL_GetAudioDeviceFormat(SDL_GetAudioStreamDevice(stream), &dev_spec, nullptr) &&
-            dev_spec.channels >= 1 && dev_spec.channels <= 2) {
+        const bool have_dev_spec =
+            SDL_GetAudioDeviceFormat(SDL_GetAudioStreamDevice(stream), &dev_spec, nullptr);
+        if (have_dev_spec && num_channels >= 6) {
+            output_channels = dev_spec.channels >= 8 ? 8 : dev_spec.channels >= 6 ? 6 : 2;
+        }
+        u32 fold_channels = 0;
+        if (num_channels >= 6 && have_dev_spec && dev_spec.channels >= 1 &&
+            dev_spec.channels <= 2) {
             ps4_downmix = true;
-            internal_buffer_size = buffer_frames * sizeof(float) * 2;
+            fold_channels = 2;
             LOG_INFO(Lib_AudioOut, "Stereo device: using PS4-accurate {}ch->stereo downmix",
                      num_channels);
+        } else if (num_channels == 8 && have_dev_spec && dev_spec.channels == 6) {
+            ps4_fold_51 = true;
+            fold_channels = 6;
+            LOG_INFO(Lib_AudioOut, "5.1 device: using PS4-accurate 7.1->5.1 downmix");
+        }
+
+        if (fold_channels != 0) {
+            internal_buffer_size = buffer_frames * sizeof(float) * fold_channels;
 
             SDL_DestroyAudioStream(stream);
-            const SDL_AudioSpec stereo_fmt = {
+            const SDL_AudioSpec fold_fmt = {
                 .format = SDL_AUDIO_F32LE,
-                .channels = 2,
+                .channels = static_cast<int>(fold_channels),
                 .freq = static_cast<int>(sample_rate),
             };
-            stream = SDL_OpenAudioDeviceStream(dev_id, &stereo_fmt, nullptr, nullptr);
+            stream = SDL_OpenAudioDeviceStream(dev_id, &fold_fmt, nullptr, nullptr);
             if (!stream) {
                 LOG_ERROR(Lib_AudioOut, "Failed to recreate SDL audio stream: {}", SDL_GetError());
                 return false;
             }
         }
 
-        // Configure channel mapping (input is already stereo when folding)
-        if (!ps4_downmix && !ConfigureChannelMap()) {
+        // Configure channel mapping (input is already in device order when folding)
+        if (fold_channels == 0 && !ConfigureChannelMap()) {
             SDL_DestroyAudioStream(stream);
             stream = nullptr;
             return false;
@@ -325,10 +352,13 @@ private:
         return true;
     }
 
-    SDL_AudioDeviceID SelectAudioDevice(const std::string& device_name, OrbisAudioOutPort type) {
+    SDL_AudioDeviceID SelectAudioDevice(const std::string& device_name, OrbisAudioOutPort type,
+                                        bool log = true) {
         if (device_name == "None") {
-            LOG_INFO(Lib_AudioOut, "Audio device disabled for port type {}",
-                     static_cast<int>(type));
+            if (log) {
+                LOG_INFO(Lib_AudioOut, "Audio device disabled for port type {}",
+                         static_cast<int>(type));
+            }
             return SDL_INVALID_AUDIODEVICEID;
         }
 
@@ -341,7 +371,9 @@ private:
         SDL_AudioDeviceID* dev_array = SDL_GetAudioPlaybackDevices(&num_devices);
 
         if (!dev_array) {
-            LOG_WARNING(Lib_AudioOut, "No audio devices found, using default");
+            if (log) {
+                LOG_WARNING(Lib_AudioOut, "No audio devices found, using default");
+            }
             return SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK;
         }
 
@@ -358,7 +390,10 @@ private:
         SDL_free(dev_array);
 
         if (selected_device == SDL_INVALID_AUDIODEVICEID) {
-            LOG_WARNING(Lib_AudioOut, "Audio device '{}' not found, using default", device_name);
+            if (log) {
+                LOG_WARNING(Lib_AudioOut, "Audio device '{}' not found, using default",
+                            device_name);
+            }
             return SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK;
         }
 
@@ -431,9 +466,43 @@ private:
         }
     }
 
+    static void DownmixS16_8CHTo51PS4(const void* src, void* dst, u32 frames, const float*) {
+        constexpr float INV = 1.0f / 32768.0f;
+        const s16* s = static_cast<const s16*>(src);
+        float* d = static_cast<float*>(dst);
+        for (u32 i = 0; i < frames; i++) {
+            const u32 o = i << 3;
+            const u32 p = i * 6;
+            d[p + FL] = s[o + FL] * INV;
+            d[p + FR] = s[o + FR] * INV;
+            d[p + FC] = s[o + FC] * INV;
+            d[p + LF] = s[o + LF] * INV;
+            d[p + 4] = (static_cast<float>(s[o + 4]) + s[o + 6]) * INV;
+            d[p + 5] = (static_cast<float>(s[o + 5]) + s[o + 7]) * INV;
+        }
+    }
+    static void DownmixF32_8CHTo51PS4(const void* src, void* dst, u32 frames, const float*) {
+        const float* s = static_cast<const float*>(src);
+        float* d = static_cast<float*>(dst);
+        for (u32 i = 0; i < frames; i++) {
+            const u32 o = i << 3;
+            const u32 p = i * 6;
+            d[p + FL] = s[o + FL];
+            d[p + FR] = s[o + FR];
+            d[p + FC] = s[o + FC];
+            d[p + LF] = s[o + LF];
+            d[p + 4] = s[o + 4] + s[o + 6];
+            d[p + 5] = s[o + 5] + s[o + 7];
+        }
+    }
+
     bool SelectConverter() {
         if (ps4_downmix) {
             convert = is_float ? &DownmixF32_8CHToStereoPS4 : &DownmixS16_8CHToStereoPS4;
+            return true;
+        }
+        if (ps4_fold_51) {
+            convert = is_float ? &DownmixF32_8CHTo51PS4 : &DownmixS16_8CHTo51PS4;
             return true;
         }
 
@@ -630,8 +699,10 @@ private:
     const u32 num_channels;
     const bool is_float;
     const bool is_std;
-    // Set when the output device is stereo and we fold 5.1/7.1 ourselves.
     bool ps4_downmix{false};
+    bool ps4_fold_51{false};
+    bool shares_main_device{false};
+    u32 output_channels{0};
     const std::array<int, 8> channel_layout;
 
     alignas(64) u64 period_us{0};

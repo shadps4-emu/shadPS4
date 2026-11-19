@@ -472,8 +472,9 @@ void L::Draw() {
             SetWindowFontScale(1.5f);
             Overlay::TextCentered("Are you sure you want to quit?");
             NewLine();
-            Text("Press Escape or Circle/B button to cancel");
-            Text("Press Enter or Cross/A button to quit");
+            const bool is_circle_enter = EmulatorSettings.IsCircleEnter();
+            Text("Press Escape or %s button to cancel", is_circle_enter ? "✕ / A" : "○ / B");
+            Text("Press Enter or %s button to quit", is_circle_enter ? "○ / B" : "✕ / A");
 
             if (IsKeyPressed(ImGuiKey_Escape, false) ||
                 (IsKeyPressed(ImGuiKey_GamepadFaceRight, false))) {
