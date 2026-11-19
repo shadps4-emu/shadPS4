@@ -3,48 +3,47 @@
 
 #include "shader_recompiler/backend/spirv/emit_spirv_instructions.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
+#include "shader_recompiler/ir/microinstruction.h"
+#include "shader_recompiler/ir/shared_memory.h"
 
 namespace Shader::Backend::SPIRV {
 
-Id EmitLoadSharedU16(EmitContext& ctx, Id offset) {
-    const Id shift_id{ctx.ConstU32(1U)};
-    const Id index{ctx.OpShiftRightLogical(ctx.U32[1], offset, shift_id)};
-    const Id pointer = ctx.EmitSharedMemoryAccess(ctx.shared_u16, ctx.shared_memory_u16, index);
+using PointerType = EmitContext::PointerType;
+using SharedFlags = SharedMemory::Flags;
+
+Id EmitLoadSharedU16(EmitContext& ctx, IR::Inst* inst, Id offset) {
+    bool is_scratch = inst->Flags<SharedFlags>().is_scratch.Value();
+    const Id pointer = ctx.EmitSharedMemoryAccess(offset, PointerType::U16, is_scratch);
     return ctx.OpLoad(ctx.U16, pointer);
 }
 
-Id EmitLoadSharedU32(EmitContext& ctx, Id offset) {
-    const Id shift_id{ctx.ConstU32(2U)};
-    const Id index{ctx.OpShiftRightLogical(ctx.U32[1], offset, shift_id)};
-    const Id pointer = ctx.EmitSharedMemoryAccess(ctx.shared_u32, ctx.shared_memory_u32, index);
+Id EmitLoadSharedU32(EmitContext& ctx, IR::Inst* inst, Id offset) {
+    bool is_scratch = inst->Flags<SharedFlags>().is_scratch.Value();
+    const Id pointer = ctx.EmitSharedMemoryAccess(offset, PointerType::U32, is_scratch);
     return ctx.OpLoad(ctx.U32[1], pointer);
 }
 
-Id EmitLoadSharedU64(EmitContext& ctx, Id offset) {
-    const Id shift_id{ctx.ConstU32(3U)};
-    const Id index{ctx.OpShiftRightLogical(ctx.U32[1], offset, shift_id)};
-    const Id pointer = ctx.EmitSharedMemoryAccess(ctx.shared_u64, ctx.shared_memory_u64, index);
+Id EmitLoadSharedU64(EmitContext& ctx, IR::Inst* inst, Id offset) {
+    bool is_scratch = inst->Flags<SharedFlags>().is_scratch.Value();
+    const Id pointer = ctx.EmitSharedMemoryAccess(offset, PointerType::U64, is_scratch);
     return ctx.OpLoad(ctx.U64, pointer);
 }
 
-void EmitWriteSharedU16(EmitContext& ctx, Id offset, Id value) {
-    const Id shift{ctx.ConstU32(1U)};
-    const Id index{ctx.OpShiftRightLogical(ctx.U32[1], offset, shift)};
-    const Id pointer = ctx.EmitSharedMemoryAccess(ctx.shared_u16, ctx.shared_memory_u16, index);
+void EmitWriteSharedU16(EmitContext& ctx, IR::Inst* inst, Id offset, Id value) {
+    bool is_scratch = inst->Flags<SharedFlags>().is_scratch.Value();
+    const Id pointer = ctx.EmitSharedMemoryAccess(offset, PointerType::U16, is_scratch);
     ctx.OpStore(pointer, value);
 }
 
-void EmitWriteSharedU32(EmitContext& ctx, Id offset, Id value) {
-    const Id shift{ctx.ConstU32(2U)};
-    const Id index{ctx.OpShiftRightLogical(ctx.U32[1], offset, shift)};
-    const Id pointer = ctx.EmitSharedMemoryAccess(ctx.shared_u32, ctx.shared_memory_u32, index);
+void EmitWriteSharedU32(EmitContext& ctx, IR::Inst* inst, Id offset, Id value) {
+    bool is_scratch = inst->Flags<SharedFlags>().is_scratch.Value();
+    const Id pointer = ctx.EmitSharedMemoryAccess(offset, PointerType::U32, is_scratch);
     ctx.OpStore(pointer, value);
 }
 
-void EmitWriteSharedU64(EmitContext& ctx, Id offset, Id value) {
-    const Id shift{ctx.ConstU32(3U)};
-    const Id index{ctx.OpShiftRightLogical(ctx.U32[1], offset, shift)};
-    const Id pointer = ctx.EmitSharedMemoryAccess(ctx.shared_u64, ctx.shared_memory_u64, index);
+void EmitWriteSharedU64(EmitContext& ctx, IR::Inst* inst, Id offset, Id value) {
+    bool is_scratch = inst->Flags<SharedFlags>().is_scratch.Value();
+    const Id pointer = ctx.EmitSharedMemoryAccess(offset, PointerType::U64, is_scratch);
     ctx.OpStore(pointer, value);
 }
 
