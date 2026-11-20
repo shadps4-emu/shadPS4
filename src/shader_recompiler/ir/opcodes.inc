@@ -5,6 +5,7 @@
 OPCODE(Phi,                                                 Opaque,                                                                                         )
 OPCODE(Void,                                                Void,                                                                                           )
 OPCODE(ConditionRef,                                        U1,             U1,                                                                             )
+OPCODE(KeepAlive,                                           Void,           Opaque,                                                                         )
 
 // Special operations
 OPCODE(Prologue,                                            Void,                                                                                           )

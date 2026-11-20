@@ -692,6 +692,8 @@ Id EmitPhi(EmitContext& ctx, IR::Inst* inst) {
 
 void EmitVoid(EmitContext&) {}
 
+void EmitKeepAlive(EmitContext&) {}
+
 Id EmitConditionRef(EmitContext& ctx, const IR::Value& value) {
     const Id id{ctx.Def(value)};
     ASSERT_MSG(Sirit::ValidId(id), "Forward identity declaration");

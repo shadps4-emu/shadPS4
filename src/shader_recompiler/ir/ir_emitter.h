@@ -36,6 +36,7 @@ public:
     [[nodiscard]] Dest BitCast(const Source& value);
 
     U1 ConditionRef(const U1& value);
+    void KeepAlive(const Value& value);
 
     void Prologue();
     void Epilogue();

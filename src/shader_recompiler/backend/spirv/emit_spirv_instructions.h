@@ -23,6 +23,7 @@ class EmitContext;
 // Microinstruction emitters
 Id EmitPhi(EmitContext& ctx, IR::Inst* inst);
 void EmitVoid(EmitContext& ctx);
+void EmitKeepAlive(EmitContext& ctx);
 Id EmitConditionRef(EmitContext& ctx, const IR::Value& value);
 void EmitGetScc(EmitContext& ctx);
 void EmitGetExec(EmitContext& ctx);
