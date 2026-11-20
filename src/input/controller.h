@@ -122,6 +122,7 @@ private:
     std::optional<Colour> override_colour{};
 
     State m_state;
+    State m_last_read_state;
 
     std::mutex m_state_mutex;
     RingBufferQueue<State> m_states_queue;
