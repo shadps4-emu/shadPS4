@@ -37,6 +37,16 @@ public:
         });
     }
 
+    bool IsRegionUploaded(VAddr cpu_addr, u64 size) noexcept {
+        u64 tracked_size = 0;
+        const bool cpu_modified =
+            IteratePages(cpu_addr, size, [&](RegionManager* manager, u64 offset, u64 size) {
+                tracked_size += size;
+                return manager->template IsRegionModified<Type::CPU>(offset, size);
+            });
+        return !cpu_modified && tracked_size == size;
+    }
+
     /// Mark region as modified from the host GPU without uploading it again
     void MarkRegionAsGpuModified(VAddr cpu_addr, u64 size) noexcept {
         IteratePages<true>(cpu_addr, size, [](RegionManager* manager, u64 offset, u64 size) {
