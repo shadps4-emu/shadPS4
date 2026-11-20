@@ -7,6 +7,7 @@
 #include <mutex>
 #include <string>
 #include <string_view>
+#include <boost/icl/interval_map.hpp>
 #include "common/enum.h"
 #include "common/shared_first_mutex.h"
 #include "common/singleton.h"
@@ -341,6 +342,8 @@ private:
 
     PhysHandle Split(PhysMap& map, PhysHandle dmem_handle, u64 offset_in_area);
 
+    void RemoveDirectMapping(PAddr phys_addr, u64 size);
+
     u64 UnmapBytesFromEntry(VAddr virtual_addr, VirtualMemoryArea vma_base, u64 size);
 
     s32 UnmapMemoryImpl(VAddr virtual_addr, u64 size);
@@ -348,6 +351,8 @@ private:
 private:
     AddressSpace impl;
     PhysMap dmem_map;
+    // Only ranges with at least one live direct mapping are present.
+    boost::icl::interval_map<PAddr, u64> direct_mapping_counts;
     PhysMap fmem_map;
     VMAMap vma_map;
     Common::SharedFirstMutex mutex{};
