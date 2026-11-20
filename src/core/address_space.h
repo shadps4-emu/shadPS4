@@ -97,6 +97,9 @@ public:
     /// Protects requested region.
     void Protect(VAddr virtual_addr, u64 size, MemoryPermission perms);
 
+    /// Ensures the virtual memory region has write permissions for direct host I/O.
+    void EnsureWritable(VAddr virtual_addr, u64 size);
+
     // Returns an interval set containing all usable regions.
     boost::icl::interval_set<VAddr> GetUsableRegions();
 
