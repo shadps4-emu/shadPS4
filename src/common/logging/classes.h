@@ -110,6 +110,7 @@ enum class Class {
     Lib_CompanionUtil,        ///< The LibCompanionUtil implementation.
     Lib_ContentExport,        ///< The LibSceContentExport implementation.
     Lib_VrTracker,            ///< The LibSceVrTracker implementation.
+    Lib_SysCore,              ///< The LibSceSysCore implementation.
     Lib_Font,                 ///< The libSceFont implementation.
     Lib_FontFt,               ///< The libSceFontFt implementation.
     Frontend,                 ///< Emulator UI
