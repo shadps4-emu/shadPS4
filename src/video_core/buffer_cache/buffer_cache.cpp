@@ -118,6 +118,120 @@ void BufferCache::TickFrame() {
     if (std::exchange(fault_process_pending, false)) {
         fault_manager->ProcessFaultBuffer();
     }
+    FreeReleasedMemory();
+    ReleaseUnmappedMemory();
+}
+
+void BufferCache::MapMemory(VAddr device_addr, u64 size) {
+    std::scoped_lock lk{unmap_mutex};
+    unmapped_ranges.Subtract(device_addr, size);
+}
+
+void BufferCache::UnmapMemory(VAddr device_addr, u64 size) {
+    std::scoped_lock lk{unmap_mutex};
+    unmapped_ranges.Add(device_addr, size);
+}
+
+void BufferCache::ReleaseUnmappedMemory() {
+    IntervalList<Backing> release_ranges;
+    {
+        std::scoped_lock lk{unmap_mutex};
+        unmapped_ranges.ForEach([&](VAddr start, VAddr end) {
+            const u64 first_block = Common::AlignUp(start, block_size) >> block_shift;
+            const u64 end_block = end >> block_shift;
+            resident_ranges.ForEachInRange(first_block, end_block, [&](const Backing& backing) {
+                release_ranges.Add(backing.SubRange(std::max(first_block, backing.start),
+                                                    std::min(end_block, backing.end)));
+            });
+        });
+        unmapped_ranges.Clear();
+    }
+    if (release_ranges.Empty()) {
+        return;
+    }
+
+    std::vector<ArenaBinds> unbinds;
+    std::vector<vk::DeviceMemory> freed_memory;
+    for (const Backing& range : release_ranges) {
+        const auto* arena = address_space[range.start >> blocks_per_arena_page_shift];
+        auto it = std::ranges::find(unbinds, arena, &ArenaBinds::arena);
+        auto& arena_unbinds = it != unbinds.end() ? *it : unbinds.emplace_back(arena);
+        arena_unbinds.binds.push_back(vk::SparseMemoryBind{
+            .resourceOffset = (range.start << block_shift) - arena->cpu_addr,
+            .size = (range.end - range.start) << block_shift,
+        });
+
+        const auto backing_it = backing_blocks.find(range.memory);
+        backing_it->second -= range.end - range.start;
+        if (backing_it->second == 0) {
+            freed_memory.push_back(range.memory);
+            backing_blocks.erase(backing_it);
+        }
+
+        resident_ranges.Subtract(range.start, range.end);
+        const VAddr device_addr = range.start << block_shift;
+        const u64 size = (range.end - range.start) << block_shift;
+        memory_tracker->UnmarkRegionAsGpuModified(device_addr, size, true);
+        gpu_modified_ranges.Subtract(device_addr, size);
+        runtime.FillBuffer(bda_pagetable_buffer.get(), range.start * sizeof(vk::DeviceAddress),
+                           (range.end - range.start) * sizeof(vk::DeviceAddress), 0u);
+    }
+
+    const u64 work_tick = scheduler.CurrentTick();
+    scheduler.Flush();
+
+    std::vector<vk::SparseBufferMemoryBindInfo> buffer_binds;
+    buffer_binds.reserve(unbinds.size());
+    for (const auto& binds : unbinds) {
+        buffer_binds.emplace_back(vk::SparseBufferMemoryBindInfo{
+            .buffer = binds.arena->Handle(),
+            .bindCount = static_cast<u32>(binds.binds.size()),
+            .pBinds = binds.binds.data(),
+        });
+    }
+
+    const auto memory_sema = memory_semaphore.Handle();
+    const std::array wait_semas = {scheduler.GetWorkSemaphore()->Handle(), memory_sema};
+    const std::array wait_ticks = {work_tick, unbind_tick};
+    unbind_tick = memory_semaphore.NextTick();
+    const vk::TimelineSemaphoreSubmitInfo timeline_si = {
+        .waitSemaphoreValueCount = static_cast<u32>(wait_ticks.size()),
+        .pWaitSemaphoreValues = wait_ticks.data(),
+        .signalSemaphoreValueCount = 1u,
+        .pSignalSemaphoreValues = &unbind_tick,
+    };
+    const vk::BindSparseInfo sparse_info = {
+        .pNext = &timeline_si,
+        .waitSemaphoreCount = static_cast<u32>(wait_semas.size()),
+        .pWaitSemaphores = wait_semas.data(),
+        .bufferBindCount = static_cast<u32>(buffer_binds.size()),
+        .pBufferBinds = buffer_binds.data(),
+        .signalSemaphoreCount = 1u,
+        .pSignalSemaphores = &memory_sema,
+    };
+    {
+        std::scoped_lock submit_lk{Vulkan::Scheduler::submit_mutex};
+        auto submit_result = instance.GetGraphicsQueue().bindSparse(sparse_info);
+        ASSERT_MSG(submit_result != vk::Result::eErrorDeviceLost, "Device lost during submit");
+    }
+
+    if (!freed_memory.empty()) {
+        released_memory.emplace_back(unbind_tick, std::move(freed_memory));
+    }
+}
+
+void BufferCache::FreeReleasedMemory() {
+    if (released_memory.empty()) {
+        return;
+    }
+    memory_semaphore.Refresh();
+    const auto device = instance.GetDevice();
+    while (!released_memory.empty() && memory_semaphore.IsFree(released_memory.front().first)) {
+        for (const auto memory : released_memory.front().second) {
+            device.freeMemory(memory);
+        }
+        released_memory.pop_front();
+    }
 }
 
 void BufferCache::InvalidateMemory(VAddr device_addr, u64 size, bool assume_locks) {
@@ -403,6 +517,7 @@ void BufferCache::EnsureResident(const Buffer* arena, u64 first_block, u64 last_
         .memoryTypeIndex = arena_memory_type_index,
     };
     const auto device_memory = Vulkan::Check(instance.GetDevice().allocateMemory(alloc_info));
+    backing_blocks.emplace(device_memory, resident_blocks);
 
     boost::container::small_vector<vk::BufferCopy, 8> copies;
     const auto staging =
@@ -553,13 +668,18 @@ void BufferCache::SubmitPendingArenaBinds(Vulkan::SubmitInfo& info) {
     const u64 signal_tick = memory_semaphore.NextTick();
     const auto signal_sema = memory_semaphore.Handle();
 
+    const u32 wait_count = unbind_tick != 0 ? 1u : 0u;
     const vk::TimelineSemaphoreSubmitInfo timeline_si = {
+        .waitSemaphoreValueCount = wait_count,
+        .pWaitSemaphoreValues = &unbind_tick,
         .signalSemaphoreValueCount = 1u,
         .pSignalSemaphoreValues = &signal_tick,
     };
 
     const vk::BindSparseInfo sparse_info = {
         .pNext = &timeline_si,
+        .waitSemaphoreCount = wait_count,
+        .pWaitSemaphores = &signal_sema,
         .bufferBindCount = static_cast<u32>(buffer_binds.size()),
         .pBufferBinds = buffer_binds.data(),
         .signalSemaphoreCount = 1u,
