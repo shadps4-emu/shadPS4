@@ -252,11 +252,40 @@ void TextureCache::MarkAsMaybeGpuDirty(VAddr addr, size_t size) {
 }
 
 void TextureCache::UnmapMemory(VAddr cpu_addr, size_t size) {
+    {
+        std::scoped_lock lk{unmap_mutex};
+        unmapped_ranges.Add(cpu_addr, size);
+        has_unmapped_ranges = true;
+    }
+    // Only the page protection has to go before the memory does.
+    // The images are freed by the GPU thread, the only one that may modify the cache.
+    SmallVector<ImageId, 16> image_ids;
+    ForEachImageInRegion(cpu_addr, size, [&](ImageId id, Image&) { image_ids.push_back(id); });
+    for (const ImageId id : image_ids) {
+        std::scoped_lock lk{slot_images[id].mutex};
+        UntrackImage(id);
+    }
+}
+
+void TextureCache::FreeUnmappedImages() {
+    if (!has_unmapped_ranges) {
+        return;
+    }
     SmallVector<ImageId, 16> deleted_images;
-    ForEachImageInRegion(cpu_addr, size, [&](ImageId id, Image&) { deleted_images.push_back(id); });
+    {
+        std::scoped_lock lk{unmap_mutex};
+        unmapped_ranges.ForEach([&](VAddr start, VAddr end) {
+            ForEachImageInRegion(start, end - start,
+                                 [&](ImageId id, Image&) { deleted_images.push_back(id); });
+        });
+        unmapped_ranges.Clear();
+        has_unmapped_ranges = false;
+    }
     for (const ImageId id : deleted_images) {
         // TODO: Download image data back to host.
-        FreeImage(id);
+        if (True(slot_images[id].flags & ImageFlagBits::Registered)) {
+            FreeImage(id);
+        }
     }
 }
 
@@ -605,6 +634,8 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
     const auto& info = desc.info;
 
     ASSERT(info.guest_address != 0);
+
+    FreeUnmappedImages();
 
     SmallVector<ImageId, 8> image_ids;
     ForEachImageInRegion(info.guest_address, info.guest_size,
@@ -1003,6 +1034,12 @@ void TextureCache::TrackImage(ImageId image_id) {
     }
 
     std::scoped_lock lk{image.mutex};
+    if (has_unmapped_ranges) {
+        std::scoped_lock lk2{unmap_mutex};
+        if (unmapped_ranges.Intersects(image_begin, image.info.guest_size)) {
+            return;
+        }
+    }
     if (image.IsUntracked()) {
         page_manager.UpdatePageWatchers(image_begin, image.info.guest_size, PageOp::Track);
     } else {
@@ -1094,6 +1131,7 @@ void TextureCache::MarkDirtyIfEdgesModified(Image& image) {
 }
 
 void TextureCache::GarbageCollectImages() {
+    FreeUnmappedImages();
     if (instance.CanReportMemoryUsage()) {
         total_used_memory = instance.GetDeviceMemoryUsage();
     }
