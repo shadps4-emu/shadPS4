@@ -20,6 +20,8 @@ static IR::Value LoadForRegType(IR::IREmitter& ir, IR::RegTag tag) {
         return ir.GetScc();
     case IR::RegType::Exec:
         return ir.GetExec();
+    case IR::RegType::Vskip:
+        return ir.GetVskip();
     case IR::RegType::VccLo:
         return ir.GetVccLo();
     case IR::RegType::VccHi:
