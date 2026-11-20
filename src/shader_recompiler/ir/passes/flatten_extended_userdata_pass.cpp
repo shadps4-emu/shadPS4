@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <unordered_map>
+#include <unordered_set>
 #include <boost/container/flat_map.hpp>
 #include <queue>
 #include <xbyak/xbyak.h>
@@ -17,6 +18,7 @@
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/ir_emitter.h"
 #include "shader_recompiler/ir/opcodes.h"
+#include "shader_recompiler/ir/passes/resource_pass.h"
 #include "shader_recompiler/ir/passes/srt.h"
 #include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/ir/reg.h"
@@ -786,6 +788,7 @@ static std::optional<SrtReadSource> FindSrtReadSource(IR::Value value) {
 }
 
 static std::vector<ReadConstArray> PrepareSrtReadArrays(IR::Program& program,
+                                                        const ResourceDiscoveryList& resources,
                                                         const Profile& profile) {
     std::vector<ReadConstArray> arrays;
     if (!program.info.params ||
@@ -807,8 +810,24 @@ static std::vector<ReadConstArray> PrepareSrtReadArrays(IR::Program& program,
         IR::Inst* first_dword;
     };
     std::vector<Snapshot> snapshots;
+    std::unordered_set<const IR::Inst*> descriptor_sources;
+    for (const auto& resource : resources) {
+        for (const auto& sharp : resource.sharps) {
+            for (u32 i = 0; i < sharp.num_dwords; ++i) {
+                if (const auto* inst = sharp.dwords[i].TryInst()) {
+                    descriptor_sources.insert(inst);
+                }
+            }
+        }
+        if (resource.user->GetOpcode() == IR::Opcode::ImageSampleRaw) {
+            if (const auto* inst = resource.sharps[1].post_op_data.lod_prod.TryInst()) {
+                descriptor_sources.insert(inst);
+            }
+        }
+    }
+
     for (auto* read : reads) {
-        if (read->Arg(1).IsImmediate()) {
+        if (read->Arg(1).IsImmediate() || descriptor_sources.contains(read)) {
             continue;
         }
         const auto source = FindSrtReadSource(read->Arg(0));
@@ -845,10 +864,11 @@ static std::vector<ReadConstArray> PrepareSrtReadArrays(IR::Program& program,
 
 } // Anonymous namespace
 
-void FlattenExtendedUserdataPass(IR::Program& program, const Profile& profile) {
+void FlattenExtendedUserdataPass(IR::Program& program, const ResourceDiscoveryList& resources,
+                                 const Profile& profile) {
     auto& post_order = program.post_order_blocks;
     PassInfo pass_info;
-    const auto arrays = PrepareSrtReadArrays(program, profile);
+    const auto arrays = PrepareSrtReadArrays(program, resources, profile);
 
     // traverse at end and assign offsets to duplicate readconsts, using
     // vn_to_inst as the source
@@ -982,7 +1002,8 @@ PFN_SrtWalker RegisterWalkerCode(const u8* ptr, size_t size) {
 
 namespace Optimization {
 
-void FlattenExtendedUserdataPass(IR::Program& program, const Profile& profile) {
+void FlattenExtendedUserdataPass(IR::Program& program, const ResourceDiscoveryList& resources,
+                                 const Profile& profile) {
     UNREACHABLE_MSG("FlattenExtendedUserdataPass unimplemented for target architecture.");
 }
 
