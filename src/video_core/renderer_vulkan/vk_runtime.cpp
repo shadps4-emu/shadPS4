@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <atomic>
+#include <vector>
+
 #include "common/alignment.h"
 #include "video_core/buffer_cache/buffer.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
@@ -111,6 +114,30 @@ void Runtime::TickFrame() {
 void Runtime::CopyBuffer(const VideoCore::Buffer* src, const VideoCore::Buffer* dst,
                          std::span<const vk::BufferCopy> copies) {
     scheduler.EndRendering();
+
+    // A transiently rebuilt descriptor can describe a copy past the end of either buffer;
+    // recording it faults the GPU context, so keep only the copies that fit.
+    std::vector<vk::BufferCopy> valid_copies;
+    valid_copies.reserve(copies.size());
+    for (const auto& copy : copies) {
+        if (u64{copy.srcOffset} + copy.size > src->SizeBytes() ||
+            u64{copy.dstOffset} + copy.size > dst->SizeBytes()) {
+            static std::atomic<u32> dropped{0};
+            if (dropped.fetch_add(1, std::memory_order_relaxed) < 16) {
+                LOG_WARNING(Render_Vulkan,
+                            "Dropping buffer copy outside the buffers: src_off={} dst_off={} "
+                            "size={} src_size={} dst_size={}",
+                            copy.srcOffset, copy.dstOffset, copy.size, src->SizeBytes(),
+                            dst->SizeBytes());
+            }
+            continue;
+        }
+        valid_copies.push_back(copy);
+    }
+    if (valid_copies.empty()) {
+        return;
+    }
+    copies = valid_copies;
 
     bool needs_flush{};
     for (const auto& copy : copies) {
