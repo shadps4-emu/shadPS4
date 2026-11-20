@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <array>
 #include <condition_variable>
 #include <deque>
 #include <mutex>
@@ -26,6 +27,9 @@ constexpr std::string_view sce_sys = "sce_sys";               // system folder i
 constexpr std::string_view backup_prefix = "sce_bu_";         // backup folder prefix
 constexpr std::string_view backup_prefix_tmp = "sce_bu_tmp_"; // in-progress backup folder prefix
 constexpr std::string_view backup_prefix_old = "sce_bu_old_"; // previous backup folder prefix
+constexpr std::string_view legacy_backup_dir = "sce_backup";  // backup folder inside save
+constexpr std::array<std::string_view, 2> legacy_backup_dirs_tmp = {"sce_backup_tmp",
+                                                                    "sce_backup_old"};
 
 namespace fs = std::filesystem;
 
@@ -291,6 +295,24 @@ bool Restore(const std::filesystem::path& save_path) {
     }
 
     return true;
+}
+
+void MoveLegacyBackup(const std::filesystem::path& save_path) {
+    std::unique_lock lk{g_backup_running_mutex};
+    std::error_code ec;
+    const auto legacy_dir = save_path / legacy_backup_dir;
+    if (fs::is_directory(legacy_dir, ec)) {
+        const auto backup_dir = MakeBackupPath(save_path);
+        if (!fs::exists(backup_dir, ec)) {
+            LOG_INFO(Lib_SaveData, "Moving backup of {} out of the save directory",
+                     fmt::UTF(save_path.u8string()));
+            fs::rename(legacy_dir, backup_dir, ec);
+        }
+        fs::remove_all(legacy_dir, ec);
+    }
+    for (const auto dir : legacy_backup_dirs_tmp) {
+        fs::remove_all(save_path / dir, ec);
+    }
 }
 
 WorkerStatus GetWorkerStatus() {
