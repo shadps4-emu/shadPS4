@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
+
 #include "common/assert.h"
 #include "core/libraries/kernel/process.h"
 #include "core/libraries/videoout/buffer.h"
@@ -184,6 +186,10 @@ bool ImageInfo::IsCompatible(const ImageInfo& info) const {
 void ImageInfo::UpdateSize() noexcept {
     ASSERT_MSG(array_mode != AmdGpu::ArrayMode::ArrayLinearGeneral,
                "Unhandled array mode: ArrayLinearGeneral");
+    if (resources.layers == 0) {
+        LOG_WARNING(Render_Vulkan, "Image with zero layers, using 1");
+        resources.layers = 1;
+    }
     if (std::has_single_bit(pitch) && std::bit_width(pitch) <= MAX_DIM_LOG2 &&
         pitch == size.height && size.depth == 1 && resources.levels == std::bit_width(pitch) &&
         resources.layers == 1 && num_samples == 1 && props.is_block && props.is_pow2 && !alt_tile &&
@@ -230,7 +236,11 @@ s32 ImageInfo::MipOf(const ImageInfo& info) const {
         const auto& [mip_size, mip_pitch, mip_height, mip_ofs] = info.mips_layout[m];
         const VAddr mip_base = info.guest_address + mip_ofs;
         const VAddr mip_end = mip_base + mip_size;
-        const u32 slice_size = mip_size / info.resources.layers;
+        const u32 slice_size =
+            info.resources.layers != 0 ? mip_size / info.resources.layers : mip_size;
+        if (slice_size == 0) {
+            continue;
+        }
         if (guest_address >= mip_base && guest_address < mip_end &&
             (guest_address - mip_base) % slice_size == 0 &&
             (pitch >> this_dim) == (mip_pitch >> info_dim)) {
@@ -292,8 +302,9 @@ s32 ImageInfo::SliceOf(const ImageInfo& info, s32 mip) const {
     }
 
     // Check for size alignment.
-    const u32 slice_size = info.mips_layout[mip].size / info.resources.layers;
-    if (guest_size % slice_size != 0) {
+    const u32 layers = std::max<u32>(info.resources.layers, 1);
+    const u32 slice_size = info.mips_layout[mip].size / layers;
+    if (slice_size == 0 || guest_size % slice_size != 0) {
         return -1;
     }
 
