@@ -2,17 +2,16 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <limits>
 #include <magic_enum/magic_enum.hpp>
 #include <xxhash.h>
 
 #include "common/alignment.h"
-#include "core/debug_state.h"
 #include "core/memory.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/buffer_cache/buffer.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/buffer_cache/memory_tracker.h"
-#include "video_core/buffer_cache/region_definitions.h"
 #include "video_core/renderer_vulkan/vk_graphics_pipeline.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_runtime.h"
@@ -102,6 +101,8 @@ BufferCache::BufferCache(const Vulkan::Instance& instance_, Vulkan::Scheduler& s
         (blocks_per_arena_page * NUM_ARENA_PAGES) * sizeof(vk::DeviceAddress);
     fault_manager = std::make_unique<FaultManager>(instance, scheduler, *this, block_shift,
                                                    blocks_per_arena_page * NUM_ARENA_PAGES);
+    const auto* fault_buffer = fault_manager->GetFaultBuffer();
+    runtime.FillBuffer(fault_buffer, 0u, fault_buffer->SizeBytes(), 0u);
     bda_pagetable_buffer = std::make_unique<Buffer>(
         instance, 0, bda_pagetable_size, MemoryType::DeviceLocal, "BDA Page Table Buffer");
     runtime.FillBuffer(bda_pagetable_buffer.get(), 0u, bda_pagetable_size, 0u);
@@ -140,7 +141,7 @@ void BufferCache::ReadMemory(VAddr device_addr, u64 size, bool is_write, bool as
 
         // GPU-modified ranges come as many small scattered islands,
         // so the download is widened to a window around the request
-        constexpr u64 WindowSize = 512_KB;
+        constexpr u64 WindowSize = 128_KB;
         const VAddr arena_end = arena->cpu_addr + arena->size_bytes;
         const VAddr window_start =
             std::max<VAddr>(Common::AlignDown(device_addr, WindowSize), arena->cpu_addr);
@@ -156,6 +157,11 @@ void BufferCache::ReadMemory(VAddr device_addr, u64 size, bool is_write, bool as
     } else {
         liverpool->SendCommand<true>(std::move(flush_request));
     }
+}
+
+void BufferCache::RequestReadback() {
+    gpu_modified_ranges.ForEach(
+        [&](VAddr start, VAddr end) { memory_tracker->RequestReadback(start, end - start); });
 }
 
 void BufferCache::DownloadMemory(const Buffer* arena, VAddr device_addr, u64 size, bool async) {
@@ -219,7 +225,8 @@ std::pair<const Buffer*, u64> BufferCache::ObtainBuffer(VAddr device_addr, u32 s
     const bool skip_stream_buffer = True(flags & ObtainBufferFlags::IgnoreStreamBuffer);
     // For read-only buffers use device local stream buffer to reduce renderpass breaks.
     if (!is_written && !skip_stream_buffer && size <= STREAM_THRESHOLD &&
-        !IsRegionGpuModified(device_addr, size)) {
+        !IsRegionGpuModified(device_addr, size) &&
+        (!is_texel_buffer || !texture_cache.FindImageFromRange(device_addr, size))) {
         const auto [data, offset] = stream_buffer.Map(size, instance.UniformMinAlignment());
         memory->CopySparseMemory(device_addr, data, size);
         stream_buffer.Commit();
@@ -256,6 +263,10 @@ bool BufferCache::IsRegionCpuModified(VAddr addr, size_t size) {
 
 bool BufferCache::IsRegionGpuModified(VAddr addr, size_t size) {
     return memory_tracker->IsRegionGpuModified(addr, size);
+}
+
+bool BufferCache::IsRangeGpuModified(VAddr addr, size_t size) const {
+    return gpu_modified_ranges.Intersects(addr, size);
 }
 
 void BufferCache::MarkRegionAsGpuModified(VAddr addr, size_t size) {
@@ -317,14 +328,123 @@ void BufferCache::ReadEdgeImagePages(const Image& image) {
         });
 }
 
-void BufferCache::SynchronizeDmaBuffers() {
+bool BufferCache::IsDmaTouchRangeMapped(VAddr address, u32 size) const {
+    if (!address || (address & (sizeof(u32) - 1)) || !memory->IsValidGpuMapping(address, 0) ||
+        !memory->IsValidGpuMapping(address, size)) {
+        return false;
+    }
+    const VAddr last_addr = address + size - 1;
+    const auto& backing_pages = memory->GetAddressSpace().BackingPages();
+    for (u64 page = address >> Core::GUEST_PAGE_BITS; page <= last_addr >> Core::GUEST_PAGE_BITS;
+         ++page) {
+        const auto* entry = backing_pages.find(page);
+        if (!entry || !*entry) {
+            return false;
+        }
+    }
+    return true;
+}
+
+BufferCache::DmaBufferRangeList BufferCache::MakeDmaTouchRangesResident(
+    std::span<const DmaTouchRange> loop_ranges) {
+    DmaBufferRangeList ranges;
+    for (const auto& [address, size] : loop_ranges) {
+        const VAddr end = address + size;
+        for (VAddr start = address; start < end;) {
+            const VAddr stop = std::min<VAddr>(end, (start | (HIGHER_PAGE_SIZE - 1)) + 1);
+            const u64 first_block = start >> block_shift;
+            const u64 last_block = (stop - 1) >> block_shift;
+            const auto* arena = GetArena(first_block, last_block);
+            EnsureResident(arena, first_block, last_block);
+            ranges.push_back({arena, arena->Offset(start), u32(stop - start)});
+            start = stop;
+        }
+    }
+    return ranges;
+}
+
+BufferCache::DmaBufferRangeList BufferCache::SynchronizeAllDmaBuffers(
+    std::span<const VAddr> addresses, std::span<const DmaTouchRange> loop_ranges) {
+    MakeDmaTouchRangesResident(loop_ranges);
+    for (const auto addr : addresses) {
+        const u64 page = addr >> ARENA_PAGE_BITS;
+        if (page >= address_space.size()) {
+            continue;
+        }
+        const u64 block = addr >> block_shift;
+        const auto* arena = GetArena(block, block);
+        EnsureResident(arena, block, block);
+    }
+
+    DmaBufferRangeList ranges;
     fault_process_pending = true;
+
     for (const auto& range : resident_ranges) {
         const u64 page = range.start >> (ARENA_PAGE_BITS - block_shift);
         const VAddr device_addr = range.start << block_shift;
-        const u64 size = (range.end - range.start) << block_shift;
-        SynchronizeMemory(address_space[page], device_addr, size, false, false);
+        const u32 size = (range.end - range.start) << block_shift;
+        const auto* arena = address_space[page];
+        SynchronizeMemory(arena, device_addr, size, false, false);
+        ranges.push_back({arena, arena->Offset(device_addr), size});
     }
+    return ranges;
+}
+
+BufferCache::DmaBufferRangeList BufferCache::SynchronizeDmaBuffers(
+    std::span<const VAddr> addresses, std::span<const DmaTouchRange> loop_ranges) {
+    constexpr u32 read_size = BYTES_PER_PAGE;
+    auto ranges = MakeDmaTouchRangesResident(loop_ranges);
+    for (const auto& [buffer, offset, size] : ranges) {
+        SynchronizeMemory(buffer, buffer->CpuAddr() + offset, size, false, false);
+    }
+    VAddr range_start = 0;
+    VAddr range_end = 0;
+    u32 range_size = 0;
+    const Buffer* current_arena = nullptr;
+
+    const auto release_pending = [&]() {
+        if (current_arena) {
+            const u64 first_block = range_start >> block_shift;
+            const u64 last_block = (range_start + range_size - 1) >> block_shift;
+            EnsureResident(current_arena, first_block, last_block);
+            SynchronizeMemory(current_arena, range_start, range_size, false, false,
+                              UploadUsage::ShaderDma);
+            ranges.push_back({current_arena, current_arena->Offset(range_start), range_size});
+            current_arena = nullptr;
+        }
+    };
+
+    for (const auto address : addresses) {
+        const VAddr addr = Common::AlignDown(address, BYTES_PER_PAGE);
+        if (addr < range_end) {
+            continue;
+        }
+        const u64 page = addr >> ARENA_PAGE_BITS;
+        if (page >= address_space.size()) {
+            release_pending();
+            continue;
+        }
+        const u64 block = addr >> block_shift;
+        const auto* arena = GetArena(block, block);
+        if (!arena->IsInBounds(addr, read_size)) {
+            release_pending();
+            continue;
+        }
+        if (arena != current_arena || addr != range_end ||
+            u64{range_size} + read_size > std::numeric_limits<u32>::max()) {
+            release_pending();
+            current_arena = arena;
+            range_start = addr;
+            range_end = addr + read_size;
+            range_size = read_size;
+        } else {
+            range_size += read_size;
+            range_end += read_size;
+        }
+    }
+    release_pending();
+
+    return ranges;
 }
 
 const Buffer* BufferCache::GetArena(u64 first_block, u64 last_block) {
@@ -369,6 +489,8 @@ const Buffer* BufferCache::GetArena(u64 first_block, u64 last_block) {
             .memoryOffset = (backing.offset + start - backing.start) << block_shift,
         });
     });
+
+    // Do we need to update BDA page table for the new arena?
 
     u64 base_page = first_addr >> ARENA_PAGE_BITS;
     for (u32 page = 0; page < (first_size >> ARENA_PAGE_BITS); ++page) {
@@ -448,7 +570,7 @@ void BufferCache::EnsureResident(const Buffer* arena, u64 first_block, u64 last_
 }
 
 bool BufferCache::SynchronizeMemory(const Buffer* arena, VAddr device_addr, u32 size,
-                                    bool is_written, bool is_texel_buffer) {
+                                    bool is_written, bool is_texel_buffer, UploadUsage usage) {
     boost::container::small_vector<vk::BufferCopy, 4> copies;
     size_t total_size_bytes{};
     memory_tracker->ForEachUploadRange(device_addr, size, is_written, [&](u64 addr, u64 size) {
@@ -463,7 +585,10 @@ bool BufferCache::SynchronizeMemory(const Buffer* arena, VAddr device_addr, u32 
             copy.dstOffset -= arena->cpu_addr;
         }
         staging.Flush();
-        runtime.CopyBuffer(staging.buffer, arena, copies);
+        const auto copy_usage = usage == UploadUsage::ShaderDma
+                                    ? Vulkan::Runtime::CopyUsage::ShaderDmaUpload
+                                    : Vulkan::Runtime::CopyUsage::General;
+        runtime.CopyBuffer(staging.buffer, arena, copies, copy_usage);
     }
     if (is_texel_buffer && !is_written) {
         return SynchronizeMemoryFromImage(arena, device_addr, size);
@@ -499,9 +624,11 @@ bool BufferCache::SynchronizeMemoryFromImage(const Buffer* arena, VAddr device_a
         return false;
     }
     Image& image = texture_cache.GetImage(image_id);
-    ASSERT_MSG(device_addr == image.info.guest_address,
-               "Texel buffer aliases image subresources {:x} : {:x}", device_addr,
-               image.info.guest_address);
+    const bool is_subrange = device_addr != image.info.guest_address;
+    const auto staging =
+        is_subrange
+            ? staging_pool.Request(image.info.guest_size, MemoryType::DeviceLocal, 256, false, true)
+            : Vulkan::StagingBufferRef{};
     const u64 arena_offset = arena->Offset(device_addr);
     boost::container::small_vector<vk::BufferImageCopy, 8> buffer_copies;
     for (u32 mip = 0; mip < image.info.resources.levels; mip++) {
@@ -509,7 +636,7 @@ bool BufferCache::SynchronizeMemoryFromImage(const Buffer* arena, VAddr device_a
         const u32 width = std::max(image.info.size.width >> mip, 1u);
         const u32 height = std::max(image.info.size.height >> mip, 1u);
         const u32 depth = std::max(image.info.size.depth >> mip, 1u);
-        if (arena_offset + mip_info.offset + mip_info.size > arena->size_bytes) {
+        if (!is_subrange && arena_offset + mip_info.offset + mip_info.size > arena->size_bytes) {
             break;
         }
         buffer_copies.push_back(vk::BufferImageCopy{
@@ -530,7 +657,20 @@ bool BufferCache::SynchronizeMemoryFromImage(const Buffer* arena, VAddr device_a
         return false;
     }
     auto& tile_manager = texture_cache.GetTileManager();
-    tile_manager.TileImage(image, buffer_copies, arena, arena_offset);
+    if (is_subrange) {
+        // Retile in image-relative coordinates, then copy only the requested guest-memory range.
+        // Using the buffer's address as the tiling origin would shift the image data.
+        tile_manager.TileImage(image, buffer_copies, staging.buffer, staging.offset);
+        const u64 image_offset = device_addr - image.info.guest_address;
+        const vk::BufferCopy copy{
+            .srcOffset = staging.offset + image_offset,
+            .dstOffset = arena_offset,
+            .size = std::min<u64>(size, image.info.guest_size - image_offset),
+        };
+        runtime.CopyBuffer(staging.buffer, arena, std::span{&copy, 1});
+    } else {
+        tile_manager.TileImage(image, buffer_copies, arena, arena_offset);
+    }
     return true;
 }
 

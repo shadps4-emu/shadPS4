@@ -6,6 +6,7 @@
 #include "common/assert.h"
 #include "common/native_clock.h"
 #include "common/singleton.h"
+#include "core/memory.h"
 #include "core/signals.h"
 #include "debug_state.h"
 #include "devtools/widget/common.h"
@@ -173,12 +174,15 @@ void DebugStateImpl::PushRegsDump(uintptr_t base_addr, uintptr_t header_addr,
             auto stage = (*dump)->regs.ProgramForStage(i);
             if (stage->address) {
                 const auto params = AmdGpu::GetParams(*stage);
+                std::vector<u32> code(params.code.size());
+                Core::Memory::Instance()->CopySparseMemory(
+                    params.Base(), reinterpret_cast<u8*>(code.data()), params.code.size_bytes());
                 (*dump)->stages[i] = PipelineShaderProgramDump{
                     .name = Vulkan::PipelineCache::GetShaderName(Shader::StageFromIndex(i),
                                                                  params.hash),
                     .hash = params.hash,
                     .user_data = *stage,
-                    .code = std::vector<u32>{params.code.begin(), params.code.end()},
+                    .code = std::move(code),
                 };
             }
         }
@@ -199,11 +203,14 @@ void DebugStateImpl::PushRegsDumpCompute(uintptr_t base_addr, uintptr_t header_a
     cs = cs_state;
 
     const auto params = AmdGpu::GetParams(cs);
+    std::vector<u32> code(params.code.size());
+    Core::Memory::Instance()->CopySparseMemory(params.Base(), reinterpret_cast<u8*>(code.data()),
+                                               params.code.size_bytes());
     (*dump)->cs_data = PipelineComputerProgramDump{
         .name = Vulkan::PipelineCache::GetShaderName(Shader::HwStage::Compute, params.hash),
         .hash = params.hash,
         .cs_program = cs,
-        .code = std::vector<u32>{params.code.begin(), params.code.end()},
+        .code = std::move(code),
     };
 }
 

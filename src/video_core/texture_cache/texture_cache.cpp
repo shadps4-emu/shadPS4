@@ -244,6 +244,9 @@ void TextureCache::InvalidateMemoryFromGPU(VAddr address, size_t max_size) {
 
 void TextureCache::MarkAsMaybeGpuDirty(VAddr addr, size_t size) {
     ForEachImageInRegion(addr, size, [&](ImageId image_id, Image& image) {
+        if (!image.HasGpuValidData()) {
+            return;
+        }
         if (image.gpu_hash == 0) {
             // Read backing pages directly, without faulting through the guest readback path.
             image.gpu_hash = HashBackingMemory(image.info.guest_address, image.info.guest_size);
@@ -643,20 +646,13 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
     }
 
     // Try to resolve overlaps (if any)
-    int view_mip{-1};
-    int view_slice{-1};
     if (!image_id) {
         for (const auto& cache_id : image_ids) {
-            view_mip = -1;
-            view_slice = -1;
-
             const auto& merged_info = image_id ? slot_images[image_id].info : info;
-            auto [overlap_image_id, overlap_view_mip, overlap_view_slice] =
-                ResolveOverlap(merged_info, desc.type, cache_id, image_id);
+            const auto overlap_image_id =
+                std::get<0>(ResolveOverlap(merged_info, desc.type, cache_id, image_id));
             if (overlap_image_id) {
                 image_id = overlap_image_id;
-                view_mip = overlap_view_mip;
-                view_slice = overlap_view_slice;
             }
         }
     }
@@ -683,12 +679,15 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
     image.tick_accessed_last = scheduler.CurrentTick();
     TouchImage(image);
 
-    // If the image requested is a subresource of the image from cache record its location.
-    if (view_mip > 0) {
-        desc.view_info.range.base.level = view_mip;
-    }
-    if (view_slice > 0) {
-        desc.view_info.range.base.layer = view_slice;
+    if (const auto mip = info.MipOf(image.info); mip >= 0) {
+        if (const auto slice = info.SliceOf(image.info, mip); slice >= 0) {
+            if (mip > 0) {
+                desc.view_info.range.base.level = mip;
+            }
+            if (slice > 0) {
+                desc.view_info.range.base.layer = slice;
+            }
+        }
     }
 
     return image_id;
@@ -696,12 +695,20 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
 
 ImageId TextureCache::FindImageFromRange(VAddr address, size_t size, bool ensure_valid) {
     SmallVector<ImageId, 4> image_ids;
-    ForEachImageWithAddress(address, [&](ImageId image_id, Image& image) {
+    const auto add_image = [&](ImageId image_id, Image& image) {
+        if (address < image.info.guest_address ||
+            address - image.info.guest_address >= image.info.guest_size) {
+            return;
+        }
         if (ensure_valid && !image.HasGpuValidData()) {
             return;
         }
         image_ids.push_back(image_id);
-    });
+    };
+    ForEachImageWithAddress(address, add_image);
+    if (image_ids.empty()) {
+        ForEachImageInRegion(address, 1, add_image);
+    }
     if (image_ids.size() == 1) {
         // Sometimes image size might not exactly match with requested buffer size
         // If we only found 1 candidate image use it without too many questions.

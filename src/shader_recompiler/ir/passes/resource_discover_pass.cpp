@@ -1,7 +1,10 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <limits>
+#include <unordered_map>
 #include "common/assert.h"
+#include "shader_recompiler/ir/ir_emitter.h"
 #include "shader_recompiler/ir/passes/ir_passes.h"
 #include "shader_recompiler/ir/passes/resource_pass.h"
 #include "shader_recompiler/ir/program.h"
@@ -278,20 +281,31 @@ IR::Inst* FindSharpSource(IR::Inst* handle) {
     return handle;
 }
 
-void MarkReadConstBufferSharpSources(const SharpReference& sharp) {
-    // In cases of bindless sharp fetches mark all producer instructions
-    // so the extended userdata flattening pass will include them.
+void MarkSourceAsSharp(IR::Inst* inst) {
+    ASSERT(IsSharpSource(inst));
+    if (inst->GetOpcode() == IR::Opcode::ReadConstBuffer) {
+        auto inst_info = inst->Flags<IR::BufferInstInfo>();
+        inst_info.sharp_source.Assign(1u);
+        inst->SetFlags(inst_info);
+        return;
+    }
+    if (inst->GetOpcode() == IR::Opcode::ReadConst) {
+        auto inst_info = inst->Flags<IR::ReadConstInstInfo>();
+        inst_info.sharp_source.Assign(1u);
+        inst->SetFlags(inst_info);
+        return;
+    }
+}
+
+void MarkSharpSources(const SharpReference& sharp) {
+    // Mark all producer instructions as sharp sources so that they will be flattened.
     for (size_t i = 0; i < sharp.num_dwords; i++) {
         IR::Inst* source = sharp.dwords[i].TryInst();
         if (!source) {
             continue;
         }
         ASSERT(IsSharpSource(source));
-        if (source->GetOpcode() == IR::Opcode::ReadConstBuffer) {
-            auto flags = source->Flags<IR::BufferInstInfo>();
-            flags.sharp_source.Assign(1u);
-            source->SetFlags(flags);
-        }
+        MarkSourceAsSharp(source);
     }
 }
 
@@ -328,7 +342,7 @@ void DiscoverBufferSharp(IR::Block& block, IR::Inst& inst, ResourceDiscoveryList
         vsharp.dwords[2] = dword2;
     }
 
-    MarkReadConstBufferSharpSources(vsharp);
+    MarkSharpSources(vsharp);
 }
 
 void DiscoverImageSharp(IR::Block& block, IR::Inst& inst, ResourceDiscoveryList& resources) {
@@ -356,7 +370,7 @@ void DiscoverImageSharp(IR::Block& block, IR::Inst& inst, ResourceDiscoveryList&
         tsharp.dwords[4] = tsharp_dw4;
     }
 
-    MarkReadConstBufferSharpSources(tsharp);
+    MarkSharpSources(tsharp);
 
     if (inst.GetOpcode() != IR::Opcode::ImageSampleRaw) {
         return;
@@ -372,6 +386,8 @@ void DiscoverImageSharp(IR::Block& block, IR::Inst& inst, ResourceDiscoveryList&
         found) {
         ssharp.post_op = SharpFetchPostOp::DisableAnisoIfSingleLod;
         ssharp.post_op_data.lod_prod = tsharp_dw3;
+        // We need lod_prod on the cpu
+        MarkSourceAsSharp(tsharp_dw3.Inst());
         ssharp.dwords[0] = ssharp_dw0;
     } else if (auto [ssharp_dw0, found] = CheckForceClampToWrapPattern(ssharp.dwords[0]); found) {
         ssharp.post_op = SharpFetchPostOp::ForceRepeatXyzClamp;
@@ -386,7 +402,127 @@ void DiscoverImageSharp(IR::Block& block, IR::Inst& inst, ResourceDiscoveryList&
         ssharp.dwords[0] = ssharp_dw0;
     }
 
-    MarkReadConstBufferSharpSources(ssharp);
+    MarkSharpSources(ssharp);
+}
+
+struct ArrayOffset {
+    IR::Value base;
+    u32 scale = 1;
+    u32 offset = 0;
+};
+
+static ArrayOffset DescribeArrayOffset(IR::Value value) {
+    auto* inst = value.TryInst();
+    if (!inst) {
+        return {value};
+    }
+    if (inst->GetOpcode() == IR::Opcode::IAdd32 && inst->Arg(1).IsImmediate()) {
+        auto result = DescribeArrayOffset(inst->Arg(0));
+        result.offset += inst->Arg(1).U32();
+        return result;
+    }
+    if (inst->GetOpcode() == IR::Opcode::IMul32 && inst->Arg(1).IsImmediate()) {
+        auto result = DescribeArrayOffset(inst->Arg(0));
+        result.scale *= inst->Arg(1).U32();
+        result.offset *= inst->Arg(1).U32();
+        return result;
+    }
+    if ((inst->GetOpcode() == IR::Opcode::ShiftLeftLogical32 ||
+         inst->GetOpcode() == IR::Opcode::ShiftRightLogical32) &&
+        inst->Arg(1).IsImmediate()) {
+        const u32 shift = inst->Arg(1).U32();
+        if (shift >= 32) {
+            return {value};
+        }
+        auto result = DescribeArrayOffset(inst->Arg(0));
+        if (inst->GetOpcode() == IR::Opcode::ShiftLeftLogical32) {
+            result.scale <<= shift;
+            result.offset <<= shift;
+            return result;
+        }
+        if ((result.scale | result.offset) % (1u << shift) == 0) {
+            result.scale >>= shift;
+            result.offset >>= shift;
+            return result;
+        }
+    }
+    return {value};
+}
+
+static void DiscoverImageArrays(IR::Program& program, ResourceDiscoveryList& resources,
+                                const Profile& profile) {
+    if (!program.info.params) {
+        return;
+    }
+    std::unordered_map<u64, std::shared_ptr<std::vector<IR::Value>>> tables;
+    for (auto& resource : resources) {
+        const auto& sharp = resource.sharps[0];
+        if (!IsImageInstruction(*resource.user) || sharp.num_dwords != 8 ||
+            sharp.post_op != SharpFetchPostOp::None ||
+            resource.user->GetOpcode() == IR::Opcode::ImageWrite ||
+            IsImageAtomicInstruction(*resource.user) ||
+            resource.user->Flags<IR::TextureInstInfo>().is_r128) {
+            continue;
+        }
+        auto* first = sharp.dwords[0].TryInst();
+        if (!first || first->GetOpcode() != IR::Opcode::ReadConst || first->Arg(1).IsImmediate()) {
+            continue;
+        }
+        auto* address = first->Arg(0).TryInst();
+        if (!address || address->GetOpcode() != IR::Opcode::CompositeConstructU32x2) {
+            continue;
+        }
+        auto* lo = address->Arg(0).TryInst();
+        auto* hi = address->Arg(1).TryInst();
+        if (!lo || !hi || lo->GetOpcode() != IR::Opcode::GetUserData ||
+            hi->GetOpcode() != IR::Opcode::GetUserData) {
+            continue;
+        }
+        const u32 reg = u32(lo->Arg(0).ScalarReg());
+        if (reg + 1 >= NUM_USER_DATA_REGS || u32(hi->Arg(0).ScalarReg()) != reg + 1) {
+            continue;
+        }
+        const auto offset = DescribeArrayOffset(first->Arg(1));
+        const auto count = program.info.params->ImageArraySize(reg, offset.offset);
+        if (!count) {
+            continue;
+        }
+        bool contiguous = offset.scale == 8;
+        for (u32 dw = 1; dw < 8 && contiguous; ++dw) {
+            auto* read = sharp.dwords[dw].TryInst();
+            if (!read || read->GetOpcode() != IR::Opcode::ReadConst) {
+                contiguous = false;
+                break;
+            }
+            auto* base = read->Arg(0).TryInst();
+            const auto next = DescribeArrayOffset(read->Arg(1));
+            contiguous = base && base->GetOpcode() == IR::Opcode::CompositeConstructU32x2 &&
+                         base->Arg(0) == address->Arg(0) && base->Arg(1) == address->Arg(1) &&
+                         next.base == offset.base && next.scale == 8 &&
+                         next.offset == offset.offset + dw;
+        }
+        if (!contiguous) {
+            continue;
+        }
+        ASSERT_MSG(profile.supports_sampled_image_array_non_uniform_indexing,
+                   "Device does not support nonuniform sampled image indexing");
+        ASSERT_MSG(*count <= profile.max_sampled_image_descriptors &&
+                       *count <= (std::numeric_limits<u16>::max() - NUM_USER_DATA_REGS) / 8,
+                   "Sampled image array exceeds the descriptor or SRT limit: {}", *count);
+        IR::IREmitter ir{*resource.user->GetParent(),
+                         IR::Block::InstructionList::s_iterator_to(*resource.user)};
+        auto& table = tables[u64(reg) << 32 | offset.offset];
+        if (!table) {
+            table = std::make_shared<std::vector<IR::Value>>();
+            table->reserve(*count * 8);
+            for (u32 dw = 0; dw < *count * 8; ++dw) {
+                table->push_back(ir.ReadConst(first->Arg(0), ir.Imm32(offset.offset + dw)));
+                MarkSourceAsSharp(table->back().Inst());
+            }
+        }
+        resource.image_array = table;
+        resource.image_array_index = offset.base;
+    }
 }
 
 ResourceDiscoveryList ResourceDiscoverPass(IR::Program& program, const Profile& profile) {
@@ -403,6 +539,7 @@ ResourceDiscoveryList ResourceDiscoverPass(IR::Program& program, const Profile& 
             }
         }
     }
+    DiscoverImageArrays(program, sharp_usages, profile);
     return sharp_usages;
 }
 
