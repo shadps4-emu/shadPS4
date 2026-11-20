@@ -625,6 +625,7 @@ IR::Value EmitImageSample(IR::IREmitter& ir, const GcnInst& inst, const IR::Scal
     info.is_array.Assign(mimg.da);
     info.is_unnormalized.Assign(mimg.unrm);
     info.is_r128.Assign(mimg.r128);
+    info.is_lod_query.Assign(inst.opcode == Opcode::IMAGE_GET_LOD);
     info.pc.Assign(pc);
 
     if (gather) {
@@ -744,24 +745,9 @@ void Translator::IMAGE_GET_LOD(const GcnInst& inst) {
     IR::VectorReg dst_reg{inst.dst[0].code};
     IR::VectorReg addr_reg{inst.src[0].code};
     const IR::ScalarReg tsharp_reg{inst.src[2].code * 4};
+    const IR::ScalarReg sampler_reg{inst.src[3].code * 4};
 
-    IR::TextureInstInfo info{};
-    info.is_array.Assign(mimg.da);
-    info.is_r128.Assign(mimg.r128);
-
-    const IR::Value tsharp_low =
-        ir.CompositeConstruct(ir.GetScalarReg(tsharp_reg), ir.GetScalarReg(tsharp_reg + 1),
-                              ir.GetScalarReg(tsharp_reg + 2), ir.GetScalarReg(tsharp_reg + 3));
-    const IR::Value tsharp_high = mimg.r128
-                                      ? IR::Value{}
-                                      : ir.CompositeConstruct(ir.GetScalarReg(tsharp_reg + 4),
-                                                              ir.GetScalarReg(tsharp_reg + 5),
-                                                              ir.GetScalarReg(tsharp_reg + 6),
-                                                              ir.GetScalarReg(tsharp_reg + 7));
-    const IR::Value body = ir.CompositeConstruct(
-        ir.GetVectorReg<IR::F32>(addr_reg), ir.GetVectorReg<IR::F32>(addr_reg + 1),
-        ir.GetVectorReg<IR::F32>(addr_reg + 2), ir.GetVectorReg<IR::F32>(addr_reg + 3));
-    const IR::Value lod = ir.ImageQueryLod(ir.ImageHandle(tsharp_low, tsharp_high), body, info);
+    const IR::Value lod = EmitImageSample(ir, inst, tsharp_reg, sampler_reg, addr_reg, false, pc);
     if (mimg.dmask & 1) {
         ir.SetVectorReg(dst_reg++, IR::F32{ir.CompositeExtract(lod, 0)});
     }
