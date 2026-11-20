@@ -38,6 +38,8 @@ public:
     /// Unregister a range of gpu memory that was unmapped.
     void OnGpuUnmap(VAddr address, size_t size);
 
+    void SetExecutable(VAddr address, size_t size, bool is_exec);
+
     /// Updates watches in the pages touching the specified region.
     void UpdatePageWatchers(VAddr addr, u64 size, PageOp write_op) const;
 
