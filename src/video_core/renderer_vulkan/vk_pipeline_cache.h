@@ -78,6 +78,7 @@ public:
 
     void WarmUp();
     void Sync();
+    void ResetProfile();
 
     bool LoadComputePipeline(Serialization::Archive& ar);
     bool LoadGraphicsPipeline(Serialization::Archive& ar);

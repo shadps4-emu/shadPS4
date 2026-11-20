@@ -322,7 +322,7 @@ void PipelineCache::WarmUp() {
     }
     if (profile_data.size() != sizeof(Shader::Profile)) {
         LOG_WARNING(Render,
-                    "Pipeline cache profile has unexpected size ({} != {}). Ignoring the cache",
+                    "Pipeline cache profile has unexpected size ({} != {}). Resetting the cache",
                     profile_data.size(), sizeof(Shader::Profile));
         Storage::DataBase::Instance().Close();
         return;
@@ -332,7 +332,8 @@ void PipelineCache::WarmUp() {
     std::memcpy(&cached_profile, profile_data.data(), sizeof(cached_profile));
     if (cached_profile != profile) {
         LOG_WARNING(Render,
-                    "Pipeline cache isn't compatible with current system. Ignoring the cache");
+                    "Pipeline cache isn't compatible with current system. Resetting the cache");
+        ResetProfile();
         Storage::DataBase::Instance().Close();
         return;
     }
@@ -379,6 +380,16 @@ void PipelineCache::WarmUp() {
 
 void PipelineCache::Sync() {
     Storage::DataBase::Instance().Close();
+}
+
+void PipelineCache::ResetProfile() {
+    // Mismatched (stale) profile: keep the database open and rewrite the profile blob so
+    // freshly compiled pipelines are persisted. Otherwise the cache stays cold forever.
+    Storage::DataBase::Instance().FinishPreload();
+    std::vector<u8> profile_data(sizeof(profile));
+    std::memcpy(profile_data.data(), &profile, sizeof(profile));
+    Storage::DataBase::Instance().Save(Storage::BlobType::ShaderProfile, "profile",
+                                       std::move(profile_data));
 }
 
 } // namespace Vulkan
