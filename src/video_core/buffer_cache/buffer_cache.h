@@ -4,6 +4,7 @@
 #pragma once
 
 #include <deque>
+#include <span>
 #include <boost/container/small_vector.hpp>
 
 #include "common/enum.h"
@@ -147,9 +148,10 @@ private:
     void DownloadMemory(const Buffer* arena, VAddr device_addr, u64 size, bool async);
 
     bool SynchronizeMemory(const Buffer* arena, VAddr device_addr, u32 size, bool is_written,
-                           bool is_texel_buffer);
+                           bool is_texel_buffer, std::span<const ImageId> image_ids = {});
 
-    bool SynchronizeMemoryFromImage(const Buffer* arena, VAddr device_addr, u32 size);
+    bool SynchronizeMemoryFromImage(const Buffer* arena, VAddr device_addr, u32 size,
+                                    std::span<const ImageId> image_ids = {});
 
     const Vulkan::Instance& instance;
     Vulkan::Scheduler& scheduler;
