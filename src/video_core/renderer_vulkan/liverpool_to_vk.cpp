@@ -828,8 +828,10 @@ vk::Format DepthFormat(DepthBuffer::ZFormat z_format, DepthBuffer::StencilFormat
 }
 
 vk::ClearValue ColorBufferClearValue(const AmdGpu::ColorBuffer& color_buffer) {
-    const auto comp_swizzle = color_buffer.Swizzle();
     const auto format = AmdGpu::DataFormat(color_buffer.info.format);
+    // CB_COLORn_CLEAR_WORD is already in memory layout, like fragment exports and CPU uploads.
+    // Only the remap implied by our own format choice is needed.
+    const auto comp_swizzle = AmdGpu::RemapSwizzle(format, AmdGpu::IdentityMapping);
     const auto number_type = color_buffer.GetFixedNumberFormat();
 
     const auto& c0 = color_buffer.clear_word0;
