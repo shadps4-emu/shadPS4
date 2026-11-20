@@ -438,6 +438,8 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
     set_writes.clear();
     buffer_infos.clear();
     image_infos.clear();
+    num_image_bindings = 0;
+    stage_image_writes.clear();
 
     bool uses_dma = false;
 
@@ -451,9 +453,10 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
         set_writes.resize(set_writes.size() + stage->buffers.size() + stage->images.size() +
                           stage->samplers.size());
         BindBuffers(*stage, binding, push_data);
-        BindTextures(*stage, binding);
+        PrepareTextures(*stage, binding);
         uses_dma |= stage->uses_dma;
     }
+    BindTextures();
 
     if (uses_dma) {
         buffer_cache.SynchronizeDmaBuffers();
@@ -882,19 +885,34 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
     }
 }
 
-void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindings& binding) {
-    const u32 first_image_idx = image_infos.size();
-    // To emulate storing to explicit mip levels, build a descriptor array with each mip level.
-    boost::container::small_vector<u32, 8> image_descriptor_array_sizes;
+void Rasterizer::PrepareTextures(const Shader::Info& stage, Shader::Backend::Bindings& binding) {
+    auto& stage_writes = stage_image_writes.emplace_back(StageImageWrites{
+        .first_image_binding = num_image_bindings,
+        .first_set_write = set_write_index,
+        .num_set_writes = static_cast<u32>(stage.images.size()),
+    });
+    set_write_index += stage_writes.num_set_writes;
 
-    u32 num_images{};
-    for (const auto& image_desc : stage.images) {
+    // To emulate storing to explicit mip levels, build a descriptor array with each mip level.
+    const auto write_image_descriptor = [&](u32 image_idx, u32 array_size, bool is_storage) {
+        auto& set_write = set_writes[stage_writes.first_set_write + image_idx];
+        set_write.dstSet = VK_NULL_HANDLE;
+        set_write.dstBinding = binding.unified;
+        set_write.dstArrayElement = 0;
+        set_write.descriptorCount = array_size;
+        set_write.descriptorType =
+            is_storage ? vk::DescriptorType::eStorageImage : vk::DescriptorType::eSampledImage;
+        binding.unified += array_size;
+    };
+
+    for (u32 image_idx = 0; image_idx < stage.images.size(); ++image_idx) {
+        const auto& image_desc = stage.images[image_idx];
         const auto tsharp = image_desc.GetSharp(stage);
         const auto data_fmt = tsharp.GetDataFmt();
         const auto num_fmt = tsharp.GetNumberFmt();
         if (tsharp.Address() == 0 || data_fmt == AmdGpu::DataFormat::FormatInvalid) {
-            image_bindings[num_images++].image_id = {};
-            image_descriptor_array_sizes.push_back(1);
+            image_bindings[num_image_bindings++].image_id = {};
+            write_image_descriptor(image_idx, 1, image_desc.is_written);
             continue;
         }
 
@@ -905,8 +923,8 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
                         "data_format={}, num_format={}",
                         tsharp.Address(), tsharp.pitch, tsharp.width, static_cast<u32>(data_fmt),
                         static_cast<u32>(num_fmt));
-            image_bindings[num_images++].image_id = {};
-            image_descriptor_array_sizes.push_back(1);
+            image_bindings[num_image_bindings++].image_id = {};
+            write_image_descriptor(image_idx, 1, image_desc.is_written);
             continue;
         }
 
@@ -914,7 +932,7 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
         const u32 num_bindings = image_desc.NumBindings(stage);
 
         for (auto i = 0; i < num_bindings; i++) {
-            auto& [image_id, desc] = image_bindings[num_images++];
+            auto& [image_id, desc] = image_bindings[num_image_bindings++];
             std::construct_at(&desc, tsharp, image_desc);
 
             if (mip_fallback_mode == Shader::MipStorageFallbackMode::ConstantIndex) {
@@ -945,11 +963,41 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
             image->binding.is_bound = 1u;
         }
 
-        image_descriptor_array_sizes.push_back(num_bindings);
+        write_image_descriptor(image_idx, num_bindings, image_desc.is_written);
     }
 
+    for (const auto& sampler : stage.samplers) {
+        auto ssharp = sampler.GetSharp(stage);
+        if (!ssharp.Valid() || (ssharp.border_color_type.Value() == AmdGpu::BorderColor::Custom &&
+                                liverpool->regs.ta_bc_base.Address() == 0)) {
+            LOG_WARNING(Render_Vulkan,
+                        "Rejecting invalid S# max_aniso={}, filter_mode={}, mip_filter={}, "
+                        "border_color_type={}, border_color_base={:#x}",
+                        static_cast<u32>(ssharp.max_aniso.Value()),
+                        static_cast<u32>(ssharp.filter_mode.Value()),
+                        static_cast<u32>(ssharp.mip_filter.Value()),
+                        static_cast<u32>(ssharp.border_color_type.Value()),
+                        liverpool->regs.ta_bc_base.Address());
+            ssharp = AmdGpu::Sampler{};
+        }
+        const auto vk_sampler =
+            texture_cache.GetSampler(ssharp, liverpool->regs.ta_bc_base, sampler.is_depth);
+        image_infos.emplace_back(vk_sampler, VK_NULL_HANDLE, vk::ImageLayout::eGeneral);
+        auto& set_write = set_writes[set_write_index++];
+        set_write.dstSet = VK_NULL_HANDLE;
+        set_write.dstBinding = binding.unified++;
+        set_write.dstArrayElement = 0;
+        set_write.descriptorCount = 1;
+        set_write.descriptorType = vk::DescriptorType::eSampler;
+        set_write.pImageInfo = &image_infos.back();
+    }
+}
+
+void Rasterizer::BindTextures() {
+    const u32 first_image_info = image_infos.size();
+
     // Second pass to re-bind images that were updated after binding
-    for (u32 i = 0; i < num_images; ++i) {
+    for (u32 i = 0; i < num_image_bindings; ++i) {
         auto& [image_id, desc] = image_bindings[i];
         bool is_storage = desc.type == VideoCore::TextureCache::BindingType::Storage;
         if (!image_id) {
@@ -1014,49 +1062,13 @@ void Rasterizer::BindTextures(const Shader::Info& stage, Shader::Backend::Bindin
         }
     }
 
-    u32 image_info_idx = first_image_idx;
-    u32 image_binding_idx = 0;
-    for (u32 array_size : image_descriptor_array_sizes) {
-        const auto& [_, desc] = image_bindings[image_binding_idx];
-        const bool is_storage = desc.type == VideoCore::TextureCache::BindingType::Storage;
-        auto& set_write = set_writes[set_write_index++];
-        set_write.dstSet = VK_NULL_HANDLE;
-        set_write.dstBinding = binding.unified;
-        set_write.dstArrayElement = 0;
-        set_write.descriptorCount = array_size;
-        set_write.descriptorType =
-            is_storage ? vk::DescriptorType::eStorageImage : vk::DescriptorType::eSampledImage;
-        set_write.pImageInfo = &image_infos[image_info_idx];
-
-        image_info_idx += array_size;
-        image_binding_idx += array_size;
-        binding.unified += array_size;
-    }
-
-    for (const auto& sampler : stage.samplers) {
-        auto ssharp = sampler.GetSharp(stage);
-        if (!ssharp.Valid() || (ssharp.border_color_type.Value() == AmdGpu::BorderColor::Custom &&
-                                liverpool->regs.ta_bc_base.Address() == 0)) {
-            LOG_WARNING(Render_Vulkan,
-                        "Rejecting invalid S# max_aniso={}, filter_mode={}, mip_filter={}, "
-                        "border_color_type={}, border_color_base={:#x}",
-                        static_cast<u32>(ssharp.max_aniso.Value()),
-                        static_cast<u32>(ssharp.filter_mode.Value()),
-                        static_cast<u32>(ssharp.mip_filter.Value()),
-                        static_cast<u32>(ssharp.border_color_type.Value()),
-                        liverpool->regs.ta_bc_base.Address());
-            ssharp = AmdGpu::Sampler{};
+    for (const auto& stage_writes : stage_image_writes) {
+        u32 image_binding_idx = stage_writes.first_image_binding;
+        for (u32 i = 0; i < stage_writes.num_set_writes; ++i) {
+            auto& set_write = set_writes[stage_writes.first_set_write + i];
+            set_write.pImageInfo = &image_infos[first_image_info + image_binding_idx];
+            image_binding_idx += set_write.descriptorCount;
         }
-        const auto vk_sampler =
-            texture_cache.GetSampler(ssharp, liverpool->regs.ta_bc_base, sampler.is_depth);
-        image_infos.emplace_back(vk_sampler, VK_NULL_HANDLE, vk::ImageLayout::eGeneral);
-        auto& set_write = set_writes[set_write_index++];
-        set_write.dstSet = VK_NULL_HANDLE;
-        set_write.dstBinding = binding.unified++;
-        set_write.dstArrayElement = 0;
-        set_write.descriptorCount = 1;
-        set_write.descriptorType = vk::DescriptorType::eSampler;
-        set_write.pImageInfo = &image_infos.back();
     }
 }
 
