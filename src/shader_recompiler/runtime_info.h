@@ -250,9 +250,11 @@ struct HwComputeRuntimeInfo {
     u32 shared_memory_size;
     std::array<u32, 3> workgroup_size;
     std::array<bool, 3> tgid_enable;
+    bool tg_size_en;
 
     bool operator==(const HwComputeRuntimeInfo& other) const noexcept {
-        return workgroup_size == other.workgroup_size && tgid_enable == other.tgid_enable;
+        return workgroup_size == other.workgroup_size && tgid_enable == other.tgid_enable &&
+               tg_size_en == other.tg_size_en;
     }
 };
 

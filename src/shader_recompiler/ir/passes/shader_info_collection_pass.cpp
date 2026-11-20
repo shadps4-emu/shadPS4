@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "core/emulator_settings.h"
+#include "shader_recompiler/ir/passes/resource_pass.h"
 #include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/ir/shared_memory.h"
 #include "shader_recompiler/profile.h"
@@ -76,6 +77,7 @@ void Visit(Info& info, const IR::Inst& inst, Profile const& profile) {
         break;
     case IR::Opcode::LoadSharedU32:
     case IR::Opcode::WriteSharedU32:
+    case IR::Opcode::PredicatedWriteSharedU32:
     case IR::Opcode::SharedAtomicIAdd32:
     case IR::Opcode::SharedAtomicISub32:
     case IR::Opcode::SharedAtomicSMin32:
@@ -156,9 +158,6 @@ void Visit(Info& info, const IR::Inst& inst, Profile const& profile) {
     case IR::Opcode::ConvertF64U32:
         info.uses_fp64 = true;
         break;
-    case IR::Opcode::ImageWrite:
-        info.has_storage_images = true;
-        break;
     case IR::Opcode::QuadBroadcast:
         info.uses_group_quad = true;
         break;
@@ -169,6 +168,13 @@ void Visit(Info& info, const IR::Inst& inst, Profile const& profile) {
     case IR::Opcode::ReadLane:
     case IR::Opcode::ReadFirstLane:
     case IR::Opcode::WriteLane:
+        info.uses_group_ballot = true;
+        break;
+    case IR::Opcode::ElectOrLane0:
+        info.uses_group_ballot = true;
+        info.uses_group_vote = true;
+        break;
+    case IR::Opcode::OrderedCountEpilogue:
         info.uses_group_ballot = true;
         break;
     case IR::Opcode::Discard:
@@ -222,6 +228,9 @@ void Visit(Info& info, const IR::Inst& inst, Profile const& profile) {
     case IR::Opcode::SubgroupId:
         info.uses_subgroup_id = true;
         break;
+    case IR::Opcode::GroupAny:
+        info.uses_group_vote = true;
+        break;
     case IR::Opcode::Memtime:
         info.uses_shader_clock = true;
         break;
@@ -239,8 +248,22 @@ void Visit(Info& info, const IR::Inst& inst, Profile const& profile) {
     case IR::Opcode::UnpackUfloat10_11_11:
         info.uses_unpack_10_11_11 = true;
         break;
+    case IR::Opcode::OrderedCount: {
+        auto flags = inst.Flags<OrderedCount::Flags>();
+        info.uses_ordered_count = true;
+        if (flags.wave_release.Value() == 0) {
+            info.uses_ordered_count_acquire_only = true;
+        }
+        info.ordered_count_permutations.emplace(
+            std::make_pair(flags.instruction_type.Value(), bool(flags.wave_release.Value())));
+        break;
+    }
     default:
         break;
+    }
+
+    if (IsImageInstruction(inst)) {
+        info.has_storage_images = true;
     }
 }
 
@@ -275,6 +298,22 @@ void CollectShaderInfoPass(IR::Program& program, const Profile& profile) {
         if (std::popcount(static_cast<u64>(segment.used_types)) > 1) {
             info.uses_aliased_shared_memory = true;
         }
+    }
+    if (info.uses_ordered_count) {
+        info.buffers.push_back({
+            .used_types = IR::Type::U32,
+            .buffer_type = BufferType::OrderedCountUtility,
+            .is_written = true,
+        });
+        info.buffers.push_back({
+            .used_types = IR::Type::U32,
+            .buffer_type = BufferType::GdsBuffer,
+            .is_written = true,
+        });
+        // For sharing emulated workgroup ID in prologue
+        info.shared_scratch_segment.UseType(IR::Type::U32);
+        info.shared_scratch_segment.SetMinAlignment(sizeof(u32));
+        info.shared_scratch_segment.SetMinSize(sizeof(u32));
     }
 }
 
