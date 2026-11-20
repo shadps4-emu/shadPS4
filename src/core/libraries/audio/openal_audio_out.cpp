@@ -26,6 +26,7 @@
 #ifndef AL_SOFT_direct_channels_remix
 #define AL_REMIX_UNMATCHED_SOFT 0x0002
 #endif
+#include <type_traits>
 #include <queue>
 #include "common/logging/log.h"
 #include "core/emulator_settings.h"
@@ -170,6 +171,14 @@ public:
         last_output_time.store(current_time, std::memory_order_release);
         output_count++;
     }
+    u32 GetOutputChannels() const override {
+        return output_channels;
+    }
+
+    bool SharesMainDevice() const override {
+        return shares_main_device;
+    }
+
     void SetVolume(const std::array<int, 8>& ch_volumes) override {
         if (!device_context->MakeCurrent(device_name)) {
             return;
@@ -229,6 +238,16 @@ private:
 
         device_registered = true;
         device_context = &OpenALDevice::GetInstance();
+
+        if (type == OrbisAudioOutPort::PadSpk) {
+            // Without a dedicated controller speaker device the pad speaker source plays on
+            // the main output, i.e. it is mixed with MAIN.
+            const auto normalize = [](std::string name) {
+                return name.empty() ? std::string{"Default Device"} : name;
+            };
+            shares_main_device =
+                normalize(device_name) == normalize(GetDeviceName(OrbisAudioOutPort::Main));
+        }
 
         // Make this device's context current
         if (!device_context->MakeCurrent(device_name)) {
@@ -290,8 +309,34 @@ private:
                      num_channels, has_float_ext ? "float" : "int16");
         }
 
+        if (know_output_mode && output_mode == ALC_SURROUND_5_1_SOFT && num_channels == 8 &&
+            !downmix_to_stereo && !hrtf_active) {
+            alGetError();
+            const ALenum format_51 =
+                alGetEnumValue(has_float_ext ? "AL_FORMAT_51CHN32" : "AL_FORMAT_51CHN16");
+            if (format_51 != 0 && alGetError() == AL_NO_ERROR) {
+                fold_to_51 = true;
+                use_native_float = has_float_ext;
+                format = format_51;
+                LOG_INFO(Lib_AudioOut, "5.1 output: using internal 7.1->5.1 downmix ({})",
+                         has_float_ext ? "float" : "int16");
+            }
+        }
+
+        if (num_channels >= 6) {
+            if (downmix_to_stereo) {
+                output_channels = 2;
+            } else if (know_output_mode) {
+                output_channels =
+                    output_mode == ALC_SURROUND_7_1_SOFT ? 8
+                    : (output_mode == ALC_SURROUND_5_1_SOFT || output_mode == ALC_SURROUND_6_1_SOFT)
+                        ? 6
+                        : 2;
+            }
+        }
+
         // Allocate buffers based on format
-        const u32 out_channels = downmix_to_stereo ? 2u : num_channels;
+        const u32 out_channels = downmix_to_stereo ? 2u : fold_to_51 ? 6u : num_channels;
         if (use_native_float) {
             al_buffer_float.resize(buffer_frames * out_channels);
             buffer_size_bytes = buffer_frames * out_channels * sizeof(float);
@@ -578,6 +623,15 @@ private:
     }
 
     bool SelectConverter() {
+        if (fold_to_51) {
+            if (use_native_float) {
+                convert = is_float ? &Fold8CHTo51<float, float> : &Fold8CHTo51<s16, float>;
+            } else {
+                convert = is_float ? &Fold8CHTo51<float, s16> : &Fold8CHTo51<s16, s16>;
+            }
+            return true;
+        }
+
         if (downmix_to_stereo) {
             if (use_native_float) {
                 if (is_float) {
@@ -799,6 +853,38 @@ private:
                 f[FR] = ClampSampleToS16(static_cast<float>(f[FR]) + lfe);
                 f[LF] = 0;
             }
+        }
+    }
+
+    template <typename Src, typename Dst>
+    static Dst FoldSample(const Src a, const Src b = Src{}) {
+        const float sum = static_cast<float>(a) + static_cast<float>(b);
+        if constexpr (std::is_same_v<Src, Dst>) {
+            if constexpr (std::is_same_v<Dst, s16>) {
+                return ClampSampleToS16(sum);
+            } else {
+                return sum;
+            }
+        } else if constexpr (std::is_same_v<Dst, s16>) {
+            return OrbisFloatToS16(sum); // float -> s16
+        } else {
+            return sum * (1.0f / 32768.0f); // s16 -> float
+        }
+    }
+
+    template <typename Src, typename Dst>
+    static void Fold8CHTo51(const void* src, void* dst, u32 frames, const float*) {
+        const Src* s = static_cast<const Src*>(src);
+        Dst* d = static_cast<Dst*>(dst);
+        for (u32 i = 0; i < frames; i++) {
+            const u32 o = i << 3;
+            const u32 p = i * 6;
+            d[p + FL] = FoldSample<Src, Dst>(s[o + FL]);
+            d[p + FR] = FoldSample<Src, Dst>(s[o + FR]);
+            d[p + FC] = FoldSample<Src, Dst>(s[o + FC]);
+            d[p + LF] = FoldSample<Src, Dst>(s[o + LF]);
+            d[p + 4] = FoldSample<Src, Dst>(s[o + 4], s[o + 6]);
+            d[p + 5] = FoldSample<Src, Dst>(s[o + 5], s[o + 7]);
         }
     }
 
@@ -1063,6 +1149,9 @@ private:
     bool downmix_to_stereo{false};
     bool fold_lfe{false};
     bool hrtf_active{false};
+    bool fold_to_51{false};
+    bool shares_main_device{false};
+    u32 output_channels{0};
 
     // Converter function pointer
     ConverterFunc convert{nullptr};
