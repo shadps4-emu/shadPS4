@@ -271,8 +271,6 @@ void Translator::EmitPrologue(IR::Block* first_block) {
                         ir.GetAttributeU32(IR::Attribute::PackedHullInvocationInfo));
 
         if (runtime_info.sw.tcs.offchip_lds_enable) {
-            // No off-chip tessellation has been observed yet. If this survives dead code elim,
-            // revisit
             ir.SetScalarReg(dst_sreg++, ir.GetAttributeU32(IR::Attribute::OffChipLdsBase));
         }
         ir.SetScalarReg(dst_sreg++, ir.GetAttributeU32(IR::Attribute::TessFactorsBufferBase));
@@ -292,6 +290,13 @@ void Translator::EmitPrologue(IR::Block* first_block) {
         ir.SetVectorReg(IR::VectorReg::V2, ir.Imm32(0u));
         // V3 is the actual PrimitiveID as intended by the shader author.
         ir.SetVectorReg(IR::VectorReg::V3, ir.GetAttributeU32(IR::Attribute::PrimitiveId));
+        if (runtime_info.sw.tes.offchip_lds_enable) {
+            // As VS, the streamout config SGPR precedes the off-chip base
+            if (runtime_info.hw_stage == HwStage::Vertex) {
+                ++dst_sreg;
+            }
+            ir.SetScalarReg(dst_sreg++, ir.GetAttributeU32(IR::Attribute::OffChipLdsBase));
+        }
         break;
     case SwStage::Compute:
         ir.SetVectorReg(dst_vreg++, ir.GetAttributeU32(IR::Attribute::LocalInvocationId, 0));

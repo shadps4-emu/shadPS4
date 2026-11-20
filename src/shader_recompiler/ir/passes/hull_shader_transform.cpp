@@ -407,7 +407,10 @@ void HullShaderTransform(IR::Program& program, const RuntimeInfo& runtime_info) 
                     return ir.BitCast<IR::F32, IR::U32>(IR::U32{data});
                 };
 
-                auto get_factor_attr = [&](u32 gcn_factor_idx) -> IR::Patch {
+                const u32 first_factor = runtime_info.sw.tcs.dynamic_hs ? 1u : 0u;
+
+                auto get_factor_attr = [&](u32 dword_idx) -> IR::Patch {
+                    const u32 factor_idx = dword_idx - first_factor;
                     // The hull outputs tess factors in different formats depending on the shader.
                     // For triangle domains, it seems to pack the entries into 4 consecutive floats,
                     // with the 3 edge factors followed by the 1 interior factor.
@@ -418,23 +421,26 @@ void HullShaderTransform(IR::Program& program, const RuntimeInfo& runtime_info) 
                     // The layout seems to be implied by the type of the abstract domain.
                     switch (runtime_info.sw.tcs.tess_type) {
                     case AmdGpu::TessellationType::Isoline:
-                        ASSERT(gcn_factor_idx < 2);
-                        return IR::PatchFactor(gcn_factor_idx);
+                        ASSERT(factor_idx < 2);
+                        return IR::PatchFactor(factor_idx);
                     case AmdGpu::TessellationType::Triangle:
-                        ASSERT(gcn_factor_idx < 4);
-                        if (gcn_factor_idx == 3) {
+                        ASSERT(factor_idx < 4);
+                        if (factor_idx == 3) {
                             return IR::Patch::TessellationLodInteriorU;
                         }
-                        return IR::PatchFactor(gcn_factor_idx);
+                        return IR::PatchFactor(factor_idx);
                     case AmdGpu::TessellationType::Quad:
-                        ASSERT(gcn_factor_idx < 6);
-                        return IR::PatchFactor(gcn_factor_idx);
+                        ASSERT(factor_idx < 6);
+                        return IR::PatchFactor(factor_idx);
                     default:
                         UNREACHABLE();
                     }
                 };
 
                 inst.Invalidate();
+                if (num_dwords == 1 && gcn_factor_idx < first_factor) {
+                    break;
+                }
                 if (num_dwords == 1) {
                     ir.SetPatch(get_factor_attr(gcn_factor_idx), GetValue(data));
                     break;
@@ -444,6 +450,9 @@ void HullShaderTransform(IR::Program& program, const RuntimeInfo& runtime_info) 
                                 inst->GetOpcode() == IR::Opcode::CompositeConstructU32x3 ||
                                 inst->GetOpcode() == IR::Opcode::CompositeConstructU32x4));
                 for (s32 i = 0; i < num_dwords; i++) {
+                    if (gcn_factor_idx + i < first_factor) {
+                        continue;
+                    }
                     ir.SetPatch(get_factor_attr(gcn_factor_idx + i), GetValue(inst->Arg(i)));
                 }
                 break;
@@ -607,8 +616,63 @@ void DomainShaderTransform(const IR::Program& program, const RuntimeInfo& runtim
     }
 }
 
+static void LowerOffChipBufferAccess(IR::Program& program) {
+    for (IR::Block* block : program.blocks) {
+        for (IR::Inst& inst : block->Instructions()) {
+            const auto opcode = inst.GetOpcode();
+            const bool is_store =
+                opcode >= IR::Opcode::StoreBufferU32 && opcode <= IR::Opcode::StoreBufferU32x4;
+            const bool is_load =
+                opcode >= IR::Opcode::LoadBufferU32 && opcode <= IR::Opcode::LoadBufferU32x4;
+            if (!is_store && !is_load) {
+                continue;
+            }
+            if (!M_GETATTRIBUTEU32(MatchAttribute(IR::Attribute::OffChipLdsBase), MatchIgnore())
+                     .Match(IR::GetBufferSOffsetArg(&inst))) {
+                continue;
+            }
+            const auto first = is_store ? IR::Opcode::StoreBufferU32 : IR::Opcode::LoadBufferU32;
+            const u32 num_dwords = u32(opcode) - u32(first) + 1;
+            const auto buf_info = inst.Flags<IR::BufferInstInfo>();
+            if (buf_info.index_enable) {
+                const IR::U32 index = IR::GetBufferIndexArg(&inst);
+                ASSERT_MSG(index.IsImmediate() && index.U32() == 0,
+                           "Indexed off-chip tessellation access");
+            }
+
+            IR::IREmitter ir{*block, IR::Block::InstructionList::s_iterator_to(inst)};
+            IR::U32 addr = buf_info.voffset_enable ? IR::GetBufferVOffsetArg(&inst) : ir.Imm32(0u);
+            if (const u32 inst_offset = buf_info.inst_offset.Value(); inst_offset != 0) {
+                addr = ir.IAdd(addr, ir.Imm32(inst_offset));
+            }
+            const auto dword_addr = [&](u32 i) {
+                return i == 0 ? addr : IR::U32{ir.IAdd(addr, ir.Imm32(i * 4))};
+            };
+
+            if (is_store) {
+                const IR::Value data = inst.Arg(IR::StoreBufferArgs::Data);
+                for (u32 i = 0; i < num_dwords; i++) {
+                    const IR::Value value = num_dwords == 1 ? data : ir.CompositeExtract(data, i);
+                    ir.WriteShared(32, value, dword_addr(i));
+                }
+                inst.Invalidate();
+            } else {
+                boost::container::static_vector<IR::Value, 4> values;
+                for (u32 i = 0; i < num_dwords; i++) {
+                    values.push_back(ir.LoadShared(32, false, dword_addr(i)));
+                }
+                const IR::Value result =
+                    num_dwords == 1 ? values[0] : ir.CompositeConstruct(values);
+                inst.ReplaceUsesWithAndRemove(result);
+            }
+        }
+    }
+}
+
 // Run before either hull or domain transform
 void TessellationPreprocess(IR::Program& program, RuntimeInfo& runtime_info) {
+    LowerOffChipBufferAccess(program);
+
     TessellationDataConstantBuffer tess_constants;
     Shader::Info& info = program.info;
     // Find the TessellationDataConstantBuffer V#

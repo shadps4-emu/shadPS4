@@ -109,6 +109,7 @@ struct SwTessControlRuntimeInfo {
     bool offchip_lds_enable;
     u32 ls_stride;
     u32 hs_output_base;
+    bool dynamic_hs;
 
     bool operator==(const SwTessControlRuntimeInfo&) const = default;
 
@@ -133,6 +134,7 @@ struct SwTessEvalRuntimeInfo {
     AmdGpu::TessellationType tess_type;
     AmdGpu::TessellationTopology tess_topology;
     AmdGpu::TessellationPartitioning tess_partitioning;
+    bool offchip_lds_enable;
 
     bool operator==(const SwTessEvalRuntimeInfo&) const noexcept = default;
 };
