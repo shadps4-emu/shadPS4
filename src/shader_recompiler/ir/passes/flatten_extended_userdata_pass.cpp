@@ -914,7 +914,8 @@ static std::vector<ReadConstArray> PrepareSrtReadArrays(IR::Program& program,
     };
     std::vector<Snapshot> snapshots;
     for (auto* read : reads) {
-        if (read->Arg(1).IsImmediate() || (profile.support_bda && FindReadConstLoop(*read))) {
+        if (IsSharpSource(read) || read->Arg(1).IsImmediate() ||
+            (profile.support_bda && FindReadConstLoop(*read))) {
             continue;
         }
         const auto source = FindSrtReadSource(read->Arg(0));
