@@ -103,11 +103,13 @@ enum class NumberConversion : u32 {
     None = 0,
     UintToUscaled = 1,
     SintToSscaled = 2,
-    UnormToUbnorm = 3,
+    UnormToUbnormNz = 3,
     Sint8ToSnormNz = 4,
     Sint16ToSnormNz = 5,
     Uint32ToUnorm = 6,
     SrgbToNorm = 7,
+    Unorm8ToUbnorm = 8,
+    Unorm16ToUbnorm = 9,
 };
 
 union CompMapping {
@@ -242,6 +244,7 @@ constexpr NumberFormat RemapNumberFormat(const NumberFormat format, const DataFo
     case NumberFormat::SnormNz:
         return NumberFormat::Sint;
     case NumberFormat::Ubnorm:
+    case NumberFormat::UbnormNz:
         return NumberFormat::Unorm;
     case NumberFormat::Float:
         if (data_format == DataFormat::Format8) {
@@ -345,8 +348,23 @@ constexpr NumberConversion MapNumberConversion(const NumberFormat num_fmt,
         return NumberConversion::UintToUscaled;
     case NumberFormat::Sscaled:
         return NumberConversion::SintToSscaled;
-    case NumberFormat::Ubnorm:
-        return NumberConversion::UnormToUbnorm;
+    case NumberFormat::Ubnorm: {
+        switch (data_fmt) {
+        case DataFormat::Format8:
+        case DataFormat::Format8_8:
+        case DataFormat::Format8_8_8_8:
+        case DataFormat::FormatBc5:
+            return NumberConversion::Unorm8ToUbnorm;
+        case DataFormat::Format16:
+        case DataFormat::Format16_16:
+        case DataFormat::Format16_16_16_16:
+            return NumberConversion::Unorm16ToUbnorm;
+        default:
+            return NumberConversion::UnormToUbnormNz;
+        }
+    }
+    case NumberFormat::UbnormNz:
+        return NumberConversion::UnormToUbnormNz;
     case NumberFormat::SnormNz: {
         switch (data_fmt) {
         case DataFormat::Format8:
