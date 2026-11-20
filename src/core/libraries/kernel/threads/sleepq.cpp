@@ -55,16 +55,16 @@ SleepQueue* SleepqLookup(void* wchan) {
 void SleepqAdd(void* wchan, Pthread* td) {
     SleepQueue* sq = SleepqLookup(wchan);
     if (sq != nullptr) {
-        sq->sq_freeq.push_front(*td->sleepqueue);
+        sq->sq_freeq.push_front(*td->Sleepqueue());
     } else {
         SleepQueueChain* sc = SC_LOOKUP(wchan);
-        sq = td->sleepqueue;
+        sq = td->Sleepqueue();
         sc->sc_queues.push_front(*sq);
         sq->sq_wchan = wchan;
         /* sq->sq_type = type; */
     }
-    td->sleepqueue = nullptr;
-    td->wchan = wchan;
+    td->Sleepqueue() = nullptr;
+    td->Wchan() = wchan;
     // libkernel uses a TAILQ here. Signal therefore selects the oldest waiter.
     sq->sq_blocked.push_back(td);
 }
@@ -82,15 +82,15 @@ bool SleepqRemove(SleepQueue* sq, Pthread* td) {
         return has_waiters;
     }
 
-    td->wchan = nullptr;
+    td->Wchan() = nullptr;
     if (!has_waiters) {
-        td->sleepqueue = sq;
+        td->Sleepqueue() = sq;
         sq->unlink();
         return false;
     }
 
     ASSERT_MSG(!sq->sq_freeq.empty(), "Sleep queue free list is empty while waiters remain");
-    td->sleepqueue = std::addressof(sq->sq_freeq.front());
+    td->Sleepqueue() = std::addressof(sq->sq_freeq.front());
     sq->sq_freeq.pop_front();
     return true;
 }
@@ -106,14 +106,14 @@ void SleepqDrop(SleepQueue* sq, void (*callback)(Pthread*, void*), void* arg) {
 
     callback(td, arg);
 
-    td->sleepqueue = sq;
-    td->wchan = nullptr;
+    td->Sleepqueue() = sq;
+    td->Wchan() = nullptr;
 
     auto sq2 = sq->sq_freeq.begin();
     for (Pthread* td2 : sq->sq_blocked) {
         callback(td2, arg);
-        td2->sleepqueue = std::addressof(*sq2);
-        td2->wchan = nullptr;
+        td2->Sleepqueue() = std::addressof(*sq2);
+        td2->Wchan() = nullptr;
         ++sq2;
     }
     sq->sq_blocked.clear();
