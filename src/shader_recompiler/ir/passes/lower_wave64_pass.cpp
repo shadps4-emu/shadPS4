@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <unordered_set>
 #include "common/logging/classes.h"
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/basic_block.h"
@@ -114,6 +115,7 @@ void LowerWave64BallotPass(IR::Program& program, const RuntimeInfo& runtime_info
     }
 
     std::vector<IR::Inst*> worklist;
+    std::vector<const IR::Inst*> native_masks;
     const auto uniform_blocks = FindUniformBlocks(program);
     for (IR::Block* block : program.blocks) {
         const bool is_uniform = std::ranges::contains(uniform_blocks, block);
@@ -130,6 +132,10 @@ void LowerWave64BallotPass(IR::Program& program, const RuntimeInfo& runtime_info
                 push_worklist(inst);
             } else if (inst.GetOpcode() == IR::Opcode::Ballot) {
                 push_worklist(inst);
+            } else if ((inst.GetOpcode() == IR::Opcode::BallotFindLsb ||
+                        inst.GetOpcode() == IR::Opcode::InverseBallot) &&
+                       !inst.Arg(0).IsImmediate()) {
+                native_masks.push_back(inst.Arg(0).Inst());
             } else if (inst.GetOpcode() == IR::Opcode::MaskedBitCount32) {
                 IR::Inst* const ballot = FindBallotForMaskedBitCount(inst);
                 if (ballot == nullptr ||
@@ -139,6 +145,29 @@ void LowerWave64BallotPass(IR::Program& program, const RuntimeInfo& runtime_info
             }
         }
     }
+    // Native subgroup consumers need the same mask width on every path, including loop backedges.
+    std::unordered_set<const IR::Inst*> native_mask_dependencies;
+    while (!native_masks.empty()) {
+        const IR::Inst* const inst = native_masks.back();
+        native_masks.pop_back();
+        if (!native_mask_dependencies.insert(inst).second ||
+            inst->GetOpcode() == IR::Opcode::Ballot) {
+            continue;
+        }
+        for (size_t i = 0; i < inst->NumArgs(); ++i) {
+            const IR::Value arg = inst->Arg(i);
+            if (!arg.IsImmediate()) {
+                native_masks.push_back(arg.Inst());
+            }
+        }
+    }
+    std::erase_if(worklist, [&](const IR::Inst* inst) {
+        if (inst->GetOpcode() == IR::Opcode::MaskedBitCount32) {
+            return native_mask_dependencies.contains(FindBallotForMaskedBitCount(*inst));
+        }
+        return inst->GetOpcode() == IR::Opcode::Ballot && native_mask_dependencies.contains(inst);
+    });
+
     if (worklist.empty()) {
         return;
     }
