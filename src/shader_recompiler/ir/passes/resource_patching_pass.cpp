@@ -769,10 +769,19 @@ void PatchImageSampleArgs(IR::Inst& inst, Info& info, const ImageResource& image
             }
         }
         if (unnormalized) {
-            // Normalize the coordinate for sampling, dividing by its corresponding dimension.
+            // An unnormalized coordinate addresses the centre of the texel it falls in, so
+            // normalize that centre and not the texel corner, or linear filtering blends in
+            // the neighbouring texel. An array layer or cube face is an index, not a
+            // coordinate, and keeps the old conversion.
             const auto dim =
                 ir.ConvertUToF(32, 32, IR::U32{ir.CompositeExtract(dimensions, dim_idx)});
-            return ir.FPDiv(coord, dim);
+            const bool is_layer = (dim_idx == 2 && (view_type == AmdGpu::ImageType::Color2DArray ||
+                                                    view_type == AmdGpu::ImageType::Cube)) ||
+                                  (dim_idx == 1 && view_type == AmdGpu::ImageType::Color1DArray);
+            if (is_layer) {
+                return ir.FPDiv(coord, dim);
+            }
+            return ir.FPDiv(ir.FPAdd(coord, ir.Imm32(0.5f)), dim);
         }
         return coord;
     };
