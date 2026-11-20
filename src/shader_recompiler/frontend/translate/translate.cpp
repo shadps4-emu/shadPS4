@@ -170,6 +170,14 @@ void Translator::EmitPrologue(IR::Block* first_block) {
     case SwStage::Fragment: {
         dst_vreg =
             IterateBarycentrics(runtime_info, [this](u32 vreg, IR::Attribute attrib, u32 comp) {
+                if (runtime_info.hw.fs.point_sprite_coords) {
+                    // On GCN the barycentrics of a point are its sprite coordinates, and some
+                    // shaders sample with the raw I/J VGPRs (1/W of the pull model is 1).
+                    ir.SetVectorReg(IR::VectorReg(vreg),
+                                    comp < 2 ? ir.GetAttribute(IR::Attribute::PointCoord, comp)
+                                             : ir.Imm32(1.0f));
+                    return;
+                }
                 if (profile.supports_amd_shader_explicit_vertex_parameter ||
                     profile.supports_fragment_shader_barycentric) {
                     ir.SetVectorReg(IR::VectorReg(vreg), ir.GetAttribute(attrib, comp));

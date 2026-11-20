@@ -363,6 +363,9 @@ void EmitContext::DefineInputs() {
              !profile.supports_amd_shader_explicit_vertex_parameter)) {
             frag_coord = DefineVariable(F32[4], spv::BuiltIn::FragCoord, spv::StorageClass::Input);
         }
+        if (info.loads.GetAny(IR::Attribute::PointCoord)) {
+            point_coord = DefineVariable(F32[2], spv::BuiltIn::PointCoord, spv::StorageClass::Input);
+        }
         if (info.loads.Get(IR::Attribute::IsFrontFace)) {
             front_facing =
                 DefineVariable(U1[1], spv::BuiltIn::FrontFacing, spv::StorageClass::Input);
