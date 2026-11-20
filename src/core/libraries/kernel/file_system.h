@@ -180,6 +180,7 @@ s64 PS4_SYSV_ABI posix_pathconf(const char* path, s32 name);
 s32 PS4_SYSV_ABI posix_fstatfs(s32 fd, OrbisKernelStatfs* buf);
 s32 PS4_SYSV_ABI posix_statfs(const char* path, OrbisKernelStatfs* buf);
 s64 PS4_SYSV_ABI posix_lseek(s32 fd, s64 offset, s32 whence);
+s32 PS4_SYSV_ABI posix_access(const char* path, s32 mode);
 s64 PS4_SYSV_ABI sceKernelWrite(s32 fd, const void* buf, u64 nbytes);
 s64 PS4_SYSV_ABI sceKernelRead(s32 fd, void* buf, u64 nbytes);
 s64 PS4_SYSV_ABI sceKernelPread(s32 fd, void* buf, u64 nbytes, s64 offset);
