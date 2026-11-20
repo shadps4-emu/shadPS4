@@ -91,6 +91,7 @@ struct PthreadMutex {
     PthreadMutexFlags m_flags;
     TimedMutex m_lock;
     std::string name;
+    bool destroyed = false;
 
     [[nodiscard]] PthreadMutexType Type() const noexcept {
         return static_cast<PthreadMutexType>(m_flags & PthreadMutexFlags::TypeMask);
@@ -121,6 +122,8 @@ struct PthreadMutex {
     int IsOwned(Pthread* curthread) const;
 };
 using PthreadMutexT = PthreadMutex*;
+
+void CleanupDeletedMutexes();
 
 // libc and libSceLibcInternal modify the m_flags of a mutex, make sure it's in the right spot.
 static_assert(offsetof(PthreadMutex, m_flags) == 0x20, "Incorrect offset for mutex flags");
