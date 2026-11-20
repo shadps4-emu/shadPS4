@@ -109,6 +109,7 @@ enum class Class {
     Lib_CompanionHttpd,       ///< The LibCompanionHttpd implementation.
     Lib_CompanionUtil,        ///< The LibCompanionUtil implementation.
     Lib_ContentExport,        ///< The LibSceContentExport implementation.
+    Lib_Composite,            ///< The LibSceComposite implementation.
     Lib_VrTracker,            ///< The LibSceVrTracker implementation.
     Lib_Font,                 ///< The libSceFont implementation.
     Lib_FontFt,               ///< The libSceFontFt implementation.

@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include <span>
+
 #include "common/types.h"
 #include "video_core/renderer_vulkan/vk_common.h"
 
@@ -23,10 +25,11 @@ public:
     void Create(vk::Device device, vk::Format surface_format);
 
     void Render(vk::CommandBuffer cmdbuf, vk::ImageView input, vk::Extent2D input_size,
-                Frame& output, Settings settings);
+                Frame& output, Settings settings, std::span<const vk::ImageView> overlays = {});
 
 private:
     vk::UniquePipeline pipeline{};
+    vk::UniquePipeline overlay_pipeline{};
     vk::UniquePipelineLayout pipeline_layout{};
     vk::UniqueDescriptorSetLayout desc_set_layout{};
     vk::UniqueSampler sampler{};

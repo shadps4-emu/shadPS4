@@ -65,6 +65,11 @@ struct BufferAttributeGroup {
     BufferAttribute attrib;
 };
 
+struct CompositeOverlay {
+    BufferAttribute attrib;
+    uintptr_t address;
+};
+
 struct VideoOutBuffer {
     s32 group_index{-1};
     uintptr_t address_left;

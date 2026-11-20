@@ -201,6 +201,8 @@ std::string_view NameOf(Class log_class) {
         return "Lib.CompanionUtil";
     case Class::Lib_ContentExport:
         return "Lib.ContentExport";
+    case Class::Lib_Composite:
+        return "Lib.Composite";
     case Class::Lib_VrTracker:
         return "Lib.VrTracker";
     case Class::Lib_Font:
