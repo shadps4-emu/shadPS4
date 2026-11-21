@@ -92,7 +92,6 @@ void SettingsWindow::LoadSettings(std::string profile) {
         neoModeSetting = EmulatorSettings.IsNeo();
         shadnetEnabledSetting = EmulatorSettings.IsShadNetEnabledSetting();
         connectedNetworkSetting = EmulatorSettings.IsConnectedToNetwork();
-        hostOverridesAutoDownloadSetting = EmulatorSettings.IsHostOverridesAutoDownload();
         pipelineCacheEnabledSetting = EmulatorSettings.IsPipelineCacheEnabled();
         pipelineCacheArchiveSetting = EmulatorSettings.IsPipelineCacheArchived();
         extraDmemSetting = EmulatorSettings.GetExtraDmemInMBytes();
@@ -150,7 +149,6 @@ void SettingsWindow::SaveSettings(std::string profile) {
         EmulatorSettings.SetNeo(neoModeSetting, true);
         EmulatorSettings.SetShadNetEnabled(shadnetEnabledSetting, true);
         EmulatorSettings.SetConnectedToNetwork(connectedNetworkSetting, true);
-        EmulatorSettings.SetHostOverridesAutoDownload(hostOverridesAutoDownloadSetting, true);
         EmulatorSettings.SetPipelineCacheEnabled(pipelineCacheEnabledSetting, true);
         EmulatorSettings.SetPipelineCacheArchived(pipelineCacheArchiveSetting, true);
         EmulatorSettings.SetExtraDmemInMBytes(extraDmemSetting, true);
@@ -798,7 +796,6 @@ void SettingsWindow::DrawSettingsTable(SettingsCategory category) {
             AddSettingCheckbox("Enable PS4 Neo Mode", neoModeSetting);
             AddSettingCheckbox("Enable ShadNet", shadnetEnabledSetting);
             AddSettingCheckbox("Set Network Connected to True", connectedNetworkSetting);
-            AddSettingCheckbox("Auto-download Host Overrides", hostOverridesAutoDownloadSetting);
             AddSettingCheckbox("Enable Shader Cache", pipelineCacheEnabledSetting);
 
             if (pipelineCacheEnabledSetting) {

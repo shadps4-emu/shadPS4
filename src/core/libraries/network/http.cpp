@@ -238,8 +238,7 @@ static std::string HttpStatusLabel(int sc);
 // When scheme is omitted the connection's original scheme is preserved.
 //
 // Files (user dir); the per-game file, when present, replaces the global one entirely:
-//   host_overrides/<TITLE_ID>.json  per game, written by the user or auto-downloaded from
-//                                   github.com/shad-net/http_host_overrides
+//   host_overrides/<TITLE_ID>.json  per game (written by the user or a launcher)
 //   host_overrides.json             global (or SHADPS4_HTTP_HOST_OVERRIDES_JSON)
 struct HostOverrideTarget {
     std::string scheme; // "http", "https", or "" to mean "preserve original"
