@@ -217,7 +217,6 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
     }
 
     bool nonblock = (flags & ORBIS_KERNEL_O_NONBLOCK) != 0;
-    bool append = (flags & ORBIS_KERNEL_O_APPEND) != 0;
     // Flags fsync and sync behave the same
     bool sync = (flags & ORBIS_KERNEL_O_SYNC) != 0 || (flags & ORBIS_KERNEL_O_FSYNC) != 0;
     bool create = (flags & ORBIS_KERNEL_O_CREAT) != 0;
@@ -357,15 +356,14 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
         }
 
         // Map the guest open flags onto a single host access mode.
+        // O_APPEND is not part of it, it is applied per write (see SeekToEndIfAppend).
         Common::FS::FileAccessMode access_mode;
         if (read) {
             access_mode = Common::FS::FileAccessMode::Read;
         } else if (write) {
-            access_mode =
-                append ? Common::FS::FileAccessMode::Append : Common::FS::FileAccessMode::Write;
+            access_mode = Common::FS::FileAccessMode::Write;
         } else if (rdwr) {
-            access_mode = append ? Common::FS::FileAccessMode::ReadAppend
-                                 : Common::FS::FileAccessMode::ReadWrite;
+            access_mode = Common::FS::FileAccessMode::ReadWrite;
         } else {
             access_mode = Common::FS::FileAccessMode::Read;
         }
@@ -633,6 +631,15 @@ s32 PS4_SYSV_ABI posix_dup2(s32 old_fd, s32 new_fd) {
     return posix_fcntl(old_fd, ORBIS_KERNEL_F_DUP2FD, new_fd);
 }
 
+// With O_APPEND set, every write goes to the end of the file. Checked per write because
+// fcntl(F_SETFL) can toggle it. The caller must hold file->m_mutex.
+static bool SeekToEndIfAppend(Core::FileSys::File* file) {
+    if ((file->m_flags.load() & ORBIS_KERNEL_O_APPEND) == 0) {
+        return true;
+    }
+    return file->Seek(0, Common::FS::SeekOrigin::End);
+}
+
 s64 PS4_SYSV_ABI write(s32 fd, const void* buf, u64 nbytes) {
     if (nbytes > 0 && buf == nullptr) {
         *__Error() = POSIX_EFAULT;
@@ -664,6 +671,11 @@ s64 PS4_SYSV_ABI write(s32 fd, const void* buf, u64 nbytes) {
 
     if (file->IsReadOnly()) {
         *__Error() = POSIX_EBADF;
+        return -1;
+    }
+
+    if (!SeekToEndIfAppend(file)) {
+        *__Error() = POSIX_EIO;
         return -1;
     }
 
@@ -811,6 +823,11 @@ s64 PS4_SYSV_ABI writev(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
 
     if (file->IsReadOnly()) {
         *__Error() = POSIX_EBADF;
+        return -1;
+    }
+
+    if (!SeekToEndIfAppend(file)) {
+        *__Error() = POSIX_EIO;
         return -1;
     }
 
@@ -2414,7 +2431,8 @@ s64 PS4_SYSV_ABI posix_pwritev(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt, 
     SCOPE_EXIT {
         file->Seek(pos);
     };
-    if (!file->Seek(offset)) {
+    // With O_APPEND the offset is ignored, as on FreeBSD.
+    if (!file->Seek(offset) || !SeekToEndIfAppend(file)) {
         *__Error() = POSIX_EIO;
         return -1;
     }
