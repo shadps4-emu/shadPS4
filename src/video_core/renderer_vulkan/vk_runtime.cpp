@@ -95,6 +95,34 @@ static u32 BufferImageCopySize(const vk::BufferImageCopy& copy, const vk::Format
            width_in_blocks * block_size;
 }
 
+static u64 ImageBufferCopySize(const VideoCore::Image* src, const VideoCore::Image* dst) {
+    const u32 num_mips = std::min(src->info.resources.levels, dst->info.resources.levels);
+    const u32 num_layers = std::min(src->info.resources.layers, dst->info.resources.layers);
+    vk::BufferImageCopy copy{
+        .bufferOffset = 0,
+        .bufferRowLength = 0,
+        .bufferImageHeight = 0,
+        .imageSubresource{
+            .aspectMask = src->aspect_mask & ~vk::ImageAspectFlagBits::eStencil,
+            .mipLevel = 0u,
+            .baseArrayLayer = 0,
+            .layerCount = num_layers,
+        },
+        .imageOffset = {0, 0, 0},
+        .imageExtent = {src->info.size.width, src->info.size.height, src->info.size.depth},
+    };
+    u64 copy_size = BufferImageCopySize(copy, src->info.pixel_format);
+    for (u32 mip = 1; mip < num_mips; ++mip) {
+        copy.imageSubresource.mipLevel = mip;
+        copy.imageExtent = vk::Extent3D{std::max(src->info.size.width >> mip, 1u),
+                                        std::max(src->info.size.height >> mip, 1u),
+                                        std::max(src->info.size.depth >> mip, 1u)};
+        copy_size = Common::AlignUp(copy_size, 16) +
+                    BufferImageCopySize(copy, src->info.pixel_format);
+    }
+    return copy_size;
+}
+
 Runtime::Runtime(const Instance& instance_, Scheduler& scheduler_)
     : instance{instance_}, scheduler{scheduler_}, staging_pool{instance_, scheduler_} {
     blit_helper = std::make_unique<VideoCore::BlitHelper>(instance, scheduler);
@@ -505,9 +533,9 @@ void Runtime::CopyColorAndDepth(VideoCore::Image* src, VideoCore::Image* dst) {
             CopyImage(src, dst);
         } else {
             // Perform depth from/to color copy using the intermediate copy buffer.
-            static constexpr size_t COPY_BUFFER_SIZE = 128_MB;
+            const u64 copy_size = ImageBufferCopySize(src, dst);
             const auto copy_ref =
-                staging_pool.Request(COPY_BUFFER_SIZE, VideoCore::MemoryType::DeviceLocal);
+                staging_pool.Request(copy_size, VideoCore::MemoryType::DeviceLocal);
             CopyImageWithBuffer(src, dst, copy_ref.buffer, copy_ref.offset);
         }
     } else if (src->info.num_samples == 1 && dst->info.num_samples > 1 &&
