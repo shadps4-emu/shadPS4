@@ -438,10 +438,10 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
     set_writes.clear();
     buffer_infos.clear();
     image_infos.clear();
-    num_image_bindings = 0;
     stage_image_writes.clear();
 
     bool uses_dma = false;
+    u32 num_images = 0;
 
     // Bind resource buffers and textures.
     Shader::Backend::Bindings binding{};
@@ -453,10 +453,10 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
         set_writes.resize(set_writes.size() + stage->buffers.size() + stage->images.size() +
                           stage->samplers.size());
         BindBuffers(*stage, binding, push_data);
-        PrepareTextures(*stage, binding);
+        PrepareTextures(*stage, binding, num_images);
         uses_dma |= stage->uses_dma;
     }
-    BindTextures();
+    BindTextures(num_images);
 
     if (uses_dma) {
         buffer_cache.SynchronizeDmaBuffers();
@@ -885,9 +885,10 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
     }
 }
 
-void Rasterizer::PrepareTextures(const Shader::Info& stage, Shader::Backend::Bindings& binding) {
+void Rasterizer::PrepareTextures(const Shader::Info& stage, Shader::Backend::Bindings& binding,
+                                 u32& num_images) {
     auto& stage_writes = stage_image_writes.emplace_back(StageImageWrites{
-        .first_image_binding = num_image_bindings,
+        .first_image_binding = num_images,
         .first_set_write = set_write_index,
         .num_set_writes = static_cast<u32>(stage.images.size()),
     });
@@ -911,7 +912,7 @@ void Rasterizer::PrepareTextures(const Shader::Info& stage, Shader::Backend::Bin
         const auto data_fmt = tsharp.GetDataFmt();
         const auto num_fmt = tsharp.GetNumberFmt();
         if (tsharp.Address() == 0 || data_fmt == AmdGpu::DataFormat::FormatInvalid) {
-            image_bindings[num_image_bindings++].image_id = {};
+            image_bindings[num_images++].image_id = {};
             write_image_descriptor(image_idx, 1, image_desc.is_written);
             continue;
         }
@@ -923,7 +924,7 @@ void Rasterizer::PrepareTextures(const Shader::Info& stage, Shader::Backend::Bin
                         "data_format={}, num_format={}",
                         tsharp.Address(), tsharp.pitch, tsharp.width, static_cast<u32>(data_fmt),
                         static_cast<u32>(num_fmt));
-            image_bindings[num_image_bindings++].image_id = {};
+            image_bindings[num_images++].image_id = {};
             write_image_descriptor(image_idx, 1, image_desc.is_written);
             continue;
         }
@@ -932,7 +933,7 @@ void Rasterizer::PrepareTextures(const Shader::Info& stage, Shader::Backend::Bin
         const u32 num_bindings = image_desc.NumBindings(stage);
 
         for (auto i = 0; i < num_bindings; i++) {
-            auto& [image_id, desc] = image_bindings[num_image_bindings++];
+            auto& [image_id, desc] = image_bindings[num_images++];
             std::construct_at(&desc, tsharp, image_desc);
 
             if (mip_fallback_mode == Shader::MipStorageFallbackMode::ConstantIndex) {
@@ -993,11 +994,11 @@ void Rasterizer::PrepareTextures(const Shader::Info& stage, Shader::Backend::Bin
     }
 }
 
-void Rasterizer::BindTextures() {
+void Rasterizer::BindTextures(u32 num_images) {
     const u32 first_image_info = image_infos.size();
 
     // Second pass to re-bind images that were updated after binding
-    for (u32 i = 0; i < num_image_bindings; ++i) {
+    for (u32 i = 0; i < num_images; ++i) {
         auto& [image_id, desc] = image_bindings[i];
         bool is_storage = desc.type == VideoCore::TextureCache::BindingType::Storage;
         if (!image_id) {

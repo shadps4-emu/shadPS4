@@ -120,8 +120,9 @@ private:
 
     void BindBuffers(const Shader::Info& stage, Shader::Backend::Bindings& binding,
                      Shader::PushData& push_data);
-    void PrepareTextures(const Shader::Info& stage, Shader::Backend::Bindings& binding);
-    void BindTextures();
+    void PrepareTextures(const Shader::Info& stage, Shader::Backend::Bindings& binding,
+                         u32& num_images);
+    void BindTextures(u32 num_images);
     bool BindResources(const Pipeline* pipeline);
 
     void BindVertexBuffers(const GraphicsPipeline* pipeline);
@@ -160,7 +161,6 @@ private:
         VideoCore::TextureCache::ImageDesc desc;
     };
     std::array<ImageBinding, Shader::NUM_IMAGES> image_bindings;
-    u32 num_image_bindings{};
 
     struct StageImageWrites {
         u32 first_image_binding;
