@@ -133,9 +133,6 @@ struct Image : public Common::LRUNode<> {
     ImageView& FindView(const ImageViewInfo& view_info, bool ensure_guest_samples = true);
 
     using Barriers = SmallVector<vk::ImageMemoryBarrier2, 32>;
-    void GetBarriers(Barriers& out_barriers, vk::ImageLayout dst_layout, vk::AccessFlags2 dst_mask,
-                     vk::PipelineStageFlags2 dst_stage,
-                     std::optional<SubresourceRange> subres_range = {});
 
 public:
     Vulkan::Runtime* runtime;
@@ -164,7 +161,20 @@ public:
         SmallVector<ImageViewInfo, 2> image_view_infos;
         SmallVector<ImageViewId, 2> image_view_ids;
         u32 num_samples;
+        bool subrect_valid{};
     };
+    BackingImage& AddBacking(const vk::ImageCreateInfo& create_info, u32 num_samples);
+    ImageView& FindView(const ImageViewInfo& view_info, BackingImage& view_backing);
+    void GetBarriers(Barriers& out_barriers, BackingImage& image_backing,
+                     vk::ImageLayout dst_layout, vk::AccessFlags2 dst_mask,
+                     vk::PipelineStageFlags2 dst_stage,
+                     std::optional<SubresourceRange> subres_range = {});
+    void InvalidateSubrects() {
+        for (auto& image_backing : backing_images) {
+            image_backing.subrect_valid = false;
+        }
+    }
+
     SmallVector<BackingImage, 2> backing_images;
     BackingImage* backing{};
     u64* memory_usage_counter{};
@@ -187,6 +197,7 @@ public:
     struct {
         u32 is_bound : 1;
         u32 is_target : 1;
+        u32 is_storage : 1;
         u32 needs_rebind : 1;
         u32 force_general : 1;
     } binding{};
