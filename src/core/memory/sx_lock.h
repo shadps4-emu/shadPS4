@@ -1,5 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
+// SPDX-FileCopyrightText: 2007 Attilio Rao <attilio@freebsd.org>
+// SPDX-FileCopyrightText: 2001 Jason Evans <jasone@freebsd.org>
+// SPDX-License-Identifier: BSD-2-Clause
 
 #pragma once
 
