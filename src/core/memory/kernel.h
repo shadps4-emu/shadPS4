@@ -154,7 +154,17 @@ public:
         u64 cursor = 0;
         VAddr current = addr;
         while (entry != vm_map.GetTree().end() && size) {
-            const u64 clip_start = entry->start < current ? current - entry->start : 0;
+            if (entry->start > current) {
+                // Skip unmapped space between entries.
+                const u64 gap = std::min<u64>(entry->start - current, size);
+                cursor += gap;
+                current += gap;
+                size -= gap;
+                if (size == 0) {
+                    break;
+                }
+            }
+            const u64 clip_start = current - entry->start;
             const u64 clip_offset = clip_start + (entry->IsBlockpool() ? 0 : entry->offset);
             const u64 clip_size = std::min<u64>(entry->end - current, size);
             if (entry->object && entry->object->HasPhysicalBacking()) {

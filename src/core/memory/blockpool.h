@@ -65,7 +65,7 @@ public:
         return addr >> BLOCK_SHIFT;
     }
 
-    constexpr static u32 ToBytes(u64 blocks) {
+    constexpr static u64 ToBytes(u64 blocks) {
         return blocks << BLOCK_SHIFT;
     }
 
