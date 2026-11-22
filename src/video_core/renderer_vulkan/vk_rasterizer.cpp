@@ -997,27 +997,49 @@ void Rasterizer::PrepareTextures(const Shader::Info& stage, Shader::Backend::Bin
 void Rasterizer::BindTextures(u32 num_images) {
     const u32 first_image_info = image_infos.size();
 
-    // Second pass to re-bind images that were updated after binding
+    // Rebind needed images
+    for (u32 i = 0; i < num_images; ++i) {
+        auto& [image_id, desc] = image_bindings[i];
+        if (!image_id) {
+            continue;
+        }
+        auto& image = texture_cache.GetImage(image_id);
+        if (!image.IsRegistered()) {
+            image.binding = {};
+            image_id = texture_cache.FindImage(desc);
+        }
+    }
+
+    // Refresh image subrects
+    for (u32 i = 0; i < num_images; ++i) {
+        auto& [image_id, desc] = image_bindings[i];
+        if (!image_id) {
+            continue;
+        }
+        auto& image = texture_cache.GetImage(image_id);
+        if (desc.IsSubrectTexture(image.info)) {
+            texture_cache.UpdateImage(image_id);
+            runtime.RefreshSubrect(image, desc.info);
+        }
+    }
+
+    // Decide layouts for images
     for (u32 i = 0; i < num_images; ++i) {
         auto& [image_id, desc] = image_bindings[i];
         bool is_storage = desc.type == VideoCore::TextureCache::BindingType::Storage;
         if (!image_id) {
             image_infos.emplace_back(VK_NULL_HANDLE, VK_NULL_HANDLE, vk::ImageLayout::eGeneral);
         } else {
-            if (auto& old_image = texture_cache.GetImage(image_id);
-                old_image.binding.needs_rebind ||
-                (desc.IsSubrectTexture(old_image.info) &&
-                 False(old_image.flags & VideoCore::ImageFlagBits::Registered))) {
-                old_image.binding = {};
-                image_id = texture_cache.FindImage(desc);
-            }
-
             bound_images.emplace_back(image_id);
 
             auto& image = texture_cache.GetImage(image_id);
             if (desc.IsSubrectTexture(image.info)) {
-                texture_cache.UpdateImage(image_id);
-                auto& view = runtime.FindSubrectView(image, desc.info, desc.view_info);
+                auto& backing = image.FindBacking({desc.info.size.width, desc.info.size.height, 1},
+                                                  desc.info.num_samples);
+                auto& view = image.FindView(desc.view_info, backing);
+                needs_barrier |= runtime.Transit(
+                    &image, &backing, vk::ImageLayout::eShaderReadOnlyOptimal,
+                    vk::PipelineStageFlagBits2::eAllCommands, vk::AccessFlagBits2::eShaderRead);
                 image_infos.emplace_back(VK_NULL_HANDLE, *view.image_view,
                                          vk::ImageLayout::eShaderReadOnlyOptimal);
                 continue;
@@ -1091,7 +1113,7 @@ RenderState Rasterizer::BeginRendering(const GraphicsPipeline* pipeline) {
         }
         has_attachment = true;
         auto* image = &texture_cache.GetImage(image_id);
-        if (image->binding.needs_rebind) {
+        if (!image->IsRegistered()) {
             image_id = bound_images.emplace_back(texture_cache.FindImage(desc));
             image = &texture_cache.GetImage(image_id);
         }
@@ -1158,7 +1180,7 @@ RenderState Rasterizer::BeginRendering(const GraphicsPipeline* pipeline) {
             texture_cache.IsMetaCleared(htile_address, slice);
         const bool is_stencil_clear = regs.depth_render_control.stencil_clear_enable;
         texture_cache.TouchMeta(htile_address, slice, false);
-        ASSERT(desc.view_info.range.extent.levels == 1 && !image.binding.needs_rebind);
+        ASSERT(desc.view_info.range.extent.levels == 1 && image.IsRegistered());
 
         const bool has_stencil = image.info.props.has_stencil;
         // Stencil writes can be enabled while depth writes are off.

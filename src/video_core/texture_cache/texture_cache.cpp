@@ -544,7 +544,6 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
                 // We have a larger image created and a separate one, representing a subres of it
                 // bound as render target. In this case we need to rebind render target.
                 if (cache_image.binding.is_target) {
-                    cache_image.binding.needs_rebind = 1u;
                     if (merged_image_id) {
                         GetImage(merged_image_id).binding.is_target = 1u;
                     }
@@ -586,10 +585,6 @@ ImageId TextureCache::ExpandImage(const ImageInfo& info, ImageId image_id) {
     const bool src_has_gpu_data = src_image.HasGpuValidData();
 
     RefreshImage(new_image);
-
-    if (src_image.binding.is_bound || src_image.binding.is_target) {
-        src_image.binding.needs_rebind = 1u;
-    }
 
     TrackImage(new_image_id);
     new_image.flags &= ~ImageFlagBits::Dirty;

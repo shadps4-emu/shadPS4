@@ -105,6 +105,10 @@ struct Image : public Common::LRUNode<> {
         return track_addr == 0 || track_addr_end == 0;
     }
 
+    bool IsRegistered() const {
+        return True(flags & ImageFlagBits::Registered);
+    }
+
     bool HasGpuValidData() const {
         return True(flags & ImageFlagBits::GpuModified) && False(flags & ImageFlagBits::Dirty);
     }
@@ -164,6 +168,7 @@ public:
         bool subrect_valid{};
     };
     BackingImage& AddBacking(const vk::ImageCreateInfo& create_info, u32 num_samples);
+    BackingImage& FindBacking(vk::Extent3D extent, u32 num_samples);
     ImageView& FindView(const ImageViewInfo& view_info, BackingImage& view_backing);
     void GetBarriers(Barriers& out_barriers, BackingImage& image_backing,
                      vk::ImageLayout dst_layout, vk::AccessFlags2 dst_mask,
@@ -198,7 +203,6 @@ public:
         u32 is_bound : 1;
         u32 is_target : 1;
         u32 is_storage : 1;
-        u32 needs_rebind : 1;
         u32 force_general : 1;
     } binding{};
 
