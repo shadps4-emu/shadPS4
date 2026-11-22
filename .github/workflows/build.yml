@@ -100,11 +100,20 @@ jobs:
       - name: Setup CMake
         uses: lukka/get-cmake@latest
 
-      - name: Setup Visual Studio shell (Windows only)
+      - &windows-msvc
+        name: Set up MSVC 14.44
         if: runner.os == 'Windows'
-        uses: egor-tensin/vs-shell@v2
-        with:
-          arch: x64
+        shell: pwsh
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          $vs = & $vswhere -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.14.44.17.14.x86.x64 -property installationPath
+          if (!$vs) { throw 'Visual Studio with MSVC 14.44 was not found' }
+          Import-Module (Join-Path $vs 'Common7\Tools\Microsoft.VisualStudio.DevShell.dll')
+          $before = [Environment]::GetEnvironmentVariables()
+          Enter-VsDevShell -VsInstallPath $vs -SkipAutomaticLocation -DevCmdArguments '-arch=x64 -host_arch=x64 -vcvars_ver=14.44 -no_logo'
+          if ($env:VCToolsVersion -notlike '14.44.*') { throw 'Failed to select MSVC 14.44' }
+          Get-ChildItem Env: | Where-Object { $_.Value -cne $before[$_.Name] } |
+            ForEach-Object { "$($_.Name)=$($_.Value)" } >> $env:GITHUB_ENV
 
       - name: Install dependencies (Linux)
         if: runner.os == 'Linux'
@@ -156,6 +165,8 @@ jobs:
     - uses: actions/checkout@v6
       with:
         submodules: recursive
+
+    - *windows-msvc
 
     - name: Cache CMake Build
       uses: hendrikmuhs/ccache-action@v1.2.21
