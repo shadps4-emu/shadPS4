@@ -125,7 +125,17 @@ void MemoryManager::CopySparseMemory(VAddr virtual_addr, u8* dest, u64 size) {
 
     while (entry != vm_map.GetTree().end() && size) {
         const u64 copy_size = std::min<u64>(entry->end - virtual_addr, size);
-        if (entry->object) {
+        if (entry->object && entry->object->HasPhysicalBacking()) {
+            // Backed objects read from their backing to avoid GPU tracking faults.
+            const u64 clip_start = virtual_addr - entry->start;
+            const u64 obj_offset = clip_start + (entry->IsBlockpool() ? 0 : entry->offset);
+            u8* backing_base = impl.BackingBase();
+            std::memset(dest, 0, copy_size);
+            entry->object->ForEachBacking(
+                obj_offset, copy_size, [&](u64 phys_addr, u64 backing_size, u64 range_offset) {
+                    std::memcpy(dest + range_offset, backing_base + phys_addr, backing_size);
+                });
+        } else if (entry->object) {
             std::memcpy(dest, std::bit_cast<const u8*>(virtual_addr), copy_size);
         } else {
             std::memset(dest, 0, copy_size);
