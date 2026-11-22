@@ -51,6 +51,8 @@ public:
                        std::span<const vk::BufferImageCopy> download_copies);
 
     void CopyImage(VideoCore::Image* src, VideoCore::Image* dst);
+    VideoCore::ImageView& FindSubrectView(VideoCore::Image& image, const VideoCore::ImageInfo& info,
+                                          const VideoCore::ImageViewInfo& view_info);
     void CopyImageWithBuffer(VideoCore::Image* src, VideoCore::Image* dst,
                              const VideoCore::Buffer* buffer, u64 offset);
     void CopyMip(VideoCore::Image* src, VideoCore::Image* dst, u32 mip, u32 slice);
