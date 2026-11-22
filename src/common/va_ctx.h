@@ -65,6 +65,7 @@ T vaArgRegSaveAreaGp(VaList* l) {
     l->gp_offset += Size;
     return *addr;
 }
+
 template <class T, u64 Align, u64 Size>
 T vaArgOverflowArgArea(VaList* l) {
     auto ptr = ((reinterpret_cast<u64>(l->overflow_arg_area) + (Align - 1)) & ~(Align - 1));

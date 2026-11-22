@@ -23,7 +23,7 @@ public:
 
     ~NopDevice() override = default;
 
-    s32 ioctl(u64 cmd, Common::VaCtx* args) override {
+    s32 ioctl(u32 cmd, void* args) override {
         return 0;
     }
 

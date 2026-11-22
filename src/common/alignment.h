@@ -9,16 +9,16 @@
 namespace Common {
 
 template <typename T>
+    requires std::is_integral_v<T>
 [[nodiscard]] constexpr T AlignUp(T value, std::size_t size) {
-    static_assert(std::is_unsigned_v<T>, "T must be an unsigned value.");
     auto mod{static_cast<T>(value % size)};
     value -= mod;
     return static_cast<T>(mod == T{0} ? value : value + size);
 }
 
 template <typename T>
+    requires std::is_integral_v<T>
 [[nodiscard]] constexpr T AlignDown(T value, std::size_t size) {
-    static_assert(std::is_unsigned_v<T>, "T must be an unsigned value.");
     return static_cast<T>(value - value % size);
 }
 
@@ -28,6 +28,18 @@ template <typename T>
 }
 
 template <typename T>
+[[nodiscard]] constexpr T AlignDownPow2(T value, std::size_t size) {
+    return static_cast<T>(value & ~(size - 1));
+}
+
+template <typename T>
+    requires std::is_integral_v<T>
+[[nodiscard]] constexpr T AlignUpPow2(T value, std::size_t size) {
+    return static_cast<T>(value + (size - 1) & ~(size - 1));
+}
+
+template <typename T>
+    requires std::is_integral_v<T>
 [[nodiscard]] constexpr T AlignDownPow2(T value, std::size_t size) {
     return static_cast<T>(value & ~(size - 1));
 }

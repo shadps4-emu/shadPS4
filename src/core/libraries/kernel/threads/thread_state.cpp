@@ -8,7 +8,7 @@
 #include "core/libraries/kernel/threads/pthread.h"
 #include "core/libraries/kernel/threads/sleepq.h"
 #include "core/libraries/kernel/threads/thread_state.h"
-#include "core/memory.h"
+#include "core/memory/kernel.h"
 #include "core/tls.h"
 
 namespace Libraries::Kernel {
@@ -23,12 +23,12 @@ ThreadState::ThreadState() {
     auto* memory = Core::Memory::Instance();
     auto& impl = memory->GetAddressSpace();
     static constexpr u32 ThrHeapSize = Common::AlignUp(sizeof(Pthread) * MaxThreads, 16_KB);
-    void* heap_addr{};
-    const int ret = memory->MapMemory(&heap_addr, impl.SystemReservedVirtualBase(), ThrHeapSize,
-                                      Core::MemoryProt::CpuReadWrite, Core::MemoryMapFlags::NoFlags,
-                                      Core::VMAType::File, "ThrHeap");
-    ASSERT_MSG(ret == 0, "Unable to allocate thread heap memory {}", ret);
-    thread_heap.Initialize(heap_addr, ThrHeapSize);
+    VAddr heap_addr = impl.SystemReservedVirtualBase();
+    const s32 ret = memory->MapMemory(&heap_addr, ThrHeapSize, Core::MemoryProt::NoAccess,
+                                      Core::MemoryMapFlags::Void, -1, 0, "ThrHeap");
+    ASSERT_MSG(ret == 0, "Unable to reserve thread heap memory {}", ret);
+    impl.Map(heap_addr, ThrHeapSize);
+    thread_heap.Initialize(reinterpret_cast<void*>(heap_addr), ThrHeapSize);
 }
 
 void ThreadState::Collect(Pthread* curthread) {

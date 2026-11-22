@@ -926,10 +926,10 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/aerolib/stubs.h
          src/core/aerolib/aerolib.cpp
          src/core/aerolib/aerolib.h
-         src/core/address_space.cpp
-         src/core/address_space.h
          src/core/file_sys/devices/base_device.cpp
          src/core/file_sys/devices/base_device.h
+         src/core/file_sys/devices/blockpool_device.cpp
+         src/core/file_sys/devices/blockpool_device.h
          src/core/file_sys/devices/ioccom.h
          src/core/file_sys/devices/logger.cpp
          src/core/file_sys/devices/logger.h
@@ -938,6 +938,8 @@ set(CORE src/core/aerolib/stubs.cpp
          src/core/file_sys/devices/console_device.h
          src/core/file_sys/devices/deci_tty_device.cpp
          src/core/file_sys/devices/deci_tty_device.h
+         src/core/file_sys/devices/dmem_device.cpp
+         src/core/file_sys/devices/dmem_device.h
          src/core/file_sys/devices/random_device.cpp
          src/core/file_sys/devices/random_device.h
          src/core/file_sys/devices/rng_device.cpp
@@ -1009,14 +1011,29 @@ set(CORE src/core/aerolib/stubs.cpp
          ${CAMERA_LIBS}
          ${COMPANION_LIBS}
          ${DEV_TOOLS}
+         src/core/memory/address_space.cpp
+         src/core/memory/address_space.h
+         src/core/memory/blockpool.cpp
+         src/core/memory/blockpool.h
+         src/core/memory/budget.h
+         src/core/memory/dmem_map.cpp
+         src/core/memory/dmem_map.h
+         src/core/memory/kernel.cpp
+         src/core/memory/kernel.h
+         src/core/memory/flexible_pool.h
+         src/core/memory/rmap_splay_tree.h
+         src/core/memory/splay_tree.h
+         src/core/memory/sx_lock.cpp
+         src/core/memory/sx_lock.h
+         src/core/memory/vm_map.cpp
+         src/core/memory/vm_map.h
+         src/core/memory/vm_object.h
          src/core/debug_state.cpp
          src/core/debug_state.h
          src/core/debugger.cpp
          src/core/debugger.h
          src/core/linker.cpp
          src/core/linker.h
-         src/core/memory.cpp
-         src/core/memory.h
          src/core/module.cpp
          src/core/module.h
          src/core/platform.h

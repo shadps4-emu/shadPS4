@@ -3,12 +3,15 @@
 
 #pragma once
 
+#include <memory>
 #include "common/types.h"
 #include "core/libraries/kernel/orbis_error.h"
 
-namespace Common {
-struct VaCtx;
-}
+namespace Core {
+struct VmObject;
+enum class MemoryProt : u8;
+enum class MemoryMapFlags : u32;
+} // namespace Core
 
 namespace Libraries::Kernel {
 struct OrbisKernelStat;
@@ -23,8 +26,13 @@ public:
 
     virtual ~BaseDevice() = 0;
 
-    virtual s32 ioctl(u64 cmd, Common::VaCtx* args) {
+    virtual s32 ioctl(u32 cmd, void* args) {
         return ORBIS_KERNEL_ERROR_ENOTTY;
+    }
+
+    virtual s32 mmap(u64 offset, u64 size, Core::MemoryProt prot, Core::MemoryProt* max_prot,
+                     Core::MemoryMapFlags flags, std::shared_ptr<VmObject>* out_object) {
+        return ORBIS_KERNEL_ERROR_ENODEV;
     }
 
     virtual s64 write(const void* buf, u64 nbytes) {

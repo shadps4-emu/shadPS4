@@ -49,6 +49,8 @@ public:
         return m_file.IsOpen() && m_file.IsWriteOnly();
     }
 
+    bool Map(VAddr addr, u64 size, u64 offset, MemoryMapFlags flags, MemoryProt raw_prot) override;
+
     void Stat(FileStat& out) override;
 
 private:

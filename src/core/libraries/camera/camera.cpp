@@ -10,7 +10,7 @@
 #include "core/libraries/kernel/memory.h"
 #include "core/libraries/kernel/process.h"
 #include "core/libraries/libs.h"
-#include "core/memory.h"
+#include "core/memory/kernel.h"
 
 #include <utility>
 
@@ -229,7 +229,7 @@ s32 PS4_SYSV_ABI sceCameraOpen(Libraries::UserService::OrbisUserServiceUserId us
 
     if (!buffers_initialized) {
         constexpr s32 camera_system_mem_size = 0xfd0000;
-        void* camera_garlic_pool = (void*)0xfd0000000;
+        VAddr camera_garlic_pool = 0xfd0000000;
 
         s32 ret = Libraries::Kernel::sceKernelMapNamedSystemFlexibleMemory(
             &camera_garlic_pool, camera_system_mem_size,

@@ -6,14 +6,14 @@
 #include <magic_enum/magic_enum.hpp>
 
 #include "core/debug_state.h"
-#include "core/memory.h"
+#include "core/memory/kernel.h"
 #include "memory_map.h"
 
 using namespace ImGui;
 
 namespace Core::Devtools::Widget {
 
-bool MemoryMapViewer::Iterator::DrawLine() {
+/*bool MemoryMapViewer::Iterator::DrawLine() {
     if (is_vma) {
         if (vma.it == vma.end) {
             return false;
@@ -56,11 +56,10 @@ bool MemoryMapViewer::Iterator::DrawLine() {
     auto type = static_cast<::Libraries::Kernel::MemoryTypes>(m.memory_type);
     Text("%s", magic_enum::enum_name(type).data());
     TableNextColumn();
-    Text("%d",
-         m.dma_type == PhysicalMemoryType::Pooled || m.dma_type == PhysicalMemoryType::Committed);
+    Text("%d", m.dma_type == PhysicalMemoryType::Committed);
     ++dmem.it;
     return true;
-}
+}*/
 
 void MemoryMapViewer::Draw() {
     SetNextWindowSize({600.0f, 500.0f}, ImGuiCond_FirstUseEver);
@@ -70,7 +69,7 @@ void MemoryMapViewer::Draw() {
     }
 
     auto mem = Memory::Instance();
-    std::scoped_lock lck{mem->mutex};
+    // std::scoped_lock lck{mem->mutex};
 
     {
         bool next_showing_vma = showing_vma;
@@ -96,7 +95,7 @@ void MemoryMapViewer::Draw() {
         showing_vma = next_showing_vma;
     }
 
-    Iterator it{};
+    /*Iterator it{};
     if (showing_vma) {
         it.is_vma = true;
         it.vma.it = mem->vma_map.begin();
@@ -105,7 +104,7 @@ void MemoryMapViewer::Draw() {
         it.is_vma = false;
         it.dmem.it = mem->dmem_map.begin();
         it.dmem.end = mem->dmem_map.end();
-    }
+    }*/
 
     if (BeginTable("memory_view_table", showing_vma ? 6 : 4,
                    ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_RowBg |
@@ -125,8 +124,8 @@ void MemoryMapViewer::Draw() {
         }
         TableHeadersRow();
 
-        while (it.DrawLine())
-            ;
+        /*while (it.DrawLine())
+            ;*/
         EndTable();
     }
 

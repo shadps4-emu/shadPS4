@@ -41,7 +41,6 @@
 #include "core/libraries/kernel/process.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/libs.h"
-#include "core/memory.h"
 #include "core/tls.h"
 #include "font_error.h"
 
@@ -5697,14 +5696,11 @@ s32 PS4_SYSV_ABI sceFontRenderSurfaceSetStyleFrame(OrbisFontRenderSurface* rende
     }
 
     {
-        auto* memory = Core::Memory::Instance();
-        if (memory && !memory->IsValidMapping(reinterpret_cast<VAddr>(renderSurface),
-                                              sizeof(OrbisFontRenderSurface))) {
+        if (renderSurface) {
             LOG_ERROR(Lib_Font, "INVALID_ADDR renderSurface={}", fmt::ptr(renderSurface));
             return ORBIS_FONT_ERROR_INVALID_PARAMETER;
         }
-        if (styleFrame && !memory->IsValidMapping(reinterpret_cast<VAddr>(styleFrame),
-                                                  sizeof(OrbisFontStyleFrame))) {
+        if (styleFrame) {
             LOG_ERROR(Lib_Font, "INVALID_ADDR styleFrame={}", fmt::ptr(styleFrame));
             return ORBIS_FONT_ERROR_INVALID_PARAMETER;
         }

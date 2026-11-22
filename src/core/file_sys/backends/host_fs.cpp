@@ -7,6 +7,7 @@
 #include "common/string_util.h"
 #include "core/file_sys/backends/host_fs.h"
 #include "core/file_sys/fs.h"
+#include "core/memory/kernel.h"
 
 namespace Core::FileSys {
 
@@ -96,6 +97,18 @@ void HostFile::Stat(FileStat& out) {
     m_file.Flush();
     const auto info = m_file.GetInfo();
     out = info ? MakeFileStat(*info, m_inode) : FileStat{};
+}
+
+bool HostFile::Map(VAddr addr, u64 size, u64 offset, MemoryMapFlags flags, MemoryProt raw_prot) {
+    if (!IsOpen()) {
+        return false;
+    }
+    const auto& memory = Core::Memory::Instance();
+    auto& vm_map = memory->GetVmMap();
+    auto& address_space = memory->GetAddressSpace();
+    address_space.MapFile(addr, size, offset, flags, static_cast<u32>(raw_prot),
+                          m_file.GetFileMapping());
+    return true;
 }
 
 HostDirectory::HostDirectory(const std::filesystem::path& root) : m_root(root) {

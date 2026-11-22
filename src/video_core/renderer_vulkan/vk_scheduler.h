@@ -456,7 +456,6 @@ private:
 
     void PriorityPendingOpsThread(std::stop_token stoken);
 
-private:
     const Instance& instance;
     Semaphore work_semaphore;
     CommandPool command_pool;

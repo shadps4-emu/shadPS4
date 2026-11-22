@@ -14,7 +14,7 @@ std::shared_ptr<BaseDevice> ZeroDevice::Create(u32 handle, const char*, s32, u16
     return std::static_pointer_cast<BaseDevice>(std::make_shared<ZeroDevice>(handle));
 }
 
-s32 ZeroDevice::ioctl(u64 cmd, Common::VaCtx* args) {
+s32 ZeroDevice::ioctl(u32 cmd, void* args) {
     LOG_ERROR(Kernel_Fs, "(STUBBED) called, cmd = {:#x}", cmd);
     return 0;
 }

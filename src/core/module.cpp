@@ -13,17 +13,13 @@
 #include "core/cpu_patches.h"
 #include "core/libraries/error_codes.h"
 #include "core/loader/dwarf.h"
-#include "core/memory.h"
+#include "core/memory/kernel.h"
 #include "core/module.h"
 #include "core/tls.h"
 
 namespace Core {
 
 using EntryFunc = PS4_SYSV_ABI int (*)(size_t args, const void* argp, void* param);
-
-static constexpr u64 ExecutableLoadBase = 0x400000;
-static constexpr u64 GameModuleLoadBase = 0x80000000;
-static constexpr u64 SystemModuleLoadBase = 0x800000000;
 
 static u64 GetAlignedSize(const elf_program_header& phdr) {
     return (phdr.p_align != 0 ? (phdr.p_memsz + (phdr.p_align - 1)) & ~(phdr.p_align - 1)
@@ -86,12 +82,41 @@ static std::string StringToNid(std::string_view symbol) {
     return dst;
 }
 
+struct ModuleBudgetInfo {
+    BudgetPtype budget_ptype;
+    VmContainer vm_container;
+    bool wire;
+    bool use_2mb;
+    bool skip_2mb_precheck;
+};
+
+ModuleBudgetInfo ClassifyModule(std::filesystem::path path, BudgetPtype process_budget) {
+    ModuleBudgetInfo info{};
+
+    const auto filename = path.filename().string();
+    const bool is_libc_or_fios = (filename == "libc.sprx" || filename == "libSceFios2.sprx");
+    const bool is_system = path.string().contains("sys_modules");
+    if (is_system && !is_libc_or_fios) {
+        // System library.
+        info.budget_ptype = BudgetPtype::System;
+        info.vm_container = VmContainer::System;
+        info.wire = false;
+    } else {
+        info.budget_ptype = process_budget;
+        info.vm_container = VmContainer::Game;
+        info.wire = process_budget == BudgetPtype::BigApp;
+        info.skip_2mb_precheck = is_libc_or_fios;
+    }
+    return info;
+}
+
 Module::Module(Core::MemoryManager* memory_, const std::filesystem::path& file_,
-               std::unique_ptr<Core::FileSys::IFile> handle, u32& max_tls_index, s32 id_)
+               std::unique_ptr<Core::FileSys::IFile> handle, u32& max_tls_index, s32 id_,
+               bool is_dynamic)
     : id{id_}, memory{memory_}, file{file_}, name{file.filename().string()} {
     elf.Open(std::move(handle));
     if (elf.IsElfFile()) {
-        LoadModuleToMemory(max_tls_index);
+        LoadModuleToMemory(max_tls_index, is_dynamic);
         LoadDynamicInfo();
         LoadSymbols();
     }
@@ -105,7 +130,7 @@ s32 Module::Start(u64 args, const void* argp, void* param) {
     return reinterpret_cast<EntryFunc>(addr)(args, argp, param);
 }
 
-void Module::LoadModuleToMemory(u32& max_tls_index) {
+void Module::LoadModuleToMemory(u32& max_tls_index, bool is_dynamic) {
     static constexpr size_t BlockAlign = 0x1000;
     static constexpr u64 TrampolineSize = 8_MB;
 
@@ -115,42 +140,47 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
     const u64 base_size = CalculateBaseSize(elf_header, elf_pheader);
     aligned_base_size = Common::AlignUp(base_size, BlockAlign);
 
+    auto& vm_map = memory->GetVmMap();
+    auto& address_space = memory->GetAddressSpace();
+
     // Reserve memory area for module
-    const bool is_executable =
-        elf_header.e_type == ET_SCE_EXEC || elf_header.e_type == ET_SCE_DYNEXEC;
-    const u64 load_base = is_executable   ? ExecutableLoadBase
-                          : IsSystemLib() ? SystemModuleLoadBase
-                                          : GameModuleLoadBase;
-    void** out_addr = reinterpret_cast<void**>(&base_virtual_addr);
-    s32 result =
-        memory->MapMemory(out_addr, load_base, aligned_base_size + TrampolineSize,
-                          MemoryProt::NoAccess, MemoryMapFlags::NoFlags, VMAType::Reserved, name);
+    const auto mod_info = ClassifyModule(file, BudgetPtype::BigApp);
+    if (is_dynamic) {
+        base_virtual_addr =
+            mod_info.budget_ptype == BudgetPtype::System ? 0x800000000ULL : 0x80000000ULL;
+    }
+    s32 result = vm_map.MapMemory(&base_virtual_addr, aligned_base_size + TrampolineSize,
+                                  MemoryProt::NoAccess, MemoryProt::NoAccess, MemoryMapFlags::Void,
+                                  nullptr, 0, name);
     ASSERT_MSG(result == ORBIS_OK, "Failed to reserve memory for module {}", name);
-    LOG_INFO(Core_Linker, "Loading module {} to {}", name, fmt::ptr(*out_addr));
+    LOG_INFO(Core_Linker, "Loading module {} to {:#x}", name, base_virtual_addr);
 
 #ifdef ARCH_X86_64
     // Initialize trampoline generator.
-    VAddr trampoline_vaddr = base_virtual_addr + aligned_base_size;
-    void* trampoline_addr = std::bit_cast<void*>(trampoline_vaddr);
-    result = memory->MapMemory(&trampoline_addr, trampoline_vaddr, TrampolineSize,
-                               MemoryProt::CpuReadWrite | MemoryProt::CpuExec,
-                               MemoryMapFlags::Fixed, VMAType::Code, name);
-    ASSERT_MSG(result == ORBIS_OK, "Failed to map trampoline area for module {}", name);
-    RegisterPatchModule(*out_addr, aligned_base_size, trampoline_addr, TrampolineSize);
+    VAddr trampoline_addr = base_virtual_addr + aligned_base_size;
+    ASSERT(address_space.Map(trampoline_addr, TrampolineSize, -1, true) ==
+           reinterpret_cast<void*>(trampoline_addr));
+    RegisterPatchModule(reinterpret_cast<void*>(base_virtual_addr), aligned_base_size,
+                        reinterpret_cast<void*>(trampoline_addr), TrampolineSize);
 #endif
+
+    // Create SELF vm object
+    auto object = std::make_shared<VmObject>();
+    object->type = VmObjectType::Self;
+    object->budget_ptype = BudgetPtype::BigApp;
 
     LOG_INFO(Core_Linker, "======== Load Module to Memory ========");
     LOG_INFO(Core_Linker, "base_virtual_addr ......: {:#018x}", base_virtual_addr);
     LOG_INFO(Core_Linker, "base_size ..............: {:#018x}", base_size);
     LOG_INFO(Core_Linker, "aligned_base_size ......: {:#018x}", aligned_base_size);
 
-    const auto add_segment = [this](const elf_program_header& phdr, bool do_map = true) {
-        const VAddr segment_vaddr = base_virtual_addr + phdr.p_vaddr;
-        void* segment_addr = std::bit_cast<void*>(segment_vaddr);
+    const auto add_segment = [&](u16 i, bool do_map = true) {
+        const elf_program_header& phdr = elf_pheader[i];
+        VAddr segment_vaddr = base_virtual_addr + phdr.p_vaddr;
         const u64 segment_size = GetAlignedSize(phdr);
         if (do_map) {
             // Convert ELF flags to memory prot.
-            auto segment_prot = MemoryProt::NoAccess;
+            auto segment_prot = MemoryProt::CpuWrite;
             if ((phdr.p_flags & PF_READ) != 0) {
                 segment_prot |= MemoryProt::CpuRead;
             }
@@ -162,12 +192,16 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
             }
 
             // Map module segments
-            const auto memory_type = IsSystemLib() ? VMAType::Code : VMAType::Flexible;
-            s32 result = memory->MapMemory(&segment_addr, segment_vaddr, segment_size, segment_prot,
-                                           MemoryMapFlags::Fixed, memory_type, name);
+            // const auto memory_type = IsSystemLib() ? VMAType::Code : VMAType::Flexible;
+            s32 result = vm_map.MapMemory(&segment_vaddr, segment_size, segment_prot,
+                                          MemoryProt::All, MemoryMapFlags::Fixed, object, i, name);
             ASSERT_MSG(result == ORBIS_OK, "Failed to map segment at {:#x} for module {}",
                        segment_vaddr, name);
             elf.LoadSegment(segment_vaddr, phdr.p_offset, phdr.p_filesz);
+
+            if (mod_info.wire) {
+                memory->GetBudget().ReserveWire(mod_info.budget_ptype, segment_size);
+            }
         }
         if (info.num_segments < 4) {
             auto& segment = info.segments[info.num_segments++];
@@ -211,7 +245,7 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
             LOG_INFO(Core_Linker, "segment_memory_size ...: {:#018x}", segment_memory_size);
             LOG_INFO(Core_Linker, "segment_mode ..........: {}", segment_mode);
 
-            add_segment(elf_pheader[i]);
+            add_segment(i);
 #ifdef ARCH_X86_64
             if (elf_pheader[i].p_flags & PF_EXEC) {
                 PrePatchInstructions(segment_addr, segment_file_size);
@@ -223,7 +257,7 @@ void Module::LoadModuleToMemory(u32& max_tls_index) {
             break;
         }
         case PT_DYNAMIC:
-            add_segment(elf_pheader[i], false);
+            add_segment(i, false);
             if (elf_pheader[i].p_filesz != 0) {
                 m_dynamic.resize(elf_pheader[i].p_filesz);
                 const VAddr segment_addr = std::bit_cast<VAddr>(m_dynamic.data());

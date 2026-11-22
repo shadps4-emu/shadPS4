@@ -3,11 +3,12 @@
 
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
+#include "core/libraries/kernel/memory.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/vr_tracker/vr_tracker.h"
 #include "core/libraries/vr_tracker/vr_tracker_error.h"
-#include "core/memory.h"
+#include "core/memory/kernel.h"
 #include "video_core/amdgpu/liverpool.h"
 
 namespace Libraries::VrTracker {

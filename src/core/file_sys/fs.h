@@ -132,11 +132,12 @@ private:
 };
 
 enum class FileType {
-    Regular, // standard file
+    Regular,
     Directory,
     Device,
     Socket,
-    Equeue
+    Equeue,
+    Blockpool,
 };
 
 struct File {

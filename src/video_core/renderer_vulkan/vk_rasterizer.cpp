@@ -4,7 +4,7 @@
 #include "common/debug.h"
 #include "core/debug_state.h"
 #include "core/emulator_settings.h"
-#include "core/memory.h"
+#include "core/memory/kernel.h"
 #include "shader_recompiler/resource.h"
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/amdgpu/liverpool.h"

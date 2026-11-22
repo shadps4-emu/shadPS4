@@ -3,12 +3,12 @@
 
 #pragma once
 
-#include "core/memory.h"
+#include "core/memory/kernel.h"
 
 namespace Core::Devtools::Widget {
 
 class MemoryMapViewer {
-    struct Iterator {
+    /*struct Iterator {
         bool is_vma;
         struct {
             MemoryManager::PhysMap::iterator it;
@@ -20,7 +20,7 @@ class MemoryMapViewer {
         } vma;
 
         bool DrawLine();
-    };
+    };*/
 
     bool showing_vma = true;
 

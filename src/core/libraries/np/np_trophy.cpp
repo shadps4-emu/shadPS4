@@ -18,7 +18,7 @@
 #include "core/libraries/np/np_trophy.h"
 #include "core/libraries/np/trophy_ui.h"
 #include "core/libraries/system/userservice.h"
-#include "core/memory.h"
+#include "core/memory/kernel.h"
 
 namespace Libraries::Np::NpTrophy {
 

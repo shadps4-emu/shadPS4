@@ -142,7 +142,8 @@ class MemoryManager;
 class Module {
 public:
     explicit Module(Core::MemoryManager* memory, const std::filesystem::path& file,
-                    std::unique_ptr<Core::FileSys::IFile> handle, u32& max_tls_index, s32 id);
+                    std::unique_ptr<Core::FileSys::IFile> handle, u32& max_tls_index, s32 id,
+                    bool is_dynamic);
     ~Module();
 
     VAddr GetBaseAddress() const noexcept {
@@ -217,7 +218,7 @@ public:
     }
 
     s32 Start(u64 args, const void* argp, void* param);
-    void LoadModuleToMemory(u32& max_tls_index);
+    void LoadModuleToMemory(u32& max_tls_index, bool is_dynamic);
     void LoadDynamicInfo();
     void LoadSymbols();
 

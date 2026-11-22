@@ -10,11 +10,10 @@
 #include "common/assert.h"
 #include "common/elf_info.h"
 #include "common/error.h"
-#include "core/address_space.h"
 #include "core/emulator_settings.h"
 #include "core/libraries/kernel/memory.h"
-#include "core/memory.h"
-#include "libraries/error_codes.h"
+#include "core/memory/address_space.h"
+#include "core/memory/vm_map.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -669,6 +668,23 @@ enum PosixPageProtection {
     }
 }
 
+[[nodiscard]] constexpr int ToPosixFlags(MemoryMapFlags flags) {
+    int posix_flags{};
+    if (False(flags & (MemoryMapFlags::Shared | MemoryMapFlags::Private))) {
+        posix_flags = MAP_PRIVATE;
+    }
+    if (True(flags & MemoryMapFlags::Private)) {
+        posix_flags |= MAP_PRIVATE;
+    }
+    if (True(flags & MemoryMapFlags::Anon)) {
+        posix_flags |= MAP_ANONYMOUS;
+    }
+    if (True(flags & MemoryMapFlags::Shared)) {
+        posix_flags |= MAP_SHARED;
+    }
+    return posix_flags;
+}
+
 struct AddressSpace::Impl {
     Impl() {
         BackingSize += EmulatorSettings.GetExtraDmemInMBytes() * 1_MB +
@@ -772,7 +788,7 @@ struct AddressSpace::Impl {
         }
     }
 
-    void* Map(VAddr virtual_addr, PAddr phys_addr, u64 size, PosixPageProtection prot,
+    void* Map(VAddr virtual_addr, PAddr phys_addr, u64 size, PosixPageProtection prot, int flag,
               int fd = -1) {
 #ifdef __APPLE__
         if ((prot & PROT_EXEC) != 0) {
@@ -780,9 +796,8 @@ struct AddressSpace::Impl {
             phys_addr = -1;
         }
 #endif
-        const int handle = phys_addr != -1 ? (fd == -1 ? backing_fd : fd) : -1;
+        const int handle = fd != -1 ? fd : (phys_addr != -1 ? backing_fd : -1);
         const off_t host_offset = phys_addr != -1 ? phys_addr : 0;
-        const int flag = phys_addr != -1 ? MAP_SHARED : (MAP_ANONYMOUS | MAP_PRIVATE);
         void* ret = mmap(reinterpret_cast<void*>(virtual_addr), size, prot, MAP_FIXED | flag,
                          handle, host_offset);
         ASSERT_MSG(ret != MAP_FAILED, "mmap failed: {}", strerror(errno));
@@ -858,16 +873,21 @@ void* AddressSpace::Map(VAddr virtual_addr, u64 size, PAddr phys_addr, bool is_e
     // canonical copy of the memory and rely on the JIT to map translated code as executable.
     constexpr auto prot = PAGE_READWRITE;
 #endif
+#ifdef _WIN32
     return impl->Map(virtual_addr, phys_addr, size, prot);
+#else
+    const int flag = phys_addr != -1 ? MAP_SHARED : (MAP_ANONYMOUS | MAP_PRIVATE);
+    return impl->Map(virtual_addr, phys_addr, size, prot, flag);
+#endif
 }
 
-void* AddressSpace::MapFile(VAddr virtual_addr, u64 size, u64 offset, u32 prot, uintptr_t fd) {
+void* AddressSpace::MapFile(VAddr virtual_addr, u64 size, u64 offset, MemoryMapFlags flags,
+                            u32 prot, uintptr_t fd) {
 #ifdef _WIN32
-    return impl->Map(virtual_addr, offset, size,
-                     ToWindowsProt(std::bit_cast<Core::MemoryProt>(prot)), fd);
+    return impl->Map(virtual_addr, offset, size, ToWindowsProt(Core::MemoryProt(prot)), fd);
 #else
-    return impl->Map(virtual_addr, offset, size, ToPosixProt(std::bit_cast<Core::MemoryProt>(prot)),
-                     fd);
+    return impl->Map(virtual_addr, offset, size, ToPosixProt(Core::MemoryProt(prot)),
+                     ToPosixFlags(flags), fd);
 #endif
 }
 
