@@ -192,11 +192,11 @@ private:
                     left->right = root;
                     SetMaxFree(root);
                     root = left->left;
-                    left->left = llist;
-                    llist = left;
+                    left->left = rlist;
+                    rlist = left;
                 } else {
-                    root->left = llist;
-                    llist = root;
+                    root->left = rlist;
+                    rlist = root;
                     root = left;
                 }
             } else {
@@ -206,11 +206,11 @@ private:
                     right->left = root;
                     SetMaxFree(root);
                     root = right->right;
-                    right->right = rlist;
-                    rlist = right;
+                    right->right = llist;
+                    llist = right;
                 } else {
-                    root->right = rlist;
-                    rlist = root;
+                    root->right = llist;
+                    llist = root;
                     root = right;
                 }
             }
