@@ -285,7 +285,8 @@ bool TryLowerReduction(IR::Inst& root, const Reduction& reduction,
 } // Anonymous namespace
 
 void WaveReductionPass(IR::Program& program, const Profile& profile) {
-    if (profile.subgroup_size != WaveSize) {
+    if (profile.subgroup_size != WaveSize ||
+        !(profile.subgroup_arithmetic_stages & (1u << static_cast<u32>(program.info.hw_stage)))) {
         return;
     }
     const WholeWaveRegions regions = FindWholeWaveRegions(program);

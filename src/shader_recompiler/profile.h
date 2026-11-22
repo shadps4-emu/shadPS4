@@ -56,6 +56,8 @@ struct Profile {
     bool fast_shader_math{};
     bool support_bda{};
 
+    u32 subgroup_arithmetic_stages{};
+
     bool operator==(const Profile&) const = default;
 };
 
