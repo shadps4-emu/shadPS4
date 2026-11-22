@@ -31,8 +31,8 @@ constexpr u64 ORBIS_USB_STORAGE_FEATURE_FAT = 1ull << 6;
 constexpr u64 ORBIS_USB_STORAGE_FEATURE_EXFAT = 1ull << 7;
 
 struct OrbisUsbStorageDeviceInfo {
-    u32 device_id;           // +0x00
-    u8 pad0[12];             // +0x04
+    u64 capacity;            // +0x00
+    u64 free_space;          // +0x08
     u16 vendor_id;           // +0x10
     u16 product_id;          // +0x12
     u16 bcd_device;          // +0x14
@@ -212,8 +212,16 @@ static s32 PS4_SYSV_ABI sceUsbStorageGetDeviceInfo(u32 device_id, OrbisUsbStorag
         return ORBIS_AUTO_MOUNTER_ERROR_NOENT;
     }
 
+    const auto space = std::filesystem::space(usb_path, ec);
+    if (ec) {
+        LOG_ERROR(Lib_Usbd, "Could not get free space of USB device {} mount path: {}", device_id,
+                  ec.message());
+        return ORBIS_AUTO_MOUNTER_ERROR_NOENT;
+    }
+
     std::memset(info, 0, sizeof(OrbisUsbStorageDeviceInfo));
-    info->device_id = device_id;
+    info->capacity = space.capacity;
+    info->free_space = space.free;
     info->vendor_id = 0x054c;
     info->product_id = 0x0268;
     info->bcd_device = 0x0100;
