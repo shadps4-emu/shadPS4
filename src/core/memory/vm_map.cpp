@@ -68,7 +68,7 @@ static bool CanMerge(VmMap::Tree::iterator a, VmMap::Tree::iterator b) {
     return true;
 }
 
-static MemoryPermission ToHostPerm(MemoryProt guest_prot) {
+MemoryPermission ToHostPerm(MemoryProt guest_prot) {
     MemoryPermission perms{};
     if (True(guest_prot & (MemoryProt::CpuRead | MemoryProt::GpuRead))) {
         perms |= MemoryPermission::Read;
@@ -86,6 +86,8 @@ void VmMap::Init(VAddr min_offset, VAddr max_offset, u32 sdk_version) {
     m_min_offset = min_offset;
     m_max_offset = max_offset;
     m_sdk_version = sdk_version;
+    m_wire_future = true;
+    m_heap_end = 0x6ff000000ULL; // real kernel applies an ASLR offset to this.
     m_header.start = min_offset;
     m_header.end = max_offset;
     m_tree.Init(&m_header, min_offset, max_offset);
@@ -175,8 +177,7 @@ s32 VmMap::MapMemory(VAddr* out_addr, u64 size, MemoryProt prot, MemoryProt max_
         if (object) {
             budget_ptype = object->budget_ptype;
         } else {
-            budget_ptype =
-                cow_system ? BudgetPtype::System : /*td_proc->budget_ptype*/ BudgetPtype::BigApp;
+            budget_ptype = cow_system ? BudgetPtype::System : m_process_budget;
         }
     }
 
@@ -189,6 +190,7 @@ s32 VmMap::MapMemory(VAddr* out_addr, u64 size, MemoryProt prot, MemoryProt max_
             if (found) {
                 return ORBIS_KERNEL_ERROR_ENOMEM;
             }
+            eflags |= VmEntryFlags::GrowsDown;
         } else if (True(flags & MemoryMapFlags::Fixed)) {
             if (False(flags & MemoryMapFlags::NoOverwrite)) {
                 Delete(addr, addr + size);
@@ -296,11 +298,11 @@ s32 VmMap::FindAddress(VAddr* addr, u64 size, MemoryMapFlags flags, VmObject* ob
             }
         }
 
-        /*if (loop_start - 0x200000000ULL < 0x500000001ULL) {
+        if (loop_start - 0x200000000ULL < 0x500000001ULL) {
             if (*addr >= m_heap_end) {
                 return ORBIS_KERNEL_ERROR_ENOMEM;
             }
-        }*/
+        }
 
         if ((False(flags & MemoryMapFlags::Sanitizer) && ((loop_start >> 34) >= 63) ||
              ((loop_start + size) >= 0xfc00000001ULL) &&
@@ -358,6 +360,7 @@ s32 VmMap::Delete(VAddr start, VAddr end) {
                 ClipEnd(entry, end);
             }
             if (entry->wired_count != 0) {
+                entry->wired_count = 1;
                 UnwireRange(entry, entry->end, {});
             }
             if (entry->IsGpuMapping()) {
@@ -372,9 +375,11 @@ s32 VmMap::Delete(VAddr start, VAddr end) {
                 rasterizer->RegisterMemory(unmapped_addr, size_to_unmap);
             }
             if (entry->object && entry->object->type == VmObjectType::Default) {
-                // ASSERT(entry->offset == 0 && entry->Size() == entry->object->size);
-                // flex_pool.Free(entry->object->anon.backing);
-                budget.ReleaseWire(entry->budget_ptype, entry->Size());
+                std::vector<PhysRange> freed;
+                entry->object->ForEachBacking(
+                    entry->offset, entry->Size(),
+                    [&](u64 phys_addr, u64 size, u64) { freed.push_back({phys_addr, size}); });
+                flex_pool.Free(freed);
             }
         }
 
@@ -419,11 +424,6 @@ s32 VmMap::Protect(DmemManager& dmem, VAddr start, VAddr end, MemoryProt new_pro
         if (True(cur->ext_flags & VmExtFlags::Hide)) {
             eff = MemoryProt::NoAccess;
         }
-        if ((eff & new_prot) != new_prot) {
-            LOG_WARNING(Kernel_Vmm, "Protection request exceeds max_protection, this succeeds on "
-                                    "console for some reason");
-            // return ORBIS_KERNEL_ERROR_ENOENT;
-        }
         if (cur->IsDmem()) {
             if (True(new_prot & (MemoryProt::GpuWrite | MemoryProt::CpuWrite))) {
                 const PAddr entry_start = std::max(start, cur->start);
@@ -451,19 +451,12 @@ s32 VmMap::Protect(DmemManager& dmem, VAddr start, VAddr end, MemoryProt new_pro
             PAddr entry_end = std::min(end, entry->end);
             entry_end = Common::AlignDownPow2(entry_end, Blockpool::BLOCK_SIZE);
             if (entry_start < entry_end) {
-                const u64 vm_start = entry->start - entry->offset;
-                /*ret1 = vm_map_protect_blockpool
-                    (map2,obj,vm_start,(uint)(b_start - vm_start >> 0x10),
-                     (int)((b___end & 0xffffffffffff0000) - vm_start >> 0x10),
-                     (uint)local_68);
-                if (ret1 != 0) {
-                    if (ret1 == 13) {
-                        ret1 = 2;
-                    } else {
-                        ret1 = 4;
-                    }
-                    goto _exit_unlock;
-                }*/
+                const VAddr vm_start = entry->start - entry->offset;
+                if (const s32 ret =
+                        blockpool.Protect(*entry, Blockpool::ToBlocks(entry_start - vm_start),
+                                          Blockpool::ToBlocks(entry_end - vm_start), new_prot)) {
+                    return ret;
+                }
             }
             ++entry;
             continue;
@@ -508,11 +501,14 @@ s32 VmMap::ProtectType(DmemManager& dmem, VAddr start, VAddr end, DmemMemoryType
     }
 
     if (entry != m_tree.end() && entry->IsBlockpool()) {
-        // _sx_downgrade
         if (!Common::Is64KBAligned(start) || !Common::Is64KBAligned(end) || end > entry->end) {
             return ORBIS_KERNEL_ERROR_EINVAL;
         }
-        // vm_map_type_protect_blockpool
+        if (start < end) {
+            const VAddr vm_start = entry->start - entry->offset;
+            blockpool.TypeProtect(*entry, Blockpool::ToBlocks(start - vm_start),
+                                  Blockpool::ToBlocks(end - vm_start), new_mtype, new_prot);
+        }
         return ORBIS_OK;
     }
 
@@ -624,17 +620,18 @@ s32 VmMap::Wire(VAddr start, VAddr end, VmMapWireFlags flags) {
         }
 
         if (entry->wired_count == 0) {
-            /*const bool needs_budget =
+            const bool needs_budget =
                 !entry->object || (False(entry->object->flags & VmObjectFlags::WireBudget) &&
                                    entry->object->IsPageable());
-            if (needs_budget && entry->budget_ptype > BudgetPtype::Invalid) {
+            if (needs_budget && entry->budget_ptype > BudgetPtype::Invalid &&
+                entry->max_protection != MemoryProt::NoAccess) {
                 if (budget.ReserveWire(entry->budget_ptype, entry->Size())) {
                     entry->wired_count = -1;
                     UnwireRange(first_entry, entry->end, flags);
                     return ORBIS_KERNEL_ERROR_EINVAL;
                 }
                 entry->eflags |= VmEntryFlags::InBudget;
-            }*/
+            }
             entry->wired_count = 1;
         } else {
             entry->wired_count++;
@@ -665,10 +662,10 @@ void VmMap::UnwireRange(Tree::iterator first_entry, VAddr upto_addr, VmMapWireFl
             it->wired_count = 0;
         } else if (it->wired_count == 1) {
             it->wired_count = 0;
-            /*if (True(it->eflags & VmEntryFlags::InBudget)) {
+            if (True(it->eflags & VmEntryFlags::InBudget)) {
                 budget.ReleaseWire(it->budget_ptype, it->Size());
                 it->eflags &= ~VmEntryFlags::InBudget;
-            }*/
+            }
         } else if (it->wired_count > 1) {
             it->wired_count--;
         }

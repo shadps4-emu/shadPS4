@@ -23,6 +23,7 @@
 #include "core/libraries/ime/ime_kb_layout.h"
 #include "core/libraries/ime/ime_ui_shared.h"
 #include "core/libraries/pad/pad.h"
+#include "core/memory/kernel.h"
 #include "core/tls.h"
 #include "imgui/imgui_std.h"
 #include "imgui/renderer/imgui_core.h"
@@ -59,12 +60,11 @@ bool IsMappedGuestBuffer(const void* ptr, size_t bytes) {
     if (!ptr || bytes == 0) {
         return false;
     }
-    /*auto* memory = ::Core::Memory::Instance();
+    auto* memory = ::Core::Memory::Instance();
     if (!memory) {
         return false;
     }
-    return memory->IsValidMapping(reinterpret_cast<VAddr>(ptr), bytes);*/
-    return true;
+    return memory->IsValidMapping(reinterpret_cast<VAddr>(ptr), bytes);
 }
 
 size_t BoundedUtf16Length(const char16_t* text, size_t max_len) {

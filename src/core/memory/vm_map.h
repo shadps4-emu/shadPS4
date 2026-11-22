@@ -80,6 +80,8 @@ enum class VmEntryFlags : u32 {
     Dmem2 = 0x80000,
     WireBudget = 0x100000,
     InBudget = 0x200000,
+    GrowsDown = 0x400000,
+    GrowsUp = 0x800000,
     Kernel = 0x80000000,
 };
 DECLARE_ENUM_FLAG_OPERATORS(VmEntryFlags)
@@ -158,6 +160,9 @@ class FlexibleMemoryPool;
 enum class DmemMemoryType : s32;
 
 class AddressSpace;
+enum class MemoryPermission : u32;
+
+MemoryPermission ToHostPerm(MemoryProt guest_prot);
 
 class VmMap {
 public:
@@ -176,6 +181,10 @@ public:
     }
 
     void Init(VAddr min_offset, VAddr max_offset, u32 sdk_version);
+
+    bool IsWireFuture() const {
+        return m_wire_future;
+    }
 
     Tree::iterator Insert(Tree::iterator prev, VAddr start, VAddr end,
                           std::shared_ptr<VmObject> object, u64 offset, MemoryProt prot,
@@ -268,6 +277,9 @@ private:
     u64 m_size{};
     u64 m_obj_entry_count{};
     u32 m_sdk_version;
+    bool m_wire_future{};
+    VAddr m_heap_end{};
+    BudgetPtype m_process_budget{BudgetPtype::BigApp};
     bool m_wire_on_map{true};
 };
 

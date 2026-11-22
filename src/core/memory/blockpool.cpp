@@ -5,6 +5,7 @@
 #include "core/libraries/kernel/memory.h"
 #include "core/memory/address_space.h"
 #include "core/memory/blockpool.h"
+#include "core/memory/dmem_map.h"
 #include "core/memory/vm_map.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
 
@@ -79,7 +80,6 @@ bool Blockpool::Map(VmMapEntry& entry, VAddr addr, u64 size, MemoryProt prot, s3
 void Blockpool::Unmap(VmMapEntry& entry, VAddr addr, u64 size) {
     const u32 block_start = ToBlocks(addr - entry.start);
     const u32 num_blocks = ToBlocks(size);
-    const u32 block_end = block_start + num_blocks;
     DmemBlock* vm_blocks = entry.object->blockpool.blocks.data() + block_start;
 
     for (u32 chunk = 0; chunk < num_blocks; chunk += 2048) {
@@ -96,6 +96,83 @@ void Blockpool::Unmap(VmMapEntry& entry, VAddr addr, u64 size) {
     if (rasterizer) {
         rasterizer->RegisterMemory(unmapped_addr, size_to_unmap);
     }
+}
+
+static void ProtectCommittedRuns(AddressSpace& impl, VAddr base, const DmemBlock* blocks,
+                                 u64 start_block, u64 end_block, MemoryProt prot) {
+    u64 block = start_block;
+    while (block < end_block) {
+        if (!blocks[block].valid) {
+            ++block;
+            continue;
+        }
+        const u64 run_start = block;
+        while (block < end_block && blocks[block].valid) {
+            ++block;
+        }
+        impl.Protect(base + Blockpool::ToBytes(run_start), Blockpool::ToBytes(block - run_start),
+                     ToHostPerm(prot));
+    }
+}
+
+static u32 BlockCpuProt(MemoryProt prot) {
+    const u32 raw = static_cast<u32>(prot);
+    return (raw & 3) | ((raw >> 1) & 1);
+}
+
+static u32 BlockGpuProt(MemoryProt prot) {
+    return (static_cast<u32>(prot) & 0x30) >> 4;
+}
+
+s32 Blockpool::Protect(VmMapEntry& entry, u64 start_block, u64 end_block, MemoryProt prot) {
+    DmemBlock* blocks = entry.object->blockpool.blocks.data();
+
+    // WB Garlic blocks cannot be made writable.
+    if (True(prot & (MemoryProt::CpuWrite | MemoryProt::GpuWrite))) {
+        for (u64 block = start_block; block < end_block; ++block) {
+            if (blocks[block].writeback && !blocks[block].onion) {
+                return ORBIS_KERNEL_ERROR_EACCES;
+            }
+        }
+    }
+
+    for (u64 block = start_block; block < end_block; ++block) {
+        if (blocks[block].valid) {
+            blocks[block].prot_cpu = BlockCpuProt(prot);
+            blocks[block].prot_gpu = BlockGpuProt(prot);
+        }
+    }
+    ProtectCommittedRuns(impl, entry.start - entry.offset, blocks, start_block, end_block, prot);
+    return ORBIS_OK;
+}
+
+void Blockpool::TypeProtect(VmMapEntry& entry, u64 start_block, u64 end_block, DmemMemoryType mtype,
+                            MemoryProt prot) {
+    DmemBlock* blocks = entry.object->blockpool.blocks.data();
+    const bool writeback = mtype != DmemMemoryType::WcGarlic;
+    const bool onion = writeback && mtype != DmemMemoryType::WbGarlic;
+
+    s32 cached_delta = 0;
+    for (u64 block = start_block; block < end_block; ++block) {
+        if (blocks[block].valid && bool(blocks[block].writeback) != writeback) {
+            cached_delta += writeback ? 1 : -1;
+        }
+    }
+    {
+        std::scoped_lock lk{mutex};
+        cached.allocated_blocks += cached_delta;
+        flushed.allocated_blocks -= cached_delta;
+    }
+
+    for (u64 block = start_block; block < end_block; ++block) {
+        if (blocks[block].valid) {
+            blocks[block].onion = onion;
+            blocks[block].writeback = writeback;
+            blocks[block].prot_cpu = BlockCpuProt(prot);
+            blocks[block].prot_gpu = BlockGpuProt(prot);
+        }
+    }
+    ProtectCommittedRuns(impl, entry.start - entry.offset, blocks, start_block, end_block, prot);
 }
 
 bool Blockpool::Commit(u32 count, bool onion, bool writeback, u32* out_blocks) {
@@ -179,37 +256,34 @@ void Blockpool::Flush() {
 
 void Blockpool::Query(VAddr addr, VAddr base, u64 size, const DmemBlock* blocks,
                       ::Libraries::Kernel::OrbisVirtualQueryInfo* info) {
-    u32 start = base;
-    u32 end = base + size;
-    // UNREACHABLE();
-    //  get _start and __end from name splay tree
-    u32 block_min = 0;
-    if (base <= start) {
-        block_min = Blockpool::ToBlocks(start - base);
+    VAddr start = base;
+    VAddr end = base + size;
+    const auto next_name = blockpool_names.upper_bound(addr);
+    bool in_name = false;
+    if (next_name != blockpool_names.begin()) {
+        const auto& prev = std::prev(next_name)->second;
+        in_name = addr < prev.end;
+        if (in_name) {
+            start = std::max(start, prev.start);
+            end = std::min(end, prev.end);
+        } else {
+            start = std::max(start, prev.end);
+        }
     }
-    u32 block_max = Blockpool::ToBlocks(size);
-    if ((end - base) <= size) {
-        block_max = Blockpool::ToBlocks(end - base);
+    if (!in_name && next_name != blockpool_names.end()) {
+        end = std::min(end, next_name->second.start);
     }
-    const u32 query_block = Blockpool::ToBlocks(addr - base);
+    const u64 block_min = Blockpool::ToBlocks(start - base);
+    const u64 block_max = Blockpool::ToBlocks(end - base);
+    const u64 query_block = Blockpool::ToBlocks(addr - base);
     const auto vm_block = blocks[query_block];
-    u32 start_block = query_block;
-    u32 end_block = query_block;
-    if (!vm_block.valid) {
-        while (start_block > block_min && !blocks[start_block - 1].valid) {
-            --start_block;
-        }
-        while (end_block < block_max && !blocks[end_block + 1].valid) {
-            ++end_block;
-        }
-    } else {
-        while (start_block > block_min &&
-               blocks[start_block].Props() == blocks[query_block].Props()) {
-            --start_block;
-        }
-        while (end_block < block_max && blocks[end_block].Props() == blocks[query_block].Props()) {
-            ++end_block;
-        }
+    u64 start_block = query_block;
+    u64 end_block = query_block + 1;
+    while (start_block > block_min && blocks[start_block - 1].Props() == vm_block.Props()) {
+        --start_block;
+    }
+    while (end_block < block_max && blocks[end_block].Props() == vm_block.Props()) {
+        ++end_block;
     }
     info->start = base + Blockpool::ToBytes(start_block);
     info->end = base + Blockpool::ToBytes(end_block);

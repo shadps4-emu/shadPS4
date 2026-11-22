@@ -265,15 +265,11 @@ s32 MemoryManager::MapMemory(VAddr* out_addr, u64 size, MemoryProt prot, MemoryM
             True(flags & (MemoryMapFlags::System | MemoryMapFlags::Sanitizer))
                 ? BudgetPtype::System
                 : BudgetPtype::BigApp;
-        if (budget.ReserveWire(budget_ptype, size)) {
-            return ORBIS_KERNEL_ERROR_EINVAL;
-        }
         object = std::make_shared<VmObject>();
         object->type = VmObjectType::Default;
         object->budget_ptype = budget_ptype;
         object->size = size;
         if (!flex_pool.Allocate(size, object->anon.backing)) {
-            budget.ReleaseWire(budget_ptype, size);
             LOG_ERROR(
                 Kernel_Vmm,
                 "Out of flexible memory, available flexible memory = {:#x} requested size = {:#x}",
@@ -336,12 +332,12 @@ s32 MemoryManager::MapMemory(VAddr* out_addr, u64 size, MemoryProt prot, MemoryM
     if (s32 ret = vm_map.MapMemory(&addr, size, prot, max_prot, flags, object, offset, name)) {
         if (True(flags & MemoryMapFlags::Anon)) {
             flex_pool.Free(object->anon.backing);
-            budget.ReleaseWire(object->budget_ptype, size);
         }
         return ret;
     }
 
-    if (/*m_wire_on_map &&*/ False(flags & (MemoryMapFlags::Void | MemoryMapFlags::Sanitizer))) {
+    if (vm_map.IsWireFuture() &&
+        False(flags & (MemoryMapFlags::Void | MemoryMapFlags::Sanitizer))) {
         if (s32 ret =
                 vm_map.Wire(addr, addr + size, VmMapWireFlags::User | VmMapWireFlags::HolesOk)) {
             UnmapMemory(addr, size);
@@ -490,8 +486,7 @@ s32 MemoryManager::VirtualQuery(VAddr addr, s32 flags,
     if (entry->max_protection != MemoryProt::NoAccess) {
         info->is_flexible = 1;
         info->is_committed = entry->wired_count > 0;
-        info->is_stack =
-            /* True(entry->eflags & (VmEntryFlags::GrowsUp | VmEntryFlags::GrowsDown)); */ 0;
+        info->is_stack = True(entry->eflags & (VmEntryFlags::GrowsUp | VmEntryFlags::GrowsDown));
     }
 
     return ORBIS_OK;

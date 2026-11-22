@@ -2,8 +2,11 @@
 //  SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <cinttypes>
+#include <mutex>
+#include <shared_mutex>
 #include <imgui.h>
 #include <magic_enum/magic_enum.hpp>
+#include <magic_enum/magic_enum_flags.hpp>
 
 #include "core/debug_state.h"
 #include "core/memory/kernel.h"
@@ -13,53 +16,61 @@ using namespace ImGui;
 
 namespace Core::Devtools::Widget {
 
-/*bool MemoryMapViewer::Iterator::DrawLine() {
-    if (is_vma) {
-        if (vma.it == vma.end) {
-            return false;
-        }
-        auto m = vma.it->second;
-        if (m.type == VMAType::Free) {
-            ++vma.it;
-            return DrawLine();
-        }
+static const char* GetEntryType(const VmMapEntry& entry) {
+    if (!entry.object) {
+        return "Reserved";
+    }
+    if (entry.IsBlockpool()) {
+        return "Pooled";
+    }
+    if (entry.IsDmem()) {
+        return "Direct";
+    }
+    switch (entry.object->type) {
+    case VmObjectType::Default:
+        return "Flexible";
+    case VmObjectType::Self:
+        return "Code";
+    case VmObjectType::Vnode:
+        return "File";
+    default:
+        return magic_enum::enum_name(entry.object->type).data();
+    }
+}
+
+void MemoryMapViewer::DrawVirtualMemory() {
+    auto& vm_map = Memory::Instance()->GetVmMap();
+    std::shared_lock lk{vm_map.lock};
+    const auto& tree = vm_map.GetTree();
+    for (auto it = tree.begin(); it != tree.end(); ++it) {
+        const auto& entry = *it;
         TableNextColumn();
-        Text("%" PRIXPTR, m.base);
+        Text("%" PRIXPTR, entry.start);
         TableNextColumn();
-        Text("%" PRIX64, m.size);
+        Text("%" PRIX64, entry.Size());
         TableNextColumn();
-        Text("%s", magic_enum::enum_name(m.type).data());
+        Text("%s", GetEntryType(entry));
         TableNextColumn();
-        Text("%s", magic_enum::enum_name(m.prot).data());
+        Text("%s", magic_enum::enum_flags_name(entry.protection).c_str());
         TableNextColumn();
-        if (True(m.prot & MemoryProt::CpuExec)) {
+        if (True(entry.protection & MemoryProt::CpuExec)) {
             Text("X");
         }
         TableNextColumn();
-        Text("%s", m.name.c_str());
-        ++vma.it;
-        return true;
+        Text("%s", entry.name);
     }
-    if (dmem.it == dmem.end) {
-        return false;
-    }
-    auto m = dmem.it->second;
-    if (m.dma_type == PhysicalMemoryType::Free) {
-        ++dmem.it;
-        return DrawLine();
-    }
-    TableNextColumn();
-    Text("%" PRIXPTR, m.base);
-    TableNextColumn();
-    Text("%" PRIX64, m.size);
-    TableNextColumn();
-    auto type = static_cast<::Libraries::Kernel::MemoryTypes>(m.memory_type);
-    Text("%s", magic_enum::enum_name(type).data());
-    TableNextColumn();
-    Text("%d", m.dma_type == PhysicalMemoryType::Committed);
-    ++dmem.it;
-    return true;
-}*/
+}
+
+void MemoryMapViewer::DrawDirectMemory() {
+    Memory::Instance()->GetDmemManager().ForEachEntry([](const DmemEntry& entry) {
+        TableNextColumn();
+        Text("%" PRIXPTR, entry.start);
+        TableNextColumn();
+        Text("%" PRIX64, entry.Size());
+        TableNextColumn();
+        Text("%s", magic_enum::enum_name(entry.mtype).data());
+    });
+}
 
 void MemoryMapViewer::Draw() {
     SetNextWindowSize({600.0f, 500.0f}, ImGuiCond_FirstUseEver);
@@ -67,9 +78,6 @@ void MemoryMapViewer::Draw() {
         End();
         return;
     }
-
-    auto mem = Memory::Instance();
-    // std::scoped_lock lck{mem->mutex};
 
     {
         bool next_showing_vma = showing_vma;
@@ -95,18 +103,7 @@ void MemoryMapViewer::Draw() {
         showing_vma = next_showing_vma;
     }
 
-    /*Iterator it{};
-    if (showing_vma) {
-        it.is_vma = true;
-        it.vma.it = mem->vma_map.begin();
-        it.vma.end = mem->vma_map.end();
-    } else {
-        it.is_vma = false;
-        it.dmem.it = mem->dmem_map.begin();
-        it.dmem.end = mem->dmem_map.end();
-    }*/
-
-    if (BeginTable("memory_view_table", showing_vma ? 6 : 4,
+    if (BeginTable("memory_view_table", showing_vma ? 6 : 3,
                    ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_RowBg |
                        ImGuiTableFlags_SizingFixedFit)) {
         if (showing_vma) {
@@ -116,16 +113,15 @@ void MemoryMapViewer::Draw() {
             TableSetupColumn("Prot");
             TableSetupColumn("Is Exec");
             TableSetupColumn("Name");
+            TableHeadersRow();
+            DrawVirtualMemory();
         } else {
             TableSetupColumn("Address");
             TableSetupColumn("Size");
             TableSetupColumn("Type");
-            TableSetupColumn("Pooled");
+            TableHeadersRow();
+            DrawDirectMemory();
         }
-        TableHeadersRow();
-
-        /*while (it.DrawLine())
-            ;*/
         EndTable();
     }
 

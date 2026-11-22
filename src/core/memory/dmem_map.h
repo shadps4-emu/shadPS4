@@ -135,6 +135,22 @@ public:
         return m_total_size;
     }
 
+    void SetAliasing(s32 mode) {
+        m_aliasing_mode |= mode;
+    }
+
+    bool ChecksGpuWriteAlias() const {
+        return (m_aliasing_mode & 1) == 0 && (m_aliasing_mode & 2) != 0;
+    }
+
+    template <typename Func>
+    void ForEachEntry(Func&& func) {
+        std::scoped_lock lock{m_mutex};
+        for (auto it = m_tree.begin(); it != m_tree.end(); ++it) {
+            func(*it);
+        }
+    }
+
     std::shared_ptr<VmObject>& GetDmemObject() {
         return m_dmem_object;
     }
@@ -202,6 +218,7 @@ private:
     std::shared_ptr<VmObject> m_dmem_object;
 
     u64 m_total_size{};
+    u32 m_aliasing_mode{};
     u32 m_entry_count{};
 };
 

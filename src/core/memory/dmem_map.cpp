@@ -137,7 +137,7 @@ s32 DmemManager::MapDirectMemory(VmMap& map, VAddr* out_addr, u64 length,
 
     // If the physical range already has virtual mappings and aliasing mode
     // requires it, check for GPU write conflicts.
-    if (True(prot & MemoryProt::GpuReadWrite)) {
+    if (ChecksGpuWriteAlias() && True(prot & MemoryProt::GpuReadWrite)) {
         std::scoped_lock lock{m_rmap_mutex};
 
         const auto prot_mask =
@@ -609,10 +609,9 @@ bool DmemManager::CheckRmapAlias(PAddr phys_start, PAddr phys_end, VAddr vstart,
 }
 
 bool DmemManager::CheckGpuWriteAlias(VmMap& map, VmMapEntry& entry, VAddr protect_end) {
-    // Only check if aliasing mode is strict.
-    // if (process->dmem_aliasing_mode != 2) {
-    //    return false;
-    //}
+    if (!ChecksGpuWriteAlias()) {
+        return false;
+    }
 
     auto* rmap = FindRmap(&map);
     if (!rmap) {
@@ -676,9 +675,6 @@ void DmemManager::SimplifyDmemEntry(Tree::iterator entry) {
         return;
     }
 
-    // if (prev->busy != entry->busy) {
-    //     return;
-    // }
     if (prev->mtype != entry->mtype) {
         return;
     }
@@ -688,7 +684,12 @@ void DmemManager::SimplifyDmemEntry(Tree::iterator entry) {
     if (prev->is_free != entry->is_free) {
         return;
     }
-    // hash_entry, budget_id, control_count, ACL
+    if (prev->budget_id != entry->budget_id) {
+        return;
+    }
+    if (prev->control_count != entry->control_count) {
+        return;
+    }
 
     // Absorb prev into entry.
     m_tree.UnlinkPrev(entry);

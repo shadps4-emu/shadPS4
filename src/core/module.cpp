@@ -192,7 +192,6 @@ void Module::LoadModuleToMemory(u32& max_tls_index, bool is_dynamic) {
             }
 
             // Map module segments
-            // const auto memory_type = IsSystemLib() ? VMAType::Code : VMAType::Flexible;
             s32 result = vm_map.MapMemory(&segment_vaddr, segment_size, segment_prot,
                                           MemoryProt::All, MemoryMapFlags::Fixed, object, i, name);
             ASSERT_MSG(result == ORBIS_OK, "Failed to map segment at {:#x} for module {}",

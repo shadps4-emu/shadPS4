@@ -45,6 +45,7 @@ struct BlockStats {
 
 struct VmMapEntry;
 enum class MemoryProt : u8;
+enum class DmemMemoryType : s32;
 
 class AddressSpace;
 
@@ -87,6 +88,11 @@ public:
     bool Map(VmMapEntry& entry, VAddr addr, u64 size, MemoryProt prot, s32 mtype);
 
     void Unmap(VmMapEntry& entry, VAddr addr, u64 size);
+
+    s32 Protect(VmMapEntry& entry, u64 start_block, u64 end_block, MemoryProt prot);
+
+    void TypeProtect(VmMapEntry& entry, u64 start_block, u64 end_block, DmemMemoryType mtype,
+                     MemoryProt prot);
 
     bool Commit(u32 count, bool onion, bool writeback, u32* out_blocks);
 

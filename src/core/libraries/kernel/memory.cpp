@@ -30,7 +30,6 @@
 namespace Libraries::Kernel {
 
 static s32 g_sdk_version = -1;
-static bool g_alias_dmem = false;
 static s32 g_dmem_fd = -1;
 static u32 g_blockpool_fd = -1;
 static std::shared_ptr<Core::Devices::BaseDevice> g_dmem_device;
@@ -45,7 +44,9 @@ u64 PS4_SYSV_ABI sceKernelGetDirectMemorySize() {
 
 s32 PS4_SYSV_ABI sceKernelEnableDmemAliasing() {
     LOG_DEBUG(Kernel_Vmm, "called");
-    g_alias_dmem = true;
+    auto* memory = Core::Memory::Instance();
+    // The version we're exporting hardcodes 2. Other exports set different modes.
+    memory->GetDmemManager().SetAliasing(2);
     return ORBIS_OK;
 }
 

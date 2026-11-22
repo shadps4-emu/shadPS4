@@ -8,21 +8,10 @@
 namespace Core::Devtools::Widget {
 
 class MemoryMapViewer {
-    /*struct Iterator {
-        bool is_vma;
-        struct {
-            MemoryManager::PhysMap::iterator it;
-            MemoryManager::PhysMap::iterator end;
-        } dmem;
-        struct {
-            MemoryManager::VMAMap::iterator it;
-            MemoryManager::VMAMap::iterator end;
-        } vma;
-
-        bool DrawLine();
-    };*/
-
     bool showing_vma = true;
+
+    void DrawVirtualMemory();
+    void DrawDirectMemory();
 
 public:
     bool open = false;
