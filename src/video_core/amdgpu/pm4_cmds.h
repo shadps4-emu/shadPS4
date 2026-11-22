@@ -336,7 +336,7 @@ enum class InterruptSelect : u32 {
     None = 0,
     IrqOnly = 1,
     IrqWhenWriteConfirm = 2,
-    IrqUndocumented = 3,
+    DataAfterWriteConfirm = 3,
 };
 
 static u64 GetGpuClock64() {
@@ -954,6 +954,9 @@ struct PM4CmdReleaseMem {
 
     void SignalFence(auto&& signal_irq, auto&& gds_to_mem) const {
         switch (data_sel.Value()) {
+        case DataSelect::None: {
+            break;
+        }
         case DataSelect::Data32Low: {
             *Address<u32*>() = DataDWord();
             break;
@@ -980,11 +983,14 @@ struct PM4CmdReleaseMem {
         }
 
         switch (int_sel.Value()) {
-        case InterruptSelect::None: {
+        case InterruptSelect::None:
+            [[fallthrough]];
+        case InterruptSelect::DataAfterWriteConfirm: {
             // No interrupt
             break;
         }
-        case InterruptSelect::IrqUndocumented:
+        case InterruptSelect::IrqOnly:
+            ASSERT(data_sel == DataSelect::None);
             [[fallthrough]];
         case InterruptSelect::IrqWhenWriteConfirm: {
             signal_irq();
