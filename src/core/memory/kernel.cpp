@@ -121,9 +121,25 @@ void MemoryManager::SetPrtArea(u32 id, VAddr address, u64 size) {
 void MemoryManager::CopySparseMemory(VAddr virtual_addr, u8* dest, u64 size) {
     std::shared_lock lk{vm_map.lock};
     auto [entry, found] = vm_map.LookupEntryReadOnly(virtual_addr);
-    ASSERT_MSG(found, "Failed to find entry for virtual_addr {:#x}", virtual_addr);
+    if (!found) {
+        ++entry;
+    }
+
+    // Unmapped space reads as zeros.
+    const auto zero_fill = [&](u64 fill_size) {
+        std::memset(dest, 0, fill_size);
+        size -= fill_size;
+        virtual_addr += fill_size;
+        dest += fill_size;
+    };
 
     while (entry != vm_map.GetTree().end() && size) {
+        if (entry->start > virtual_addr) {
+            zero_fill(std::min<u64>(entry->start - virtual_addr, size));
+            if (size == 0) {
+                break;
+            }
+        }
         const u64 copy_size = std::min<u64>(entry->end - virtual_addr, size);
         if (entry->object && entry->object->HasPhysicalBacking()) {
             // Backed objects read from their backing to avoid GPU tracking faults.
@@ -144,6 +160,9 @@ void MemoryManager::CopySparseMemory(VAddr virtual_addr, u8* dest, u64 size) {
         virtual_addr += copy_size;
         dest += copy_size;
         entry++;
+    }
+    if (size) {
+        zero_fill(size);
     }
 }
 
