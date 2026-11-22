@@ -44,7 +44,6 @@ struct InfoPersistent {
         None = 0,
         Unchecked = 1 << 0,
         Checked = 1 << 1,
-        Bounded = 1 << 2,
     };
 
     BufferResourceList buffers;

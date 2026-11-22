@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <bit>
 #include <unordered_map>
 #include <boost/container/flat_map.hpp>
 #include <queue>
@@ -625,7 +626,13 @@ static std::optional<Info::SrtLoopTouch> FindReadConstLoop(const IR::Inst& read)
     }
     const auto limit = condition->Arg(1);
     if (limit.IsImmediate()) {
-        return Info::SrtLoopTouch{first_offset, step, limit.U32(), NUM_USER_DATA_REGS};
+        const Info::SrtLoopTouch loop{first_offset, step, limit.U32(), NUM_USER_DATA_REGS};
+        return loop.SizeInBytes({}) ? std::optional{loop} : std::nullopt;
+    }
+    // With a power-of-two step, wrapping preserves the residue class. If the first
+    // increment does not wrap, every terminating execution exits before wrapping.
+    if (!std::has_single_bit(step) || u64{first_offset} + step > std::numeric_limits<u32>::max()) {
+        return std::nullopt;
     }
     const auto* limit_inst = limit.TryInst();
     if (!limit_inst || limit_inst->GetOpcode() != IR::Opcode::GetUserData ||
@@ -681,20 +688,17 @@ static void VisitPointer(const IR::Value& off_dw, IR::Inst* subtree, PassInfo& p
             c.lea(r10, ptr[rdi + (src_off_dw.U32() << 2)]);
         } else {
             if (auto loop = FindReadConstLoop(*use)) {
-                if (pass_info.flatbuf_dst_off_dw > std::numeric_limits<u16>::max() - 3) {
+                if (pass_info.flatbuf_dst_off_dw > std::numeric_limits<u16>::max() - 2) {
                     continue;
                 }
                 loop->range_offset_dw = pass_info.flatbuf_dst_off_dw;
-                pass_info.flatbuf_dst_off_dw += 3;
+                pass_info.flatbuf_dst_off_dw += 2;
                 c.mov(r10d, loop->first_offset);
                 c.lea(r10, ptr[rdi + r10]);
                 c.mov(ptr[rsi + (loop->range_offset_dw << 2)], r10);
                 pass_info.loop_touches.push_back(*loop);
 
-                auto flags = use->Flags<IR::ReadConstInstInfo>();
-                flags.flatbuf_off_dw.Assign(loop->range_offset_dw);
-                flags.range_touch.Assign(true);
-                use->SetFlags(flags);
+                IR::TouchReadConstAddress(use, 0);
                 continue;
             }
             if (!ComputeOffset(c, r10d, pass_info, src_off_dw)) {
@@ -961,9 +965,6 @@ void FlattenExtendedUserdataPass(IR::Program& program) {
         IR::Inst* original = pass_info.DeduplicateInstruction(readconst);
         if (IR::IsReadConstAddressTouched(original)) {
             IR::TouchReadConstAddress(readconst, IR::GetFlatBufferOffset(original));
-        } else if (original->GetOpcode() == IR::Opcode::ReadConst &&
-                   original->Flags<IR::ReadConstInstInfo>().range_touch) {
-            readconst->SetFlags(original->Flags<IR::ReadConstInstInfo>());
         }
     }
 

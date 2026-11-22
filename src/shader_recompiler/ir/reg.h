@@ -70,7 +70,6 @@ union ReadConstInstInfo {
     BitField<0, 16, u32> flatbuf_off_dw;
     BitField<16, 1, u32> sharp_source;
     BitField<17, 1, u32> address_touched;
-    BitField<18, 1, u32> range_touch;
 };
 
 enum class ScalarReg : u32 {

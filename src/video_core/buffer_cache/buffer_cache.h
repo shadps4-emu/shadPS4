@@ -133,7 +133,10 @@ public:
         u32 size;
     };
 
-    [[nodiscard]] bool IsDmaTouchRangeMapped(VAddr address, u32 size) const;
+    using DmaTouchRanges = boost::container::small_vector<DmaTouchRange, 4>;
+
+    [[nodiscard]] bool CollectDmaTouchRanges(DmaTouchRanges& ranges, VAddr address, u32 size,
+                                             u32 stride) const;
 
     /// Synchronizes all resident buffers needed for DMA.
     DmaBufferRangeList SynchronizeAllDmaBuffers(std::span<const VAddr> addresses,
@@ -147,6 +150,7 @@ public:
     void SubmitPendingArenaBinds(Vulkan::SubmitInfo& info);
 
 private:
+    [[nodiscard]] bool HasDmaTouchRangeBacking(VAddr address, u32 size) const;
     DmaBufferRangeList MakeDmaTouchRangesResident(std::span<const DmaTouchRange> loop_ranges);
 
     struct ArenaBinds {

@@ -318,11 +318,30 @@ void BufferCache::ReadEdgeImagePages(const Image& image) {
         });
 }
 
-bool BufferCache::IsDmaTouchRangeMapped(VAddr address, u32 size) const {
-    if (!address || (address & (sizeof(u32) - 1)) || !memory->IsValidGpuMapping(address, 0) ||
-        !memory->IsValidGpuMapping(address, size)) {
+bool BufferCache::CollectDmaTouchRanges(DmaTouchRanges& ranges, VAddr address, u32 size,
+                                        u32 stride) const {
+    if (size == 0 || address == 0 || (address & (sizeof(u32) - 1)) ||
+        !memory->IsValidGpuMapping(address, 0) || !memory->IsValidGpuMapping(address, size)) {
         return false;
     }
+    if (stride <= Core::GUEST_PAGE_SIZE) {
+        if (!HasDmaTouchRangeBacking(address, size)) {
+            return false;
+        }
+        ranges.push_back({address, size});
+        return true;
+    }
+    const VAddr last = address + size - sizeof(u32);
+    for (VAddr read = address; read <= last; read += stride) {
+        if (!HasDmaTouchRangeBacking(read, sizeof(u32))) {
+            return false;
+        }
+        ranges.push_back({read, sizeof(u32)});
+    }
+    return true;
+}
+
+bool BufferCache::HasDmaTouchRangeBacking(VAddr address, u32 size) const {
     const VAddr last_addr = address + size - 1;
     const auto& backing_pages = memory->GetAddressSpace().BackingPages();
     for (u64 page = address >> Core::GUEST_PAGE_BITS; page <= last_addr >> Core::GUEST_PAGE_BITS;

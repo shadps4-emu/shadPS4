@@ -1310,14 +1310,12 @@ void EmitContext::DefineFunctions() {
         uf11_to_f32 = DefineUfloatM5ToFloat32(6, "uf11_to_f32");
         uf10_to_f32 = DefineUfloatM5ToFloat32(5, "uf10_to_f32");
     }
-    if (True(info.readconst_types &
-             (Info::ReadConstType::Unchecked | Info::ReadConstType::Bounded))) {
+    if (True(info.readconst_types & Info::ReadConstType::Unchecked)) {
         get_bda_pointer = DefineGetBdaPointer(false);
         LOG_DEBUG(Render_Recompiler, "Shader {:#x} uses unchecked ReadConst", info.pgm_hash);
         read_const = DefineReadConst(false);
     }
-    if (True(info.readconst_types &
-             (Info::ReadConstType::Checked | Info::ReadConstType::Bounded))) {
+    if (True(info.readconst_types & Info::ReadConstType::Checked)) {
         LOG_DEBUG(Render_Recompiler, "Shader {:#x} uses checked ReadConst", info.pgm_hash);
         get_bda_pointer_faulting = DefineGetBdaPointer(true);
         read_const_checked = DefineReadConst(true);

@@ -434,12 +434,31 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
 
     bool sync_all_buffers = false;
     boost::container::small_vector<VAddr, 32> touch_addresses;
-    boost::container::small_vector<VideoCore::BufferCache::DmaTouchRange, 4> loop_ranges;
+    VideoCore::BufferCache::DmaTouchRanges loop_ranges;
+    const auto stages = pipeline->GetStages();
+    for (const auto* stage : stages) {
+        if (!stage) {
+            continue;
+        }
+        for (const auto& loop : stage->srt_loop_touches) {
+            const u32 dw = loop.range_offset_dw;
+            const VAddr address =
+                VAddr(stage->flattened_ud_buf[dw]) | (VAddr(stage->flattened_ud_buf[dw + 1]) << 32);
+            const u32 size = loop.SizeInBytes(stage->user_data);
+            if (!buffer_cache.CollectDmaTouchRanges(loop_ranges, address, size, loop.step)) {
+                LOG_ERROR(Render_Vulkan,
+                          "Cannot prepare shader {:#x} DMA range at {:#x} ({} bytes)",
+                          stage->pgm_hash, address, size);
+                return false;
+            }
+        }
+    }
+    sync_all_buffers = !loop_ranges.empty() && EmulatorSettings.IsFullDmaSyncEnabled();
 
     // Bind resource buffers and textures.
     Shader::Backend::Bindings binding{};
     push_data = MakeUserData(liverpool->regs);
-    for (const auto* stage : pipeline->GetStages()) {
+    for (const auto* stage : stages) {
         if (!stage) {
             continue;
         }
@@ -452,31 +471,7 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
                 std::span{stage->touch_addrs}.first(stage->srt_info.touch_addr_bufsize_qw);
             touch_addresses.insert(touch_addresses.end(), addresses.begin(), addresses.end());
         }
-        boost::container::small_vector<u32, 64> bounded_read_flatbuf;
-        const bool has_bounded_read_consts =
-            True(stage->readconst_types & Shader::InfoPersistent::ReadConstType::Bounded);
-        if (has_bounded_read_consts) {
-            bounded_read_flatbuf.assign(stage->flattened_ud_buf.begin(),
-                                        stage->flattened_ud_buf.end());
-        }
-        for (const auto& loop : stage->srt_loop_touches) {
-            const u32 dw = loop.range_offset_dw;
-            const VAddr address =
-                VAddr(stage->flattened_ud_buf[dw]) | (VAddr(stage->flattened_ud_buf[dw + 1]) << 32);
-            const u32 size = loop.SizeInBytes(stage->user_data);
-            if (!size || !buffer_cache.IsDmaTouchRangeMapped(address, size)) {
-                sync_all_buffers |= has_bounded_read_consts;
-                continue;
-            }
-            loop_ranges.push_back({address, size});
-            if (has_bounded_read_consts) {
-                bounded_read_flatbuf[dw + 2] = size;
-            }
-        }
-        const std::span<const u32> flatbuf = has_bounded_read_consts
-                                                 ? std::span<const u32>{bounded_read_flatbuf}
-                                                 : stage->flattened_ud_buf;
-        BindBuffers(*stage, binding, push_data, flatbuf);
+        BindBuffers(*stage, binding, push_data);
         BindTextures(*stage, binding);
     }
 
@@ -820,7 +815,7 @@ bool Rasterizer::IsComputeImageClear(const Pipeline* pipeline) {
 }
 
 void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Bindings& binding,
-                             Shader::PushData& push_data, std::span<const u32> flatbuf) {
+                             Shader::PushData& push_data) {
     const u64 alignment = instance.StorageMinAlignment();
     for (const auto& desc : stage.buffers) {
         const auto src_access =
@@ -835,7 +830,8 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
                 bound_buffers.emplace_back(gds_buf, 0, gds_buf->SizeBytes(), src_access);
             } else if (desc.buffer_type == Shader::BufferType::Flatbuf) {
                 auto& vk_buffer = buffer_cache.GetStreamBuffer();
-                const u32 ubo_size = flatbuf.size_bytes();
+                const auto& flatbuf = stage.flattened_ud_buf;
+                const u32 ubo_size = flatbuf.size() * sizeof(u32);
                 const u64 offset = vk_buffer.Copy(flatbuf.data(), ubo_size, alignment);
                 buffer_infos.emplace_back(vk_buffer.Handle(), offset, ubo_size);
             } else if (desc.buffer_type == Shader::BufferType::ClipPlanes) {

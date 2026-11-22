@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include "core/emulator_settings.h"
 #include "shader_recompiler/ir/helpers.h"
 #include "shader_recompiler/ir/program.h"
 #include "shader_recompiler/ir/shared_memory.h"
@@ -230,10 +229,6 @@ void Visit(Info& info, const IR::Inst& inst, const Profile& profile) {
         const bool is_touched = IR::IsReadConstAddressTouched(&inst);
         if (is_touched) {
             info.readconst_types |= InfoPersistent::ReadConstType::Unchecked;
-        } else if (!EmulatorSettings.IsFullDmaSyncEnabled() &&
-                   inst.Flags<IR::ReadConstInstInfo>().range_touch) {
-            AddFlatbuf(info);
-            info.readconst_types |= InfoPersistent::ReadConstType::Bounded;
         } else {
             info.readconst_types |= InfoPersistent::ReadConstType::Checked;
         }
@@ -265,8 +260,7 @@ void CollectShaderInfoPass(IR::Program& program, const Profile& profile) {
             .is_written = true,
         });
 
-        if (True(info.readconst_types & (InfoPersistent::ReadConstType::Checked |
-                                         InfoPersistent::ReadConstType::Bounded))) {
+        if (True(info.readconst_types & InfoPersistent::ReadConstType::Checked)) {
             info.buffers.push_back({
                 .used_types = IR::Type::U32,
                 .buffer_type = BufferType::FaultBuffer,
