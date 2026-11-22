@@ -997,7 +997,6 @@ void Rasterizer::PrepareTextures(const Shader::Info& stage, Shader::Backend::Bin
 void Rasterizer::BindTextures(u32 num_images) {
     const u32 first_image_info = image_infos.size();
 
-    // Rebind needed images
     for (u32 i = 0; i < num_images; ++i) {
         auto& [image_id, desc] = image_bindings[i];
         if (!image_id) {
@@ -1010,7 +1009,6 @@ void Rasterizer::BindTextures(u32 num_images) {
         }
     }
 
-    // Refresh image subrects
     for (u32 i = 0; i < num_images; ++i) {
         auto& [image_id, desc] = image_bindings[i];
         if (!image_id) {
@@ -1023,7 +1021,6 @@ void Rasterizer::BindTextures(u32 num_images) {
         }
     }
 
-    // Decide layouts for images
     for (u32 i = 0; i < num_images; ++i) {
         auto& [image_id, desc] = image_bindings[i];
         bool is_storage = desc.type == VideoCore::TextureCache::BindingType::Storage;
@@ -1033,9 +1030,12 @@ void Rasterizer::BindTextures(u32 num_images) {
             bound_images.emplace_back(image_id);
 
             auto& image = texture_cache.GetImage(image_id);
+            DEBUG_ASSERT(image.IsRegistered());
+
             if (desc.IsSubrectTexture(image.info)) {
                 auto& backing = image.FindBacking({desc.info.size.width, desc.info.size.height, 1},
                                                   desc.info.num_samples);
+                ASSERT(backing.subrect_valid);
                 auto& view = image.FindView(desc.view_info, backing);
                 needs_barrier |= runtime.Transit(
                     &image, &backing, vk::ImageLayout::eShaderReadOnlyOptimal,

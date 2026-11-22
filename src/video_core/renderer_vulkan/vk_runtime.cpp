@@ -542,7 +542,6 @@ void Runtime::RefreshSubrect(VideoCore::Image& image, const VideoCore::ImageInfo
     auto& crop = image.FindBacking({info.size.width, info.size.height, 1}, info.num_samples);
     if (!crop.subrect_valid) {
         scheduler.EndRendering();
-        const auto source_state = image.backing->state;
         Transit(&image, vk::ImageLayout::eTransferSrcOptimal, vk::PipelineStageFlagBits2::eCopy,
                 vk::AccessFlagBits2::eTransferRead);
         image.GetBarriers(image_barriers, crop, vk::ImageLayout::eTransferDstOptimal,
