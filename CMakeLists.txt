@@ -378,6 +378,8 @@ endif()
 
 set(NETWORK_LIBS src/core/libraries/network/http.cpp
                  src/core/libraries/network/http.h
+                 src/core/libraries/network/http_host_overrides.cpp
+                 src/core/libraries/network/http_host_overrides.h
                  src/core/libraries/network/http_error.h
                  src/core/libraries/network/http2.cpp
                  src/core/libraries/network/http2.h
