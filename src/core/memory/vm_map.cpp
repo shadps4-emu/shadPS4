@@ -222,11 +222,11 @@ s32 VmMap::MapMemory(VAddr* out_addr, u64 size, MemoryProt prot, MemoryProt max_
                 object->vnode.file->handle->Map(addr, size, offset, flags, prot);
                 break;
             case VmObjectType::Default: {
-                u64 map_offset = 0;
-                object->ForEachBacking(entry->offset, size, [&](u64 phys_addr, u64 size) {
-                    impl.Map(addr + map_offset, size, phys_addr, True(prot & MemoryProt::CpuExec));
-                    map_offset += size;
-                });
+                object->ForEachBacking(entry->offset, size,
+                                       [&](u64 phys_addr, u64 size, u64 map_offset) {
+                                           impl.Map(addr + map_offset, size, phys_addr,
+                                                    True(prot & MemoryProt::CpuExec));
+                                       });
                 std::memset(reinterpret_cast<void*>(addr), 0, size);
                 break;
             }

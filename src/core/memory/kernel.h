@@ -155,15 +155,13 @@ public:
         VAddr current = addr;
         while (entry != vm_map.GetTree().end() && size) {
             const u64 clip_start = entry->start < current ? current - entry->start : 0;
-            const u64 clip_offset = clip_start + entry->offset;
+            const u64 clip_offset = clip_start + (entry->IsBlockpool() ? 0 : entry->offset);
             const u64 clip_size = std::min<u64>(entry->end - current, size);
-            if (entry->object) {
+            if (entry->object && entry->object->HasPhysicalBacking()) {
                 u8* backing_base = impl.BackingBase();
-                u64 backing_cursor = cursor;
                 entry->object->ForEachBacking(
-                    clip_offset, clip_size, [&](u64 phys_addr, u64 backing_size) {
-                        func(backing_cursor, backing_size, backing_base + phys_addr);
-                        backing_cursor += backing_size;
+                    clip_offset, clip_size, [&](u64 phys_addr, u64 backing_size, u64 range_offset) {
+                        func(cursor + range_offset, backing_size, backing_base + phys_addr);
                     });
             }
             cursor += clip_size;
