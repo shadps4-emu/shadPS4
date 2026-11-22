@@ -261,14 +261,19 @@ s32 MemoryManager::MapMemory(VAddr* out_addr, u64 size, MemoryProt prot, MemoryM
         max_prot = MemoryProt::NoAccess;
     } else if (True(flags & MemoryMapFlags::Anon)) {
         max_prot = MemoryProt::All;
-        if (budget.ReserveWire(BudgetPtype::BigApp, size)) {
+        const BudgetPtype budget_ptype =
+            True(flags & (MemoryMapFlags::System | MemoryMapFlags::Sanitizer))
+                ? BudgetPtype::System
+                : BudgetPtype::BigApp;
+        if (budget.ReserveWire(budget_ptype, size)) {
             return ORBIS_KERNEL_ERROR_EINVAL;
         }
         object = std::make_shared<VmObject>();
         object->type = VmObjectType::Default;
-        object->budget_ptype = BudgetPtype::BigApp;
+        object->budget_ptype = budget_ptype;
         object->size = size;
         if (!flex_pool.Allocate(size, object->anon.backing)) {
+            budget.ReleaseWire(budget_ptype, size);
             LOG_ERROR(
                 Kernel_Vmm,
                 "Out of flexible memory, available flexible memory = {:#x} requested size = {:#x}",
@@ -331,7 +336,7 @@ s32 MemoryManager::MapMemory(VAddr* out_addr, u64 size, MemoryProt prot, MemoryM
     if (s32 ret = vm_map.MapMemory(&addr, size, prot, max_prot, flags, object, offset, name)) {
         if (True(flags & MemoryMapFlags::Anon)) {
             flex_pool.Free(object->anon.backing);
-            budget.ReleaseWire(BudgetPtype::BigApp, size);
+            budget.ReleaseWire(object->budget_ptype, size);
         }
         return ret;
     }
