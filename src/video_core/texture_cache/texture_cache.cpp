@@ -619,7 +619,9 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
         if (cache_image.info.guest_address != info.guest_address) {
             continue;
         }
-        if (desc.IsSubrectTexture(cache_image.info) && cache_image.HasGpuValidData()) {
+        if (desc.IsSubrectTexture(cache_image.info) && cache_image.HasGpuValidData() &&
+            (!subrect_source ||
+             cache_image.gpu_write_order >= slot_images[subrect_source].gpu_write_order)) {
             subrect_source = cache_id;
         }
         if (cache_image.info.guest_size != info.guest_size) {
@@ -727,7 +729,7 @@ ImageId TextureCache::FindImageFromRange(VAddr address, size_t size, bool ensure
 ImageView& TextureCache::FindTexture(ImageId image_id, const ImageDesc& desc) {
     Image& image = slot_images[image_id];
     if (desc.type == BindingType::Storage) {
-        image.flags |= ImageFlagBits::GpuModified;
+        image.MarkGpuModified();
         if (readback_linear_images && (!image.info.props.is_tiled || image.info.size.width <= 8) &&
             image.info.guest_address != 0) {
             std::unique_lock lk{download_images_mutex};
@@ -765,7 +767,7 @@ void TextureCache::UnregisterMeta(VAddr address, u64 owner_uid) {
 
 ImageView& TextureCache::FindRenderTarget(ImageId image_id, const ImageDesc& desc) {
     Image& image = slot_images[image_id];
-    image.flags |= ImageFlagBits::GpuModified;
+    image.MarkGpuModified();
     if (readback_linear_images && (!image.info.props.is_tiled || image.info.size.width <= 8)) {
         std::unique_lock lk{download_images_mutex};
         download_images.emplace(image_id);
@@ -807,7 +809,7 @@ ImageView& TextureCache::FindRenderTarget(ImageId image_id, const ImageDesc& des
 
 ImageView& TextureCache::FindDepthTarget(ImageId image_id, const ImageDesc& desc) {
     Image& image = slot_images[image_id];
-    image.flags |= ImageFlagBits::GpuModified;
+    image.MarkGpuModified();
     image.usage.depth_target = 1u;
     UpdateImage(image_id);
 
