@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2026 shadPS4 Emulator Project
+SPDX-License-Identifier: GPL-2.0-or-later
+-->
+
 # IME keyboard languages
 
 Both the embedded IME and the IME dialog use the profiles registered in
