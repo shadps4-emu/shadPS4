@@ -6,6 +6,8 @@
 #include "shader_recompiler/ir/reinterpret.h"
 #include "shader_recompiler/profile.h"
 #include "shader_recompiler/runtime_info.h"
+#include "video_core/amdgpu/pixel_format.h"
+#include "video_core/amdgpu/regs_shader.h"
 
 namespace Shader::Gcn {
 
@@ -138,7 +140,8 @@ void Translator::ExportRenderTarget(const GcnInst& inst) {
     }
 
     const auto color_buffer = runtime_info.hw.fs.color_buffers[color_buffer_idx];
-    if (color_buffer.export_format == AmdGpu::ShaderExportFormat::Zero || exp.en == 0) {
+    const auto export_format = AmdGpu::ShaderExportFormat(color_buffer.export_format);
+    if (export_format == AmdGpu::ShaderExportFormat::Zero || exp.en == 0) {
         // No export
         return;
     }
@@ -146,7 +149,7 @@ void Translator::ExportRenderTarget(const GcnInst& inst) {
     std::array<IR::F32, 4> components{};
     if (exp.compr) {
         // Components are float16 packed into a VGPR
-        const auto num_format = NumberFormatCompressed(color_buffer.export_format);
+        const auto num_format = NumberFormatCompressed(export_format);
         // Export R, G
         if (exp.en & 1) {
             const IR::Value unpacked_value =
@@ -163,7 +166,7 @@ void Translator::ExportRenderTarget(const GcnInst& inst) {
         }
     } else {
         // Components are float32 into separate VGPRS
-        u32 mask = MaskFromExportFormat(exp.en, color_buffer.export_format);
+        u32 mask = MaskFromExportFormat(exp.en, export_format);
         for (u32 i = 0; i < 4; i++, mask >>= 1) {
             if ((mask & 1) == 0) {
                 continue;
@@ -172,24 +175,16 @@ void Translator::ExportRenderTarget(const GcnInst& inst) {
         }
     }
 
-    // Metal seems to have an issue where 8-bit unorm/snorm/sRGB outputs to render target
-    // need a bias applied to round correctly; detect and set the flag for that here.
-    const auto needs_unorm_fixup = profile.needs_unorm_fixup &&
-                                   (color_buffer.num_format == AmdGpu::NumberFormat::Unorm ||
-                                    color_buffer.num_format == AmdGpu::NumberFormat::Snorm ||
-                                    color_buffer.num_format == AmdGpu::NumberFormat::Srgb) &&
-                                   (color_buffer.data_format == AmdGpu::DataFormat::Format8 ||
-                                    color_buffer.data_format == AmdGpu::DataFormat::Format8_8 ||
-                                    color_buffer.data_format == AmdGpu::DataFormat::Format8_8_8_8);
-
     // Swizzle components and export
+    const auto swizzle = AmdGpu::CompMapping{.raw = color_buffer.swizzle};
     for (u32 i = 0; i < 4; ++i) {
-        const auto swizzled_comp = components[color_buffer.swizzle.Map(i)];
+        const auto swizzled_comp = components[swizzle.Map(i)];
         if (swizzled_comp.IsEmpty()) {
             continue;
         }
-        auto converted = ApplyWriteNumberConversion(ir, swizzled_comp, color_buffer.num_conversion);
-        if (needs_unorm_fixup) {
+        auto converted = ApplyWriteNumberConversion(
+            ir, swizzled_comp, AmdGpu::NumberConversion(color_buffer.num_conversion));
+        if (color_buffer.needs_unorm_fixup) {
             // FIXME: Fix-up for GPUs where float-to-unorm rounding is off from expected.
             converted = ir.FPSub(converted, ir.Imm32(1.f / 127500.f));
         }

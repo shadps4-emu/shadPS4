@@ -29,12 +29,19 @@ class DescriptorHeap;
 template <typename T>
 using VertexInputs = boost::container::static_vector<T, MaxVertexBufferCount>;
 
+struct ColorBuffer {
+    u16 data_format : 5;
+    u16 num_format : 4;
+    u16 blend_self_scale : 1;
+    u16 reserved : 6;
+};
+
 struct GraphicsPipelineKey {
     std::array<size_t, MaxShaderStages> stage_hashes;
     std::array<vk::Format, MaxVertexBufferCount> vertex_buffer_formats;
     u32 patch_control_points;
     u32 num_color_attachments;
-    std::array<Shader::PsColorBuffer, AmdGpu::NUM_COLOR_BUFFERS> color_buffers;
+    std::array<ColorBuffer, AmdGpu::NUM_COLOR_BUFFERS> color_buffers;
     std::array<AmdGpu::BlendControl, AmdGpu::NUM_COLOR_BUFFERS> blend_controls;
     std::array<vk::ColorComponentFlags, AmdGpu::NUM_COLOR_BUFFERS> write_masks;
     AmdGpu::ColorBufferMask cb_shader_mask;

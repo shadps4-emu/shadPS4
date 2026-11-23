@@ -443,7 +443,7 @@ private:
     void DefineSharedMemory();
     void DefineFunctions();
 
-    SpirvAttribute GetAttributeInfo(AmdGpu::NumberFormat fmt, Id id, u32 num_components,
+    SpirvAttribute GetAttributeInfo(AmdGpu::NumberClass num_class, Id id, u32 num_components,
                                     bool output, bool loaded = false, bool array = false);
 
     BufferSpv DefineBuffer(bool is_written, bool is_coherent, u32 elem_shift,

@@ -13,7 +13,8 @@ namespace Shader::Optimization {
 struct FormatInfo {
     AmdGpu::DataFormat data_format;
     AmdGpu::NumberFormat num_format;
-    AmdGpu::CompMapping swizzle;
+    AmdGpu::CompMapping load_swizzle;
+    AmdGpu::CompMapping store_swizzle;
     AmdGpu::NumberConversion num_conversion;
     u32 num_components;
 };
@@ -102,7 +103,9 @@ static IR::Value LoadBufferFormat(IR::IREmitter& ir, const IR::Value handle, con
             components.push_back(ir.Imm32(0.f));
         }
     }
-    const auto swizzled = ApplySwizzle(ir, ir.CompositeConstruct(components), format_info.swizzle);
+    const bool is_integer = AmdGpu::IsInteger(format_info.num_format);
+    const auto swizzled =
+        ApplySwizzle(ir, ir.CompositeConstruct(components), format_info.load_swizzle, is_integer);
     return swizzled;
 }
 
@@ -110,7 +113,8 @@ static void StoreBufferFormat(IR::IREmitter& ir, const IR::Value handle, const I
                               const IR::Value& value, const IR::BufferInstInfo info,
                               const FormatInfo& format_info) {
     // Extract actual number of components and apply additional modifications.
-    const auto swizzled = ApplySwizzle(ir, value, format_info.swizzle.Inverse());
+    const bool is_integer = AmdGpu::IsInteger(format_info.num_format);
+    const auto swizzled = ApplySwizzle(ir, value, format_info.store_swizzle, is_integer);
     boost::container::static_vector<IR::Value, 4> components;
     for (u32 i = 0; i < format_info.num_components; i++) {
         const auto component = IR::F32{ir.CompositeExtract(swizzled, i)};
@@ -203,9 +207,13 @@ static void LowerBufferFormatInst(IR::Block& block, IR::Inst& inst, Info& info) 
         .num_format = is_inst_typed
                           ? AmdGpu::RemapNumberFormat(flags.inst_num_fmt.Value(), data_format)
                           : buffer.GetNumberFmt(),
-        .swizzle = is_inst_typed
-                       ? AmdGpu::RemapSwizzle(flags.inst_data_fmt.Value(), AmdGpu::IdentityMapping)
-                       : buffer.DstSelect(),
+        // Typed instructions keep the components in order, only the host channel order applies.
+        .load_swizzle = is_inst_typed ? AmdGpu::RemapLoadSwizzle(flags.inst_data_fmt.Value(),
+                                                                 AmdGpu::IdentityMapping)
+                                      : buffer.LoadSwizzle(),
+        .store_swizzle = is_inst_typed ? AmdGpu::RemapStoreSwizzle(flags.inst_data_fmt.Value(),
+                                                                   AmdGpu::IdentityMapping)
+                                       : buffer.StoreSwizzle(flags.format_x_op),
         .num_conversion = is_inst_typed ? AmdGpu::MapNumberConversion(flags.inst_num_fmt.Value(),
                                                                       flags.inst_data_fmt.Value())
                                         : buffer.GetNumberConversion(),

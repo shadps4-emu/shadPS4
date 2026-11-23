@@ -913,14 +913,14 @@ void PatchImageArgs(IR::Inst& inst, Info& info) {
     const auto ms = has_ms ? IR::U32{arg} : IR::U32{};
 
     const auto is_storage = image_res.is_written;
+    const bool is_integer = AmdGpu::IsInteger(image.GetNumberFmt());
     if (inst.GetOpcode() == IR::Opcode::ImageRead) {
-        auto texel = ir.ImageRead(image_handle, coords, lod, ms, inst_info);
+        const auto texel = ir.ImageRead(image_handle, coords, lod, ms, inst_info);
+        auto converted = ApplyReadNumberConversionVec4(ir, texel, image.GetNumberConversion());
         if (is_storage) {
             // Storage image requires shader swizzle.
-            texel = ApplySwizzle(ir, texel, image.DstSelect());
+            converted = ApplySwizzle(ir, converted, image.LoadSwizzle(), is_integer);
         }
-        const auto converted =
-            ApplyReadNumberConversionVec4(ir, texel, image.GetNumberConversion());
         inst.ReplaceUsesWith(converted);
     } else {
         inst.SetArg(1, coords);
@@ -931,7 +931,7 @@ void PatchImageArgs(IR::Inst& inst, Info& info) {
             auto texel = inst.Arg(4);
             if (is_storage) {
                 // Storage image requires shader swizzle.
-                texel = ApplySwizzle(ir, texel, image.DstSelect().Inverse());
+                texel = ApplySwizzle(ir, texel, image.StoreSwizzle(), is_integer);
             }
             const auto converted =
                 ApplyWriteNumberConversionVec4(ir, texel, image.GetNumberConversion());

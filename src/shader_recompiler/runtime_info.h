@@ -170,12 +170,12 @@ enum class MrtSwizzle : u8 {
 static constexpr u32 MaxColorBuffers = 8;
 
 struct PsColorBuffer {
-    AmdGpu::DataFormat data_format : 6;
-    AmdGpu::NumberFormat num_format : 4;
-    AmdGpu::NumberConversion num_conversion : 3;
-    AmdGpu::ShaderExportFormat export_format : 4;
-    u32 blend_self_scale : 1;
-    AmdGpu::CompMapping swizzle;
+    u16 swizzle;
+    u16 num_class : 2;
+    u16 num_conversion : 3;
+    u16 export_format : 4;
+    u16 blend_self_scale : 1;
+    u16 needs_unorm_fixup : 1;
 
     bool operator==(const PsColorBuffer& other) const = default;
 };

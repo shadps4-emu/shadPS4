@@ -8,6 +8,7 @@
 #include "common/assert.h"
 #include "common/bit_field.h"
 #include "video_core/amdgpu/pixel_format.h"
+#include "video_core/amdgpu/swizzle.h"
 #include "video_core/amdgpu/tiling.h"
 
 namespace AmdGpu {
@@ -59,13 +60,23 @@ struct Buffer {
     }
 
     CompMapping DstSelect() const {
-        const CompMapping dst_sel{
+        return CompMapping{
             .r = CompSwizzle(dst_sel_x),
             .g = CompSwizzle(dst_sel_y),
             .b = CompSwizzle(dst_sel_z),
             .a = CompSwizzle(dst_sel_w),
         };
-        return RemapSwizzle(DataFormat(data_format), dst_sel);
+    }
+
+    CompMapping LoadSwizzle() const {
+        const auto dfmt = DataFormat(data_format);
+        return RemapLoadSwizzle(dfmt, DstSelLoad(DstSelect(), NumComponents(dfmt)));
+    }
+
+    CompMapping StoreSwizzle(bool is_format_x_op = false) const {
+        const auto dfmt = DataFormat(data_format);
+        return RemapStoreSwizzle(dfmt,
+                                 DstSelStore(DstSelect(), NumComponents(dfmt), is_format_x_op));
     }
 
     NumberFormat GetNumberFmt() const noexcept {
@@ -210,13 +221,23 @@ struct Image {
     }
 
     CompMapping DstSelect() const {
-        const CompMapping dst_sel{
+        return CompMapping{
             .r = CompSwizzle(dst_sel_x),
             .g = CompSwizzle(dst_sel_y),
             .b = CompSwizzle(dst_sel_z),
             .a = CompSwizzle(dst_sel_w),
         };
-        return RemapSwizzle(DataFormat(data_format), dst_sel);
+    }
+
+    CompMapping LoadSwizzle() const {
+        const auto dfmt = DataFormat(data_format);
+        return RemapLoadSwizzle(dfmt, DstSelLoad(DstSelect(), NumComponents(dfmt)));
+    }
+
+    CompMapping StoreSwizzle(bool is_format_x_op = false) const {
+        const auto dfmt = DataFormat(data_format);
+        return RemapStoreSwizzle(dfmt,
+                                 DstSelStore(DstSelect(), NumComponents(dfmt), is_format_x_op));
     }
 
     u32 Pitch() const {
@@ -352,7 +373,6 @@ struct Image {
 };
 static_assert(sizeof(Image) == 32); // 256bits
 
-// 8.2.7. Image Sampler [RDNA 2 Instruction Set Architecture]
 enum class ClampMode : u64 {
     Wrap = 0,
     Mirror = 1,

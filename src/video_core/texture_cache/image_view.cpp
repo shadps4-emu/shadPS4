@@ -68,7 +68,8 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, const Shader::ImageReso
     type = image.GetViewType(desc.is_array);
     min_lod = static_cast<u32>(image.min_lod);
     if (!is_storage) {
-        mapping = image.DstSelect();
+        // Storage views must use identity, their swizzle is applied in the shader.
+        mapping = AmdGpu::ImageViewMapping(image.LoadSwizzle(), AmdGpu::IsInteger(nfmt));
     }
 }
 
