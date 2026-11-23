@@ -638,7 +638,8 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolGetBlockStats(OrbisKernelMemoryPoolBlockStat
     const s32 ret =
         g_blockpool_device->ioctl(Core::Devices::BlockpoolDevice::GetBlockStats, &stats);
     if (ret == ORBIS_OK) {
-        std::memcpy(out_stats, &stats, std::min(size, sizeof(OrbisKernelMemoryPoolBlockStats)));
+        std::memcpy(out_stats, &stats,
+                    std::min<u64>(size, sizeof(OrbisKernelMemoryPoolBlockStats)));
     }
     return ret;
 }
