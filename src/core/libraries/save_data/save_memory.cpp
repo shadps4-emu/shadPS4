@@ -53,6 +53,7 @@ void PersistMemory(u32 slot_id, bool lock) {
     auto& data = g_attached_slots[slot_id];
     auto memoryPath = data.folder_path / FilenameSaveDataMemory;
     fs::create_directories(memoryPath.parent_path());
+    const auto backup_lck = Backup::LockForWrite();
 
     int n = 0;
     std::string errMsg;
@@ -136,6 +137,7 @@ size_t SetupSaveMemory(Libraries::UserService::OrbisUserServiceUserId user_id, u
 
 void SetIcon(u32 slot_id, void* buf, size_t buf_size) {
     std::lock_guard lck{g_slot_mtx};
+    const auto backup_lck = Backup::LockForWrite();
     const auto& data = g_attached_slots[slot_id];
     const auto icon_path = data.folder_path / sce_sys / "icon0.png";
     if (buf == nullptr) {
@@ -184,6 +186,7 @@ std::vector<u8> GetIcon(u32 slot_id) {
 
 void SaveSFO(u32 slot_id) {
     std::lock_guard lck{g_slot_mtx};
+    const auto backup_lck = Backup::LockForWrite();
     const auto& data = g_attached_slots[slot_id];
     const auto sfo_path = SaveInstance::GetParamSFOPath(data.folder_path);
     fs::create_directories(sfo_path.parent_path());
