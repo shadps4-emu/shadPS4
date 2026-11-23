@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -71,6 +71,7 @@ Common::NativeClock* GetClock();
 } // namespace Dev
 
 u64 PS4_SYSV_ABI sceKernelGetTscFrequency();
+u64 PS4_SYSV_ABI sceKernelGetCpuFrequency();
 u64 PS4_SYSV_ABI sceKernelGetProcessTime();
 u64 PS4_SYSV_ABI sceKernelGetProcessTimeCounter();
 u64 PS4_SYSV_ABI sceKernelGetProcessTimeCounterFrequency();
