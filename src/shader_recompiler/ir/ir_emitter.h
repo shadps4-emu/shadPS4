@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -10,6 +10,7 @@
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/condition.h"
 #include "shader_recompiler/ir/patch.h"
+#include "shader_recompiler/ir/shared_memory.h"
 #include "shader_recompiler/ir/value.h"
 
 namespace Shader::IR {
@@ -56,6 +57,9 @@ public:
     void SetScalarReg(IR::ScalarReg reg, const U32F32& value);
     void SetVectorReg(IR::VectorReg reg, const U32F32& value);
 
+    [[nodiscard]] U32 VMovRelS(IR::VectorReg reg, const U32& m0);
+    void VMovRelD(IR::VectorReg reg, const U32& value, const U32& m0);
+
     [[nodiscard]] Value GetVirtualReg(IR::VirtualReg reg);
     void SetVirtualReg(IR::VirtualReg reg, const Value& value);
 
@@ -93,8 +97,13 @@ public:
     void SetPatch(Patch patch, const F32& value);
 
     [[nodiscard]] Value LoadShared(int bit_size, bool is_signed, const U32& offset,
-                                   bool is_gds = false);
-    void WriteShared(int bit_size, const Value& value, const U32& offset, bool is_gds = false);
+                                   bool is_gds = false, bool is_scratch = false);
+    void WriteShared(int bit_size, const Value& value, const U32& offset, bool is_gds = false,
+                     bool is_scratch = false);
+
+    [[nodiscard]] U32 LoadSharedU32Scratch(const U32& offset);
+    [[nodiscard]] U64 LoadSharedU64Scratch(const U32& offset);
+    void WriteSharedU32Scratch(const U32& value, const U32& offset);
 
     [[nodiscard]] U32U64 SharedAtomicIAdd(const U32& address, const U32U64& data, bool is_gds);
     [[nodiscard]] U32U64 SharedAtomicISub(const U32& address, const U32U64& data, bool is_gds);
@@ -102,6 +111,8 @@ public:
                                           bool is_gds);
     [[nodiscard]] U32U64 SharedAtomicIMax(const U32& address, const U32U64& data, bool is_signed,
                                           bool is_gds);
+    [[nodiscard]] F32F64 SharedAtomicFMax(const U32& address, const F32F64& data, bool is_gds);
+    [[nodiscard]] F32F64 SharedAtomicFMin(const U32& address, const F32F64& data, bool is_gds);
     [[nodiscard]] U32U64 SharedAtomicAnd(const U32& address, const U32U64& data, bool is_gds);
     [[nodiscard]] U32U64 SharedAtomicOr(const U32& address, const U32U64& data, bool is_gds);
     [[nodiscard]] U32U64 SharedAtomicXor(const U32& address, const U32U64& data, bool is_gds);
@@ -172,7 +183,8 @@ public:
     [[nodiscard]] U32 DataAppend(const U32& gds_dw_offset);
     [[nodiscard]] U32 DataConsume(const U32& gds_dw_offset);
     [[nodiscard]] U32 LaneId();
-    [[nodiscard]] U32 WarpId();
+    [[nodiscard]] U32 WaveId();
+    [[nodiscard]] U32 SubgroupId();
     [[nodiscard]] U32 QuadBroadcast(const U32& value, const U32& index);
     [[nodiscard]] U32 Shuffle(const U32& value, const U32& index);
     [[nodiscard]] U32 ShuffleXor(const U32& value, const U32& mask);

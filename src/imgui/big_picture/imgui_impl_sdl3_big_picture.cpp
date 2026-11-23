@@ -5,6 +5,7 @@
 
 #include "imgui.h"
 #ifndef IMGUI_DISABLE
+#include "core/emulator_settings.h"
 #include "imgui_impl_sdl3_big_picture.h"
 
 // Clang warnings with -Weverything
@@ -925,16 +926,19 @@ static void ImGui_ImplSDL3_UpdateGamepads() {
 
     // Update gamepad inputs
     const int thumb_dead_zone = 8000; // SDL_gamepad.h suggests using this value.
+    const bool is_circle_enter = EmulatorSettings.IsCircleEnter();
+    const SDL_GamepadButton enter_button =
+        is_circle_enter ? SDL_GAMEPAD_BUTTON_EAST : SDL_GAMEPAD_BUTTON_SOUTH;
+    const SDL_GamepadButton back_button =
+        is_circle_enter ? SDL_GAMEPAD_BUTTON_SOUTH : SDL_GAMEPAD_BUTTON_EAST;
     ImGui_ImplSDL3_UpdateGamepadButton(bd, io, ImGuiKey_GamepadStart, SDL_GAMEPAD_BUTTON_START);
     ImGui_ImplSDL3_UpdateGamepadButton(bd, io, ImGuiKey_GamepadBack, SDL_GAMEPAD_BUTTON_BACK);
     ImGui_ImplSDL3_UpdateGamepadButton(bd, io, ImGuiKey_GamepadFaceLeft,
                                        SDL_GAMEPAD_BUTTON_WEST); // Xbox X, PS Square
-    ImGui_ImplSDL3_UpdateGamepadButton(bd, io, ImGuiKey_GamepadFaceRight,
-                                       SDL_GAMEPAD_BUTTON_EAST); // Xbox B, PS Circle
+    ImGui_ImplSDL3_UpdateGamepadButton(bd, io, ImGuiKey_GamepadFaceRight, back_button);
     ImGui_ImplSDL3_UpdateGamepadButton(bd, io, ImGuiKey_GamepadFaceUp,
                                        SDL_GAMEPAD_BUTTON_NORTH); // Xbox Y, PS Triangle
-    ImGui_ImplSDL3_UpdateGamepadButton(bd, io, ImGuiKey_GamepadFaceDown,
-                                       SDL_GAMEPAD_BUTTON_SOUTH); // Xbox A, PS Cross
+    ImGui_ImplSDL3_UpdateGamepadButton(bd, io, ImGuiKey_GamepadFaceDown, enter_button);
     ImGui_ImplSDL3_UpdateGamepadButton(bd, io, ImGuiKey_GamepadDpadLeft,
                                        SDL_GAMEPAD_BUTTON_DPAD_LEFT);
     ImGui_ImplSDL3_UpdateGamepadButton(bd, io, ImGuiKey_GamepadDpadRight,

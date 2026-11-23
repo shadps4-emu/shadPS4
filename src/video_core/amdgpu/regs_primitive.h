@@ -1,7 +1,9 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
+
+#include <array>
 
 #include "common/types.h"
 
@@ -216,6 +218,10 @@ struct ClipUserData {
     u32 data_y;
     u32 data_z;
     u32 data_w;
+};
+
+struct AaSampleMask {
+    std::array<u16, 4> pixel; // X0Y0, X1Y0, X0Y1, X1Y1
 };
 
 struct AaConfig {

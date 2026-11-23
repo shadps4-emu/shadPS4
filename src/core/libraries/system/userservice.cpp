@@ -118,9 +118,28 @@ int PS4_SYSV_ABI sceUserServiceGetDiscPlayerFlag() {
 
 std::queue<OrbisUserServiceEvent> user_service_event_queue = {};
 
+struct UserServiceEventCallbackEntry {
+    OrbisUserServiceEventCallback func{nullptr};
+    void* userdata{nullptr};
+};
+
+static std::mutex g_user_service_callbacks_mutex;
+static std::vector<UserServiceEventCallbackEntry> g_user_service_callbacks;
+
 void AddUserServiceEvent(const OrbisUserServiceEvent e) {
     LOG_DEBUG(Lib_UserService, "Event added to queue: {} {}", (u8)e.event, e.userId);
     user_service_event_queue.push(e);
+
+    std::vector<UserServiceEventCallbackEntry> callbacks;
+    {
+        std::scoped_lock lock{g_user_service_callbacks_mutex};
+        callbacks = g_user_service_callbacks;
+    }
+    for (const auto& cb : callbacks) {
+        if (cb.func != nullptr) {
+            cb.func(&e, cb.userdata);
+        }
+    }
 }
 
 s32 PS4_SYSV_ABI sceUserServiceGetEvent(OrbisUserServiceEvent* event) {
@@ -1233,8 +1252,25 @@ int PS4_SYSV_ABI sceUserServiceLogout() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceUserServiceRegisterEventCallback() {
-    LOG_ERROR(Lib_UserService, "(STUBBED) called");
+int PS4_SYSV_ABI sceUserServiceRegisterEventCallback(OrbisUserServiceEventCallback callback,
+                                                     void* userdata) {
+    if (callback == nullptr) {
+        LOG_WARNING(Lib_UserService, "called with NULL callback");
+        return ORBIS_OK;
+    }
+
+    {
+        std::scoped_lock lock{g_user_service_callbacks_mutex};
+        for (const auto& entry : g_user_service_callbacks) {
+            if (entry.func == callback && entry.userdata == userdata) {
+                return ORBIS_OK;
+            }
+        }
+        g_user_service_callbacks.push_back({callback, userdata});
+    }
+
+    LOG_INFO(Lib_UserService, "called callback={:p}, userdata={}",
+             reinterpret_cast<const void*>(callback), userdata);
     return ORBIS_OK;
 }
 
@@ -2198,8 +2234,22 @@ int PS4_SYSV_ABI sceUserServiceTerminate() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceUserServiceUnregisterEventCallback() {
-    LOG_ERROR(Lib_UserService, "(STUBBED) called");
+int PS4_SYSV_ABI sceUserServiceUnregisterEventCallback(OrbisUserServiceEventCallback callback,
+                                                       void* userdata) {
+    if (callback == nullptr) {
+        LOG_WARNING(Lib_UserService, "called with NULL callback");
+        return ORBIS_USER_SERVICE_ERROR_INVALID_ARGUMENT;
+    }
+
+    std::scoped_lock lock{g_user_service_callbacks_mutex};
+    auto it = std::remove_if(g_user_service_callbacks.begin(), g_user_service_callbacks.end(),
+                             [callback, userdata](const UserServiceEventCallbackEntry& entry) {
+                                 return entry.func == callback &&
+                                        (userdata == nullptr || entry.userdata == userdata);
+                             });
+    g_user_service_callbacks.erase(it, g_user_service_callbacks.end());
+    LOG_INFO(Lib_UserService, "called callback={:p}, userdata={}",
+             reinterpret_cast<const void*>(callback), userdata);
     return ORBIS_OK;
 }
 
