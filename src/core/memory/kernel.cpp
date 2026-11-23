@@ -464,8 +464,8 @@ s32 MemoryManager::VirtualQuery(VAddr addr, s32 flags,
             ASSERT(dmem.GetDirectMemoryType(addr + relofs, &memory_type, &dmem_start, &dmem_end) ==
                    0);
 
-            info->start = std::max(dmem_start - relofs, entry->start);
-            info->end = std::min(dmem_end - relofs, entry->end);
+            info->start = std::max<u64>(dmem_start - relofs, entry->start);
+            info->end = std::min<u64>(dmem_end - relofs, entry->end);
             info->memory_type = memory_type;
             info->offset = info->start + relofs;
             LOG_WARNING(
