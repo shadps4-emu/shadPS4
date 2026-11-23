@@ -5,6 +5,7 @@
 #include <climits>
 #include <condition_variable>
 #include <cstdint>
+#include <cstring>
 #include <map>
 #include <mutex>
 #include <unordered_map>
@@ -93,6 +94,37 @@ namespace Libraries::Kernel {
 
 namespace {
 
+struct FlockKey {
+    Common::FS::FileIdentity identity{};
+    std::string fallback_name{};
+
+    bool HasIdentity() const {
+        return identity.device != 0 || identity.file_lo != 0 || identity.file_hi != 0;
+    }
+
+    bool operator==(const FlockKey& o) const {
+        if (HasIdentity() && o.HasIdentity()) {
+            return identity == o.identity;
+        }
+        if (!HasIdentity() && !o.HasIdentity()) {
+            return fallback_name == o.fallback_name;
+        }
+        return false;
+    }
+};
+
+struct FlockKeyHash {
+    size_t operator()(const FlockKey& k) const noexcept {
+        if (k.HasIdentity()) {
+            size_t h = std::hash<u64>{}(k.identity.device);
+            h ^= std::hash<u64>{}(k.identity.file_lo) + 0x9e3779b9 + (h << 6) + (h >> 2);
+            h ^= std::hash<u64>{}(k.identity.file_hi) + 0x9e3779b9 + (h << 6) + (h >> 2);
+            return h;
+        }
+        return std::hash<std::string>{}(k.fallback_name);
+    }
+};
+
 struct FlockState {
     std::mutex mtx;
     std::condition_variable cv;
@@ -103,17 +135,20 @@ struct FlockState {
 };
 
 std::mutex g_flock_map_mtx;
-std::unordered_map<std::string, std::shared_ptr<FlockState>> g_flock_states;
+std::unordered_map<FlockKey, std::shared_ptr<FlockState>, FlockKeyHash> g_flock_states;
 
-std::string GetFileLockKey(Core::FileSys::File* file) {
+FlockKey GetFileLockKey(Core::FileSys::File* file) {
     if (!file->m_host_name.empty()) {
-        return file->m_host_name.string();
+        if (auto info = Common::FS::GetFileInfo(file->m_host_name)) {
+            return FlockKey{.identity = info->identity};
+        }
+        return FlockKey{.fallback_name = file->m_host_name.string()};
     }
-    return file->m_guest_name;
+    return FlockKey{.fallback_name = file->m_guest_name};
 }
 
 void ReleaseFlockState(Core::FileSys::File* file) {
-    const std::string key = GetFileLockKey(file);
+    const FlockKey key = GetFileLockKey(file);
     std::shared_ptr<FlockState> state;
     {
         std::scoped_lock lock{g_flock_map_mtx};
@@ -149,7 +184,17 @@ void ReleaseFlockState(Core::FileSys::File* file) {
 } // anonymous namespace
 
 s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
+    if (raw_path == nullptr) {
+        *__Error() = POSIX_EFAULT;
+        return -1;
+    }
+
     LOG_INFO(Kernel_Fs, "path = {} flags = {:#x} mode = {:#o}", raw_path, flags, mode);
+
+    if (raw_path[0] == '\0') {
+        *__Error() = POSIX_ENOENT;
+        return -1;
+    }
 
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
@@ -165,14 +210,13 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
         return -1;
     }
 
-    if (strlen(raw_path) > 255) {
+    if (strlen(raw_path) >= ORBIS_MAX_PATH) {
         *__Error() = POSIX_ENAMETOOLONG;
         LOG_ERROR(Kernel_Fs, "Opening path {} failed, path is too long", raw_path);
         return -1;
     }
 
     bool nonblock = (flags & ORBIS_KERNEL_O_NONBLOCK) != 0;
-    bool append = (flags & ORBIS_KERNEL_O_APPEND) != 0;
     // Flags fsync and sync behave the same
     bool sync = (flags & ORBIS_KERNEL_O_SYNC) != 0 || (flags & ORBIS_KERNEL_O_FSYNC) != 0;
     bool create = (flags & ORBIS_KERNEL_O_CREAT) != 0;
@@ -181,6 +225,13 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
     bool dsync = (flags & ORBIS_KERNEL_O_DSYNC) != 0;
     bool direct = (flags & ORBIS_KERNEL_O_DIRECT) != 0;
     bool directory = (flags & ORBIS_KERNEL_O_DIRECTORY) != 0;
+
+    if (truncate && !write && !rdwr) {
+        *__Error() = POSIX_EINVAL;
+        LOG_ERROR(Kernel_Fs, "Opening path {} failed, O_TRUNC specified without write access",
+                  raw_path);
+        return -1;
+    }
 
     if (sync || direct || dsync || nonblock) {
         LOG_WARNING(Kernel_Fs, "flags {:#x} not fully handled", flags);
@@ -195,6 +246,7 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
     const std::string& path = *sanitized_path;
     u32 handle = h->CreateHandle();
     auto* file = h->GetFile(handle);
+    file->m_flags = flags;
 
     if (path.starts_with("/dev/")) {
         for (const auto& [prefix, factory] : available_device) {
@@ -239,6 +291,7 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
             }
             // Create a file if it doesn't exist
             Common::FS::IOFile out(file->m_host_name, Common::FS::FileAccessMode::Create);
+            mnt->InvalidateCache(file->m_guest_name);
         }
     } else if (!exists) {
         // If we're not creating a file, and it doesn't exist, return ENOENT
@@ -303,17 +356,14 @@ s32 PS4_SYSV_ABI open(const char* raw_path, s32 flags, u16 mode) {
         }
 
         // Map the guest open flags onto a single host access mode.
+        // O_APPEND is not part of it, it is applied per write (see SeekToEndIfAppend).
         Common::FS::FileAccessMode access_mode;
-        if (truncate) {
-            access_mode = Common::FS::FileAccessMode::ReadWrite;
-        } else if (read) {
+        if (read) {
             access_mode = Common::FS::FileAccessMode::Read;
         } else if (write) {
-            access_mode =
-                append ? Common::FS::FileAccessMode::Append : Common::FS::FileAccessMode::Write;
+            access_mode = Common::FS::FileAccessMode::Write;
         } else if (rdwr) {
-            access_mode = append ? Common::FS::FileAccessMode::ReadAppend
-                                 : Common::FS::FileAccessMode::ReadWrite;
+            access_mode = Common::FS::FileAccessMode::ReadWrite;
         } else {
             access_mode = Common::FS::FileAccessMode::Read;
         }
@@ -344,6 +394,59 @@ s32 PS4_SYSV_ABI posix_open(const char* filename, s32 flags, u16 mode) {
     return open(filename, flags, mode);
 }
 
+s32 PS4_SYSV_ABI posix_openat(s32 fd, const char* path, s32 flags, u16 mode) {
+    if (path == nullptr) {
+        *__Error() = POSIX_EFAULT;
+        return -1;
+    }
+    if (path[0] == '\0') {
+        *__Error() = POSIX_ENOENT;
+        return -1;
+    }
+
+    // AT_FDCWD (-100) or absolute path resolves relative to the current directory
+    if (path[0] == '/' || fd == -100) {
+        return open(path, flags, mode);
+    }
+
+    if (fd < 0) {
+        *__Error() = POSIX_EBADF;
+        return -1;
+    }
+
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    auto* file = h->GetFile(fd);
+    if (file == nullptr) {
+        *__Error() = POSIX_EBADF;
+        return -1;
+    }
+
+    if (file->type != Core::FileSys::FileType::Directory) {
+        *__Error() = POSIX_ENOTDIR;
+        return -1;
+    }
+
+    std::string combined = file->m_guest_name;
+    if (!combined.empty() && combined.back() != '/') {
+        combined += '/';
+    }
+    combined += path;
+    return open(combined.c_str(), flags, mode);
+}
+
+s32 PS4_SYSV_ABI posix_creat(const char* path, u16 mode) {
+    return open(path, ORBIS_KERNEL_O_WRONLY | ORBIS_KERNEL_O_CREAT | ORBIS_KERNEL_O_TRUNC, mode);
+}
+
+s32 PS4_SYSV_ABI posix_pipe(s32 fildes[2]) {
+    if (fildes == nullptr) {
+        *__Error() = POSIX_EFAULT;
+        return -1;
+    }
+    return Libraries::Net::sys_socketpair(Libraries::Net::ORBIS_NET_AF_UNIX,
+                                          Libraries::Net::ORBIS_NET_SOCK_STREAM, 0, fildes);
+}
+
 s32 PS4_SYSV_ABI sceKernelOpen(const char* path, s32 flags, /* SceKernelMode*/ u16 mode) {
     s32 result = open(path, flags, mode);
     if (result < 0) {
@@ -366,14 +469,15 @@ s32 PS4_SYSV_ABI close(s32 fd) {
     if (file->type == Core::FileSys::FileType::Socket) {
         return Libraries::Net::KernelClose(fd);
     }
-    ReleaseFlockState(file);
-    if (file->type == Core::FileSys::FileType::Regular) {
-        file->handle.reset();
-    }
-    file->is_opened = false;
     LOG_INFO(Kernel_Fs, "Closing {}", file->m_guest_name);
-    // FIXME: Lock file mutex before deleting it?
-    h->DeleteHandle(fd);
+    if (auto* to_delete = h->UnrefHandle(fd)) {
+        ReleaseFlockState(to_delete);
+        if (to_delete->type == Core::FileSys::FileType::Regular) {
+            to_delete->handle.reset();
+        }
+        to_delete->is_opened = false;
+        delete to_delete;
+    }
     return ORBIS_OK;
 }
 
@@ -390,7 +494,158 @@ s32 PS4_SYSV_ABI sceKernelClose(s32 fd) {
     return result;
 }
 
+s32 PS4_SYSV_ABI posix_fcntl(s32 fd, s32 cmd, s64 arg) {
+    LOG_TRACE(Kernel_Fs, "fd = {}, cmd = {}, arg = {:#x}", fd, cmd, arg);
+
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    auto* file = h->GetFile(fd);
+    if (file == nullptr) {
+        *__Error() = POSIX_EBADF;
+        return -1;
+    }
+
+    switch (cmd) {
+    case ORBIS_KERNEL_F_DUPFD:
+    case ORBIS_KERNEL_F_DUPFD_CLOEXEC: {
+        if (arg < 0 || arg >= 1024) {
+            *__Error() = POSIX_EINVAL;
+            return -1;
+        }
+        const bool cloexec = (cmd == ORBIS_KERNEL_F_DUPFD_CLOEXEC);
+        s32 new_fd = h->DuplicateHandleFrom(fd, static_cast<s32>(arg), cloexec);
+        if (new_fd < 0) {
+            *__Error() = POSIX_EMFILE;
+            return -1;
+        }
+        if (file->type == Core::FileSys::FileType::Socket) {
+            Libraries::Net::KernelDuplicate(fd, new_fd);
+        }
+        return new_fd;
+    }
+    case ORBIS_KERNEL_F_DUP2FD:
+    case ORBIS_KERNEL_F_DUP2FD_CLOEXEC: {
+        if (arg < 0 || arg >= 1024) {
+            *__Error() = POSIX_EBADF;
+            return -1;
+        }
+        if (fd == arg) {
+            return fd;
+        }
+        if (h->GetFile(static_cast<s32>(arg)) != nullptr) {
+            posix_close(static_cast<s32>(arg));
+        }
+        const bool cloexec = (cmd == ORBIS_KERNEL_F_DUP2FD_CLOEXEC);
+        s32 new_fd = h->DuplicateHandleTo(fd, static_cast<s32>(arg), cloexec);
+        if (new_fd < 0) {
+            *__Error() = POSIX_EMFILE;
+            return -1;
+        }
+        if (file->type == Core::FileSys::FileType::Socket) {
+            Libraries::Net::KernelDuplicate(fd, new_fd);
+        }
+        return new_fd;
+    }
+    case ORBIS_KERNEL_F_GETFD: {
+        return h->GetFdFlags(fd);
+    }
+    case ORBIS_KERNEL_F_SETFD: {
+        h->SetFdFlags(fd, static_cast<s32>(arg));
+        return 0;
+    }
+    case ORBIS_KERNEL_F_GETFL: {
+        if (file->type == Core::FileSys::FileType::Socket) {
+            return Libraries::Net::KernelFcntl(fd, cmd, arg);
+        }
+        return file->m_flags.load();
+    }
+    case ORBIS_KERNEL_F_SETFL: {
+        if (file->type == Core::FileSys::FileType::Socket) {
+            return Libraries::Net::KernelFcntl(fd, cmd, arg);
+        }
+        constexpr s32 settable =
+            ORBIS_KERNEL_O_NONBLOCK | ORBIS_KERNEL_O_APPEND | ORBIS_KERNEL_O_DIRECT;
+        s32 current = file->m_flags.load();
+        s32 new_flags = (current & ~settable) | (static_cast<s32>(arg) & settable);
+        file->m_flags.store(new_flags);
+        return 0;
+    }
+    case ORBIS_KERNEL_F_GETOWN: {
+        return 1;
+    }
+    case ORBIS_KERNEL_F_SETOWN: {
+        return 0;
+    }
+    case ORBIS_KERNEL_F_OGETLK:
+    case ORBIS_KERNEL_F_GETLK: {
+        if (arg != 0) {
+            auto* fl = reinterpret_cast<OrbisKernelFlock*>(arg);
+            fl->l_type = ORBIS_KERNEL_F_UNLCK;
+        }
+        return 0;
+    }
+    case ORBIS_KERNEL_F_OSETLK:
+    case ORBIS_KERNEL_F_OSETLKW:
+    case ORBIS_KERNEL_F_SETLK:
+    case ORBIS_KERNEL_F_SETLKW: {
+        return 0;
+    }
+    case ORBIS_KERNEL_F_READAHEAD:
+    case ORBIS_KERNEL_F_RDAHEAD: {
+        return 0;
+    }
+    default:
+        LOG_WARNING(Kernel_Fs, "Unsupported fcntl cmd = {} on fd = {}", cmd, fd);
+        *__Error() = POSIX_EINVAL;
+        return -1;
+    }
+}
+
+s32 PS4_SYSV_ABI sceKernelFcntl(s32 fd, s32 cmd, s64 arg) {
+    s32 result = posix_fcntl(fd, cmd, arg);
+    if (result < 0) {
+        LOG_ERROR(Kernel_Fs, "fd = {}, cmd = {}, error = {}", fd, cmd, *__Error());
+        return ErrnoToSceKernelError(*__Error());
+    }
+    return result;
+}
+
+s32 PS4_SYSV_ABI posix_dup(s32 old_fd) {
+    LOG_TRACE(Kernel_Fs, "old_fd = {}", old_fd);
+    return posix_fcntl(old_fd, ORBIS_KERNEL_F_DUPFD, 0);
+}
+
+s32 PS4_SYSV_ABI posix_dup2(s32 old_fd, s32 new_fd) {
+    LOG_TRACE(Kernel_Fs, "old_fd = {}, new_fd = {}", old_fd, new_fd);
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    if (h->GetFile(old_fd) == nullptr) {
+        *__Error() = POSIX_EBADF;
+        return -1;
+    }
+    if (new_fd < 0 || new_fd >= 1024) {
+        *__Error() = POSIX_EBADF;
+        return -1;
+    }
+    if (old_fd == new_fd) {
+        return new_fd;
+    }
+    return posix_fcntl(old_fd, ORBIS_KERNEL_F_DUP2FD, new_fd);
+}
+
+// With O_APPEND set, every write goes to the end of the file. Checked per write because
+// fcntl(F_SETFL) can toggle it. The caller must hold file->m_mutex.
+static bool SeekToEndIfAppend(Core::FileSys::File* file) {
+    if ((file->m_flags.load() & ORBIS_KERNEL_O_APPEND) == 0) {
+        return true;
+    }
+    return file->Seek(0, Common::FS::SeekOrigin::End);
+}
+
 s64 PS4_SYSV_ABI write(s32 fd, const void* buf, u64 nbytes) {
+    if (nbytes > 0 && buf == nullptr) {
+        *__Error() = POSIX_EFAULT;
+        return -1;
+    }
+
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(fd);
     if (file == nullptr) {
@@ -410,12 +665,17 @@ s64 PS4_SYSV_ABI write(s32 fd, const void* buf, u64 nbytes) {
         }
         return result;
     } else if (file->type == Core::FileSys::FileType::Directory) {
-        *__Error() = POSIX_EBADF;
+        *__Error() = POSIX_EISDIR;
         return -1;
     }
 
     if (file->IsReadOnly()) {
         *__Error() = POSIX_EBADF;
+        return -1;
+    }
+
+    if (!SeekToEndIfAppend(file)) {
+        *__Error() = POSIX_EIO;
         return -1;
     }
 
@@ -438,6 +698,10 @@ s64 PS4_SYSV_ABI sceKernelWrite(s32 fd, const void* buf, u64 nbytes) {
 static thread_local std::vector<u8> file_buf{};
 
 s64 ReadFile(Core::FileSys::File* file, void* buf, u64 nbytes) {
+    if (nbytes == 0) {
+        return 0;
+    }
+
     const auto* memory = Core::Memory::Instance();
     // Invalidate up to the actual number of bytes that could be read.
     const auto remaining = file->GetSize() - file->Tell();
@@ -454,6 +718,15 @@ s64 ReadFile(Core::FileSys::File* file, void* buf, u64 nbytes) {
 }
 
 s64 PS4_SYSV_ABI readv(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
+    if (iovcnt <= 0 || iovcnt > 1024) {
+        *__Error() = POSIX_EINVAL;
+        return -1;
+    }
+    if (iov == nullptr) {
+        *__Error() = POSIX_EFAULT;
+        return -1;
+    }
+
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(fd);
     if (file == nullptr) {
@@ -485,7 +758,21 @@ s64 PS4_SYSV_ABI readv(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
 
     s64 total_read = 0;
     for (s32 i = 0; i < iovcnt; i++) {
-        total_read += ReadFile(file, iov[i].iov_base, iov[i].iov_len);
+        if (iov[i].iov_len == 0) {
+            continue;
+        }
+        if (iov[i].iov_base == nullptr) {
+            *__Error() = POSIX_EFAULT;
+            return -1;
+        }
+        s64 bytes = ReadFile(file, iov[i].iov_base, iov[i].iov_len);
+        if (bytes < 0) {
+            return total_read > 0 ? total_read : -1;
+        }
+        total_read += bytes;
+        if (static_cast<u64>(bytes) < iov[i].iov_len) {
+            break;
+        }
     }
     return total_read;
 }
@@ -504,6 +791,15 @@ s64 PS4_SYSV_ABI sceKernelReadv(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt)
 }
 
 s64 PS4_SYSV_ABI writev(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
+    if (iovcnt <= 0 || iovcnt > 1024) {
+        *__Error() = POSIX_EINVAL;
+        return -1;
+    }
+    if (iov == nullptr) {
+        *__Error() = POSIX_EFAULT;
+        return -1;
+    }
+
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(fd);
     if (file == nullptr) {
@@ -521,7 +817,7 @@ s64 PS4_SYSV_ABI writev(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
         }
         return result;
     } else if (file->type == Core::FileSys::FileType::Directory) {
-        *__Error() = POSIX_EBADF;
+        *__Error() = POSIX_EISDIR;
         return -1;
     }
 
@@ -530,9 +826,28 @@ s64 PS4_SYSV_ABI writev(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt) {
         return -1;
     }
 
+    if (!SeekToEndIfAppend(file)) {
+        *__Error() = POSIX_EIO;
+        return -1;
+    }
+
     s64 total_written = 0;
     for (s32 i = 0; i < iovcnt; i++) {
-        total_written += file->Write(iov[i].iov_base, iov[i].iov_len);
+        if (iov[i].iov_len == 0) {
+            continue;
+        }
+        if (iov[i].iov_base == nullptr) {
+            *__Error() = POSIX_EFAULT;
+            return -1;
+        }
+        s64 bytes = file->Write(iov[i].iov_base, iov[i].iov_len);
+        if (bytes < 0) {
+            return total_written > 0 ? total_written : -1;
+        }
+        total_written += bytes;
+        if (static_cast<u64>(bytes) < iov[i].iov_len) {
+            break;
+        }
     }
     return total_written;
 }
@@ -583,8 +898,8 @@ s64 PS4_SYSV_ABI posix_lseek(s32 fd, s64 offset, s32 whence) {
     } else if (whence == 2) {
         origin = Common::FS::SeekOrigin::End;
     } else if (whence == 3 || whence == 4) {
-        // whence parameter belongs to an unsupported POSIX extension
-        *__Error() = POSIX_ENOTTY;
+        // SEEK_DATA / SEEK_HOLE not supported by the backend
+        *__Error() = POSIX_EINVAL;
         return -1;
     } else {
         // whence parameter is invalid
@@ -621,6 +936,11 @@ s64 PS4_SYSV_ABI sceKernelLseek(s32 fd, s64 offset, s32 whence) {
 }
 
 s64 PS4_SYSV_ABI read(s32 fd, void* buf, u64 nbytes) {
+    if (nbytes > 0 && buf == nullptr) {
+        *__Error() = POSIX_EFAULT;
+        return -1;
+    }
+
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(fd);
     if (file == nullptr) {
@@ -675,7 +995,7 @@ s32 PS4_SYSV_ABI posix_mkdir(const char* path, u16 mode) {
         return -1;
     }
     LOG_INFO(Kernel_Fs, "path = {} mode = {:#o}", path, mode);
-    if (strlen(path) > 255) {
+    if (strlen(path) >= ORBIS_MAX_PATH) {
         *__Error() = POSIX_ENAMETOOLONG;
         return -1;
     }
@@ -699,6 +1019,12 @@ s32 PS4_SYSV_ABI posix_mkdir(const char* path, u16 mode) {
         return -1;
     }
 
+    const auto parent = fs::path(sanitized_path).parent_path().generic_string();
+    if (!mnt->IsDirectory(parent)) {
+        *__Error() = mnt->Exists(parent) ? POSIX_ENOTDIR : POSIX_ENOENT;
+        return -1;
+    }
+
     std::error_code ec;
     if (dir_name.empty() || !fs::create_directory(dir_name, ec)) {
         if (ec == std::errc::no_such_file_or_directory) {
@@ -709,6 +1035,7 @@ s32 PS4_SYSV_ABI posix_mkdir(const char* path, u16 mode) {
         return -1;
     }
 
+    mnt->InvalidateCache(sanitized_path);
     return ORBIS_OK;
 }
 
@@ -726,7 +1053,7 @@ s32 PS4_SYSV_ABI posix_rmdir(const char* path) {
         *__Error() = POSIX_EFAULT;
         return -1;
     }
-    if (strlen(path) > 255) {
+    if (strlen(path) >= ORBIS_MAX_PATH) {
         *__Error() = POSIX_ENAMETOOLONG;
         return -1;
     }
@@ -775,6 +1102,7 @@ s32 PS4_SYSV_ABI posix_rmdir(const char* path) {
         *__Error() = (ec.value() == EACCES || ec.value() == EPERM) ? POSIX_EACCES : POSIX_EIO;
         return -1;
     }
+    mnt->InvalidateCache(sanitized_path);
     return ORBIS_OK;
 }
 
@@ -788,22 +1116,45 @@ s32 PS4_SYSV_ABI sceKernelRmdir(const char* path) {
 }
 
 s32 PS4_SYSV_ABI posix_access(const char* path, s32 mode) {
+    if (path == nullptr) {
+        *__Error() = POSIX_EFAULT;
+        return -1;
+    }
+    if (path[0] == '\0') {
+        *__Error() = POSIX_ENOENT;
+        return -1;
+    }
     LOG_INFO(Kernel_Fs, "(PARTIAL) path = {}, mode = {}", path, mode);
-    if (strlen(path) > 255) {
+    if (strlen(path) >= ORBIS_MAX_PATH) {
         *__Error() = POSIX_ENAMETOOLONG;
         return -1;
     }
 
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    const bool is_root = strncmp(path, "/", 2) == 0;
+    if (is_root) {
+        LOG_WARNING(Kernel_Fs, "Checking accessibility of filesystem root");
+        if (mode & ORBIS_KERNEL_W_OK) {
+            *__Error() = POSIX_EROFS;
+            return -1;
+        }
+        return ORBIS_OK;
+    }
+
     const bool is_dir = mnt->IsDirectory(path);
     const bool is_file = !is_dir && mnt->Exists(path);
-    const bool is_root = strncmp(path, "/", 2) == 0;
-    if (!is_dir && !is_file && !is_root) {
+    if (!is_dir && !is_file) {
         *__Error() = POSIX_ENOENT;
         return -1;
     }
-    if (is_root) {
-        LOG_WARNING(Kernel_Fs, "Checking accessibility of filesystem root");
+
+    if (mode & ORBIS_KERNEL_W_OK) {
+        bool ro = false;
+        mnt->GetHostPath(path, &ro);
+        if (ro) {
+            *__Error() = POSIX_EROFS;
+            return -1;
+        }
     }
     return ORBIS_OK;
 }
@@ -814,8 +1165,16 @@ s32 PS4_SYSV_ABI posix_chdir(const char* path) {
 }
 
 s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
+    if (path == nullptr || sb == nullptr) {
+        *__Error() = POSIX_EFAULT;
+        return -1;
+    }
+    if (path[0] == '\0') {
+        *__Error() = POSIX_ENOENT;
+        return -1;
+    }
     LOG_DEBUG(Kernel_Fs, "(PARTIAL) path = {}", path);
-    if (strlen(path) > 255) {
+    if (strlen(path) >= ORBIS_MAX_PATH) {
         *__Error() = POSIX_ENAMETOOLONG;
         return -1;
     }
@@ -833,6 +1192,8 @@ s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
     if (is_root) {
         LOG_WARNING(Kernel_Fs, "Attempting to access filesystem root");
         sb->st_mode = 0000777u | 0040000u;
+        sb->st_ino = 2;
+        sb->st_nlink = 2;
         sb->st_size = 65536;
         sb->st_blksize = 65536;
         sb->st_blocks = 128;
@@ -848,26 +1209,10 @@ s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
         fs::exists(path_name, ec) ? fs::last_write_time(path_name, ec) : fs::file_time_type{};
     const auto mtimestamp = now_sys + (mtime - now_file);
 
-    if (is_dir) {
-        sb->st_mode = 0000777u | 0040000u;
-        sb->st_size = 65536;
-        sb->st_blksize = 65536;
-        sb->st_blocks = 128;
-        sb->st_mtim.tv_sec =
-            std::chrono::duration_cast<std::chrono::seconds>(mtimestamp.time_since_epoch()).count();
-        // TODO incomplete
-    } else {
-        sb->st_mode = 0000777u | 0100000u;
-        Core::FileSys::FileStat fst{};
-        if (!mnt->Stat(path, fst)) {
-            LOG_ERROR(Kernel_Fs, "Could not get metadata for {}", path);
-            *__Error() = POSIX_EIO;
-            return -1;
-        }
-        if (fst.inode == 0) {
-            *__Error() = POSIX_EIO;
-            return -1;
-        }
+    Core::FileSys::FileStat fst{};
+    auto const exists = mnt->Stat(path, fst);
+
+    if (exists && fst.inode != 0) {
         sb->st_ino = fst.inode;
         sb->st_size = static_cast<s64>(fst.size);
         if (fst.mtime_sec != 0 || fst.mtime_nsec != 0) {
@@ -881,6 +1226,27 @@ s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
             sb->st_mtim.tv_sec =
                 std::chrono::duration_cast<std::chrono::seconds>(mtimestamp.time_since_epoch())
                     .count();
+        }
+    }
+
+    if (is_dir) {
+        sb->st_mode = 0000777u | 0040000u;
+        sb->st_nlink = 2;
+        sb->st_size = 65536;
+        sb->st_blksize = 65536;
+        sb->st_blocks = 128;
+    } else {
+        sb->st_mode = 0000777u | 0100000u;
+        sb->st_nlink = 1;
+        Core::FileSys::FileStat fst{};
+        if (!mnt->Stat(path, fst)) {
+            LOG_ERROR(Kernel_Fs, "Could not get metadata for {}", path);
+            *__Error() = POSIX_EIO;
+            return -1;
+        }
+        if (fst.inode == 0) {
+            *__Error() = POSIX_EIO;
+            return -1;
         }
         sb->st_blksize = 512;
         sb->st_blocks = (sb->st_size + 511) / 512;
@@ -897,14 +1263,18 @@ s32 PS4_SYSV_ABI posix_lstat(const char* path, OrbisKernelStat* sb) {
 s32 PS4_SYSV_ABI sceKernelStat(const char* path, OrbisKernelStat* sb) {
     s32 result = posix_stat(path, sb);
     if (result < 0) {
-        LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
+        if (*__Error() == POSIX_ENOENT) {
+            LOG_INFO(Kernel_Fs, "no entry for {}", path);
+        } else {
+            LOG_ERROR(Kernel_Fs, "error = {} for {}", *__Error(), path);
+        }
         return ErrnoToSceKernelError(*__Error());
     }
     return result;
 }
 
 s32 PS4_SYSV_ABI sceKernelCheckReachability(const char* path) {
-    if (strlen(path) > 255) {
+    if (strlen(path) >= ORBIS_MAX_PATH) {
         return ORBIS_KERNEL_ERROR_ENAMETOOLONG;
     }
 
@@ -950,6 +1320,7 @@ s32 PS4_SYSV_ABI fstat(s32 fd, OrbisKernelStat* sb) {
     }
     case Core::FileSys::FileType::Regular: {
         sb->st_mode = 0000777u | 0100000u;
+        sb->st_nlink = 1;
         sb->st_blksize = 512;
         Core::FileSys::FileStat fst{};
         if (file->handle) {
@@ -977,6 +1348,7 @@ s32 PS4_SYSV_ABI fstat(s32 fd, OrbisKernelStat* sb) {
             ErrSceToPosix(result);
             return -1;
         }
+        sb->st_nlink = 2;
         return result;
     }
     case Core::FileSys::FileType::Socket: {
@@ -1003,6 +1375,144 @@ s32 PS4_SYSV_ABI sceKernelFstat(s32 fd, OrbisKernelStat* sb) {
         return ErrnoToSceKernelError(*__Error());
     }
     return result;
+}
+
+static s64 PathconfInternal(s32 name) {
+    switch (name) {
+    case ORBIS_PC_LINK_MAX:
+        return 32767;
+    case ORBIS_PC_MAX_CANON:
+    case ORBIS_PC_MAX_INPUT:
+    case ORBIS_PC_NAME_MAX:
+        return 255;
+    case ORBIS_PC_PATH_MAX:
+    case ORBIS_PC_SYMLINK_MAX:
+        return 1024;
+    case ORBIS_PC_PIPE_BUF:
+        return 512;
+    case ORBIS_PC_CHOWN_RESTRICTED:
+    case ORBIS_PC_NO_TRUNC:
+        return 1;
+    case ORBIS_PC_VDISABLE:
+        return 0xff;
+    case ORBIS_PC_FILESIZEBITS:
+        return 64;
+    case ORBIS_PC_ALLOC_SIZE_MIN:
+    case ORBIS_PC_REC_INCR_XFER_SIZE:
+    case ORBIS_PC_REC_MAX_XFER_SIZE:
+    case ORBIS_PC_REC_MIN_XFER_SIZE:
+    case ORBIS_PC_REC_XFER_ALIGN:
+        return 4096;
+    case ORBIS_PC_MIN_HOLE_SIZE:
+        return 512;
+    default:
+        *__Error() = POSIX_EINVAL;
+        return -1;
+    }
+}
+
+s64 PS4_SYSV_ABI posix_fpathconf(s32 fd, s32 name) {
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    auto* file = h->GetFile(fd);
+    if (file == nullptr) {
+        *__Error() = POSIX_EBADF;
+        return -1;
+    }
+    return PathconfInternal(name);
+}
+
+s64 PS4_SYSV_ABI posix_pathconf(const char* path, s32 name) {
+    if (path == nullptr) {
+        *__Error() = POSIX_EFAULT;
+        return -1;
+    }
+    if (path[0] == '\0') {
+        *__Error() = POSIX_ENOENT;
+        return -1;
+    }
+    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    if (!mnt->Exists(path) && !mnt->GetMount(path)) {
+        *__Error() = POSIX_ENOENT;
+        return -1;
+    }
+    return PathconfInternal(name);
+}
+
+static s32 FillStatfs(const std::string& guest_path, OrbisKernelStatfs* buf) {
+    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    const auto* mount = mnt->GetMount(guest_path);
+
+    std::memset(buf, 0, sizeof(OrbisKernelStatfs));
+    buf->f_version = 0x20030518;
+    buf->f_type = 0;
+    buf->f_flags = (mount && mount->read_only) ? 0x1 : 0;
+    buf->f_bsize = 4096;
+    buf->f_iosize = 65536;
+    buf->f_blocks = 0x10000000ULL;
+    buf->f_bfree = 0x8000000ULL;
+    buf->f_bavail = 0x8000000LL;
+    buf->f_files = 1000000ULL;
+    buf->f_ffree = 500000LL;
+    buf->f_namemax = 255;
+    buf->f_owner = 0;
+    buf->f_fsid[0] = 0x1337;
+    buf->f_fsid[1] = 0x1337;
+
+    if (mount && !mount->host_path.empty()) {
+        std::error_code ec;
+        const auto si = std::filesystem::space(mount->host_path, ec);
+        if (!ec && si.capacity != static_cast<std::uintmax_t>(-1)) {
+            buf->f_blocks = si.capacity / buf->f_bsize;
+            buf->f_bfree = si.free / buf->f_bsize;
+            buf->f_bavail = static_cast<s64>(si.available / buf->f_bsize);
+        }
+    }
+
+    const char* fs_type =
+        (guest_path.starts_with("/app0") || guest_path.starts_with("/addcont")) ? "pfs" : "ufs";
+    std::strncpy(buf->f_fstypename, fs_type, sizeof(buf->f_fstypename) - 1);
+    std::strncpy(buf->f_mntonname, mount ? mount->mount.c_str() : "/",
+                 sizeof(buf->f_mntonname) - 1);
+    std::strncpy(buf->f_mntfromname,
+                 mount ? mount->host_path.generic_string().c_str() : "/dev/da0s1",
+                 sizeof(buf->f_mntfromname) - 1);
+
+    return 0;
+}
+
+s32 PS4_SYSV_ABI posix_fstatfs(s32 fd, OrbisKernelStatfs* buf) {
+    if (buf == nullptr) {
+        *__Error() = POSIX_EFAULT;
+        return -1;
+    }
+    auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
+    auto* file = h->GetFile(fd);
+    if (file == nullptr) {
+        *__Error() = POSIX_EBADF;
+        return -1;
+    }
+    if (file->type == Core::FileSys::FileType::Socket) {
+        *__Error() = POSIX_EBADF;
+        return -1;
+    }
+    return FillStatfs(file->m_guest_name, buf);
+}
+
+s32 PS4_SYSV_ABI posix_statfs(const char* path, OrbisKernelStatfs* buf) {
+    if (buf == nullptr || path == nullptr) {
+        *__Error() = POSIX_EFAULT;
+        return -1;
+    }
+    if (path[0] == '\0') {
+        *__Error() = POSIX_ENOENT;
+        return -1;
+    }
+    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    if (!mnt->Exists(path) && !mnt->GetMount(path)) {
+        *__Error() = POSIX_ENOENT;
+        return -1;
+    }
+    return FillStatfs(path, buf);
 }
 
 s32 PS4_SYSV_ABI posix_ftruncate(s32 fd, s64 length) {
@@ -1064,7 +1574,7 @@ s32 PS4_SYSV_ABI posix_truncate(const char* path, s64 length) {
         *__Error() = POSIX_EFAULT;
         return -1;
     }
-    if (strlen(path) > 255) {
+    if (strlen(path) >= ORBIS_MAX_PATH) {
         *__Error() = POSIX_ENAMETOOLONG;
         return -1;
     }
@@ -1118,7 +1628,7 @@ s32 PS4_SYSV_ABI posix_chmod(const char* path, u32 mode) {
         *__Error() = POSIX_EFAULT;
         return -1;
     }
-    if (strlen(path) > 255) {
+    if (strlen(path) >= ORBIS_MAX_PATH) {
         *__Error() = POSIX_ENAMETOOLONG;
         return -1;
     }
@@ -1141,7 +1651,9 @@ s32 PS4_SYSV_ABI posix_chmod(const char* path, u32 mode) {
     }
 
     std::error_code ec;
-    fs::permissions(host_path, static_cast<fs::perms>(mode & 07777), ec);
+    const auto host_perms =
+        static_cast<fs::perms>(mode & 07777) | fs::perms::owner_read | fs::perms::owner_write;
+    fs::permissions(host_path, host_perms, ec);
     if (ec) {
         *__Error() = NativeToPosixErrno(ec.value());
         return -1;
@@ -1175,7 +1687,7 @@ s32 PS4_SYSV_ABI posix_fchmod(s32 fd, u32 mode) {
 
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
     const auto* mount = mnt->GetMount(file->m_guest_name);
-    if ((file->handle && file->handle->IsReadOnly()) || (mount && mount->read_only)) {
+    if (mount && mount->read_only) {
         *__Error() = POSIX_EROFS;
         return -1;
     }
@@ -1186,7 +1698,9 @@ s32 PS4_SYSV_ABI posix_fchmod(s32 fd, u32 mode) {
     }
 
     std::error_code ec;
-    fs::permissions(file->m_host_name, static_cast<fs::perms>(mode & 07777), ec);
+    const auto host_perms =
+        static_cast<fs::perms>(mode & 07777) | fs::perms::owner_read | fs::perms::owner_write;
+    fs::permissions(file->m_host_name, host_perms, ec);
     if (ec) {
         *__Error() = NativeToPosixErrno(ec.value());
         return -1;
@@ -1209,7 +1723,7 @@ s32 PS4_SYSV_ABI posix_utimes(const char* path, const OrbisKernelTimeval* times)
         *__Error() = POSIX_EFAULT;
         return -1;
     }
-    if (strlen(path) > 255) {
+    if (strlen(path) >= ORBIS_MAX_PATH) {
         *__Error() = POSIX_ENAMETOOLONG;
         return -1;
     }
@@ -1309,7 +1823,7 @@ s32 PS4_SYSV_ABI posix_futimes(s32 fd, const OrbisKernelTimeval* times) {
 
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
     const auto* mount = mnt->GetMount(file->m_guest_name);
-    if ((file->handle && file->handle->IsReadOnly()) || (mount && mount->read_only)) {
+    if (mount && mount->read_only) {
         *__Error() = POSIX_EROFS;
         return -1;
     }
@@ -1374,7 +1888,7 @@ s32 PS4_SYSV_ABI posix_rename(const char* from, const char* to) {
         *__Error() = POSIX_ENOENT;
         return -1;
     }
-    if (strlen(from) > 255 || strlen(to) > 255) {
+    if (strlen(from) >= ORBIS_MAX_PATH || strlen(to) >= ORBIS_MAX_PATH) {
         *__Error() = POSIX_ENAMETOOLONG;
         return -1;
     }
@@ -1395,12 +1909,30 @@ s32 PS4_SYSV_ABI posix_rename(const char* from, const char* to) {
         *__Error() = POSIX_EROFS;
         return -1;
     }
+    std::string dst_guest(to);
+    while (dst_guest.length() > 1 && dst_guest.back() == '/') {
+        dst_guest.pop_back();
+    }
+    const auto dst_parent = fs::path(dst_guest).parent_path().generic_string();
+    if (!mnt->IsDirectory(dst_parent)) {
+        *__Error() = mnt->Exists(dst_parent) ? POSIX_ENOTDIR : POSIX_ENOENT;
+        return -1;
+    }
     if (src_path == dst_path ||
         (fs::exists(dst_path, ec) && fs::equivalent(src_path, dst_path, ec))) {
         return ORBIS_OK;
     }
     const bool src_is_dir = fs::is_directory(src_path, ec);
     const bool dst_is_dir = fs::is_directory(dst_path, ec);
+
+    if (src_is_dir) {
+        // A directory can't be moved into itself.
+        const auto rel = dst_path.lexically_relative(src_path);
+        if (!rel.empty() && *rel.begin() != "..") {
+            *__Error() = POSIX_EINVAL;
+            return -1;
+        }
+    }
 
     if (fs::exists(dst_path, ec)) {
         if (src_is_dir && !dst_is_dir) {
@@ -1417,29 +1949,50 @@ s32 PS4_SYSV_ABI posix_rename(const char* from, const char* to) {
         }
     }
 
-    // On Windows, fs::rename will error if the file has been opened before.
-    fs::copy(src_path, dst_path, fs::copy_options::overwrite_existing | fs::copy_options::recursive,
-             ec);
-    if (ec) {
-        *__Error() = POSIX_EIO;
-        return -1;
-    }
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto file = h->GetFile(src_path);
+    Common::FS::FileAccessMode access_mode = Common::FS::FileAccessMode::ReadWrite;
+    s64 file_pos = 0;
     if (file) {
-        Common::FS::FileAccessMode access_mode = Common::FS::FileAccessMode::ReadWrite;
         if (auto* host = file->GetHostFile()) {
             access_mode = host->GetAccessMode();
         }
+        file_pos = file->Tell();
         file->handle.reset();
-        fs::remove(src_path, ec);
-        // Reopen through the mount stack at the destination guest path.
-        file->handle = mnt->Open(std::string_view(to), access_mode);
-        file->m_host_name = dst_path;
-        file->m_guest_name = to;
-    } else {
+    }
+
+    // Try atomic rename first
+    fs::rename(src_path, dst_path, ec);
+    if (ec) {
+        // Fallback to copy + remove if atomic rename failed (e.g. cross-device)
+        ec.clear();
+        fs::copy(src_path, dst_path,
+                 fs::copy_options::overwrite_existing | fs::copy_options::recursive, ec);
+        if (ec) {
+            *__Error() = POSIX_EIO;
+            if (file) {
+                file->handle = mnt->Open(std::string_view(from), access_mode);
+                if (file->handle && file_pos > 0) {
+                    file->Seek(file_pos);
+                }
+            }
+            return -1;
+        }
         fs::remove_all(src_path, ec);
     }
+
+    if (file) {
+        // Reopen through the mount stack at the destination guest path.
+        file->handle = mnt->Open(std::string_view(to), access_mode);
+        if (file->handle && file_pos > 0) {
+            file->Seek(file_pos);
+        }
+        file->m_host_name = dst_path;
+        file->m_guest_name = to;
+    }
+
+    mnt->InvalidateCache(from);
+    mnt->InvalidateCache(to);
 
     return ORBIS_OK;
 }
@@ -1453,9 +2006,13 @@ s32 PS4_SYSV_ABI sceKernelRename(const char* from, const char* to) {
     return result;
 }
 
-s64 PS4_SYSV_ABI posix_preadv(s32 fd, OrbisKernelIovec* iov, s32 iovcnt, s64 offset) {
-    if (offset < 0) {
+s64 PS4_SYSV_ABI posix_preadv(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt, s64 offset) {
+    if (offset < 0 || iovcnt <= 0 || iovcnt > 1024) {
         *__Error() = POSIX_EINVAL;
+        return -1;
+    }
+    if (iov == nullptr) {
+        *__Error() = POSIX_EFAULT;
         return -1;
     }
 
@@ -1498,12 +2055,26 @@ s64 PS4_SYSV_ABI posix_preadv(s32 fd, OrbisKernelIovec* iov, s32 iovcnt, s64 off
     }
     s64 total_read = 0;
     for (s32 i = 0; i < iovcnt; i++) {
-        total_read += ReadFile(file, iov[i].iov_base, iov[i].iov_len);
+        if (iov[i].iov_len == 0) {
+            continue;
+        }
+        if (iov[i].iov_base == nullptr) {
+            *__Error() = POSIX_EFAULT;
+            return -1;
+        }
+        s64 bytes = ReadFile(file, iov[i].iov_base, iov[i].iov_len);
+        if (bytes < 0) {
+            return total_read > 0 ? total_read : -1;
+        }
+        total_read += bytes;
+        if (static_cast<u64>(bytes) < iov[i].iov_len) {
+            break;
+        }
     }
     return total_read;
 }
 
-s64 PS4_SYSV_ABI sceKernelPreadv(s32 fd, OrbisKernelIovec* iov, s32 iovcnt, s64 offset) {
+s64 PS4_SYSV_ABI sceKernelPreadv(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt, s64 offset) {
     s64 result = posix_preadv(fd, iov, iovcnt, offset);
     if (result < 0) {
         LOG_ERROR(Kernel_Fs, "error = {}", *__Error());
@@ -1605,7 +2176,7 @@ s32 PS4_SYSV_ABI posix_flock(s32 fd, s32 operation) {
     }
 
     const bool non_blocking = (operation & ORBIS_KERNEL_LOCK_NB) != 0;
-    const std::string key = GetFileLockKey(file);
+    const FlockKey key = GetFileLockKey(file);
 
     std::shared_ptr<FlockState> state;
     {
@@ -1782,7 +2353,7 @@ static s64 GetDents(s32 fd, char* buf, u64 nbytes, s64* basep) {
     }
     default: {
         // Not directory or device
-        *__Error() = POSIX_EINVAL;
+        *__Error() = POSIX_ENOTDIR;
         return -1;
     }
     }
@@ -1821,8 +2392,12 @@ s64 PS4_SYSV_ABI sceKernelGetdirentries(s32 fd, char* buf, u64 nbytes, s64* base
 }
 
 s64 PS4_SYSV_ABI posix_pwritev(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt, s64 offset) {
-    if (offset < 0) {
+    if (offset < 0 || iovcnt <= 0 || iovcnt > 1024) {
         *__Error() = POSIX_EINVAL;
+        return -1;
+    }
+    if (iov == nullptr) {
+        *__Error() = POSIX_EFAULT;
         return -1;
     }
 
@@ -1843,7 +2418,7 @@ s64 PS4_SYSV_ABI posix_pwritev(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt, 
         }
         return result;
     } else if (file->type == Core::FileSys::FileType::Directory) {
-        *__Error() = POSIX_EBADF;
+        *__Error() = POSIX_EISDIR;
         return -1;
     }
 
@@ -1856,13 +2431,28 @@ s64 PS4_SYSV_ABI posix_pwritev(s32 fd, const OrbisKernelIovec* iov, s32 iovcnt, 
     SCOPE_EXIT {
         file->Seek(pos);
     };
-    if (!file->Seek(offset)) {
+    // With O_APPEND the offset is ignored, as on FreeBSD.
+    if (!file->Seek(offset) || !SeekToEndIfAppend(file)) {
         *__Error() = POSIX_EIO;
         return -1;
     }
     s64 total_written = 0;
     for (s32 i = 0; i < iovcnt; i++) {
-        total_written += file->Write(iov[i].iov_base, iov[i].iov_len);
+        if (iov[i].iov_len == 0) {
+            continue;
+        }
+        if (iov[i].iov_base == nullptr) {
+            *__Error() = POSIX_EFAULT;
+            return -1;
+        }
+        s64 bytes = file->Write(iov[i].iov_base, iov[i].iov_len);
+        if (bytes < 0) {
+            return total_written > 0 ? total_written : -1;
+        }
+        total_written += bytes;
+        if (static_cast<u64>(bytes) < iov[i].iov_len) {
+            break;
+        }
     }
     return total_written;
 }
@@ -1895,7 +2485,7 @@ s32 PS4_SYSV_ABI posix_unlink(const char* path) {
         *__Error() = POSIX_EFAULT;
         return -1;
     }
-    if (strlen(path) > 255) {
+    if (strlen(path) >= ORBIS_MAX_PATH) {
         *__Error() = POSIX_ENAMETOOLONG;
         return -1;
     }
@@ -1927,12 +2517,16 @@ s32 PS4_SYSV_ABI posix_unlink(const char* path) {
 
     auto* file = h->GetFile(host_path);
     if (file == nullptr) {
-        // File to unlink hasn't been opened, manually open and unlink it.
-        Common::FS::IOFile file(host_path, Common::FS::FileAccessMode::ReadWrite);
-        file.Unlink();
+        std::error_code ec;
+        if (!fs::remove(host_path, ec) && ec) {
+            *__Error() = POSIX_ENOENT;
+            return -1;
+        }
     } else if (auto* host = file->GetHostFile()) {
         host->Unlink();
     }
+
+    mnt->InvalidateCache(path);
 
     LOG_INFO(Kernel_Fs, "Unlinked {}", path);
     return ORBIS_OK;
@@ -1984,31 +2578,36 @@ s32 PS4_SYSV_ABI posix_select(s32 nfds, GuestFdSet* readfds, GuestFdSet* writefd
     }
 
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
-    GuestFdSet read_ready{}, write_ready{};
+    GuestFdSet read_ready{}, write_ready{}, except_ready{};
     s32 ready = 0;
     std::vector<Core::Net::SelectEntry> sockets;
     for (s32 i = 0; i < nfds; ++i) {
         const bool want_read = GuestFdIsSet(readfds, i);
         const bool want_write = GuestFdIsSet(writefds, i);
-        if (!want_read && !want_write && !GuestFdIsSet(exceptfds, i)) {
+        const bool want_except = GuestFdIsSet(exceptfds, i);
+        if (!want_read && !want_write && !want_except) {
             continue;
         }
         auto* file = h->GetFile(i);
-        if (!file || ((file->type == Core::FileSys::FileType::Regular && !file->IsBackendOpen()) ||
-                      (file->type == Core::FileSys::FileType::Socket && !file->is_opened))) {
-            LOG_ERROR(Kernel_Fs, "fd {} is null or not opened", i);
+        if (!file || !file->is_opened ||
+            (file->type == Core::FileSys::FileType::Regular && !file->IsBackendOpen())) {
+            LOG_ERROR(Kernel_Fs, "posix_select: fd {} is null, closed or invalid", i);
             *__Error() = POSIX_EBADF;
             return -1;
         }
         if (file->type == Core::FileSys::FileType::Socket) {
-            const u32 interest = (want_read ? Core::Net::Host::EvIn : 0u) |
-                                 (want_write ? Core::Net::Host::EvOut : 0u);
+            const u32 interest =
+                (want_read ? Core::Net::Host::EvIn : 0u) |
+                (want_write ? Core::Net::Host::EvOut : 0u) |
+                (want_except ? (Core::Net::Host::EvErr | Core::Net::Host::EvHup) : 0u);
             if (interest != 0) {
                 sockets.push_back({i, interest, 0});
             }
             continue;
         }
-        if (want_read && i != 0) {
+        // Non-socket file descriptors (regular files, directories, character devices)
+        // are always considered immediately ready without blocking under POSIX.
+        if (want_read) {
             GuestFdSetBit(&read_ready, i);
             ++ready;
         }
@@ -2028,11 +2627,13 @@ s32 PS4_SYSV_ABI posix_select(s32 nfds, GuestFdSet* readfds, GuestFdSet* writefd
         }
         ready += static_cast<s32>(n);
     } else if (ready == 0 && timeout_us != 0) {
-        // Nothing that can become ready: select() is a sleep (forever without a timeout).
-        do {
-            std::this_thread::sleep_for(
-                std::chrono::microseconds{timeout_us < 0 ? 1'000'000 : timeout_us});
-        } while (timeout_us < 0);
+        if (timeout_us > 0) {
+            std::this_thread::sleep_for(std::chrono::microseconds{timeout_us});
+        } else {
+            // timeout_us < 0 with no sockets to poll. Yield briefly to prevent thread deadlock
+            // and starvation while maintaining heartbeats for watchdog threads.
+            std::this_thread::sleep_for(std::chrono::milliseconds{10});
+        }
     }
 
     for (const auto& e : sockets) {
@@ -2042,6 +2643,9 @@ s32 PS4_SYSV_ABI posix_select(s32 nfds, GuestFdSet* readfds, GuestFdSet* writefd
         if (e.ready & Core::Net::Host::EvOut) {
             GuestFdSetBit(&write_ready, e.id);
         }
+        if (e.ready & (Core::Net::Host::EvErr | Core::Net::Host::EvHup)) {
+            GuestFdSetBit(&except_ready, e.id);
+        }
     }
     if (readfds) {
         *readfds = read_ready;
@@ -2050,7 +2654,7 @@ s32 PS4_SYSV_ABI posix_select(s32 nfds, GuestFdSet* readfds, GuestFdSet* writefd
         *writefds = write_ready;
     }
     if (exceptfds) {
-        *exceptfds = {};
+        *exceptfds = except_ready;
     }
     return ready;
 }
@@ -2154,6 +2758,42 @@ void RegisterFileSystem(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("AUXVxWeJU-A", "libkernel", 1, "libkernel", sceKernelUnlink);
     LIB_FUNCTION("T8fER+tIGgk", "libScePosix", 1, "libkernel", posix_select);
     LIB_FUNCTION("T8fER+tIGgk", "libkernel", 1, "libkernel", posix_select);
+    LIB_FUNCTION("8nY19bKoiZk", "libkernel", 1, "libkernel", posix_fcntl);
+    LIB_FUNCTION("8nY19bKoiZk", "libScePosix", 1, "libkernel", posix_fcntl);
+    LIB_FUNCTION("t0fXUzq61Z4", "libkernel", 1, "libkernel", posix_fcntl);
+    LIB_FUNCTION("t0fXUzq61Z4", "libScePosix", 1, "libkernel", posix_fcntl);
+    LIB_FUNCTION("SoZkxZkCHaw", "libkernel", 1, "libkernel", sceKernelFcntl);
+    LIB_FUNCTION("iiQjzvfWDq0", "libkernel", 1, "libkernel", posix_dup);
+    LIB_FUNCTION("iiQjzvfWDq0", "libScePosix", 1, "libkernel", posix_dup);
+    LIB_FUNCTION("wdUufa9g-D8", "libkernel", 1, "libkernel", posix_dup2);
+    LIB_FUNCTION("wdUufa9g-D8", "libScePosix", 1, "libkernel", posix_dup2);
+    LIB_FUNCTION("W8f1adVl+48", "libkernel", 1, "libkernel", posix_dup2);
+
+    LIB_FUNCTION("bGVEgWXy6dg", "libkernel", 1, "libkernel", posix_openat);
+    LIB_FUNCTION("bGVEgWXy6dg", "libScePosix", 1, "libkernel", posix_openat);
+    LIB_FUNCTION("A8Yk5AhNDck", "libkernel", 1, "libkernel", posix_openat);
+    LIB_FUNCTION("A8Yk5AhNDck", "libScePosix", 1, "libkernel", posix_openat);
+
+    LIB_FUNCTION("5AMS0IntU8I", "libkernel", 1, "libkernel", posix_creat);
+    LIB_FUNCTION("5AMS0IntU8I", "libScePosix", 1, "libkernel", posix_creat);
+
+    LIB_FUNCTION("-Jp7F+pXxNg", "libkernel", 1, "libkernel", posix_pipe);
+    LIB_FUNCTION("-Jp7F+pXxNg", "libkernel_psmkit", 1, "libkernel", posix_pipe);
+    LIB_FUNCTION("-Jp7F+pXxNg", "libScePosix", 1, "libkernel", posix_pipe);
+
+    LIB_FUNCTION("cZq1zIzFN7s", "libkernel", 1, "libkernel", posix_fpathconf);
+    LIB_FUNCTION("cZq1zIzFN7s", "libScePosix", 1, "libkernel", posix_fpathconf);
+    LIB_FUNCTION("FKPT9p58MAQ", "libkernel", 1, "libkernel", posix_fpathconf);
+    LIB_FUNCTION("FKPT9p58MAQ", "libScePosix", 1, "libkernel", posix_fpathconf);
+    LIB_FUNCTION("oc98+zOImus", "libkernel", 1, "libkernel", posix_pathconf);
+    LIB_FUNCTION("oc98+zOImus", "libScePosix", 1, "libkernel", posix_pathconf);
+
+    LIB_FUNCTION("17Mfe1B3X6U", "libkernel", 1, "libkernel", posix_fstatfs);
+    LIB_FUNCTION("17Mfe1B3X6U", "libScePosix", 1, "libkernel", posix_fstatfs);
+    LIB_FUNCTION("+rWFNYiNaEM", "libkernel", 1, "libkernel", posix_fstatfs);
+    LIB_FUNCTION("+rWFNYiNaEM", "libScePosix", 1, "libkernel", posix_fstatfs);
+    LIB_FUNCTION("ngZnQWyUvGI", "libkernel", 1, "libkernel", posix_statfs);
+    LIB_FUNCTION("ngZnQWyUvGI", "libScePosix", 1, "libkernel", posix_statfs);
 }
 
 } // namespace Libraries::Kernel

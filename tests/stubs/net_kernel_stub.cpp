@@ -34,10 +34,24 @@ int HandleTable::CreateHandle() {
     return static_cast<int>(m_files.size() - 1);
 }
 
-void HandleTable::DeleteHandle(int d) {
+File* HandleTable::UnrefHandle(int d) {
     std::scoped_lock lock{m_mutex};
-    delete m_files.at(d);
+    if (d < 0 || static_cast<size_t>(d) >= m_files.size()) {
+        return nullptr;
+    }
+    File* file = m_files[d];
+    if (!file) {
+        return nullptr;
+    }
     m_files[d] = nullptr;
+    if (--file->ref_count == 0) {
+        return file;
+    }
+    return nullptr;
+}
+
+void HandleTable::DeleteHandle(int d) {
+    delete UnrefHandle(d);
 }
 
 File* HandleTable::GetFile(int d) {

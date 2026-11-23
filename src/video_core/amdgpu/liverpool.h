@@ -213,6 +213,7 @@ private:
     VAddr indirect_args_addr{};
     u32 num_counter_pairs{};
     u64 pixel_counter{};
+    u32 vgt_strmout_buffer_filled_size[4]{};
 
     struct ConstantEngine {
         [[nodiscard]] u32 Diff() const {

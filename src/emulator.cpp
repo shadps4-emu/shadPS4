@@ -39,6 +39,7 @@
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/net/net_discovery.h"
+#include "core/libraries/network/http_host_overrides.h"
 #include "core/libraries/np/np_handler/np_handler.h"
 #include "core/libraries/np/np_trophy.h"
 #include "core/libraries/save_data/save_backup.h"
@@ -88,6 +89,11 @@ Emulator::~Emulator() {}
 
 void Emulator::Shutdown() {
     static bool exit_done = false;
+    static thread_local bool in_shutdown = false;
+    if (in_shutdown) {
+        return;
+    }
+    in_shutdown = true;
     std::scoped_lock l{exit_mutex};
     if (exit_done) {
         return;
@@ -99,7 +105,10 @@ void Emulator::Shutdown() {
     if (play_time_thread.joinable()) {
         play_time_thread.join();
     }
-    UpdatePlayTime(Common::Singleton<Common::ElfInfo>::Instance()->GameSerial());
+    const auto* elf_info = Common::Singleton<Common::ElfInfo>::Instance();
+    if (elf_info->initialized) {
+        UpdatePlayTime(elf_info->GameSerial());
+    }
     if (controllers) {
         controllers->ResetLightbarColors();
         // need to give SDL time to do this before the runtime exits
@@ -500,6 +509,7 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
 #endif
     LOG_INFO(Config, "GPU inlineFetchShader: {}", EmulatorSettings.IsInlineFetchShader());
     LOG_INFO(Config, "GPU fastShaderMath: {}", EmulatorSettings.IsFastShaderMath());
+    LOG_INFO(Config, "GPU submitDrawInterval: {}", EmulatorSettings.GetSubmitDrawInterval());
     LOG_INFO(Config, "Vulkan gpuId: {}", EmulatorSettings.GetGpuId());
     LOG_INFO(Config, "Vulkan vkValidation: {}", EmulatorSettings.IsVkValidationEnabled());
     LOG_INFO(Config, "Vulkan vkValidationCore: {}", EmulatorSettings.IsVkValidationCoreEnabled());
@@ -679,38 +689,43 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     // Initialize kernel and library facilities.
     Libraries::InitHLELibs(&linker->GetHLESymbols());
 
-    // Load the module with the linker.
-    if (linker->LoadModule(guest_eboot_path) == -1) {
-        LOG_CRITICAL(Loader, "Failed to load game's eboot.bin: {}", guest_eboot_path);
-        std::quick_exit(0);
-    }
+    std::jthread init_thread{[&, this]() {
+        // Load the module with the linker.
+        if (linker->LoadModule(guest_eboot_path) == -1) {
+            LOG_CRITICAL(Loader, "Failed to load game's eboot.bin: {}", guest_eboot_path);
+            std::quick_exit(0);
+        }
 
 #ifdef ENABLE_DISCORD_RPC
-    // Discord RPC
-    if (EmulatorSettings.IsDiscordRPCEnabled()) {
-        auto* rpc = Common::Singleton<DiscordRPCHandler::RPC>::Instance();
-        if (rpc->getRPCEnabled() == false) {
-            rpc->init();
+        // Discord RPC
+        if (EmulatorSettings.IsDiscordRPCEnabled()) {
+            auto* rpc = Common::Singleton<DiscordRPCHandler::RPC>::Instance();
+            if (rpc->getRPCEnabled() == false) {
+                rpc->init();
+            }
+            rpc->setStatusPlaying(game_info.title, id);
         }
-        rpc->setStatusPlaying(game_info.title, id);
-    }
 #endif
 
-    if (EmulatorSettings.IsConnectedToNetwork() && EmulatorSettings.IsDeviceDiscoveryEnabled()) {
-        Libraries::Net::DiscoveryResponder::Instance().Start();
-    }
+        if (EmulatorSettings.IsConnectedToNetwork() &&
+            EmulatorSettings.IsDeviceDiscoveryEnabled()) {
+            Libraries::Net::DiscoveryResponder::Instance().Start();
+        }
 
-    if (!id.empty()) {
-        start_time = std::chrono::steady_clock::now();
+        Libraries::Http::SetHostOverridesTitleId(id);
 
-        play_time_thread = std::jthread([this, id](std::stop_token stop) {
-            while (Common::StoppableTimedWait(stop, std::chrono::seconds(60))) {
-                UpdatePlayTime(id);
-            }
-        });
-    }
+        if (!id.empty()) {
+            start_time = std::chrono::steady_clock::now();
 
-    linker->Execute(args);
+            play_time_thread = std::jthread([this, id](std::stop_token stop) {
+                while (Common::StoppableTimedWait(stop, std::chrono::seconds(60))) {
+                    UpdatePlayTime(id);
+                }
+            });
+        }
+
+        linker->Execute(args);
+    }};
 
     window->InitTimers();
     while (window->IsOpen()) {

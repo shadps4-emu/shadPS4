@@ -1,7 +1,9 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
+
+#include <algorithm>
 
 #include "video_core/amdgpu/regs_color.h"
 #include "video_core/amdgpu/regs_depth.h"
@@ -100,7 +102,7 @@ union Regs {
         u32 draw_initiator;
         INSERT_PADDING_WORDS(3);
         DepthControl depth_control;
-        INSERT_PADDING_WORDS(1);
+        Eqaa depth_eqaa;
         ColorControl color_control;
         DepthShaderControl depth_shader_control;
         ClipperControl clipper_control;
@@ -141,14 +143,17 @@ union Regs {
         LsHsConfig ls_hs_config;
         u32 vgt_gs_vert_itemsize[4];
         TessellationConfig tess_config;
-        INSERT_PADDING_WORDS(3);
+        AlphaToMask alpha_to_mask;
+        INSERT_PADDING_WORDS(2);
         PolygonOffset poly_offset;
         GsInstances vgt_gs_instance_cnt;
         StreamOutConfig vgt_strmout_config;
         StreamOutBufferConfig vgt_strmout_buffer_config;
         INSERT_PADDING_WORDS(17);
         AaConfig aa_config;
-        INSERT_PADDING_WORDS(31);
+        INSERT_PADDING_WORDS(21);
+        AaSampleMask aa_mask;
+        INSERT_PADDING_WORDS(8);
         ColorBuffer color_buffers[NUM_COLOR_BUFFERS];
         INSERT_PADDING_WORDS(7343);
         StreamOutControl cp_strmout_cntl;
@@ -180,6 +185,32 @@ union Regs {
             return &ls_program;
         }
         return nullptr;
+    }
+
+    /// Screen, window and generic scissors combined, with the window offset applied and
+    /// negative values clamped to 0.
+    Scissor GetCombinedScissor() const {
+        const bool enable_offset = !window_scissor.window_offset_disable;
+        const s16 x_offset = enable_offset ? window_offset.window_x_offset : 0;
+        const s16 y_offset = enable_offset ? window_offset.window_y_offset : 0;
+        const auto top_left = [](s16 scr, s16 win, s16 gen, s16 offset) {
+            return Scissor::Clamp(std::max({scr, s16(win + offset), s16(gen + offset)}));
+        };
+        const auto bottom_right = [](s16 scr, s16 win, s16 gen, s16 offset) {
+            return Scissor::Clamp(std::min({scr, s16(win + offset), s16(gen + offset)}));
+        };
+        Scissor scissor{};
+        scissor.top_left_x = top_left(screen_scissor.top_left_x, window_scissor.top_left_x,
+                                      generic_scissor.top_left_x, x_offset);
+        scissor.top_left_y = top_left(screen_scissor.top_left_y, window_scissor.top_left_y,
+                                      generic_scissor.top_left_y, y_offset);
+        scissor.bottom_right_x =
+            bottom_right(screen_scissor.bottom_right_x, window_scissor.bottom_right_x,
+                         generic_scissor.bottom_right_x, x_offset);
+        scissor.bottom_right_y =
+            bottom_right(screen_scissor.bottom_right_y, window_scissor.bottom_right_y,
+                         generic_scissor.bottom_right_y, y_offset);
+        return scissor;
     }
 
     bool IsClipDisabled() const {

@@ -18,6 +18,7 @@ path = [
     "scripts/ps4_names.txt",
     "src/dist/MacOSBundleInfo.plist.in",
     "src/dist/net.shadps4.shadPS4.desktop",
+    "src/dist/net.shadps4.shadPS4.png",
     "src/dist/net.shadps4.shadPS4.svg",
     "src/dist/shadps4.ico",
     "src/dist/shadps4.rc",

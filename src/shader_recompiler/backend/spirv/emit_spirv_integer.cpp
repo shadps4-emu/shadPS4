@@ -267,7 +267,10 @@ Id EmitFindILsb64(EmitContext& ctx, Id value) {
     const Id lo_lsb{ctx.OpFindILsb(ctx.U32[1], lo)};
     const Id hi_lsb{ctx.OpFindILsb(ctx.U32[1], hi)};
     const Id found_lo{ctx.OpINotEqual(ctx.U1[1], lo_lsb, ctx.ConstU32(u32(-1)))};
-    return ctx.OpSelect(ctx.U32[1], found_lo, lo_lsb, hi_lsb);
+    const Id found_hi{ctx.OpINotEqual(ctx.U1[1], hi_lsb, ctx.ConstU32(u32(-1)))};
+    const Id shifted_hi{ctx.OpIAdd(ctx.U32[1], hi_lsb, ctx.ConstU32(32u))};
+    const Id high_result{ctx.OpSelect(ctx.U32[1], found_hi, shifted_hi, ctx.ConstU32(u32(-1)))};
+    return ctx.OpSelect(ctx.U32[1], found_lo, lo_lsb, high_result);
 }
 
 Id EmitSMin32(EmitContext& ctx, Id a, Id b) {
