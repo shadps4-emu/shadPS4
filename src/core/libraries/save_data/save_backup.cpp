@@ -293,6 +293,10 @@ bool Restore(const std::filesystem::path& save_path) {
     return true;
 }
 
+std::unique_lock<std::mutex> LockForWrite() {
+    return std::unique_lock{g_backup_running_mutex};
+}
+
 WorkerStatus GetWorkerStatus() {
     return g_backup_status;
 }
