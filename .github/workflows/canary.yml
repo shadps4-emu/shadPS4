@@ -1,0 +1,52 @@
+# SPDX-FileCopyrightText: 2026 shadPS4 Emulator Project
+# SPDX-License-Identifier: GPL-2.0-or-later
+
+# Builds the canary source: main plus every open PR labelled "canary", pushed to
+# shadps4-emu/shadPS4-canary as tag canary-N. That repository's build.yml then
+# builds it and publishes the release. See canary-merge.js.
+
+name: Canary Merge
+
+on:
+  schedule:
+    - cron: "17 1 * * *" # daily, 01:17 UTC
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Push a new canary even if nothing changed"
+        type: boolean
+        default: false
+
+concurrency:
+  group: canary-merge
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  merge:
+    # This file is also copied into the canary repository; only run it here.
+    if: github.repository == 'shadps4-emu/shadPS4'
+    runs-on: ubuntu-latest
+    steps:
+    # PR code is only merged and pushed, never run, in this job.
+    - uses: actions/checkout@v6
+      with:
+        ref: main
+        fetch-depth: 0
+        persist-credentials: false
+
+    - name: Merge labelled pull requests and push canary
+      uses: actions/github-script@v8
+      env:
+        CANARY_PUSH_TOKEN: ${{ secrets.CANARY_PUSH_TOKEN }}
+        CANARY_REPO: shadps4-emu/shadPS4-canary
+        CANARY_LABEL: canary
+        CANARY_REQUIRE_APPROVAL: "true"
+        CANARY_FORCE: ${{ inputs.force || 'false' }}
+      with:
+        script: |
+          const { mergebot } = require(`${process.env.GITHUB_WORKSPACE}/.github/workflows/canary-merge.js`);
+          await mergebot({ github, context, exec, core });
