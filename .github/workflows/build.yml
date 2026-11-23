@@ -495,8 +495,9 @@ jobs:
         done
 
   canary-release:
-    # Runs only in shadps4-emu/shadPS4-canary, on the commit canary.yml pushed.
-    if: github.ref == 'refs/heads/main' && github.repository == 'shadps4-emu/shadPS4-canary' && github.event_name == 'push'
+    # Runs only in shadps4-emu/shadPS4-canary, on the commit canary.yml pushed, or
+    # when a build of main is started by hand there (Actions > Run workflow).
+    if: github.ref == 'refs/heads/main' && github.repository == 'shadps4-emu/shadPS4-canary' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     needs: [get-info, windows-sdl, macos-sdl, linux-sdl]
     runs-on: ubuntu-latest
     permissions:
@@ -536,8 +537,14 @@ jobs:
         fi
         # Release notes: the merge log from the commit message, without the bot trailer.
         git log -1 --format=%b | sed '/^Canary-Inputs:/d' > notes.md
-        gh release create "$tag" ./artifacts/*.zip --verify-tag --prerelease \
-          --title "shadPS4 Canary #${tag#canary-}" --notes-file notes.md
+        if gh release view "$tag" >/dev/null 2>&1; then
+          # Re-run for an already published canary: replace its files and notes.
+          gh release upload "$tag" ./artifacts/*.zip --clobber
+          gh release edit "$tag" --notes-file notes.md
+        else
+          gh release create "$tag" ./artifacts/*.zip --verify-tag --prerelease \
+            --title "shadPS4 Canary #${tag#canary-}" --notes-file notes.md
+        fi
 
     - name: Delete old canary releases (keep the latest 5)
       env:
