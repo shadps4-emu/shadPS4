@@ -72,7 +72,7 @@ s32 DmemManager::Free(PAddr start, u64 size, bool is_checked) {
     if (start >= DMEM_MAX_ADDRESS) {
         return ORBIS_OK;
     }
-    size = std::min(DMEM_MAX_ADDRESS - start, size);
+    size = std::min<s64>(DMEM_MAX_ADDRESS - start, size);
     const PAddr end = start + size;
     if (size == 0) {
         return ORBIS_OK;
