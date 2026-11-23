@@ -7,6 +7,7 @@
 #include "common/types.h"
 #include "core/libraries/ajm/ajm_instance.h"
 
+#include <optional>
 #include <span>
 #include <vector>
 
@@ -62,7 +63,7 @@ private:
     std::vector<float> m_resample_buffer;
 
     u32 m_skip_frames = 0;
-    InitializeParameters m_init_params = {};
+    std::optional<InitializeParameters> m_init_params;
     AAC_DECODER_INSTANCE* m_decoder = nullptr;
 };
 

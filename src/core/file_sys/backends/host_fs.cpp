@@ -42,7 +42,12 @@ s64 HostFile::Read(void* dst, u64 size) {
     if (!m_file.IsOpen()) {
         return -1;
     }
-    return static_cast<s64>(m_file.ReadRaw<u8>(dst, size));
+    const u64 read = m_file.ReadRaw<u8>(dst, size);
+    if (read < size) {
+        // Clear the sticky stdio EOF flag so the file can be read again after it grows.
+        m_file.Seek(0, Common::FS::SeekOrigin::CurrentPosition);
+    }
+    return static_cast<s64>(read);
 }
 
 s64 HostFile::Write(const void* src, u64 size) {
@@ -260,6 +265,23 @@ std::optional<std::vector<u8>> HostFsBackend::ReadFile(std::string_view rel_path
         return std::nullopt;
     }
     return data;
+}
+
+void HostFsBackend::InvalidateCache(std::string_view rel_path) {
+    std::scoped_lock lk{m_case_cache_mutex};
+    if (rel_path.empty()) {
+        m_case_cache.clear();
+        return;
+    }
+    const std::string prefix = Common::ToLower(std::string(rel_path));
+    const std::string prefix_slash = prefix + '/';
+    for (auto it = m_case_cache.begin(); it != m_case_cache.end();) {
+        if (it->first == prefix || it->first.starts_with(prefix_slash)) {
+            it = m_case_cache.erase(it);
+        } else {
+            ++it;
+        }
+    }
 }
 
 } // namespace Core::FileSys

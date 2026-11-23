@@ -91,6 +91,10 @@ public:
         ImageViewInfo view_info;
         BindingType type{BindingType::Texture};
 
+        bool IsSubrectTexture(const ImageInfo& source) const {
+            return type == BindingType::Texture && info.IsSubrectOf(source);
+        }
+
         ImageDesc() = default;
         ImageDesc(const AmdGpu::Image& image, const Shader::ImageResource& desc)
             : info{image, desc}, view_info{image, desc},

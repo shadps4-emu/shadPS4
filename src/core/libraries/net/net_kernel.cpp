@@ -182,6 +182,44 @@ s32 KernelFstat(s32 fd, Libraries::Kernel::OrbisKernelStat* sb) {
     return 0;
 }
 
+s32 KernelFcntl(s32 fd, s32 cmd, s64 arg) {
+    if (Core::Net::GetObjectKind(fd) != Core::Net::NetObjectKind::Socket) {
+        return PosixError(ORBIS_NET_EBADF);
+    }
+    switch (cmd) {
+    case Kernel::ORBIS_KERNEL_F_GETFL: {
+        Core::Net::SocketInfo info{};
+        const auto res = Core::Net::SocketGetInfo(fd, &info);
+        if (res.error != Error::Ok) {
+            return PosixError(ToOrbisErrno(res.error));
+        }
+        s32 flags = Kernel::ORBIS_KERNEL_O_RDWR;
+        if (info.nonblocking) {
+            flags |= Kernel::ORBIS_KERNEL_O_NONBLOCK;
+        }
+        return flags;
+    }
+    case Kernel::ORBIS_KERNEL_F_SETFL: {
+        const bool nonblock = (arg & Kernel::ORBIS_KERNEL_O_NONBLOCK) != 0;
+        const auto res = Core::Net::SocketSetNonBlocking(fd, nonblock);
+        if (res.error != Error::Ok) {
+            return PosixError(ToOrbisErrno(res.error));
+        }
+        return 0;
+    }
+    default:
+        return PosixError(ORBIS_NET_EINVAL);
+    }
+}
+
+s32 KernelDuplicate(s32 old_fd, s32 new_fd) {
+    const auto res = Core::Net::DuplicateObject(old_fd, new_fd);
+    if (res.error != Error::Ok) {
+        return PosixError(ToOrbisErrno(res.error));
+    }
+    return 0;
+}
+
 s64 KernelSelect(std::span<Core::Net::SelectEntry> entries, s64 timeout_us) {
     std::vector<Core::Net::SelectEntry> sockets;
     sockets.reserve(entries.size());
