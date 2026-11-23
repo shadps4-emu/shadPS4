@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <mutex>
 #include "common/enum.h"
 #include "common/types.h"
 #include "core/libraries/ime/ime_common.h"
@@ -12,6 +13,17 @@ class SymbolsResolver;
 }
 
 namespace Libraries::Ime {
+
+enum class ImeFrontend : u8 {
+    None,
+    Ime,
+    Dialog,
+};
+
+std::recursive_mutex& GetImeMutex();
+bool IsRegisteredImeUser(s32 user_id);
+bool TryAcquireImeFrontend(ImeFrontend frontend);
+void ReleaseImeFrontend(ImeFrontend frontend);
 
 int PS4_SYSV_ABI FinalizeImeModule();
 int PS4_SYSV_ABI InitializeImeModule();
@@ -43,7 +55,7 @@ Error PS4_SYSV_ABI sceImeKeyboardOpen(Libraries::UserService::OrbisUserServiceUs
 int PS4_SYSV_ABI sceImeKeyboardOpenInternal();
 int PS4_SYSV_ABI sceImeKeyboardSetMode(Libraries::UserService::OrbisUserServiceUserId userId,
                                        u32 mode);
-int PS4_SYSV_ABI sceImeKeyboardUpdate();
+int PS4_SYSV_ABI sceImeKeyboardUpdate(OrbisImeEventHandler handler);
 Error PS4_SYSV_ABI sceImeOpen(const OrbisImeParam* param, const OrbisImeParamExtended* extended);
 int PS4_SYSV_ABI sceImeOpenInternal();
 void PS4_SYSV_ABI sceImeParamInit(OrbisImeParam* param);

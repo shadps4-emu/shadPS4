@@ -27,12 +27,16 @@ class ImeDialogState final {
     friend ImeDialogUi;
 
     bool input_changed = false;
+    u64 generation = 0;
+    OrbisImeOption option = OrbisImeOption::DEFAULT;
     int caret_index = 0;
     int caret_byte_index = 0;
     bool caret_dirty = false;
     bool use_over2k = false;
     OrbisImePositionAndForm panel_layout{};
     bool panel_layout_valid = false;
+    OrbisImePositionAndForm displayed_layout{};
+    bool displayed_layout_valid = false;
     u32 panel_req_width = 0;
     u32 panel_req_height = 0;
     OrbisImeExtOption ext_option = OrbisImeExtOption::DEFAULT;
@@ -77,8 +81,6 @@ public:
     bool ClampCurrentTextToMaxLen();
 
 private:
-    bool CallKeyboardFilter(const OrbisImeKeycode* src_keycode, u16* out_keycode, u32* out_status);
-
     bool ConvertOrbisToUTF8(const char16_t* orbis_text, std::size_t orbis_text_len, char* utf8_text,
                             std::size_t native_text_len);
     bool ConvertUTF8ToOrbis(const char* native_text, std::size_t utf8_text_len,
@@ -106,6 +108,9 @@ class ImeDialogUi final : public ImGui::Layer {
     bool first_render = true;
     bool accept_armed = false;
     bool native_input_active = false;
+    bool native_accept_pressed = false;
+    bool native_newline_pressed = false;
+    int preferred_caret_column = -1;
     bool pointer_navigation_active = true;
     EditMenuPopup edit_menu_popup = EditMenuPopup::None;
     bool menu_activate_armed = true;
@@ -163,7 +168,7 @@ class ImeDialogUi final : public ImGui::Layer {
     Libraries::Ime::ImeKbLayoutSelection last_nav_layout_selection{};
     bool nav_layout_selection_initialized = false;
     Libraries::Ime::ImeKbLayoutFamily kb_alpha_family = Libraries::Ime::ImeKbLayoutFamily::Latin;
-    std::mutex draw_mutex;
+    std::recursive_mutex draw_mutex;
 
 public:
     explicit ImeDialogUi(ImeDialogState* state = nullptr, OrbisImeDialogStatus* status = nullptr,
@@ -174,6 +179,7 @@ public:
     ImeDialogUi& operator=(ImeDialogUi&& other);
 
     void Draw() override;
+    bool GetPanelPosition(OrbisImePositionAndForm* position);
 
 private:
     void FinishDialog(OrbisImeDialogEndStatus endstatus, bool restore_original, const char* reason);

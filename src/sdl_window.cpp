@@ -18,6 +18,7 @@
 #include "core/debug_state.h"
 #include "core/devtools/layer.h"
 #include "core/emulator_settings.h"
+#include "core/libraries/ime/ime_keyboard.h"
 #include "core/libraries/kernel/time.h"
 #include "core/libraries/pad/pad.h"
 #include "core/libraries/system/userservice.h"
@@ -181,6 +182,7 @@ WindowSDL::WindowSDL(s32 width_, s32 height_, Input::GameControllers* controller
     window_info.type = WindowSystemType::Metal;
     window_info.render_surface = SDL_Metal_GetLayer(SDL_Metal_CreateView(window));
 #endif
+    Libraries::Ime::InitializeImeKeyboard();
     // input handler init-s
     Input::ControllerOutput::LinkJoystickAxes();
     Input::ParseInputConfig(std::string(Common::ElfInfo::Instance().GameSerial()));
@@ -209,7 +211,11 @@ void WindowSDL::WaitEvent() {
         return;
     }
 
-    if (Libraries::Mouse::PushSDLEvent(event) || Libraries::Keyboard::PushSDLEvent(event)) {
+    if (Libraries::Ime::ProcessImeKeyboardEvent(event)) {
+        return;
+    }
+    if (Libraries::Mouse::PushSDLEvent(event) ||
+        (!Libraries::Ime::IsImeKeyboardActive() && Libraries::Keyboard::PushSDLEvent(event))) {
         return;
     }
 

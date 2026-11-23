@@ -187,6 +187,7 @@ enum class ImeKbLayoutFamily : u8 {
     Latin = 0,
     Symbols = 1,
     Specials = 2,
+    Numeric = 3,
 };
 
 enum class ImeKbCaseState : u8 {
@@ -203,12 +204,15 @@ enum class ImeKbLayoutId : u8 {
     SymbolsPage2 = 4,
     SpecialsPage1 = 5,
     SpecialsPage2 = 6,
+    Numeric = 7,
 };
 
 struct ImeKbLayoutSelection {
     ImeKbLayoutFamily family = ImeKbLayoutFamily::Latin;
     ImeKbCaseState case_state = ImeKbCaseState::Lower;
     u8 page = 0;
+    OrbisImeLanguage language = OrbisImeLanguage::ENGLISH_US;
+    bool multiline = false;
 };
 
 enum class ImeKbKeyAction : u8 {
@@ -243,6 +247,10 @@ enum class ImeKbKeyGlyph : u8 {
     ShiftOutline = 6,
     ShiftFilled = 7,
     CapsLockFilled = 8,
+    Enter = 9,
+    Keyboard = 10,
+    Options = 11,
+    Gyro = 12,
 };
 
 struct ImeKbKeySpec {
@@ -466,6 +474,7 @@ struct ImeKbDrawParams {
     bool allow_nav_input = true;
     bool use_imgui_lstick_nav = true;
     bool allow_activate_input = true;
+    bool allow_pointer_input = true;
     bool external_nav_left = false;
     bool external_nav_right = false;
     bool external_nav_up = false;
@@ -508,6 +517,7 @@ struct ImePanelMetricsConfig {
     float panel_h = 0.0f;
     bool multiline = false;
     bool show_title = true;
+    bool numeric = false;
     float base_font_size = 0.0f;
     ImVec2 window_pos{};
 };
@@ -543,7 +553,7 @@ struct ImePanelMetrics {
 ImeViewportMetrics ComputeImeViewportMetrics(bool use_over2k);
 ImePanelMetrics ComputeImePanelMetrics(const ImePanelMetricsConfig& config);
 ImeKbLayoutId ResolveImeKeyboardLayoutId(const ImeKbLayoutSelection& selection);
-const ImeKbLayoutModel& GetImeKeyboardLayout(ImeKbLayoutId id);
+const ImeKbLayoutModel& GetImeKeyboardLayout(ImeKbLayoutId id, bool multiline = false);
 const ImeKbLayoutModel& GetImeKeyboardLayout(const ImeKbLayoutSelection& selection);
 const ImeTopPanelLayoutConfig& GetImeTopPanelLayoutConfig();
 const ImeTopPanelLayoutConfig& GetImeTopPanelLayoutConfig(ImeKbLayoutId id);

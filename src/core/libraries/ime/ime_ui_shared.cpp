@@ -6,9 +6,14 @@
 #include <cmath>
 #include <cstring>
 #include <numbers>
+#include <string>
+#include <magic_enum/magic_enum_flags.hpp>
 
+#include "common/scope_exit.h"
 #include "common/singleton.h"
 #include "core/emulator_settings.h"
+#include "core/libraries/ime/ime_kb_language.h"
+#include "imgui/notifications_layer.h"
 #include "input/controller.h"
 
 namespace Libraries::Ime {
@@ -217,8 +222,16 @@ void DrawSelectorFadeState(const SelectorFadeState& state, ImDrawList* draw_list
 }
 
 ImeKbLayoutSelection ResolveInitialKbLayoutSelection(OrbisImeExtOption ext_option,
-                                                     OrbisImePanelPriority panel_priority) {
+                                                     OrbisImePanelPriority panel_priority,
+                                                     OrbisImeLanguage supported_languages,
+                                                     OrbisImeType type) {
     ImeKbLayoutSelection selection{};
+    selection.language =
+        ResolveImeKeyboardLanguage(supported_languages, EmulatorSettings.GetConsoleLanguage());
+    if (type == OrbisImeType::Number) {
+        selection.family = ImeKbLayoutFamily::Numeric;
+        return selection;
+    }
     const bool set_priority = True(ext_option & OrbisImeExtOption::SET_PRIORITY);
     if (set_priority) {
         switch (panel_priority) {
@@ -244,9 +257,35 @@ ImeKbLayoutSelection ResolveInitialKbLayoutSelection(OrbisImeExtOption ext_optio
     return selection;
 }
 
+void NotifyImeKeyboardLayoutFallback(OrbisImeLanguage supported_languages, OrbisImeType type) {
+    if (type == OrbisImeType::Number) {
+        return;
+    }
+    const bool console_default = static_cast<u64>(supported_languages) == 0;
+    const int console_language = EmulatorSettings.GetConsoleLanguage();
+    const bool implemented = std::ranges::any_of(
+        GetImeKeyboardLanguageProfiles(), [&](const ImeKbLanguageProfile& profile) {
+            return console_default ? profile.console_language == console_language
+                                   : True(supported_languages & profile.language);
+        });
+    if (implemented) {
+        return;
+    }
+    const std::string requested =
+        console_default ? "console language" : magic_enum::enum_flags_name(supported_languages);
+    shadNotifications::QueueNotification(
+        "IME keyboard layout not implemented: " + requested + ".\nUsing English (US).", 6.0f,
+        shadNotifications::position::BottomRight, shadNotifications::stockIcons::Input);
+}
+
 void InitializeDefaultOskSelectionAnchor(const ImeKbLayoutSelection& layout_selection,
                                          OrbisImeExtOption ext_option, int& pending_row,
                                          int& pending_col, int& last_row, int& last_col) {
+    if (layout_selection.family == ImeKbLayoutFamily::Numeric) {
+        pending_row = last_row = 0;
+        pending_col = last_col = 0;
+        return;
+    }
     constexpr int kLatinLowerDefaultRow = 2;
     constexpr int kLatinLowerDefaultCol = 4;
 
@@ -258,8 +297,11 @@ void InitializeDefaultOskSelectionAnchor(const ImeKbLayoutSelection& layout_sele
         return;
     }
 
-    pending_row = kLatinLowerDefaultRow;
-    pending_col = kLatinLowerDefaultCol;
+    const auto& layout = GetImeKeyboardLayout(layout_selection);
+    const int typing_rows =
+        ImeSelectionGridIndex::ResolveTypingRows(layout.rows, layout.function_rows);
+    pending_row = std::min(kLatinLowerDefaultRow, typing_rows - 1);
+    pending_col = std::min(kLatinLowerDefaultCol, std::max(0, static_cast<int>(layout.cols) - 1));
     last_row = kLatinLowerDefaultRow;
     last_col = kLatinLowerDefaultCol;
 }
@@ -334,7 +376,12 @@ void FlipKeyboardModePage(ImeKbLayoutSelection& selection, int direction) {
         return;
     }
     const int page = static_cast<int>(selection.page);
-    selection.page = static_cast<u8>((page + direction + 2) % 2);
+    const auto& profile = GetImeKeyboardLanguageProfile(selection.language);
+    const int page_count =
+        std::max(1, static_cast<int>(selection.family == ImeKbLayoutFamily::Symbols
+                                         ? profile.symbol_pages
+                                         : profile.special_pages));
+    selection.page = static_cast<u8>(((page + direction) % page_count + page_count) % page_count);
 }
 
 int Utf16CountFromUtf8Range(const char* text, const char* end) {
@@ -376,6 +423,197 @@ int Utf8ByteIndexFromUtf16Index(const char* text, int utf16_index) {
         p += step;
     }
     return static_cast<int>(p - text);
+}
+
+int MoveImeCaretByLine(const char* text, int caret_utf16, int direction, int& preferred_column) {
+    if (!text) {
+        return 0;
+    }
+    const int length = static_cast<int>(std::strlen(text));
+    const int caret = Utf8ByteIndexFromUtf16Index(text, caret_utf16);
+    int line_start = caret;
+    while (line_start > 0 && text[line_start - 1] != '\n') {
+        --line_start;
+    }
+    if (preferred_column < 0) {
+        preferred_column = Utf16CountFromUtf8Range(text + line_start, text + caret);
+    }
+    int target_start = line_start;
+    if (direction < 0) {
+        if (line_start == 0) {
+            return 0;
+        }
+        target_start = line_start - 1;
+        while (target_start > 0 && text[target_start - 1] != '\n') {
+            --target_start;
+        }
+    } else {
+        while (target_start < length && text[target_start] != '\n') {
+            ++target_start;
+        }
+        if (target_start == length) {
+            return Utf16CountFromUtf8Range(text, text + length);
+        }
+        ++target_start;
+    }
+    int target_end = target_start;
+    while (target_end < length && text[target_end] != '\n') {
+        ++target_end;
+    }
+    const int column =
+        std::min(preferred_column, Utf16CountFromUtf8Range(text + target_start, text + target_end));
+    return Utf16CountFromUtf8Range(text, text + target_start) + column;
+}
+
+bool IsImeCharacterAllowed(unsigned int character, OrbisImeType type) {
+    if (character > 0xffff || (character >= 0xd800 && character <= 0xdfff)) {
+        return false;
+    }
+    if (type == OrbisImeType::Number) {
+        return (character >= '0' && character <= '9') || character == '.' || character == ',' ||
+               character == '-';
+    }
+    if (type == OrbisImeType::BasicLatin || type == OrbisImeType::Mail) {
+        return character >= 0x20 && character < 0x7f;
+    }
+    return true;
+}
+
+bool DrawImeInputText(const char* label, const char* hint, char* buffer, int capacity,
+                      const ImVec2& size, ImGuiInputTextFlags flags,
+                      ImGuiInputTextCallback callback, void* userdata, bool password,
+                      bool disable_clipboard) {
+    auto& platform = ImGui::GetPlatformIO();
+    const auto get_clipboard = platform.Platform_GetClipboardTextFn;
+    const auto set_clipboard = platform.Platform_SetClipboardTextFn;
+    if (disable_clipboard && ImGui::GetActiveID() == ImGui::GetID(label)) {
+        const auto owner = ImHashStr("shadps4/ime/clipboard-disabled");
+        if (ImGui::GetIO().KeyCtrl) {
+            for (auto key : {ImGuiKey_C, ImGuiKey_X, ImGuiKey_V, ImGuiKey_Insert}) {
+                ImGui::SetKeyOwner(key, owner, ImGuiInputFlags_LockThisFrame);
+            }
+        }
+        if (ImGui::GetIO().KeyShift) {
+            ImGui::SetKeyOwner(ImGuiKey_Insert, owner, ImGuiInputFlags_LockThisFrame);
+            ImGui::SetKeyOwner(ImGuiKey_Delete, owner, ImGuiInputFlags_LockThisFrame);
+        }
+    }
+    if (disable_clipboard) {
+        platform.Platform_GetClipboardTextFn = [](ImGuiContext*) { return ""; };
+        platform.Platform_SetClipboardTextFn = [](ImGuiContext*, const char*) {};
+    }
+    SCOPE_EXIT {
+        platform.Platform_GetClipboardTextFn = get_clipboard;
+        platform.Platform_SetClipboardTextFn = set_clipboard;
+    };
+    if (password) {
+        flags |= ImGuiInputTextFlags_Password;
+    }
+    return ImGui::InputTextEx(label, hint, buffer, capacity, size, flags, callback, userdata);
+}
+
+std::string BoundImeInsertion(const char* text, int max_utf16, bool multiline, bool numeric,
+                              OrbisImeType type) {
+    std::string result;
+    if (!text) {
+        return result;
+    }
+    for (const char* p = text; *p && max_utf16 > 0;) {
+        unsigned int codepoint = 0;
+        const int bytes = ImTextCharFromUtf8(&codepoint, p, nullptr);
+        if (bytes <= 0) {
+            break;
+        }
+        const char* start = p;
+        p += bytes;
+        if (numeric && (codepoint < '0' || codepoint > '9') && codepoint != '.' &&
+            codepoint != ',' && codepoint != '-') {
+            continue;
+        }
+        if (codepoint == '\r' || codepoint == '\n') {
+            if (codepoint == '\r' && *p == '\n') {
+                ++p;
+            }
+            if (multiline) {
+                result.push_back('\n');
+                --max_utf16;
+            }
+            continue;
+        }
+        if (codepoint < ' ' || codepoint == 0x7f || !IsImeCharacterAllowed(codepoint, type)) {
+            continue;
+        }
+        const int units = codepoint > 0xffff ? 2 : 1;
+        if (units > max_utf16) {
+            break;
+        }
+        result.append(start, static_cast<size_t>(bytes));
+        max_utf16 -= units;
+    }
+    return result;
+}
+
+bool FilterImeText(OrbisImeTextFilter filter, std::u16string& text, u32 max_length, u32& caret) {
+    if (!filter) {
+        return false;
+    }
+    std::array<char16_t, ORBIS_IME_MAX_TEXT_LENGTH + 1> output{};
+    u32 length = std::min(max_length, ORBIS_IME_MAX_TEXT_LENGTH);
+    if (filter(output.data(), &length, text.data(), static_cast<u32>(text.size())) != 0 ||
+        length > max_length || length > ORBIS_IME_MAX_TEXT_LENGTH) {
+        return false;
+    }
+    u32 count = 0;
+    while (count < length && output[count]) {
+        if ((static_cast<u16>(output[count]) & 0xf800U) == 0xd800U) {
+            return false;
+        }
+        ++count;
+    }
+    std::u16string filtered(output.data(), count);
+    if (filtered == text) {
+        return false;
+    }
+    caret = std::min(caret, static_cast<u32>(text.size()));
+    const bool at_end = caret == text.size();
+    size_t prefix = 0;
+    while (prefix < text.size() && prefix < filtered.size() && text[prefix] == filtered[prefix]) {
+        ++prefix;
+    }
+    size_t suffix = 0;
+    while (suffix < text.size() - prefix && suffix < filtered.size() - prefix &&
+           text[text.size() - suffix - 1] == filtered[filtered.size() - suffix - 1]) {
+        ++suffix;
+    }
+    if (at_end) {
+        caret = count;
+    } else if (caret > prefix) {
+        caret =
+            static_cast<u32>(caret >= text.size() - suffix
+                                 ? filtered.size() - std::min<size_t>(text.size() - caret, suffix)
+                                 : filtered.size() - suffix);
+    }
+    caret = std::min(caret, count);
+    text = std::move(filtered);
+    return true;
+}
+
+void InsertImeInputNewline(ImGuiInputTextCallbackData* data, int max_utf16) {
+    const bool selected_text = data->SelectionStart != data->SelectionEnd;
+    const int start =
+        selected_text ? std::min(data->SelectionStart, data->SelectionEnd) : data->CursorPos;
+    const int end = selected_text ? std::max(data->SelectionStart, data->SelectionEnd) : start;
+    const int length = Utf16CountFromUtf8Range(data->Buf, data->Buf + data->BufTextLen);
+    const int selected = Utf16CountFromUtf8Range(data->Buf + start, data->Buf + end);
+    if (length - selected >= max_utf16) {
+        return;
+    }
+    if (end > start) {
+        data->DeleteChars(start, end - start);
+    }
+    data->CursorPos = start;
+    data->SelectionStart = data->SelectionEnd = start;
+    data->InsertChars(start, "\n");
 }
 
 bool RejectInputCharByUtf16Limit(const ImGuiInputTextCallbackData* data, int max_utf16) {
@@ -423,66 +661,107 @@ bool ClampInputBufferToUtf16Limit(ImGuiInputTextCallbackData* data, int max_utf1
     return true;
 }
 
-void DrawInactiveCaretOverlay(const ImRect& frame_rect, const char* text, int caret_byte,
-                              int selection_start_byte, int selection_end_byte, bool multiline) {
+void DrawInactiveCaretOverlay(ImGuiID input_id, const ImRect& frame_rect, const char* text,
+                              int caret_byte, int selection_start_byte, int selection_end_byte,
+                              bool multiline, bool password) {
     if (!text) {
         return;
     }
-    if (selection_start_byte != selection_end_byte) {
+
+    std::string masked;
+    if (password) {
+        const int length = static_cast<int>(std::strlen(text));
+        caret_byte = Utf16CountFromUtf8Range(text, text + std::clamp(caret_byte, 0, length));
+        selection_start_byte =
+            Utf16CountFromUtf8Range(text, text + std::clamp(selection_start_byte, 0, length));
+        selection_end_byte =
+            Utf16CountFromUtf8Range(text, text + std::clamp(selection_end_byte, 0, length));
+        masked.assign(Utf16CountFromUtf8Range(text), '*');
+        text = masked.c_str();
+    }
+    const auto& style = ImGui::GetStyle();
+    auto* window = ImGui::GetCurrentWindow();
+    auto* draw_list = window->DrawList;
+    auto origin = frame_rect.Min + style.FramePadding;
+    auto clip = frame_rect;
+    clip.ClipWith(window->ClipRect);
+    float font_size = ImGui::GetFontSize();
+    if (multiline) {
+        const auto& children = window->DC.ChildWindows;
+        const auto child = std::ranges::find(children, input_id, &ImGuiWindow::ChildId);
+        if (child == children.end()) {
+            return;
+        }
+        origin = (*child)->DC.CursorStartPos + style.FramePadding;
+        clip.ClipWith((*child)->ClipRect);
+        font_size = (*child)->FontRefSize;
+        draw_list = (*child)->DrawList;
+    }
+
+    const int length = static_cast<int>(std::strlen(text));
+    const char* text_end = text + length;
+    const int selection_start =
+        std::clamp(std::min(selection_start_byte, selection_end_byte), 0, length);
+    const int selection_end =
+        std::clamp(std::max(selection_start_byte, selection_end_byte), 0, length);
+    const auto measure = [&](const char* start, const char* end) {
+        return ImFontCalcTextSizeEx(ImGui::GetFont(), font_size, FLT_MAX, 0.0f, start, end,
+                                    text_end, nullptr, nullptr, ImDrawTextFlags_WrapKeepBlanks)
+            .x;
+    };
+    if (clip.IsInverted()) {
+        return;
+    }
+    if (selection_start < selection_end) {
+        const char* first = text + selection_start;
+        const char* last = text + selection_end;
+        const ImU32 color = ImGui::GetColorU32(ImGuiCol_TextSelectedBg);
+        float y = origin.y;
+        draw_list->PushClipRect(clip.Min, clip.Max, true);
+        for (const char* start = text; start < last && y < clip.Max.y; y += font_size) {
+            const char* newline = multiline ? std::strchr(start, '\n') : nullptr;
+            const char* end = newline ? newline : text_end;
+            if (first <= end && y + font_size > clip.Min.y) {
+                const float left = origin.x + measure(start, std::max(start, first));
+                float right = origin.x + measure(start, std::min(end, last));
+                if (newline && last > newline) {
+                    right += font_size * 0.25f;
+                }
+                draw_list->AddRectFilled({left, y}, {right, y + font_size}, color);
+            }
+            if (!newline) {
+                break;
+            }
+            start = newline + 1;
+        }
+        draw_list->PopClipRect();
         return;
     }
     if (!IsCaretBlinkVisible()) {
         return;
     }
-
-    const int text_len = static_cast<int>(std::strlen(text));
-    const int clamped_byte = std::clamp(caret_byte, 0, text_len);
-    const char* const caret_ptr = text + clamped_byte;
-
-    const ImGuiStyle& style = ImGui::GetStyle();
-    const float left = frame_rect.Min.x + style.FramePadding.x;
-    const float right = frame_rect.Max.x - style.FramePadding.x;
-    if (right <= left) {
-        return;
-    }
-
-    const float top = frame_rect.Min.y + style.FramePadding.y;
-    const float bottom = frame_rect.Max.y - style.FramePadding.y;
-    if (bottom <= top) {
-        return;
-    }
-
-    float caret_x = left;
-    float caret_y = top;
-    float caret_bottom = bottom;
+    const char* caret = text + std::clamp(caret_byte, 0, length);
+    const char* line_start = text;
+    int line = 0;
     if (multiline) {
-        const char* line_begin = text;
-        int line_index = 0;
-        const char* p = text;
-        while (p < caret_ptr) {
+        for (const char* p = text; p < caret; ++p) {
             if (*p == '\n') {
-                line_begin = p + 1;
-                ++line_index;
+                line_start = p + 1;
+                ++line;
             }
-            ++p;
         }
-        caret_x = left + ImGui::CalcTextSize(line_begin, caret_ptr, false, -1.0f).x;
-        caret_y = top + static_cast<float>(line_index) * ImGui::GetTextLineHeight();
-        caret_bottom = caret_y + ImGui::GetTextLineHeight();
-    } else {
-        caret_x = left + ImGui::CalcTextSize(text, caret_ptr, false, -1.0f).x;
     }
-
-    caret_x = std::clamp(caret_x, left, right);
-    caret_y = std::clamp(caret_y, top, bottom);
-    caret_bottom = std::clamp(caret_bottom, caret_y, bottom);
-    if (caret_bottom <= caret_y) {
-        return;
+    const float advance = measure(line_start, caret);
+    const float x = ImTrunc(origin.x + advance);
+    const float baseline = ImTrunc(origin.y + (line + 1) * font_size);
+    const ImRect cursor{x, baseline - font_size + 0.5f, x + 1.0f, baseline - 1.5f};
+    if (cursor.Overlaps(clip)) {
+        draw_list->PushClipRect(clip.Min, clip.Max, true);
+        draw_list->AddLineV(x, cursor.Min.y, cursor.Max.y,
+                            ImGui::GetColorU32(ImGuiCol_InputTextCursor),
+                            style.InputTextCursorSize);
+        draw_list->PopClipRect();
     }
-
-    const ImU32 caret_col = ImGui::GetColorU32(ImGuiCol_Text);
-    ImGui::GetWindowDrawList()->AddLine({caret_x, caret_y}, {caret_x, caret_bottom}, caret_col,
-                                        1.5f);
 }
 
 static float ApplyAxisDeadzone(float v) {
@@ -866,12 +1145,14 @@ OskShortcutActionResult EvaluateOskShortcutAction(bool allow_osk_shortcuts, bool
         repeat_state.triangle_next_repeat_time);
     const bool tri_space_pressed = tri_pressed && !l2_down;
 
-    const bool symbols_shortcut_pressed = (l2_down && tri_edge_pressed) || (tri_down && l2_pressed);
+    const bool numeric = layout_family == ImeKbLayoutFamily::Numeric;
+    const bool symbols_shortcut_pressed =
+        !numeric && ((l2_down && tri_edge_pressed) || (tri_down && l2_pressed));
     if (symbols_shortcut_pressed) {
         result.action = ImeKbKeyAction::SymbolsMode;
-    } else if (tri_space_pressed) {
+    } else if (!numeric && tri_space_pressed) {
         result.action = ImeKbKeyAction::Space;
-    } else if (layout_family != ImeKbLayoutFamily::Symbols &&
+    } else if (!numeric && layout_family != ImeKbLayoutFamily::Symbols &&
                virtual_pad_input.Pressed(Libraries::Pad::OrbisPadButtonDataOffset::L3)) {
         result.action = ImeKbKeyAction::SpecialsMode;
     } else if (virtual_pad_input.Pressed(Libraries::Pad::OrbisPadButtonDataOffset::R2)) {
@@ -884,9 +1165,10 @@ OskShortcutActionResult EvaluateOskShortcutAction(bool allow_osk_shortcuts, bool
         result.action = ImeKbKeyAction::ArrowLeft;
     } else if (r1_repeat_pressed) {
         result.action = ImeKbKeyAction::ArrowRight;
-    } else if (virtual_pad_input.Pressed(Libraries::Pad::OrbisPadButtonDataOffset::R3)) {
+    } else if (!numeric &&
+               virtual_pad_input.Pressed(Libraries::Pad::OrbisPadButtonDataOffset::R3)) {
         result.action = ImeKbKeyAction::Settings;
-    } else if (layout_family != ImeKbLayoutFamily::Symbols && l2_pressed) {
+    } else if (!numeric && layout_family != ImeKbLayoutFamily::Symbols && l2_pressed) {
         result.action = ImeKbKeyAction::Shift;
     }
     return result;

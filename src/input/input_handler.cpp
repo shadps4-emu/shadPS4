@@ -26,6 +26,7 @@
 #include "core/emulator_settings.h"
 #include "core/emulator_state.h"
 #include "imgui/big_picture/settings_dialog_layer.h"
+#include "imgui/renderer/imgui_core.h"
 #include "input/controller.h"
 #include "input/input_mouse.h"
 
@@ -930,6 +931,11 @@ InputEvent BindingConnection::ProcessBinding() {
     // and the analog inputs are always the last one due to how they are sorted,
     // so this signifies whether or not the input is analog
     InputEvent event = InputEvent(binding.keys[0]);
+    if (ImGui::GetCurrentContext() && ImGui::GetIO().WantTextInput &&
+        ImGui::Core::IsGamepadInputCaptured() && !HasGamepadInput() &&
+        (output->IsAxis() || output->button < HOTKEY_FULLSCREEN)) {
+        return event;
+    }
     if (pressed_keys.empty()) {
         return event;
     }
