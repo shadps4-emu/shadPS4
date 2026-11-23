@@ -493,3 +493,59 @@ jobs:
             echo "Skipping pre-release: $release_id (newer or same date)"
           fi
         done
+
+  canary-release:
+    # Runs only in shadps4-emu/shadPS4-canary, on the commit canary.yml pushed.
+    if: github.ref == 'refs/heads/main' && github.repository == 'shadps4-emu/shadPS4-canary' && github.event_name == 'push'
+    needs: [get-info, windows-sdl, macos-sdl, linux-sdl]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Download all artifacts
+      uses: actions/download-artifact@v8
+      with:
+        path: ./artifacts
+
+    - name: Make SDL artifacts executable
+      run: |
+        chmod -R a+x ./artifacts/shadps4-linux-sdl-*
+        chmod -R a+x ./artifacts/shadps4-macos-sdl-*
+
+    - name: Compress individual directories (without parent directory)
+      run: |
+        cd ./artifacts
+        for dir in */; do
+          if [ -d "$dir" ]; then
+            dir_name=${dir%/}
+            (cd "$dir_name" && zip -r "../${dir_name}.zip" .)
+          fi
+        done
+
+    - name: Publish canary release
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        tag=$(git ls-remote --tags --refs origin 'refs/tags/canary-*' \
+          | awk -v sha="$GITHUB_SHA" '$1 == sha { sub("refs/tags/", "", $2); print $2 }' | head -n 1)
+        if [[ -z "$tag" ]]; then
+          echo "::error::No canary-N tag points at $GITHUB_SHA"
+          exit 1
+        fi
+        # Release notes: the merge log from the commit message, without the bot trailer.
+        git log -1 --format=%b | sed '/^Canary-Inputs:/d' > notes.md
+        gh release create "$tag" ./artifacts/*.zip --verify-tag --prerelease \
+          --title "shadPS4 Canary #${tag#canary-}" --notes-file notes.md
+
+    - name: Delete old canary releases (keep the latest 5)
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        gh release list --limit 100 --json tagName,createdAt \
+          --jq '[.[] | select(.tagName | startswith("canary-"))] | sort_by(.createdAt) | reverse | .[5:] | .[].tagName' \
+          | while read -r old; do
+              echo "Deleting release $old (tag kept)"
+              gh release delete "$old" --yes
+            done
