@@ -304,6 +304,8 @@ set(AUDIO_LIB src/core/libraries/audio/audioin.cpp
               src/core/libraries/audio/audioout.h
               src/core/libraries/audio/audioout_backend.h
               src/core/libraries/audio/audioout_error.h
+              src/core/libraries/audio/audioout_mastering.cpp
+              src/core/libraries/audio/audioout_mastering.h
               src/core/libraries/audio/sdl_audio_out.cpp
               src/core/libraries/audio/openal_audio_out.cpp
               src/core/libraries/audio/openal_manager.h
@@ -376,6 +378,8 @@ endif()
 
 set(NETWORK_LIBS src/core/libraries/network/http.cpp
                  src/core/libraries/network/http.h
+                 src/core/libraries/network/http_host_overrides.cpp
+                 src/core/libraries/network/http_host_overrides.h
                  src/core/libraries/network/http_error.h
                  src/core/libraries/network/http2.cpp
                  src/core/libraries/network/http2.h
@@ -673,6 +677,7 @@ set(NP_LIBS src/core/libraries/np/np_error.h
             src/core/libraries/np/np_handler/np_handler_auth.cpp
             src/core/libraries/np/np_handler/np_handler_invitation.cpp
             src/core/libraries/np/np_handler/np_handler_game_custom_data.cpp
+            src/core/libraries/np/np_handler/np_handler_profile.cpp
             src/core/libraries/np/np_handler/np_handler_score.cpp
             src/core/libraries/np/np_handler/np_handler_trophy.cpp
             src/core/libraries/np/np_handler/np_handler_tus.cpp

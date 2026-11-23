@@ -106,6 +106,20 @@ jobs:
         with:
           arch: x64
 
+      - name: Use Visual Studio's own clang-cl
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -property installationPath
+          $bin = Join-Path $vs 'VC\Tools\Llvm\x64\bin'
+          if (-not (Test-Path (Join-Path $bin 'clang-cl.exe'))) {
+            Write-Error "Visual Studio's C++ Clang tools are not installed ($bin)"
+            exit 1
+          }
+          & (Join-Path $bin 'clang-cl.exe') --version
+          $bin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          "CLANG_CL=$((Join-Path $bin 'clang-cl.exe') -replace '\\','/')" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
       - name: Install dependencies (Linux)
         if: runner.os == 'Linux'
         run: |
@@ -120,8 +134,8 @@ jobs:
       - name: Configure CMake
         run: |
           cmake -B build -G Ninja \
-            -DCMAKE_CXX_COMPILER="${{ matrix.compiler_cxx }}" \
-            -DCMAKE_C_COMPILER="${{ matrix.compiler_c }}" \
+            -DCMAKE_CXX_COMPILER="${CLANG_CL:-${{ matrix.compiler_cxx }}}" \
+            -DCMAKE_C_COMPILER="${CLANG_CL:-${{ matrix.compiler_c }}}" \
             -DCMAKE_BUILD_TYPE=Debug \
             -DENABLE_TESTS=ON \
             ${{ runner.os == 'Linux' && '-DCMAKE_CXX_FLAGS=-stdlib=libc++' || '' }} \
@@ -168,8 +182,21 @@ jobs:
     - name: Print CPU Info
       run: bash -c "cat /proc/cpuinfo"
 
+    - name: Use Visual Studio's own clang-cl
+      shell: pwsh
+      run: |
+        $vs = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -property installationPath
+        $bin = Join-Path $vs 'VC\Tools\Llvm\x64\bin'
+        if (-not (Test-Path (Join-Path $bin 'clang-cl.exe'))) {
+          Write-Error "Visual Studio's C++ Clang tools are not installed ($bin)"
+          exit 1
+        }
+        & (Join-Path $bin 'clang-cl.exe') --version
+        $bin | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        "CLANG_CL=$((Join-Path $bin 'clang-cl.exe') -replace '\\','/')" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
     - name: Configure CMake
-      run: cmake --fresh -G Ninja -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE=ON -DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+      run: cmake --fresh -G Ninja -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE=ON -DCMAKE_C_COMPILER="$env:CLANG_CL" -DCMAKE_CXX_COMPILER="$env:CLANG_CL" -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
     - name: Build
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel $env:NUMBER_OF_PROCESSORS
@@ -466,3 +493,66 @@ jobs:
             echo "Skipping pre-release: $release_id (newer or same date)"
           fi
         done
+
+  canary-release:
+    # Runs only in shadps4-emu/shadPS4-canary, on the commit canary.yml pushed, or
+    # when a build of main is started by hand there (Actions > Run workflow).
+    if: github.ref == 'refs/heads/main' && github.repository == 'shadps4-emu/shadPS4-canary' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    needs: [get-info, windows-sdl, macos-sdl, linux-sdl]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Download all artifacts
+      uses: actions/download-artifact@v8
+      with:
+        path: ./artifacts
+
+    - name: Make SDL artifacts executable
+      run: |
+        chmod -R a+x ./artifacts/shadps4-linux-sdl-*
+        chmod -R a+x ./artifacts/shadps4-macos-sdl-*
+
+    - name: Compress individual directories (without parent directory)
+      run: |
+        cd ./artifacts
+        for dir in */; do
+          if [ -d "$dir" ]; then
+            dir_name=${dir%/}
+            (cd "$dir_name" && zip -r "../${dir_name}.zip" .)
+          fi
+        done
+
+    - name: Publish canary release
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        tag=$(git ls-remote --tags --refs origin 'refs/tags/canary-*' \
+          | awk -v sha="$GITHUB_SHA" '$1 == sha { sub("refs/tags/", "", $2); print $2 }' | head -n 1)
+        if [[ -z "$tag" ]]; then
+          echo "::error::No canary-N tag points at $GITHUB_SHA"
+          exit 1
+        fi
+        # Release notes: the merge log from the commit message, without the bot trailer.
+        git log -1 --format=%b | sed '/^Canary-Inputs:/d' > notes.md
+        if gh release view "$tag" >/dev/null 2>&1; then
+          # Re-run for an already published canary: replace its files and notes.
+          gh release upload "$tag" ./artifacts/*.zip --clobber
+          gh release edit "$tag" --notes-file notes.md
+        else
+          gh release create "$tag" ./artifacts/*.zip --verify-tag --prerelease \
+            --title "shadPS4 Canary #${tag#canary-}" --notes-file notes.md
+        fi
+
+    - name: Delete old canary releases (keep the latest 5)
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        gh release list --limit 100 --json tagName,createdAt \
+          --jq '[.[] | select(.tagName | startswith("canary-"))] | sort_by(.createdAt) | reverse | .[5:] | .[].tagName' \
+          | while read -r old; do
+              echo "Deleting release $old (tag kept)"
+              gh release delete "$old" --yes
+            done
