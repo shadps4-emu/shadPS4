@@ -69,10 +69,8 @@ std::unordered_map<vk::Format, vk::FormatProperties3> GetFormatProperties(
     }
     // Other miscellaneous formats, e.g. for color buffers, swizzles, or compatibility
     static constexpr std::array misc_formats = {
-        vk::Format::eA2R10G10B10UnormPack32,
-        vk::Format::eB8G8R8A8Unorm,
-        vk::Format::eB8G8R8A8Srgb,
-        vk::Format::eD24UnormS8Uint,
+        vk::Format::eA2R10G10B10UnormPack32, vk::Format::eB8G8R8A8Unorm, vk::Format::eB8G8R8A8Srgb,
+        vk::Format::eD24UnormS8Uint,         vk::Format::eR64Uint,
     };
     for (const auto& format : misc_formats) {
         if (!format_properties.contains(format)) {
@@ -219,6 +217,7 @@ bool Instance::CreateDevice() {
         vk::PhysicalDeviceExtendedDynamicState3FeaturesEXT,
         vk::PhysicalDevicePrimitiveTopologyListRestartFeaturesEXT,
         vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT,
+        vk::PhysicalDeviceShaderImageAtomicInt64FeaturesEXT,
         vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR,
         vk::PhysicalDeviceImage2DViewOf3DFeaturesEXT, vk::PhysicalDeviceShaderClockFeaturesKHR>();
     features = feature_chain.get().features;
@@ -335,6 +334,11 @@ bool Instance::CreateDevice() {
         LOG_INFO(Render_Vulkan, "- shaderSharedFloat32AtomicMinMax: {}",
                  shader_atomic_float2_features.shaderSharedFloat32AtomicMinMax);
     }
+    shader_image_atomic_int64 =
+        feature_chain.get<vk::PhysicalDeviceShaderImageAtomicInt64FeaturesEXT>()
+            .shaderImageInt64Atomics &&
+        add_extension(VK_EXT_SHADER_IMAGE_ATOMIC_INT64_EXTENSION_NAME);
+    LOG_INFO(Render_Vulkan, "- shaderImageInt64Atomics: {}", shader_image_atomic_int64);
     workgroup_memory_explicit_layout =
         add_extension(VK_KHR_WORKGROUP_MEMORY_EXPLICIT_LAYOUT_EXTENSION_NAME);
     if (workgroup_memory_explicit_layout) {
@@ -529,6 +533,9 @@ bool Instance::CreateDevice() {
             .shaderImageFloat32AtomicMinMax =
                 shader_atomic_float2_features.shaderImageFloat32AtomicMinMax,
         },
+        vk::PhysicalDeviceShaderImageAtomicInt64FeaturesEXT{
+            .shaderImageInt64Atomics = true,
+        },
         vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR{
             .workgroupMemoryExplicitLayout =
                 workgroup_memory_explicit_layout_features.workgroupMemoryExplicitLayout,
@@ -589,6 +596,9 @@ bool Instance::CreateDevice() {
     }
     if (!shader_atomic_float2) {
         device_chain.unlink<vk::PhysicalDeviceShaderAtomicFloat2FeaturesEXT>();
+    }
+    if (!shader_image_atomic_int64) {
+        device_chain.unlink<vk::PhysicalDeviceShaderImageAtomicInt64FeaturesEXT>();
     }
     if (!workgroup_memory_explicit_layout) {
         device_chain.unlink<vk::PhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR>();

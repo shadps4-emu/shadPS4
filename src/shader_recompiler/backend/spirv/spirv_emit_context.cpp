@@ -968,9 +968,22 @@ spv::ImageFormat GetFormat(const AmdGpu::Image& image) {
                     image.GetNumberFmt());
 }
 
+// Vulkan has no 32-bit atomics on a 64bpp image: a 32_32 uint image used by atomics is viewed
+// as R64ui and its atomics widened to 64 bits.
+bool IsAtomic64Image(const AmdGpu::Image& image, const ImageResource& desc) {
+    return desc.is_atomic && image.GetDataFmt() == AmdGpu::DataFormat::Format32_32 &&
+           image.GetNumberFmt() == AmdGpu::NumberFormat::Uint;
+}
+
 Id ImageType(EmitContext& ctx, const ImageResource& desc, Id sampled_type) {
     const auto image = desc.GetSharp(ctx.info);
-    const auto format = desc.is_atomic ? GetFormat(image) : spv::ImageFormat::Unknown;
+    const bool atomic64 = IsAtomic64Image(image, desc);
+    if (atomic64) {
+        sampled_type = ctx.U64;
+    }
+    const auto format = atomic64         ? spv::ImageFormat::R64ui
+                        : desc.is_atomic ? GetFormat(image)
+                                         : spv::ImageFormat::Unknown;
     const auto type = image.GetViewType(desc.is_array);
     const u32 sampled = desc.is_written ? 2 : 1;
     switch (type) {
@@ -1022,6 +1035,7 @@ void EmitContext::DefineImagesAndSamplers() {
             .view_type = sharp.GetViewType(image_desc.is_array),
             .is_integer = is_integer,
             .is_storage = is_storage,
+            .is_atomic64 = IsAtomic64Image(sharp, image_desc),
             .mip_fallback_mode = mip_fallback_mode,
         });
         interfaces.push_back(id);
@@ -1030,6 +1044,7 @@ void EmitContext::DefineImagesAndSamplers() {
                             [](const ImageResource& image) { return image.is_atomic; })) {
         image_u32 = TypePointer(spv::StorageClass::Image, U32[1]);
         image_f32 = TypePointer(spv::StorageClass::Image, F32[1]);
+        image_u64 = TypePointer(spv::StorageClass::Image, U64);
     }
     if (info.samplers.empty()) {
         return;

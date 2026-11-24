@@ -57,6 +57,11 @@ ImageViewInfo::ImageViewInfo(const AmdGpu::Image& image, const Shader::ImageReso
         nfmt = AmdGpu::NumberFormat::Unorm;
     }
     format = Vulkan::LiverpoolToVK::SurfaceFormat(dfmt, nfmt);
+    if (desc.is_atomic && dfmt == AmdGpu::DataFormat::Format32_32 &&
+        nfmt == AmdGpu::NumberFormat::Uint) {
+        // Matches the R64ui image the shader recompiler declares for 32_32 atomics.
+        format = vk::Format::eR64Uint;
+    }
     if (desc.is_depth) {
         format = Vulkan::LiverpoolToVK::PromoteFormatToDepth(format);
     }
