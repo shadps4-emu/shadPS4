@@ -104,6 +104,8 @@ void Initialize(const ::Vulkan::Instance& instance, const Frontend::WindowSDL& w
     FontStack::AddPrimaryUiFont(ImGui::GetIO().Fonts, 64.0f, EmulatorSettings.GetConsoleLanguage(),
                                 font_cfg, true);
 
+    FontStack::InitTrophyFonts(io.Fonts, console_language, font_cfg);
+
     // Let the atlas size grow to the largest image the device can create,
     // floored to the power of two the packer requires.
     const u32 max_dim = instance.GetPhysicalDevice().getProperties().limits.maxImageDimension2D;

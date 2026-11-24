@@ -3,7 +3,12 @@
 
 #include "font_stack.h"
 
+#include <filesystem>
+#include <vector>
+#include "core/emulator_settings.h"
 #include "font_data.h"
+
+namespace fs = std::filesystem;
 
 namespace {
 
@@ -129,11 +134,36 @@ void AddMergedFont(ImFontAtlas* atlas, const CompressedFontBlob blob, const floa
 
 namespace ImGui::FontStack {
 
+static ImFont* s_trophy_title_font = nullptr;
+static ImFont* s_trophy_desc_font = nullptr;
+
 ImFont* AddPrimaryUiFont(ImFontAtlas* atlas, const float font_size, const int console_language,
                          const ImFontConfig& base_cfg, const bool include_cjk_fallback) {
     const ImWchar* primary_ranges = GetPrimaryTextRanges(atlas);
-    ImFont* font = atlas->AddFontFromMemoryCompressedTTF(kNotoSansBlob.data, kNotoSansBlob.size,
-                                                         font_size, &base_cfg, primary_ranges);
+
+    fs::path fonts_dir = EmulatorSettings.GetFontsDir();
+    fs::path sst_path;
+    const std::vector<fs::path> primary_candidates = {
+        fonts_dir / "font" / "SST-Medium.otf", fonts_dir / "SST-Medium.otf",
+        fonts_dir / "font" / "SST-Roman.otf",  fonts_dir / "SST-Roman.otf",
+        fonts_dir / "font" / "SST-Bold.otf",   fonts_dir / "SST-Bold.otf",
+    };
+    for (const auto& p : primary_candidates) {
+        if (fs::exists(p)) {
+            sst_path = p;
+            break;
+        }
+    }
+
+    ImFont* font = nullptr;
+    if (!sst_path.empty()) {
+        font = atlas->AddFontFromFileTTF(sst_path.string().c_str(), font_size, &base_cfg,
+                                         primary_ranges);
+    }
+    if (!font) {
+        font = atlas->AddFontFromMemoryCompressedTTF(kNotoSansBlob.data, kNotoSansBlob.size,
+                                                     font_size, &base_cfg, primary_ranges);
+    }
 
     AddMergedFont(atlas, kNotoSansArabicBlob, font_size, kArabicRanges, base_cfg);
     AddMergedFont(atlas, kNotoSansThaiBlob, font_size, atlas->GetGlyphRangesThai(), base_cfg);
@@ -145,6 +175,62 @@ ImFont* AddPrimaryUiFont(ImFontAtlas* atlas, const float font_size, const int co
     }
 
     return font;
+}
+
+void InitTrophyFonts(ImFontAtlas* atlas, const int console_language, const ImFontConfig& base_cfg) {
+    fs::path fonts_dir = EmulatorSettings.GetFontsDir();
+    const ImWchar* primary_ranges = GetPrimaryTextRanges(atlas);
+
+    fs::path bold_path;
+    const std::vector<fs::path> bold_candidates = {
+        fonts_dir / "font" / "SST-Bold.otf",
+        fonts_dir / "SST-Bold.otf",
+        fonts_dir / "font" / "SST-Medium.otf",
+        fonts_dir / "SST-Medium.otf",
+    };
+    for (const auto& p : bold_candidates) {
+        if (fs::exists(p)) {
+            bold_path = p;
+            break;
+        }
+    }
+
+    if (!bold_path.empty()) {
+        s_trophy_title_font =
+            atlas->AddFontFromFileTTF(bold_path.string().c_str(), 32.0f, &base_cfg, primary_ranges);
+    } else {
+        s_trophy_title_font = atlas->AddFontFromMemoryCompressedTTF(
+            kNotoSansBlob.data, kNotoSansBlob.size, 32.0f, &base_cfg, primary_ranges);
+    }
+
+    fs::path medium_path;
+    const std::vector<fs::path> medium_candidates = {
+        fonts_dir / "font" / "SST-Medium.otf", fonts_dir / "SST-Medium.otf",
+        fonts_dir / "font" / "SST-Roman.otf",  fonts_dir / "SST-Roman.otf",
+        fonts_dir / "font" / "SST-Bold.otf",   fonts_dir / "SST-Bold.otf",
+    };
+    for (const auto& p : medium_candidates) {
+        if (fs::exists(p)) {
+            medium_path = p;
+            break;
+        }
+    }
+
+    if (!medium_path.empty()) {
+        s_trophy_desc_font = atlas->AddFontFromFileTTF(medium_path.string().c_str(), 26.0f,
+                                                       &base_cfg, primary_ranges);
+    } else {
+        s_trophy_desc_font = atlas->AddFontFromMemoryCompressedTTF(
+            kNotoSansBlob.data, kNotoSansBlob.size, 26.0f, &base_cfg, primary_ranges);
+    }
+}
+
+ImFont* GetTrophyTitleFont() {
+    return s_trophy_title_font;
+}
+
+ImFont* GetTrophyDescFont() {
+    return s_trophy_desc_font;
 }
 
 } // namespace ImGui::FontStack

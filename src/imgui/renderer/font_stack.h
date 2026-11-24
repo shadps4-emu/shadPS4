@@ -10,4 +10,8 @@ namespace ImGui::FontStack {
 ImFont* AddPrimaryUiFont(ImFontAtlas* atlas, float font_size, int console_language,
                          const ImFontConfig& base_cfg, bool include_cjk_fallback);
 
+void InitTrophyFonts(ImFontAtlas* atlas, int console_language, const ImFontConfig& base_cfg);
+ImFont* GetTrophyTitleFont();
+ImFont* GetTrophyDescFont();
+
 } // namespace ImGui::FontStack
