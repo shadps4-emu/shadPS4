@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "shader_recompiler/backend/spirv/emit_spirv_instructions.h"
@@ -11,6 +11,10 @@ namespace Shader::Backend::SPIRV {
 void EmitPrologue(EmitContext& ctx) {
     if (ctx.hw_stage == HwStage::Fragment) {
         ctx.DefineAmdPerVertexAttribs();
+        if (ctx.info.stores.Get(IR::Attribute::SampleMask)) {
+            ctx.OpStore(ctx.OpAccessChain(ctx.output_u32, ctx.sample_mask, ctx.u32_zero_value),
+                        ctx.ConstU32(0xFFFFFFFFu));
+        }
     }
     if (ctx.info.loads.Get(IR::Attribute::WorkgroupIndex)) {
         ctx.DefineWorkgroupIndex();

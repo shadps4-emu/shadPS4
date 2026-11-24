@@ -7,6 +7,4 @@
 #include "common/logging/log.h"
 #include "core/libraries/error_codes.h"
 
-using namespace Libraries::Kernel;
-
 namespace Libraries::Ngs2 {} // namespace Libraries::Ngs2

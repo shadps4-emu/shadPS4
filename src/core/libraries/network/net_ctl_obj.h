@@ -12,13 +12,15 @@ using OrbisNetCtlCallback = PS4_SYSV_ABI void (*)(int eventType, void* arg);
 using OrbisNetCtlCallbackForNpToolkit = PS4_SYSV_ABI void (*)(int eventType, void* arg);
 
 struct NetCtlCallback {
-    OrbisNetCtlCallback func;
-    void* arg;
+    OrbisNetCtlCallback func{nullptr};
+    void* arg{nullptr};
+    s32 last_event{-1};
 };
 
 struct NetCtlCallbackForNpToolkit {
-    OrbisNetCtlCallbackForNpToolkit func;
-    void* arg;
+    OrbisNetCtlCallbackForNpToolkit func{nullptr};
+    void* arg{nullptr};
+    s32 last_event{-1};
 };
 
 class NetCtlInternal {
@@ -27,7 +29,9 @@ public:
     ~NetCtlInternal();
 
     s32 RegisterCallback(OrbisNetCtlCallback func, void* arg);
+    s32 UnregisterCallback(int cid);
     s32 RegisterNpToolkitCallback(OrbisNetCtlCallbackForNpToolkit func, void* arg);
+    s32 UnregisterNpToolkitCallback(int cid);
     void CheckCallback();
     void CheckNpToolkitCallback();
 

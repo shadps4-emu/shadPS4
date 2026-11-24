@@ -372,8 +372,7 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
             return {ExpandImage(image_info, cache_image_id), -1, -1};
         }
 
-        const bool pow2_padding_only =
-            image_info.props.is_pow2 != cache_image.info.props.is_pow2 &&
+        const bool guest_size_only =
             image_info.tile_mode == cache_image.info.tile_mode &&
             image_info.size == cache_image.info.size &&
             image_info.pitch == cache_image.info.pitch && image_info.resources.levels == 1 &&
@@ -382,7 +381,7 @@ std::tuple<ImageId, int, int> TextureCache::ResolveOverlap(const ImageInfo& imag
 
         // Size and resources are less than or equal, use image view.
         if (image_info.pixel_format != cache_image.info.pixel_format ||
-            image_info.guest_size <= cache_image.info.guest_size || pow2_padding_only) {
+            image_info.guest_size <= cache_image.info.guest_size || guest_size_only) {
             auto result_id = merged_image_id ? merged_image_id : cache_image_id;
             const auto& result_image = slot_images[result_id];
             const bool is_compatible =
@@ -612,11 +611,15 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
 
     ImageId image_id{};
 
+    ImageId subrect_source{};
     // Check for a perfect match first
     for (const auto& cache_id : image_ids) {
         auto& cache_image = slot_images[cache_id];
         if (cache_image.info.guest_address != info.guest_address) {
             continue;
+        }
+        if (desc.IsSubrectTexture(cache_image.info) && cache_image.HasGpuValidData()) {
+            subrect_source = cache_id;
         }
         if (cache_image.info.guest_size != info.guest_size) {
             continue;
@@ -632,6 +635,10 @@ ImageId TextureCache::FindImage(ImageDesc& desc, bool exact_fmt) {
             continue;
         }
         image_id = cache_id;
+    }
+
+    if (!image_id) {
+        image_id = subrect_source;
     }
 
     // Try to resolve overlaps (if any)
@@ -825,7 +832,8 @@ ImageView& TextureCache::FindDepthTarget(ImageId image_id, const ImageDesc& desc
 }
 
 void TextureCache::AssociateStencil(ImageId depth_id, const ImageInfo& depth_info) {
-    if (depth_info.stencil_addr == 0 || depth_info.stencil_addr == depth_info.guest_address) {
+    if (depth_info.stencil_addr == 0 || depth_info.stencil_addr == depth_info.guest_address ||
+        !depth_info.props.has_stencil || depth_info.stencil_size == 0) {
         return;
     }
     ImageId stencil_id{};

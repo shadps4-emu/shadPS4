@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
@@ -54,6 +54,8 @@ void EmitGetScalarRegister(EmitContext& ctx);
 void EmitSetScalarRegister(EmitContext& ctx);
 void EmitGetVectorRegister(EmitContext& ctx);
 void EmitSetVectorRegister(EmitContext& ctx);
+void EmitVMovRelS(EmitContext& ctx);
+void EmitVMovRelD(EmitContext& ctx);
 void EmitSetVirtualRegister(EmitContext& ctx);
 void EmitGetVirtualRegister(EmitContext& ctx);
 void EmitSetGotoVariable(EmitContext& ctx);
@@ -133,23 +135,26 @@ Id EmitUndefU32x2(EmitContext& ctx);
 Id EmitUndefU32x3(EmitContext& ctx);
 Id EmitUndefU32x4(EmitContext& ctx);
 Id EmitUndefF32(EmitContext& ctx);
+Id EmitUndefF32x2(EmitContext& ctx);
 Id EmitUndefU64(EmitContext& ctx);
-Id EmitLoadSharedU16(EmitContext& ctx, Id offset);
-Id EmitLoadSharedU32(EmitContext& ctx, Id offset);
-Id EmitLoadSharedU64(EmitContext& ctx, Id offset);
-void EmitWriteSharedU16(EmitContext& ctx, Id offset, Id value);
-void EmitWriteSharedU32(EmitContext& ctx, Id offset, Id value);
-void EmitWriteSharedU64(EmitContext& ctx, Id offset, Id value);
+Id EmitLoadSharedU16(EmitContext& ctx, IR::Inst* inst, Id offset);
+Id EmitLoadSharedU32(EmitContext& ctx, IR::Inst* inst, Id offset);
+Id EmitLoadSharedU64(EmitContext& ctx, IR::Inst* inst, Id offset);
+void EmitWriteSharedU16(EmitContext& ctx, IR::Inst* inst, Id offset, Id value);
+void EmitWriteSharedU32(EmitContext& ctx, IR::Inst* inst, Id offset, Id value);
+void EmitWriteSharedU64(EmitContext& ctx, IR::Inst* inst, Id offset, Id value);
 Id EmitSharedAtomicIAdd32(EmitContext& ctx, Id offset, Id value);
 Id EmitSharedAtomicIAdd64(EmitContext& ctx, Id offset, Id value);
 Id EmitSharedAtomicUMax32(EmitContext& ctx, Id offset, Id value);
 Id EmitSharedAtomicUMax64(EmitContext& ctx, Id offset, Id value);
 Id EmitSharedAtomicSMax32(EmitContext& ctx, Id offset, Id value);
 Id EmitSharedAtomicSMax64(EmitContext& ctx, Id offset, Id value);
+Id EmitSharedAtomicFMax32(EmitContext& ctx, Id offset, Id value);
 Id EmitSharedAtomicUMin32(EmitContext& ctx, Id offset, Id value);
 Id EmitSharedAtomicUMin64(EmitContext& ctx, Id offset, Id value);
 Id EmitSharedAtomicSMin32(EmitContext& ctx, Id offset, Id value);
 Id EmitSharedAtomicSMin64(EmitContext& ctx, Id offset, Id value);
+Id EmitSharedAtomicFMin32(EmitContext& ctx, Id offset, Id value);
 Id EmitSharedAtomicAnd32(EmitContext& ctx, Id offset, Id value);
 Id EmitSharedAtomicAnd64(EmitContext& ctx, Id offset, Id value);
 Id EmitSharedAtomicOr32(EmitContext& ctx, Id offset, Id value);
@@ -474,7 +479,8 @@ Id EmitCubeFaceCoordS(EmitContext& ctx, IR::Inst* inst, Id x, Id y, Id z);
 Id EmitCubeFaceCoordT(EmitContext& ctx, IR::Inst* inst, Id x, Id y, Id z);
 Id EmitCubeFaceMajorAxis(EmitContext& ctx, IR::Inst* inst, Id x, Id y, Id z);
 Id EmitLaneId(EmitContext& ctx);
-Id EmitWarpId(EmitContext& ctx);
+Id EmitWaveId(EmitContext& ctx);
+Id EmitSubgroupId(EmitContext& ctx);
 Id EmitQuadBroadcast(EmitContext& ctx, Id value, Id index);
 Id EmitShuffle(EmitContext& ctx, Id value, Id index);
 Id EmitShuffleXor(EmitContext& ctx, Id value, Id mask);

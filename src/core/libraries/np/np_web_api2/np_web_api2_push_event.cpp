@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <cstring>
+#include <string_view>
+
 #include "common/logging/log.h"
 #include "core/libraries/np/np_error.h"
 #include "core/libraries/np/np_web_api2/np_web_api2_push_event.h"
@@ -25,25 +28,35 @@ s32 PushEventFilter::Initialize(PushEventHandle* handle,
         return ORBIS_NP_WEBAPI2_ERROR_ABORTED;
     }
 
-    std::vector<std::vector<OrbisNpWebApi2PushEventExtdDataKey>> copy_storage{};
     for (u64 i = 0; i < filter_param_num; i++) {
-        OrbisNpWebApi2PushEventFilterParameter new_param{};
-        memcpy(&new_param, &filter_param[i], sizeof(OrbisNpWebApi2PushEventFilterParameter));
-        if (filter_param[i].extd_data_key != nullptr && filter_param[i].extd_data_key_num != 0) {
-            std::vector<OrbisNpWebApi2PushEventExtdDataKey> data_keys{};
-            for (u64 j = 0; j < filter_param[i].extd_data_key_num; j++) {
-                OrbisNpWebApi2PushEventExtdDataKey new_key{};
-                memcpy(&new_key, &filter_param[i].extd_data_key[j],
-                       sizeof(OrbisNpWebApi2PushEventExtdDataKey));
-                data_keys.emplace_back(new_key);
-            }
+        OrbisNpWebApi2PushEventFilterParameter new_param = filter_param[i];
+        if (new_param.extd_data_key != nullptr && new_param.extd_data_key_num != 0) {
+            auto& data_keys = this->data_key_copy_storage.emplace_back(
+                new_param.extd_data_key, new_param.extd_data_key + new_param.extd_data_key_num);
             new_param.extd_data_key = data_keys.data();
-            copy_storage.emplace_back(data_keys);
+        } else {
+            new_param.extd_data_key = nullptr;
+            new_param.extd_data_key_num = 0;
         }
         this->filter_params.emplace_back(new_param);
     }
 
     return ORBIS_OK;
+}
+
+const OrbisNpWebApi2PushEventFilterParameter* PushEventFilter::GetMatchingParameter(
+    const std::string& service_name, const std::string& data_type) {
+    if (service_name != this->np_service_name) {
+        return nullptr;
+    }
+    for (const auto& param : this->filter_params) {
+        if (data_type ==
+            std::string_view(param.data_type.val,
+                             strnlen(param.data_type.val, sizeof(param.data_type.val)))) {
+            return &param;
+        }
+    }
+    return nullptr;
 }
 
 void PushEventPushContext::Initialize() {
