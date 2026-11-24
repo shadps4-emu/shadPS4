@@ -339,7 +339,8 @@ struct InputSettings {
     Setting<bool> background_controller_input{false}; // specific
     Setting<bool> ime_accessibility_enabled{false};   // specific
     Setting<bool> ime_url_mail_short_panel{false};    // specific
-    Setting<bool> is_circle_enter{false};             // specific
+    Setting<std::string> ime_keyboard_layout{""};
+    Setting<bool> is_circle_enter{false}; // specific
     Setting<s32> camera_id{-1};
     Setting<bool> use_mice_as_mice{false};
     Setting<bool> use_keyboard_as_keyboard{false};
@@ -358,6 +359,8 @@ struct InputSettings {
                                          &InputSettings::ime_accessibility_enabled),
             make_override<InputSettings>("ime_url_mail_short_panel",
                                          &InputSettings::ime_url_mail_short_panel),
+            make_override<InputSettings>("ime_keyboard_layout",
+                                         &InputSettings::ime_keyboard_layout),
             make_override<InputSettings>("is_circle_enter", &InputSettings::is_circle_enter),
             make_override<InputSettings>("camera_id", &InputSettings::camera_id),
             make_override<InputSettings>("use_mice_as_mice", &InputSettings::use_mice_as_mice),
@@ -369,8 +372,9 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(InputSettings, cursor_state, cursor_hide_time
                                    usb_device_backend, use_special_pad, special_pad_class,
                                    motion_controls_enabled, use_unified_input_config,
                                    default_controller_id, background_controller_input,
-                                   ime_accessibility_enabled, ime_url_mail_short_panel, camera_id,
-                                   is_circle_enter, use_mice_as_mice, use_keyboard_as_keyboard)
+                                   ime_accessibility_enabled, ime_url_mail_short_panel,
+                                   ime_keyboard_layout, camera_id, is_circle_enter,
+                                   use_mice_as_mice, use_keyboard_as_keyboard)
 // -------------------------------
 // Audio settings
 // -------------------------------
@@ -804,6 +808,7 @@ public:
     SETTING_FORWARD_BOOL(m_input, BackgroundControllerInput, background_controller_input)
     SETTING_FORWARD_BOOL(m_input, ImeAccessibilityEnabled, ime_accessibility_enabled)
     SETTING_FORWARD_BOOL(m_input, ImeUrlMailShortPanel, ime_url_mail_short_panel)
+    SETTING_FORWARD(m_input, ImeKeyboardLayout, ime_keyboard_layout)
     SETTING_FORWARD(m_input, DefaultControllerId, default_controller_id)
     SETTING_FORWARD_BOOL(m_input, UsingSpecialPad, use_special_pad)
     SETTING_FORWARD(m_input, SpecialPadClass, special_pad_class)

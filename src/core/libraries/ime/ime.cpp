@@ -179,6 +179,12 @@ bool HasInvalidWorkOverlap(const OrbisImeParam* param) {
 
 } // namespace
 
+OrbisImeLanguage GetImeInputLanguages(OrbisImeLanguage supported_languages) {
+    return static_cast<u64>(supported_languages) != 0
+               ? supported_languages
+               : static_cast<OrbisImeLanguage>(GetImeLanguageMask() & kValidOrbisImeLanguageMask);
+}
+
 class ImeHandler {
 public:
     ImeHandler(const OrbisImeParam* param, const OrbisImeParamExtended* extended = nullptr) {
@@ -438,18 +444,73 @@ int PS4_SYSV_ABI InitializeImeModule() {
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceImeCheckFilterText() {
-    LOG_ERROR(Lib_Ime, "(STUBBED) called");
+int PS4_SYSV_ABI sceImeCheckFilterText(char16_t* text, bool repair) {
+    if (!text) {
+        return -3;
+    }
+    constexpr u32 filter_text_limit = 152;
+    u32 length = 0;
+    while (length < filter_text_limit && text[length]) {
+        ++length;
+    }
+    if (length == filter_text_limit) {
+        if (!repair) {
+            return -2;
+        }
+        text[filter_text_limit] = 0;
+    }
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceImeCheckRemoteEventParam() {
-    LOG_ERROR(Lib_Ime, "(STUBBED) called");
+int PS4_SYSV_ABI sceImeCheckRemoteEventParam(OrbisImeEvent* event, bool repair) {
+    if (!event) {
+        return -3;
+    }
+    if (event->id == OrbisImeEventId::UpdateText) {
+        return sceImeCheckUpdateTextInfo(&event->param.text, repair);
+    }
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceImeCheckUpdateTextInfo() {
-    LOG_ERROR(Lib_Ime, "(STUBBED) called");
+int PS4_SYSV_ABI sceImeCheckUpdateTextInfo(OrbisImeEditText* text, bool repair) {
+    if (!text) {
+        return -3;
+    }
+    u32 length = 0;
+    if (text->str) {
+        while (length < ORBIS_IME_MAX_TEXT_LENGTH && text->str[length]) {
+            ++length;
+        }
+    }
+    auto checked = *text;
+    checked.area_num = std::min<u32>(checked.area_num, std::size(checked.text_area));
+    bool changed = false;
+    for (u32 i = 0; i < checked.area_num; ++i) {
+        auto& area = checked.text_area[i];
+        if (area.mode != OrbisImeTextAreaMode::Preedit &&
+            area.mode != OrbisImeTextAreaMode::Select) {
+            continue;
+        }
+        if (area.index > length || area.length < 0 ||
+            static_cast<u32>(area.length) > length - area.index) {
+            if (!repair) {
+                return -3;
+            }
+            area.index = 0;
+            area.length = 0;
+            changed = true;
+        }
+    }
+    if (checked.caret_index > length) {
+        if (!repair) {
+            return -3;
+        }
+        checked.caret_index = length;
+        changed = true;
+    }
+    if (repair && changed) {
+        *text = checked;
+    }
     return ORBIS_OK;
 }
 
@@ -487,9 +548,9 @@ int PS4_SYSV_ABI sceImeConfigSet() {
 }
 
 int PS4_SYSV_ABI sceImeConfirmCandidate(s32 index) {
-    (void)index;
-    LOG_ERROR(Lib_Ime, "(STUBBED) called");
-    return ORBIS_OK;
+    std::scoped_lock api_lock(g_ime_api_mutex);
+    LOG_TRACE(Lib_Ime, "index={}", index);
+    return static_cast<int>(g_ime_handler ? Error::INVALID_PARAM : Error::NOT_OPENED);
 }
 
 int PS4_SYSV_ABI sceImeDicAddWord() {
@@ -871,9 +932,9 @@ void PS4_SYSV_ABI sceImeParamInit(OrbisImeParam* param) {
 }
 
 int PS4_SYSV_ABI sceImeSetCandidateIndex(s32 index) {
-    (void)index;
-    LOG_ERROR(Lib_Ime, "(STUBBED) called");
-    return ORBIS_OK;
+    std::scoped_lock api_lock(g_ime_api_mutex);
+    LOG_TRACE(Lib_Ime, "index={}", index);
+    return static_cast<int>(g_ime_handler ? Error::INVALID_PARAM : Error::NOT_OPENED);
 }
 
 Error PS4_SYSV_ABI sceImeSetCaret(const OrbisImeCaret* caret) {

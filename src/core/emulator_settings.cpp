@@ -591,6 +591,7 @@ bool EmulatorSettingsImpl::TransferSettings() {
         setFromToml(s.background_controller_input, input, "backgroundControllerInput");
         setFromToml(s.ime_accessibility_enabled, input, "imeAccessibilityEnabled");
         setFromToml(s.ime_url_mail_short_panel, input, "imeUrlMailShortPanel");
+        setFromToml(s.ime_keyboard_layout, input, "imeKeyboardLayout");
         setFromToml(s.usb_device_backend, input, "usbDeviceBackend");
     }
 

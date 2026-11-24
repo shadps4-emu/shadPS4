@@ -50,6 +50,7 @@ class ImeDialogState final {
     bool fixed_position{};
     OrbisImeType type{};
     OrbisImeLanguage supported_languages{};
+    OrbisImeLanguage input_languages{};
     OrbisImeEnterLabel enter_label{};
     OrbisImeTextFilter text_filter{};
     OrbisImeExtKeyboardFilter keyboard_filter{};
@@ -167,7 +168,7 @@ class ImeDialogUi final : public ImGui::Layer {
     Libraries::Ime::ImeKbLayoutSelection kb_layout_selection{};
     Libraries::Ime::ImeKbLayoutSelection last_nav_layout_selection{};
     bool nav_layout_selection_initialized = false;
-    Libraries::Ime::ImeKbLayoutFamily kb_alpha_family = Libraries::Ime::ImeKbLayoutFamily::Latin;
+    Libraries::Ime::ImeKbLayoutFamily kb_alpha_family = Libraries::Ime::ImeKbLayoutFamily::Alphabet;
     std::recursive_mutex draw_mutex;
 
 public:

@@ -28,6 +28,7 @@ class ImeState {
     void* work_buffer{};
     char16_t* text_buffer{};
     u32 max_text_length = 0;
+    OrbisImeLanguage input_languages{};
 
     // A character can hold up to 4 bytes in UTF-8
     Common::CString<ORBIS_IME_MAX_TEXT_LENGTH * 4 + 1> current_text;
@@ -160,7 +161,7 @@ class ImeUi : public ImGui::Layer {
     ImeKbLayoutSelection kb_layout_selection{};
     ImeKbLayoutSelection last_nav_layout_selection{};
     bool nav_layout_selection_initialized = false;
-    ImeKbLayoutFamily kb_alpha_family = ImeKbLayoutFamily::Latin;
+    ImeKbLayoutFamily kb_alpha_family = ImeKbLayoutFamily::Alphabet;
     std::recursive_mutex draw_mutex;
 
 public:

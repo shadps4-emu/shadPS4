@@ -22,14 +22,15 @@ enum class ImeFrontend : u8 {
 
 std::recursive_mutex& GetImeMutex();
 bool IsRegisteredImeUser(s32 user_id);
+OrbisImeLanguage GetImeInputLanguages(OrbisImeLanguage supported_languages);
 bool TryAcquireImeFrontend(ImeFrontend frontend);
 void ReleaseImeFrontend(ImeFrontend frontend);
 
 int PS4_SYSV_ABI FinalizeImeModule();
 int PS4_SYSV_ABI InitializeImeModule();
-int PS4_SYSV_ABI sceImeCheckFilterText();
-int PS4_SYSV_ABI sceImeCheckRemoteEventParam();
-int PS4_SYSV_ABI sceImeCheckUpdateTextInfo();
+int PS4_SYSV_ABI sceImeCheckFilterText(char16_t* text, bool repair);
+int PS4_SYSV_ABI sceImeCheckRemoteEventParam(OrbisImeEvent* event, bool repair);
+int PS4_SYSV_ABI sceImeCheckUpdateTextInfo(OrbisImeEditText* text, bool repair);
 Error PS4_SYSV_ABI sceImeClose();
 int PS4_SYSV_ABI sceImeConfigGet();
 int PS4_SYSV_ABI sceImeConfigSet();

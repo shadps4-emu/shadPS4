@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <array>
+#include <optional>
 #include <string>
 #include <imgui_internal.h>
 
@@ -24,7 +25,6 @@ struct VirtualPadSnapshot {
 };
 
 constexpr double kPanelEdgeWrapHoldDelaySec = 0.5;
-constexpr double kRepeatIntentWindowSec = 0.45;
 constexpr float kSelectorFadeOutDurationSec = 0.2f;
 constexpr float kSelectorPressPulseDurationSec = 0.2f;
 constexpr float kSelectorPressPulseExpandBorderFactor = 1.0f;
@@ -33,9 +33,19 @@ ImVec4 BrightenColor(ImU32 color, float delta);
 int Utf16CountFromUtf8Range(const char* text, const char* end = nullptr);
 int Utf8ByteIndexFromUtf16Index(const char* text, int utf16_index);
 int MoveImeCaretByLine(const char* text, int caret_utf16, int direction, int& preferred_column);
-bool IsImeCharacterAllowed(unsigned int character, OrbisImeType type);
-std::string BoundImeInsertion(const char* text, int max_utf16, bool multiline, bool numeric,
-                              OrbisImeType type = OrbisImeType::Default);
+bool IsImeCharacterAllowed(unsigned int character, OrbisImeType type,
+                           OrbisImeLanguage input_languages);
+std::string BoundImeInsertion(
+    const char* text, int max_utf16, bool multiline, bool numeric,
+    OrbisImeType type = OrbisImeType::Default, bool allow_tab = false,
+    OrbisImeLanguage input_languages = static_cast<OrbisImeLanguage>(kValidOrbisImeLanguageMask));
+struct ImeKbTextEdit {
+    int start;
+    int end;
+    std::string text;
+};
+std::optional<ImeKbTextEdit> GetImeJapaneseKeyEdit(const char* text, int start, int end,
+                                                   ImeKbKeyAction action);
 bool DrawImeInputText(const char* label, const char* hint, char* buffer, int capacity,
                       const ImVec2& size, ImGuiInputTextFlags flags,
                       ImGuiInputTextCallback callback, void* userdata, bool password,
@@ -177,7 +187,7 @@ OskShortcutActionResult EvaluateOskShortcutAction(bool allow_osk_shortcuts, bool
                                                   const OskPadInputFrame& panel_input,
                                                   const OskVirtualPadInputView& virtual_pad_input,
                                                   u32 prev_virtual_buttons,
-                                                  ImeKbLayoutFamily layout_family,
+                                                  const ImeKbLayoutSelection& selection,
                                                   OskShortcutRepeatState& repeat_state);
 
 void CycleKeyboardCaseState(ImeKbLayoutSelection& selection);
@@ -185,7 +195,7 @@ void ToggleKeyboardFamilyMode(ImeKbLayoutSelection& selection, ImeKbLayoutFamily
                               ImeKbLayoutFamily target_family);
 bool FocusKeyboardActionKeySelection(const ImeKbLayoutSelection& selection, ImeKbKeyAction action,
                                      int& out_row, int& out_col);
-void FlipKeyboardModePage(ImeKbLayoutSelection& selection, int direction);
+void CycleKeyboardSymbolPage(ImeKbLayoutSelection& selection);
 
 template <typename KeyboardDrawParams>
 inline void ApplyOskPanelNavToKeyboardParams(KeyboardDrawParams& kb_params,

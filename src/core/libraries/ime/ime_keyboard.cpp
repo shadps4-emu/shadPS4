@@ -514,11 +514,14 @@ int PS4_SYSV_ABI sceImeKeyboardSetMode(s32 user_id, u32 mode) {
     if (!keyboard_client) {
         return static_cast<int>(Error::NOT_OPENED);
     }
+    s32 sdk = 0;
+    Libraries::Kernel::sceKernelGetCompiledSdkVersion(&sdk);
+    const u32 allowed_mode = sdk < 0x02000000 ? 0x1fU : 0x7fU;
+    if ((mode & ~allowed_mode) != 0) {
+        return static_cast<int>(Error::INVALID_MODE);
+    }
     if (keyboard_client->user_id != user_id) {
         return static_cast<int>(Error::INVALID_USER_ID);
-    }
-    if ((mode & ~0x7fU) != 0) {
-        return static_cast<int>(Error::INVALID_MODE);
     }
     keyboard_client->mode = mode;
     return static_cast<int>(Error::OK);

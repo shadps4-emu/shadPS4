@@ -100,6 +100,13 @@ struct magic_enum::customize::enum_range<OrbisImeOption> {
 };
 const u32 kValidImeOptionMask = generate_full_mask<OrbisImeOption>();
 
+namespace Libraries::Ime::InternalOption {
+constexpr u32 EnableTab = 0x00000400;
+constexpr u32 DisableAlphabet = 0x00200000;
+constexpr u32 DisableSymbols = 0x00400000;
+constexpr u32 DisableSpace = 0x02000000;
+} // namespace Libraries::Ime::InternalOption
+
 enum class OrbisImeExtOption : u32 {
     DEFAULT = 0x00000000,
     SET_COLOR = 0x00000001,
@@ -165,6 +172,7 @@ enum class OrbisImeLanguage : u64 {
     VIETNAMESE = 0x0000000040000000,
     ROMANIAN = 0x0000000080000000,
     HUNGARIAN = 0x0000000100000000,
+    UKRAINIAN = 0x0000000200000000,
 };
 DECLARE_ENUM_FLAG_OPERATORS(OrbisImeLanguage);
 
@@ -280,6 +288,8 @@ enum class OrbisImeType : u32 {
     Url = 2,
     Mail = 3,
     Number = 4,
+    SocialName = 0x100,
+    FacebookPassword = 0x101,
 };
 
 enum class OrbisImeHorizontalAlignment : u32 {

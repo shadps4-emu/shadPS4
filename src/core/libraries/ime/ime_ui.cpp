@@ -49,6 +49,7 @@ ImeState::ImeState(const OrbisImeParam* param, const OrbisImeParamExtended* exte
     panel_layout = {OrbisImePanelType::Osk, param->posx, param->posy, param->horizontal_alignment,
                     param->vertical_alignment};
     sceImeGetPanelSize(param, &panel_layout.width, &panel_layout.height);
+    input_languages = GetImeInputLanguages(param->supported_languages);
     work_buffer = param->work;
     text_buffer = param->inputTextBuffer;
     // Respect both the absolute IME limit and the caller-provided limit
@@ -80,8 +81,8 @@ ImeState::ImeState(const OrbisImeParam* param, const OrbisImeParamExtended* exte
 
 ImeState::ImeState(ImeState&& other) noexcept
     : work_buffer(other.work_buffer), text_buffer(other.text_buffer),
-      max_text_length(other.max_text_length), current_text(std::move(other.current_text)),
-      reported_text(std::move(other.reported_text)),
+      max_text_length(other.max_text_length), input_languages(other.input_languages),
+      current_text(std::move(other.current_text)), reported_text(std::move(other.reported_text)),
       reported_caret_index(other.reported_caret_index), text_revision(other.text_revision),
       caret_revision(other.caret_revision), panel_layout(other.panel_layout),
       caret_geometry(other.caret_geometry), text_geometry(other.text_geometry),
@@ -101,6 +102,7 @@ ImeState& ImeState::operator=(ImeState&& other) noexcept {
         work_buffer = other.work_buffer;
         text_buffer = other.text_buffer;
         max_text_length = other.max_text_length;
+        input_languages = other.input_languages;
         current_text = std::move(other.current_text);
         reported_text = std::move(other.reported_text);
         reported_caret_index = other.reported_caret_index;
@@ -292,11 +294,12 @@ ImeUi::ImeUi(ImeState* state, const OrbisImeParam* param, const OrbisImeParamExt
         kb_layout_selection = ResolveInitialKbLayoutSelection(
             ext_option, panel_priority, param->supported_languages, param->type);
         kb_layout_selection.multiline = True(param->option & OrbisImeOption::MULTILINE);
+        kb_layout_selection.options = static_cast<u32>(param->option);
         last_nav_layout_selection = kb_layout_selection;
         nav_layout_selection_initialized = true;
-        kb_alpha_family = (kb_layout_selection.family == ImeKbLayoutFamily::Specials)
-                              ? ImeKbLayoutFamily::Specials
-                              : ImeKbLayoutFamily::Latin;
+        kb_alpha_family = (kb_layout_selection.family == ImeKbLayoutFamily::Alternate)
+                              ? ImeKbLayoutFamily::Alternate
+                              : ImeKbLayoutFamily::Alphabet;
         InitializeDefaultOskSelectionAnchor(kb_layout_selection, ext_option, pending_keyboard_row,
                                             pending_keyboard_col, last_keyboard_selected_row,
                                             last_keyboard_selected_col);
@@ -419,9 +422,9 @@ ImeUi& ImeUi::operator=(ImeUi&& other) {
     other.virtual_dpad_right_next_repeat_time = 0.0;
     other.virtual_dpad_up_next_repeat_time = 0.0;
     other.virtual_dpad_down_next_repeat_time = 0.0;
-    ResetImeEdgeWrapNav(other.panel_vertical_nav_state);
+    ResetImeEdgeWrapHold(other.panel_vertical_nav_state);
     other.nav_layout_selection_initialized = false;
-    other.kb_alpha_family = ImeKbLayoutFamily::Latin;
+    other.kb_alpha_family = ImeKbLayoutFamily::Alphabet;
     other.gamepad_input_capture_active = false;
 
     AddLayer(this);
@@ -731,9 +734,11 @@ void ImeUi::Draw() {
             (last_nav_layout_selection.family != kb_layout_selection.family ||
              last_nav_layout_selection.case_state != kb_layout_selection.case_state ||
              last_nav_layout_selection.page != kb_layout_selection.page ||
-             last_nav_layout_selection.language != kb_layout_selection.language);
+             last_nav_layout_selection.language != kb_layout_selection.language ||
+             last_nav_layout_selection.variant != kb_layout_selection.variant ||
+             last_nav_layout_selection.full_width != kb_layout_selection.full_width);
         if (nav_layout_changed) {
-            ResetImeEdgeWrapNav(panel_vertical_nav_state);
+            ResetImeEdgeWrapHold(panel_vertical_nav_state);
         }
         last_nav_layout_selection = kb_layout_selection;
         nav_layout_selection_initialized = true;
@@ -891,7 +896,7 @@ void ImeUi::Draw() {
                 const auto& first_element = top_elements[0];
                 set_top_selection(first_element.target, first_element.min_col);
             }
-            CommitImeEdgeWrapStep(panel_vertical_nav_state, wrap_dir_y, 0, nav_now);
+            ResetImeEdgeWrapHold(panel_vertical_nav_state);
             entered_top_from_keyboard = true;
         };
         if (!menu_modal && !text_select_mode && !pointer_navigation_active &&
@@ -909,8 +914,7 @@ void ImeUi::Draw() {
                 const bool wrap_repeat = nav_down_repeat;
                 if (!hold_before_wrap_to_top ||
                     !ShouldDelayImeEdgeWrap(panel_vertical_nav_state, wrap_dir_y, 0, wrap_repeat,
-                                            true, nav_now, kPanelEdgeWrapHoldDelaySec,
-                                            kRepeatIntentWindowSec)) {
+                                            true, nav_now, kPanelEdgeWrapHoldDelaySec)) {
                     move_keyboard_edge_to_top(wrap_dir_y, keyboard_col_before_panel_nav);
                 }
             }
@@ -1035,15 +1039,15 @@ void ImeUi::Draw() {
                             continue;
                         }
                         const bool repeat_hint = dir_x < 0 ? nav_left_repeat : nav_right_repeat;
-                        if (ShouldDelayImeEdgeWrap(
-                                panel_vertical_nav_state, 0, dir_x, repeat_hint, crossed_wrap,
-                                nav_now, kPanelEdgeWrapHoldDelaySec, kRepeatIntentWindowSec)) {
+                        if (ShouldDelayImeEdgeWrap(panel_vertical_nav_state, 0, dir_x, repeat_hint,
+                                                   crossed_wrap, nav_now,
+                                                   kPanelEdgeWrapHoldDelaySec)) {
                             return;
                         }
                         const auto& next_element =
                             top_elements[static_cast<std::size_t>(next_element_idx)];
                         set_top_selection(next_element.target, next_col);
-                        CommitImeEdgeWrapStep(panel_vertical_nav_state, 0, dir_x, nav_now);
+                        ResetImeEdgeWrapHold(panel_vertical_nav_state);
                         return;
                     }
                 }
@@ -1056,13 +1060,12 @@ void ImeUi::Draw() {
                     pending_keyboard_col = top_to_keyboard_col(col);
                     panel_selection = PanelSelectionTarget::Keyboard;
                     entered_keyboard_from_top = true;
-                    CommitImeEdgeWrapStep(panel_vertical_nav_state, dir_y, 0, nav_now);
+                    ResetImeEdgeWrapHold(panel_vertical_nav_state);
                     return;
                 }
                 if (dir_y < 0) {
                     if (ShouldDelayImeEdgeWrap(panel_vertical_nav_state, dir_y, 0, nav_up_repeat,
-                                               true, nav_now, kPanelEdgeWrapHoldDelaySec,
-                                               kRepeatIntentWindowSec)) {
+                                               true, nav_now, kPanelEdgeWrapHoldDelaySec)) {
                         return;
                     }
                     pending_keyboard_row = SelectionIndex::PanelToKeyboardRow(
@@ -1070,7 +1073,7 @@ void ImeUi::Draw() {
                     pending_keyboard_col = top_to_keyboard_col(col);
                     panel_selection = PanelSelectionTarget::Keyboard;
                     entered_keyboard_from_top = true;
-                    CommitImeEdgeWrapStep(panel_vertical_nav_state, dir_y, 0, nav_now);
+                    ResetImeEdgeWrapHold(panel_vertical_nav_state);
                     return;
                 }
             }
@@ -1165,9 +1168,11 @@ void ImeUi::Draw() {
             const int available_utf16 =
                 static_cast<int>(state->max_text_length) - (len_utf16 - removed_utf16);
 
-            const std::string insert_clamped =
-                BoundImeInsertion(insert_utf8, available_utf16, metrics_cfg.multiline,
-                                  ime_param->type == OrbisImeType::Number, ime_param->type);
+            const std::string insert_clamped = BoundImeInsertion(
+                insert_utf8, available_utf16, metrics_cfg.multiline,
+                ime_param->type == OrbisImeType::Number, ime_param->type,
+                (static_cast<u32>(ime_param->option) & InternalOption::EnableTab) != 0,
+                state->input_languages);
             if (insert_clamped.empty() && (removed_utf16 == 0 || (insert_utf8 && *insert_utf8))) {
                 return false;
             }
@@ -1240,8 +1245,6 @@ void ImeUi::Draw() {
             if (len <= 0) {
                 return false;
             }
-            // Matches libSceIme backend all-delete behavior (sceImeBackendAllDeleteConvertString):
-            // clear the whole editable string in one operation.
             return apply_text_edit(0, len, "");
         };
 
@@ -1276,7 +1279,6 @@ void ImeUi::Draw() {
         Libraries::Ime::ImeKbDrawParams kb_params{};
         kb_params.selection = kb_layout_selection;
         kb_params.layout_model = &selected_kb_layout;
-        kb_params.supported_languages = ime_param->supported_languages;
         kb_params.enter_label = ime_param->enter_label;
         kb_params.show_selection_highlight = (panel_selection == PanelSelectionTarget::Keyboard);
         kb_params.allow_nav_input = allow_osk_shortcuts && !menu_modal && !text_select_mode &&
@@ -1430,8 +1432,7 @@ void ImeUi::Draw() {
         const OskShortcutActionResult shortcut_action = EvaluateOskShortcutAction(
             allow_osk_shortcuts, menu_modal,
             kb_state.pressed_action == Libraries::Ime::ImeKbKeyAction::None, panel_input,
-            virtual_pad_input, prev_virtual_buttons, kb_layout_selection.family,
-            shortcut_repeat_state);
+            virtual_pad_input, prev_virtual_buttons, kb_layout_selection, shortcut_repeat_state);
         bool keyboard_action_from_hotkey = false;
         if (shortcut_action.clear_all) {
             (void)clear_all_text();
@@ -1441,7 +1442,27 @@ void ImeUi::Draw() {
         }
         switch (kb_state.pressed_action) {
         case Libraries::Ime::ImeKbKeyAction::Character:
-            consume_temporary_uppercase(insert_text_at_caret(kb_state.pressed_label));
+            consume_temporary_uppercase(insert_text_at_caret(kb_state.pressed_text));
+            break;
+        case Libraries::Ime::ImeKbKeyAction::Tab:
+            (void)insert_text_at_caret("\t");
+            break;
+        case Libraries::Ime::ImeKbKeyAction::FullWidth:
+            kb_layout_selection.full_width = !kb_layout_selection.full_width;
+            break;
+        case Libraries::Ime::ImeKbKeyAction::JapaneseVoicing:
+        case Libraries::Ime::ImeKbKeyAction::JapaneseSmall:
+        case Libraries::Ime::ImeKbKeyAction::JapanesePunctuation: {
+            const auto [start, end] = selection_utf16_range();
+            if (const auto edit = GetImeJapaneseKeyEdit(state->current_text.begin(), start, end,
+                                                        kb_state.pressed_action)) {
+                (void)apply_text_edit(edit->start, edit->end, edit->text.c_str());
+            }
+            break;
+        }
+        case Libraries::Ime::ImeKbKeyAction::Keyboard:
+            CycleImeKeyboardLanguage(kb_layout_selection, ime_param->supported_languages);
+            kb_alpha_family = ImeKbLayoutFamily::Alphabet;
             break;
         case Libraries::Ime::ImeKbKeyAction::Shift:
             CycleKeyboardCaseState(kb_layout_selection);
@@ -1450,11 +1471,11 @@ void ImeUi::Draw() {
             ToggleKeyboardFamilyMode(kb_layout_selection, kb_alpha_family,
                                      ImeKbLayoutFamily::Symbols);
             break;
-        case Libraries::Ime::ImeKbKeyAction::SpecialsMode:
+        case Libraries::Ime::ImeKbKeyAction::AlternateMode:
             ToggleKeyboardFamilyMode(kb_layout_selection, kb_alpha_family,
-                                     ImeKbLayoutFamily::Specials);
+                                     ImeKbLayoutFamily::Alternate);
             if (!keyboard_action_from_hotkey &&
-                FocusKeyboardActionKeySelection(kb_layout_selection, ImeKbKeyAction::SpecialsMode,
+                FocusKeyboardActionKeySelection(kb_layout_selection, ImeKbKeyAction::AlternateMode,
                                                 pending_keyboard_row, pending_keyboard_col)) {
                 last_keyboard_selected_row = pending_keyboard_row;
                 last_keyboard_selected_col = pending_keyboard_col;
@@ -1475,11 +1496,8 @@ void ImeUi::Draw() {
                              text_select_mode);
             break;
         }
-        case Libraries::Ime::ImeKbKeyAction::PagePrev:
-            FlipKeyboardModePage(kb_layout_selection, -1);
-            break;
         case Libraries::Ime::ImeKbKeyAction::PageNext:
-            FlipKeyboardModePage(kb_layout_selection, 1);
+            CycleKeyboardSymbolPage(kb_layout_selection);
             break;
         case Libraries::Ime::ImeKbKeyAction::Space:
             (void)insert_text_at_caret(" ");
@@ -1681,6 +1699,9 @@ bool ImeUi::DrawInputText(const ImePanelMetrics& metrics, bool pointer_selection
 
     ImGuiInputTextFlags flags =
         ImGuiInputTextFlags_CallbackAlways | ImGuiInputTextFlags_CallbackCharFilter;
+    if ((static_cast<u32>(ime_param->option) & InternalOption::EnableTab) != 0) {
+        flags |= ImGuiInputTextFlags_AllowTabInput;
+    }
     if (multiline) {
         flags |= ImGuiInputTextFlags_Multiline;
     }
@@ -1740,7 +1761,18 @@ int ImeUi::InputTextCallback(ImGuiInputTextCallbackData* data) {
         if (RejectInputCharByUtf16Limit(data, max_utf16)) {
             return 1;
         }
-        if (!IsImeCharacterAllowed(data->EventChar, ui->ime_param->type)) {
+        if (data->EventChar == '\t' &&
+            (static_cast<u32>(ui->ime_param->option) & InternalOption::EnableTab) != 0) {
+            return 0;
+        }
+        if (data->EventChar == '\n' || data->EventChar == '\r') {
+            return True(ui->ime_param->option & OrbisImeOption::MULTILINE) &&
+                           ui->ime_param->type != OrbisImeType::Number
+                       ? 0
+                       : 1;
+        }
+        if (!IsImeCharacterAllowed(data->EventChar, ui->ime_param->type,
+                                   ui->state->input_languages)) {
             return 1;
         }
         if (ui->ime_param->type == OrbisImeType::Number &&

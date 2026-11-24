@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "core/libraries/ime/ime_japanese_charset.h"
 #include "core/libraries/ime/ime_ui_shared.h"
 
 #include <cmath>
@@ -228,30 +229,37 @@ ImeKbLayoutSelection ResolveInitialKbLayoutSelection(OrbisImeExtOption ext_optio
     ImeKbLayoutSelection selection{};
     selection.language =
         ResolveImeKeyboardLanguage(supported_languages, EmulatorSettings.GetConsoleLanguage());
+    selection.variant =
+        GetImeKeyboardLanguageProfile(selection.language, EmulatorSettings.GetImeKeyboardLayout())
+            .variant;
+    selection.input_type = type;
+    selection.ext_options = ext_option;
+    selection.multiple_languages = HasMultipleImeKeyboardLanguages(supported_languages);
     if (type == OrbisImeType::Number) {
         selection.family = ImeKbLayoutFamily::Numeric;
         return selection;
     }
     const bool set_priority = True(ext_option & OrbisImeExtOption::SET_PRIORITY);
+    selection.full_width =
+        set_priority && True(ext_option & OrbisImeExtOption::PRIORITY_FULL_WIDTH);
     if (set_priority) {
         switch (panel_priority) {
         case OrbisImePanelPriority::Symbol:
             selection.family = ImeKbLayoutFamily::Symbols;
             break;
         case OrbisImePanelPriority::Accent:
-            selection.family = ImeKbLayoutFamily::Specials;
+            selection.family = ImeKbLayoutFamily::Alternate;
             break;
         case OrbisImePanelPriority::Alphabet:
         case OrbisImePanelPriority::Default:
         default:
-            selection.family = ImeKbLayoutFamily::Latin;
+            selection.family = ImeKbLayoutFamily::Alphabet;
             break;
         }
     }
 
     const bool shift_lock = set_priority && True(ext_option & OrbisImeExtOption::PRIORITY_SHIFT);
     if (shift_lock && selection.family != ImeKbLayoutFamily::Symbols) {
-        // SDK docs: PRIORITY_SHIFT starts the initial panel in Shift-lock state.
         selection.case_state = ImeKbCaseState::CapsLock;
     }
     return selection;
@@ -286,24 +294,25 @@ void InitializeDefaultOskSelectionAnchor(const ImeKbLayoutSelection& layout_sele
         pending_col = last_col = 0;
         return;
     }
-    constexpr int kLatinLowerDefaultRow = 2;
-    constexpr int kLatinLowerDefaultCol = 4;
+    constexpr int kAlphabetLowerDefaultRow = 2;
+    const int kAlphabetLowerDefaultCol = GetImeKeyboardLayout(layout_selection).cols * 4 / 10;
 
-    const bool is_default_latin_lower = layout_selection.family == ImeKbLayoutFamily::Latin &&
-                                        layout_selection.case_state == ImeKbCaseState::Lower;
+    const bool is_default_alphabet_lower = layout_selection.family == ImeKbLayoutFamily::Alphabet &&
+                                           layout_selection.case_state == ImeKbCaseState::Lower;
     const bool game_requested_other =
-        True(ext_option & OrbisImeExtOption::SET_PRIORITY) && !is_default_latin_lower;
-    if (!is_default_latin_lower || game_requested_other) {
+        True(ext_option & OrbisImeExtOption::SET_PRIORITY) && !is_default_alphabet_lower;
+    if (!is_default_alphabet_lower || game_requested_other) {
         return;
     }
 
     const auto& layout = GetImeKeyboardLayout(layout_selection);
     const int typing_rows =
         ImeSelectionGridIndex::ResolveTypingRows(layout.rows, layout.function_rows);
-    pending_row = std::min(kLatinLowerDefaultRow, typing_rows - 1);
-    pending_col = std::min(kLatinLowerDefaultCol, std::max(0, static_cast<int>(layout.cols) - 1));
-    last_row = kLatinLowerDefaultRow;
-    last_col = kLatinLowerDefaultCol;
+    pending_row = std::min(kAlphabetLowerDefaultRow, typing_rows - 1);
+    pending_col =
+        std::min(kAlphabetLowerDefaultCol, std::max(0, static_cast<int>(layout.cols) - 1));
+    last_row = kAlphabetLowerDefaultRow;
+    last_col = kAlphabetLowerDefaultCol;
 }
 
 void CycleKeyboardCaseState(ImeKbLayoutSelection& selection) {
@@ -326,7 +335,7 @@ void ToggleKeyboardFamilyMode(ImeKbLayoutSelection& selection, ImeKbLayoutFamily
     const auto set_family_and_reset_page = [&](const ImeKbLayoutFamily family) {
         selection.family = family;
         selection.page = 0;
-        if (family == ImeKbLayoutFamily::Latin || family == ImeKbLayoutFamily::Specials) {
+        if (family == ImeKbLayoutFamily::Alphabet || family == ImeKbLayoutFamily::Alternate) {
             alpha_family = family;
         }
     };
@@ -335,8 +344,8 @@ void ToggleKeyboardFamilyMode(ImeKbLayoutSelection& selection, ImeKbLayoutFamily
         if (selection.family == ImeKbLayoutFamily::Symbols) {
             set_family_and_reset_page(alpha_family);
         } else {
-            if (selection.family == ImeKbLayoutFamily::Latin ||
-                selection.family == ImeKbLayoutFamily::Specials) {
+            if (selection.family == ImeKbLayoutFamily::Alphabet ||
+                selection.family == ImeKbLayoutFamily::Alternate) {
                 alpha_family = selection.family;
             }
             set_family_and_reset_page(ImeKbLayoutFamily::Symbols);
@@ -345,7 +354,7 @@ void ToggleKeyboardFamilyMode(ImeKbLayoutSelection& selection, ImeKbLayoutFamily
     }
 
     if (selection.family == target_family) {
-        set_family_and_reset_page(ImeKbLayoutFamily::Latin);
+        set_family_and_reset_page(ImeKbLayoutFamily::Alphabet);
     } else {
         set_family_and_reset_page(target_family);
     }
@@ -370,18 +379,10 @@ bool FocusKeyboardActionKeySelection(const ImeKbLayoutSelection& selection, ImeK
     return false;
 }
 
-void FlipKeyboardModePage(ImeKbLayoutSelection& selection, int direction) {
-    if (selection.family != ImeKbLayoutFamily::Symbols &&
-        selection.family != ImeKbLayoutFamily::Specials) {
-        return;
+void CycleKeyboardSymbolPage(ImeKbLayoutSelection& selection) {
+    if (selection.family == ImeKbLayoutFamily::Symbols) {
+        selection.page = selection.page == 0 ? 1 : 0;
     }
-    const int page = static_cast<int>(selection.page);
-    const auto& profile = GetImeKeyboardLanguageProfile(selection.language);
-    const int page_count =
-        std::max(1, static_cast<int>(selection.family == ImeKbLayoutFamily::Symbols
-                                         ? profile.symbol_pages
-                                         : profile.special_pages));
-    selection.page = static_cast<u8>(((page + direction) % page_count + page_count) % page_count);
 }
 
 int Utf16CountFromUtf8Range(const char* text, const char* end) {
@@ -465,18 +466,88 @@ int MoveImeCaretByLine(const char* text, int caret_utf16, int direction, int& pr
     return Utf16CountFromUtf8Range(text, text + target_start) + column;
 }
 
-bool IsImeCharacterAllowed(unsigned int character, OrbisImeType type) {
-    if (character > 0xffff || (character >= 0xd800 && character <= 0xdfff)) {
+bool IsImeCharacterAllowed(unsigned int character, OrbisImeType type,
+                           OrbisImeLanguage input_languages) {
+    if (character < 0x20 || (character >= 0x7f && character < 0xa0) || character > 0xffff ||
+        (character >= 0xd800 && character <= 0xdfff)) {
         return false;
     }
     if (type == OrbisImeType::Number) {
         return (character >= '0' && character <= '9') || character == '.' || character == ',' ||
                character == '-';
     }
-    if (type == OrbisImeType::BasicLatin || type == OrbisImeType::Mail) {
+    if (type == OrbisImeType::BasicLatin || type == OrbisImeType::Url ||
+        type == OrbisImeType::Mail) {
         return character >= 0x20 && character < 0x7f;
     }
-    return true;
+    const auto has = [&](OrbisImeLanguage language) { return True(input_languages & language); };
+    const auto in_range = [&](unsigned int first, unsigned int last) {
+        return character >= first && character <= last;
+    };
+    const auto vietnamese = [&] {
+        return in_range(0x0300, 0x0323) || in_range(0x1e00, 0x1eff) ||
+               std::u16string_view(u"ƠơƯư₫").find(static_cast<char16_t>(character)) !=
+                   std::u16string_view::npos;
+    };
+    const bool latin_extended =
+        True(input_languages &
+             static_cast<OrbisImeLanguage>(
+                 kValidOrbisImeLanguageMask &
+                 ~static_cast<u64>(OrbisImeLanguage::RUSSIAN | OrbisImeLanguage::JAPANESE |
+                                   OrbisImeLanguage::KOREAN | OrbisImeLanguage::SIMPLIFIED_CHINESE |
+                                   OrbisImeLanguage::TRADITIONAL_CHINESE |
+                                   OrbisImeLanguage::ARABIC | OrbisImeLanguage::THAI |
+                                   OrbisImeLanguage::GREEK | OrbisImeLanguage::UKRAINIAN)));
+    if (in_range(0x20, latin_extended || type == OrbisImeType::SocialName ? 0x017e : 0x007e) ||
+        (type != OrbisImeType::SocialName &&
+         (std::u16string_view(u"¡¿´‘’‚“”„‹›°«»ªº×÷¤¢€£¥₩§¦µ¬·¹²³¼½¾№")
+              .find(static_cast<char16_t>(character)) != std::u16string_view::npos))) {
+        return true;
+    }
+    if (has(OrbisImeLanguage::VIETNAMESE) && vietnamese()) {
+        return true;
+    }
+    if (has(OrbisImeLanguage::ROMANIAN) && in_range(0x0218, 0x021b)) {
+        return true;
+    }
+    if (type == OrbisImeType::SocialName) {
+        return false;
+    }
+    if (has(OrbisImeLanguage::JAPANESE) &&
+        (kImeJapaneseCharacterBits[kImeJapaneseCharacterPages[character >> 8]]
+                                  [(character & 0xff) >> 6] &
+         (1ULL << (character & 63))) != 0) {
+        return true;
+    }
+    if (True(input_languages &
+             (OrbisImeLanguage::SIMPLIFIED_CHINESE | OrbisImeLanguage::TRADITIONAL_CHINESE)) &&
+        character >= 0x80) {
+        return true;
+    }
+    if (has(OrbisImeLanguage::KOREAN) &&
+        (in_range(0x3130, 0x318f) || in_range(0xac00, 0xd7af) || in_range(0xff10, 0xff19) ||
+         std::u16string_view(
+             u"、。・ー「」！￥＃＄％＆（）＊＋，－．／：；＜＝＞？＠［＼］＾＿｀｛｜｝～")
+                 .find(static_cast<char16_t>(character)) != std::u16string_view::npos)) {
+        return true;
+    }
+    if (True(input_languages & (OrbisImeLanguage::RUSSIAN | OrbisImeLanguage::UKRAINIAN)) &&
+        in_range(0x0400, 0x04ff)) {
+        return true;
+    }
+    if (has(OrbisImeLanguage::ARABIC) && (in_range(0x0600, 0x06ff) || in_range(0x200c, 0x200f))) {
+        return true;
+    }
+    if (has(OrbisImeLanguage::THAI) && in_range(0x0e00, 0x0e7f)) {
+        return true;
+    }
+    if (has(OrbisImeLanguage::GREEK) && (in_range(0x0370, 0x03e1) || in_range(0x03f0, 0x03ff))) {
+        return true;
+    }
+    return True(input_languages & (OrbisImeLanguage::CZECH | OrbisImeLanguage::ROMANIAN |
+                                   OrbisImeLanguage::HUNGARIAN)) &&
+           std::u16string_view(u"ˇ˘˙˛˝").find(static_cast<char16_t>(character)) !=
+               std::u16string_view::npos;
 }
 
 bool DrawImeInputText(const char* label, const char* hint, char* buffer, int capacity,
@@ -512,8 +583,72 @@ bool DrawImeInputText(const char* label, const char* hint, char* buffer, int cap
     return ImGui::InputTextEx(label, hint, buffer, capacity, size, flags, callback, userdata);
 }
 
+std::optional<ImeKbTextEdit> GetImeJapaneseKeyEdit(const char* text, int start, int end,
+                                                   ImeKbKeyAction action) {
+    if (action != ImeKbKeyAction::JapaneseVoicing && action != ImeKbKeyAction::JapaneseSmall &&
+        action != ImeKbKeyAction::JapanesePunctuation) {
+        return std::nullopt;
+    }
+    constexpr std::array<std::u16string_view, 24> small = {
+        u"あぁ", u"いぃ", u"うぅ", u"えぇ", u"おぉ", u"つっ", u"やゃ", u"ゆゅ",
+        u"よょ", u"わゎ", u"かゕ", u"けゖ", u"アァ", u"イィ", u"ウゥ", u"エェ",
+        u"オォ", u"ツッ", u"ヤャ", u"ユュ", u"ヨョ", u"ワヮ", u"カヵ", u"ケヶ",
+    };
+    constexpr std::array<std::u16string_view, 48> voiced = {
+        u"かが",   u"きぎ",   u"くぐ",   u"けげ",   u"こご", u"さざ",   u"しじ",   u"すず",
+        u"せぜ",   u"そぞ",   u"ただ",   u"ちぢ",   u"つづ", u"てで",   u"とど",   u"はばぱ",
+        u"ひびぴ", u"ふぶぷ", u"へべぺ", u"ほぼぽ", u"うゔ", u"ゝゞ",   u"カガ",   u"キギ",
+        u"クグ",   u"ケゲ",   u"コゴ",   u"サザ",   u"シジ", u"スズ",   u"セゼ",   u"ソゾ",
+        u"タダ",   u"チヂ",   u"ツヅ",   u"テデ",   u"トド", u"ハバパ", u"ヒビピ", u"フブプ",
+        u"ヘベペ", u"ホボポ", u"ウヴ",   u"ワヷ",   u"ヰヸ", u"ヱヹ",   u"ヲヺ",   u"ヽヾ",
+    };
+    const int length = text ? Utf16CountFromUtf8Range(text, text + std::strlen(text)) : 0;
+    start = std::clamp(start, 0, length);
+    end = std::clamp(end, start, length);
+    const int previous = start == end ? start - 1 : start;
+    unsigned int character = 0;
+    if (previous >= 0 && (start == end || end == start + 1)) {
+        ImTextCharFromUtf8(&character, text + Utf8ByteIndexFromUtf16Index(text, previous), nullptr);
+        if (character > 0xffff) {
+            character = 0;
+        }
+    }
+    char16_t replacement = 0;
+    const auto cycle = [&](std::u16string_view group) {
+        const auto index = group.find(static_cast<char16_t>(character));
+        if (index != std::u16string_view::npos) {
+            replacement = group[(index + 1) % group.size()];
+        }
+    };
+    if (action == ImeKbKeyAction::JapanesePunctuation) {
+        cycle(u"、。？！");
+        if (!replacement) {
+            replacement = u'、';
+        } else {
+            start = previous;
+        }
+    } else {
+        const auto groups = action == ImeKbKeyAction::JapaneseSmall
+                                ? std::span<const std::u16string_view>(small)
+                                : std::span<const std::u16string_view>(voiced);
+        for (const auto group : groups) {
+            cycle(group);
+            if (replacement) {
+                start = previous;
+                break;
+            }
+        }
+    }
+    if (!replacement) {
+        return std::nullopt;
+    }
+    char buffer[5]{};
+    ImTextCharToUtf8(buffer, replacement);
+    return ImeKbTextEdit{start, end, buffer};
+}
+
 std::string BoundImeInsertion(const char* text, int max_utf16, bool multiline, bool numeric,
-                              OrbisImeType type) {
+                              OrbisImeType type, bool allow_tab, OrbisImeLanguage input_languages) {
     std::string result;
     if (!text) {
         return result;
@@ -526,6 +661,11 @@ std::string BoundImeInsertion(const char* text, int max_utf16, bool multiline, b
         }
         const char* start = p;
         p += bytes;
+        if (codepoint == '\t' && allow_tab) {
+            result.push_back('\t');
+            --max_utf16;
+            continue;
+        }
         if (numeric && (codepoint < '0' || codepoint > '9') && codepoint != '.' &&
             codepoint != ',' && codepoint != '-') {
             continue;
@@ -540,7 +680,8 @@ std::string BoundImeInsertion(const char* text, int max_utf16, bool multiline, b
             }
             continue;
         }
-        if (codepoint < ' ' || codepoint == 0x7f || !IsImeCharacterAllowed(codepoint, type)) {
+        if (codepoint < ' ' || codepoint == 0x7f ||
+            !IsImeCharacterAllowed(codepoint, type, input_languages)) {
             continue;
         }
         const int units = codepoint > 0xffff ? 2 : 1;
@@ -1092,7 +1233,7 @@ OskShortcutActionResult EvaluateOskShortcutAction(bool allow_osk_shortcuts, bool
                                                   const OskPadInputFrame& panel_input,
                                                   const OskVirtualPadInputView& virtual_pad_input,
                                                   u32 prev_virtual_buttons,
-                                                  ImeKbLayoutFamily layout_family,
+                                                  const ImeKbLayoutSelection& selection,
                                                   OskShortcutRepeatState& repeat_state) {
     OskShortcutActionResult result{};
     if (!(allow_osk_shortcuts && !menu_modal)) {
@@ -1145,16 +1286,16 @@ OskShortcutActionResult EvaluateOskShortcutAction(bool allow_osk_shortcuts, bool
         repeat_state.triangle_next_repeat_time);
     const bool tri_space_pressed = tri_pressed && !l2_down;
 
-    const bool numeric = layout_family == ImeKbLayoutFamily::Numeric;
+    const bool numeric = selection.family == ImeKbLayoutFamily::Numeric;
     const bool symbols_shortcut_pressed =
         !numeric && ((l2_down && tri_edge_pressed) || (tri_down && l2_pressed));
     if (symbols_shortcut_pressed) {
         result.action = ImeKbKeyAction::SymbolsMode;
     } else if (!numeric && tri_space_pressed) {
         result.action = ImeKbKeyAction::Space;
-    } else if (!numeric && layout_family != ImeKbLayoutFamily::Symbols &&
+    } else if (!numeric && selection.family != ImeKbLayoutFamily::Symbols &&
                virtual_pad_input.Pressed(Libraries::Pad::OrbisPadButtonDataOffset::L3)) {
-        result.action = ImeKbKeyAction::SpecialsMode;
+        result.action = ImeKbKeyAction::AlternateMode;
     } else if (virtual_pad_input.Pressed(Libraries::Pad::OrbisPadButtonDataOffset::R2)) {
         result.action = ImeKbKeyAction::Done;
     } else if (clear_all_shortcut_pressed) {
@@ -1168,8 +1309,16 @@ OskShortcutActionResult EvaluateOskShortcutAction(bool allow_osk_shortcuts, bool
     } else if (!numeric &&
                virtual_pad_input.Pressed(Libraries::Pad::OrbisPadButtonDataOffset::R3)) {
         result.action = ImeKbKeyAction::Settings;
-    } else if (!numeric && layout_family != ImeKbLayoutFamily::Symbols && l2_pressed) {
+    } else if (!numeric && selection.family != ImeKbLayoutFamily::Symbols && l2_pressed) {
         result.action = ImeKbKeyAction::Shift;
+    }
+    if (result.action != ImeKbKeyAction::None) {
+        const auto& model = GetImeKeyboardLayout(selection);
+        const std::span keys(model.keys, model.key_count);
+        if (std::ranges::none_of(keys,
+                                 [&](const auto& key) { return key.action == result.action; })) {
+            result.action = ImeKbKeyAction::None;
+        }
     }
     return result;
 }

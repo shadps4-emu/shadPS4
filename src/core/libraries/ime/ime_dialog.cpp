@@ -49,10 +49,10 @@ static Error SetupDialogState(OrbisImeDialogParam* param, OrbisImeParamExtended*
                               bool internal);
 static bool IsValidDialogUserId(s32 user_id, bool internal);
 static Error ComputeImeDialogPanelSize(const OrbisImeDialogParam* param, u32* width, u32* height,
-                                       bool log);
+                                       bool log, bool internal = false);
 static Error ComputeImeDialogPanelSizeExtended(const OrbisImeDialogParam* param,
                                                const OrbisImeParamExtended* extended, u32* width,
-                                               u32* height, bool log);
+                                               u32* height, bool log, bool internal = false);
 
 struct ImeDialogClientStub {
     bool connected = false;
@@ -676,11 +676,10 @@ int PS4_SYSV_ABI sceImeDialogGetPanelPositionAndForm(OrbisImePositionAndForm* po
                                     static_cast<u32>(OrbisImeOption::USE_OVER_2K_COORDINATES));
     u32 width = 0;
     u32 height = 0;
-    if (g_ime_dlg_has_extended) {
-        (void)ComputeImeDialogPanelSizeExtended(&size_param, &g_ime_dlg_extended, &width, &height,
-                                                false);
-    } else {
-        (void)ComputeImeDialogPanelSize(&size_param, &width, &height, false);
+    const auto size_error = GetImeDialogPanelSize(
+        &size_param, g_ime_dlg_has_extended ? &g_ime_dlg_extended : nullptr, &width, &height);
+    if (size_error != Error::OK) {
+        return static_cast<int>(size_error);
     }
 
     if (!UseOver2kCoordinates(g_ime_dlg_param)) {
@@ -698,6 +697,12 @@ int PS4_SYSV_ABI sceImeDialogGetPanelPositionAndForm(OrbisImePositionAndForm* po
     return static_cast<int>(Error::OK);
 }
 
+Error GetImeDialogPanelSize(const OrbisImeDialogParam* param, const OrbisImeParamExtended* extended,
+                            u32* width, u32* height) {
+    return extended ? ComputeImeDialogPanelSizeExtended(param, extended, width, height, false, true)
+                    : ComputeImeDialogPanelSize(param, width, height, false, true);
+}
+
 Error PS4_SYSV_ABI sceImeDialogGetPanelSize(const OrbisImeDialogParam* param, u32* width,
                                             u32* height) {
     std::scoped_lock api_lock(GetDialogMutex());
@@ -705,7 +710,7 @@ Error PS4_SYSV_ABI sceImeDialogGetPanelSize(const OrbisImeDialogParam* param, u3
 }
 
 static Error ComputeImeDialogPanelSize(const OrbisImeDialogParam* param, u32* width, u32* height,
-                                       bool log) {
+                                       bool log, bool internal) {
     if (log) {
         LOG_INFO(Lib_ImeDialog, "called");
     }
@@ -716,7 +721,9 @@ static Error ComputeImeDialogPanelSize(const OrbisImeDialogParam* param, u32* wi
     if (!width || !height) {
         return Error::INVALID_ADDRESS;
     }
-    if (static_cast<u32>(param->type) > static_cast<u32>(OrbisImeType::Number)) {
+    if (static_cast<u32>(param->type) > static_cast<u32>(OrbisImeType::Number) &&
+        (!internal || (param->type != OrbisImeType::SocialName &&
+                       param->type != OrbisImeType::FacebookPassword))) {
         LOG_ERROR(Lib_ImeDialog, "Unknown OrbisImeType: {}", static_cast<u32>(param->type));
         return Error::INVALID_TYPE;
     }
@@ -790,12 +797,14 @@ Error PS4_SYSV_ABI sceImeDialogGetPanelSizeExtended(const OrbisImeDialogParam* p
 
 static Error ComputeImeDialogPanelSizeExtended(const OrbisImeDialogParam* param,
                                                const OrbisImeParamExtended* extended, u32* width,
-                                               u32* height, bool log) {
+                                               u32* height, bool log, bool internal) {
     if (!param || !width || !height) {
         return Error::INVALID_ADDRESS;
     }
 
-    if (static_cast<u32>(param->type) > static_cast<u32>(OrbisImeType::Number)) {
+    if (static_cast<u32>(param->type) > static_cast<u32>(OrbisImeType::Number) &&
+        (!internal || (param->type != OrbisImeType::SocialName &&
+                       param->type != OrbisImeType::FacebookPassword))) {
         return Error::INVALID_TYPE;
     }
     u32 option = static_cast<u32>(param->option);
@@ -817,7 +826,7 @@ static Error ComputeImeDialogPanelSizeExtended(const OrbisImeDialogParam* param,
     }
 
     if (!extended) {
-        return sceImeDialogGetPanelSize(param, width, height);
+        return ComputeImeDialogPanelSize(param, width, height, log, internal);
     }
 
     const u32 sdk = GetCompiledSdkVersion();
@@ -833,7 +842,6 @@ static Error ComputeImeDialogPanelSizeExtended(const OrbisImeDialogParam* param,
         if ((ext_opt & static_cast<u32>(OrbisImeExtOption::ACCESSIBILITY_PANEL_FORCED)) != 0) {
             accessibility = true;
         } else {
-            // Emulate system accessibility setting (LLE FUN_01005a50 path).
             accessibility = EmulatorSettings.IsImeAccessibilityEnabled();
         }
     }
@@ -861,12 +869,9 @@ static Error ComputeImeDialogPanelSizeExtended(const OrbisImeDialogParam* param,
     const bool multiline = (option & 1U) != 0;
 
     auto use_short_url_mail_height = [&](u32 ime_type) {
-        // LLE: (SVar1 & ~BASIC_LATIN) == (URL | bVar15), with bVar15 default true.
-        // When bVar15 is true, this condition is false for Url/Mail; false enables short heights.
-        const bool bVar15 = !EmulatorSettings.IsImeUrlMailShortPanel();
-        const u32 masked_type = ime_type & ~static_cast<u32>(OrbisImeType::BasicLatin);
-        const u32 url_or_mail = static_cast<u32>(OrbisImeType::Url) | (bVar15 ? 1U : 0U);
-        return masked_type == url_or_mail;
+        return EmulatorSettings.IsImeUrlMailShortPanel() &&
+               (ime_type == static_cast<u32>(OrbisImeType::Url) ||
+                ime_type == static_cast<u32>(OrbisImeType::Mail));
     };
 
     if (type == static_cast<u32>(OrbisImeType::Number)) {

@@ -11,17 +11,45 @@
 
 namespace Libraries::Ime {
 
-struct ImeKbLayoutModel;
 struct ImeKbLayoutSelection;
-struct ImeTopPanelLayoutConfig;
 
-enum class ImeKbCurrencyProfile : u8 {
-    Euro = 0,
-    Dollar = 1,
-    Pound = 2,
-    Yen = 3,
-    Won = 4,
-    Automatic = 5,
+enum class ImeKbVariant : u8 {
+    Automatic,
+    English_US,
+    English_GB,
+    Polish,
+    Spanish,
+    German,
+    SpanishLatinAmerica,
+    Dutch,
+    Danish,
+    Russian,
+    Swedish,
+    Finnish,
+    French_CA,
+    French,
+    Italian,
+    Norwegian,
+    Portuguese_PT,
+    Portuguese_BR,
+    Turkish,
+    Japanese,
+    Japanese_Gojuon,
+    Korean,
+    Chinese_CN,
+    Chinese_HK,
+    Chinese_TW,
+    Chinese_TW_Zhuyin,
+    Chinese_TW_Cangjie,
+    Arabic,
+    Thai,
+    Czech,
+    Greek,
+    Hungarian,
+    Indonesian,
+    Romanian,
+    Vietnamese,
+    Ukrainian,
 };
 
 struct ImeKbLabels {
@@ -32,6 +60,8 @@ struct ImeKbLabels {
     std::array<const char*, 4> enter_labels;
     std::array<const char*, 3> main_menu_items;
     std::array<const char*, 2> action_menu_items;
+    std::array<const char*, 2> width_labels;
+    std::array<const char*, 3> script_action_labels;
 };
 
 struct ImeKbLanguageProfile {
@@ -39,18 +69,20 @@ struct ImeKbLanguageProfile {
     int console_language = 1;
     const ImeKbLabels* labels = nullptr;
     std::u16string_view preferred_characters{};
-    ImeKbCurrencyProfile currency = ImeKbCurrencyProfile::Automatic;
-    u8 symbol_pages = 2;
-    u8 special_pages = 2;
-    // Return nullptr for modes that use the shared default tables.
-    const ImeKbLayoutModel* (*layout_provider)(const ImeKbLayoutSelection&) = nullptr;
-    const ImeTopPanelLayoutConfig* top_panel_layout = nullptr;
+    ImeKbVariant variant = ImeKbVariant::Automatic;
+    const char* name = "English (US)";
 
     const ImeKbLabels& GetLabels() const;
 };
 
 std::span<const ImeKbLanguageProfile> GetImeKeyboardLanguageProfiles();
-const ImeKbLanguageProfile& GetImeKeyboardLanguageProfile(OrbisImeLanguage language);
+const ImeKbLanguageProfile& GetImeKeyboardLanguageProfile(
+    OrbisImeLanguage language, ImeKbVariant variant = ImeKbVariant::Automatic);
+const ImeKbLanguageProfile& GetImeKeyboardLanguageProfile(OrbisImeLanguage language,
+                                                          std::string_view preferred_layout);
+bool HasMultipleImeKeyboardLanguages(OrbisImeLanguage supported_languages);
+void CycleImeKeyboardLanguage(ImeKbLayoutSelection& selection,
+                              OrbisImeLanguage supported_languages);
 OrbisImeLanguage ResolveImeKeyboardLanguage(OrbisImeLanguage supported_languages,
                                             int console_language);
 
