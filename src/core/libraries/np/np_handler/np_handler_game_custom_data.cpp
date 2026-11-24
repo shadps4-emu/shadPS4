@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
-#include <cstring>
 #include <random>
+#include <fmt/format.h>
 #include <httplib.h>
 #include <nlohmann/json.hpp>
 
@@ -43,10 +43,7 @@ void ReadError(const httplib::Result& res, NpHandler::GameCustomDataResult& out)
 std::string Boundary() {
     std::random_device rd;
     std::mt19937_64 gen(rd());
-    char buf[40];
-    std::snprintf(buf, sizeof(buf), "shadps4gcd%016llx%016llx",
-                  static_cast<unsigned long long>(gen()), static_cast<unsigned long long>(gen()));
-    return buf;
+    return fmt::format("shadps4gcd{:016x}{:016x}", gen(), gen());
 }
 
 std::string UserLanguage(s32 user_id) {
