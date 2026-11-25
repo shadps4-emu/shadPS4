@@ -282,4 +282,27 @@ constexpr u32 POSIX_SC_UEXTERR_MAXLEN = 123;
 constexpr u32 POSIX_SC_NSIG = 124;
 constexpr u32 POSIX_SC_PHYS_PAGES = 121;
 
+struct OrbisNotificationRequest {
+    s32 type;
+    s32 req_id;
+    s32 priority;
+    s32 msg_id;
+    s32 target_id;
+    s32 user_id;
+    u64 device_id;
+    s32 app_id;
+    s32 error_num;
+    s32 unk28;
+    u8 use_icon_image_uri;
+    char message[1024];
+    char icon_uri[2048];
+};
+static_assert(sizeof(OrbisNotificationRequest) == 0xc30, "Invalid OrbisNotificationRequest size");
+static_assert(offsetof(OrbisNotificationRequest, device_id) == 0x18);
+static_assert(offsetof(OrbisNotificationRequest, use_icon_image_uri) == 0x2c);
+static_assert(offsetof(OrbisNotificationRequest, icon_uri) == 0x42d);
+
+s32 PS4_SYSV_ABI sceKernelSendNotificationRequest(s32 device, const OrbisNotificationRequest* req,
+                                                  size_t size, s32 blocking);
+
 } // namespace Libraries::Kernel
