@@ -52,6 +52,9 @@ struct TrophyInfo {
     std::string_view trophy_type;
 };
 
+bool IsTrophyShowing();
+void ShowNextQueuedTrophy();
+
 void AddTrophyToQueue(const std::filesystem::path& trophyIconPath, const std::string& trophyName,
                       const std::string_view& rarity);
 

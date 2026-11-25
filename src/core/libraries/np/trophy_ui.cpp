@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <atomic>
 #include <filesystem>
 #include <fstream>
 #include <mutex>
@@ -19,6 +20,7 @@
 #include "common/stb.h"
 #include "core/emulator_settings.h"
 #include "core/libraries/np/trophy_ui.h"
+#include "core/libraries/system/notification_ui.h"
 #include "imgui/renderer/font_stack.h"
 
 CMRC_DECLARE(res);
@@ -29,6 +31,7 @@ namespace Libraries::Np::NpTrophy {
 std::optional<TrophyUI> current_trophy_ui;
 std::queue<TrophyInfo> trophy_queue;
 std::mutex queueMtx;
+std::atomic<bool> trophy_showing{false};
 
 // Decompresses DDS DXT5 (BC3) texture data to in-memory PNG bytes
 static std::vector<u8> DecodeDdsToPng(const std::vector<u8>& data) {
@@ -755,14 +758,23 @@ void TrophyUI::Draw() {
     PopStyleVar(4);
 
     if (trophy_timer <= 0) {
-        std::lock_guard<std::mutex> lock(queueMtx);
-        if (!trophy_queue.empty()) {
-            TrophyInfo next_trophy = trophy_queue.front();
-            trophy_queue.pop();
-            current_trophy_ui.emplace(next_trophy.trophy_icon_path, next_trophy.title,
-                                      next_trophy.trophy_name, next_trophy.trophy_type);
-        } else {
-            current_trophy_ui.reset();
+        bool notify_system_queue = false;
+        {
+            std::lock_guard<std::mutex> lock(queueMtx);
+            if (!trophy_queue.empty()) {
+                TrophyInfo next_trophy = trophy_queue.front();
+                trophy_queue.pop();
+                trophy_showing.store(true);
+                current_trophy_ui.emplace(next_trophy.trophy_icon_path, next_trophy.title,
+                                          next_trophy.trophy_name, next_trophy.trophy_type);
+            } else {
+                current_trophy_ui.reset();
+                trophy_showing.store(false);
+                notify_system_queue = true;
+            }
+        }
+        if (notify_system_queue) {
+            Libraries::SystemNotification::ShowNextQueuedNotification();
         }
     }
 }
@@ -890,6 +902,25 @@ static std::string_view GetTrophyEarnedText(s32 lang) {
     }
 }
 
+bool IsTrophyShowing() {
+    return trophy_showing.load();
+}
+
+void ShowNextQueuedTrophy() {
+    std::lock_guard<std::mutex> lock(queueMtx);
+    if (!trophy_queue.empty() && !current_trophy_ui.has_value() &&
+        !Libraries::SystemNotification::IsNotificationShowing()) {
+#ifdef ENABLE_QT_GUI
+        BackgroundMusicPlayer::getInstance().stopMusic();
+#endif
+        TrophyInfo next_trophy = trophy_queue.front();
+        trophy_queue.pop();
+        trophy_showing.store(true);
+        current_trophy_ui.emplace(next_trophy.trophy_icon_path, next_trophy.title,
+                                  next_trophy.trophy_name, next_trophy.trophy_type);
+    }
+}
+
 void AddTrophyToQueue(const std::filesystem::path& trophyIconPath, const std::string& trophyName,
                       const std::string_view& rarity) {
     std::lock_guard<std::mutex> lock(queueMtx);
@@ -905,12 +936,13 @@ void AddTrophyToQueue(const std::filesystem::path& trophyIconPath, const std::st
     new_trophy.trophy_type = rarity;
     trophy_queue.push(new_trophy);
 
-    if (!current_trophy_ui.has_value()) {
+    if (!current_trophy_ui.has_value() && !Libraries::SystemNotification::IsNotificationShowing()) {
 #ifdef ENABLE_QT_GUI
         BackgroundMusicPlayer::getInstance().stopMusic();
 #endif
         TrophyInfo next_trophy = trophy_queue.front();
         trophy_queue.pop();
+        trophy_showing.store(true);
         current_trophy_ui.emplace(next_trophy.trophy_icon_path, next_trophy.title,
                                   next_trophy.trophy_name, next_trophy.trophy_type);
     }

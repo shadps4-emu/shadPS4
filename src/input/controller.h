@@ -4,8 +4,10 @@
 #pragma once
 
 #include <array>
+#include <chrono>
 #include <mutex>
 #include <optional>
+#include <string>
 #include <utility>
 
 #include <SDL3/SDL_gamepad.h>
@@ -109,6 +111,10 @@ public:
     float gyro_buf[3] = {0.0f, 0.0f, 0.0f}, accel_buf[3] = {0.0f, 9.81f, 0.0f};
     s32 user_id = Libraries::UserService::ORBIS_USER_SERVICE_USER_ID_INVALID;
     SDL_Gamepad* m_sdl_gamepad = nullptr;
+    std::string m_pad_name;
+    bool m_low_battery_notified = false;
+    bool m_pending_handover_notif = false;
+    std::chrono::steady_clock::time_point m_connect_time{};
 
 private:
     // m_state_mutex must be held by the caller.
@@ -142,6 +148,8 @@ public:
         return controllers[i];
     }
     void TryOpenSDLControllers();
+    void OnGamepadBatteryEvent(SDL_JoystickID id);
+    void FlushPendingNotifications();
     u8 GetGamepadIndexFromJoystickId(SDL_JoystickID id);
     static std::optional<u8> GetControllerIndexFromUserID(s32 user_id);
     static std::optional<u8> GetControllerIndexFromControllerID(s32 controller_id);

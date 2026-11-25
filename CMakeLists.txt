@@ -438,6 +438,10 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/system/systemservice.cpp
                 src/core/libraries/system/systemservice.h
                 src/core/libraries/system/systemservice_error.h
+                src/core/libraries/system/notification_ui.cpp
+                src/core/libraries/system/notification_ui.h
+                src/core/libraries/system/sysutil.cpp
+                src/core/libraries/system/sysutil.h
                 src/core/libraries/system/userservice.cpp
                 src/core/libraries/system/userservice.h
                 src/core/libraries/system/userservice_error.h
