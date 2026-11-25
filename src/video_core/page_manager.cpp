@@ -193,6 +193,8 @@ struct PageManager::Impl {
         const u64 base_page = base_addr >> PM_PAGE_BITS;
         const u64 page_start = bounds.start_word * PAGES_PER_WORD + bounds.start_page;
         const u64 page_end = bounds.end_word * PAGES_PER_WORD + bounds.end_page + 1;
+        EnsurePages((base_page + page_start) << PM_PAGE_BITS, (base_page + page_end)
+                                                                  << PM_PAGE_BITS);
 
         Core::MemoryPermission perms{};
         u64 range_begin = base_page + page_start;
