@@ -44,7 +44,8 @@ Rasterizer::Rasterizer(const Instance& instance_, Scheduler& scheduler_, Runtime
       pipeline_cache{instance, scheduler, liverpool, buffer_cache.GetSparsePageShift()},
       host_markers_enabled{EmulatorSettings.IsVkHostMarkersEnabled()},
       guest_markers_enabled{EmulatorSettings.IsVkGuestMarkersEnabled()},
-      submit_draw_interval{EmulatorSettings.GetSubmitDrawInterval()} {
+      submit_draw_interval{EmulatorSettings.GetSubmitDrawInterval()},
+      unbounded_buffer_limit{u64{EmulatorSettings.GetUnboundedBufferLimitMb()} << 20} {
     if (!EmulatorSettings.IsNullGPU()) {
         liverpool->BindRasterizer(this);
     }
@@ -840,7 +841,11 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
             if (vsharp.base_address == 0 || vsharp.GetSize() == 0) {
                 buffer_infos.emplace_back(VK_NULL_HANDLE, 0, VK_WHOLE_SIZE);
             } else {
-                const u64 size = memory->ClampRangeSize(vsharp.base_address, vsharp.GetSize());
+                u64 size = memory->ClampRangeSize(vsharp.base_address, vsharp.GetSize());
+                if (unbounded_buffer_limit != 0 && !desc.is_written &&
+                    vsharp.num_records == std::numeric_limits<u32>::max()) {
+                    size = std::min(size, unbounded_buffer_limit);
+                }
                 if (size != vsharp.GetSize()) {
                     LOG_DEBUG(Render, "Clamped size from {} to {} for stage {:#x}",
                               vsharp.GetSize(), size, stage.pgm_hash);
