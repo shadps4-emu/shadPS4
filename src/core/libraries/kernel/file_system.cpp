@@ -27,6 +27,7 @@
 #include "common/singleton.h"
 #include "core/file_sys/devices/console_device.h"
 #include "core/file_sys/devices/deci_tty_device.h"
+#include "core/file_sys/devices/dmem_device.h"
 #include "core/file_sys/devices/logger.h"
 #include "core/file_sys/devices/nop_device.h"
 #include "core/file_sys/devices/random_device.h"
@@ -87,6 +88,7 @@ static std::map<std::string, FactoryDevice> available_device = {
     {"/dev/deci_tty7",&D::DeciTtyDevice::Create },
     {"/dev/rng",      &D::RngDevice::Create },
     {"/dev/zero",  &D::ZeroDevice::Create },
+    {"/dev/dmem1", &D::DmemDevice::Create },
     // clang-format on
 };
 
