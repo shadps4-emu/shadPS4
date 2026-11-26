@@ -67,7 +67,7 @@ u64 PS4_SYSV_ABI sceKernelGetDirectMemorySize() {
     return ret == ORBIS_OK ? memory_size : 0;
 }
 
-s32 PS4_SYSV_ABI sceKernelEnableDmemAliasing2() {
+s32 PS4_SYSV_ABI sceKernelEnableDmemAliasing() {
     LOG_DEBUG(Kernel_Vmm, "called");
     auto* memory = Core::Memory::Instance();
     memory->GetDmemManager().SetAliasing(Core::DmemAliasingMode::AllowGpuReadAliases);
@@ -929,8 +929,8 @@ void RegisterMemory(Core::Loader::SymbolsResolver* sym) {
     file->device = g_blockpool_device;
 
     LIB_FUNCTION("usHTMoFoBTM", "libkernel_dmem_aliasing2", 1, "libkernel",
-                 sceKernelEnableDmemAliasing2);
-    LIB_FUNCTION("usHTMoFoBTM", "libkernel", 1, "libkernel", sceKernelEnableDmemAliasing2);
+                 sceKernelEnableDmemAliasing);
+    LIB_FUNCTION("usHTMoFoBTM", "libkernel", 1, "libkernel", sceKernelEnableDmemAliasing);
     LIB_FUNCTION("rTXw65xmLIA", "libkernel", 1, "libkernel", sceKernelAllocateDirectMemory);
     LIB_FUNCTION("B+vc2AO2Zrc", "libkernel", 1, "libkernel", sceKernelAllocateMainDirectMemory);
     LIB_FUNCTION("C0f7TJcbfac", "libkernel", 1, "libkernel", sceKernelAvailableDirectMemorySize);
