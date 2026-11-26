@@ -20,6 +20,7 @@
 #else
 #include <fcntl.h>
 #include <sys/mman.h>
+#include <unistd.h>
 #endif
 
 #if defined(__APPLE__) && defined(ARCH_X86_64)
@@ -920,8 +921,21 @@ void* AddressSpace::MapFile(VAddr virtual_addr, u64 size, u64 offset, MemoryMapF
     }
     return impl->Map(virtual_addr, offset, file_map_size, win_prot, fd, file_size);
 #else
-    return impl->Map(virtual_addr, offset, size, ToPosixProt(Core::MemoryProt(prot)),
-                     ToPosixFlags(flags), fd);
+    // POSIX platforms allow file mmaps larger than the file size,
+    // however attempts to read past the file's length cause a SIGBUS exception.
+    static const u64 host_page_size = sysconf(_SC_PAGESIZE);
+    const auto posix_prot = ToPosixProt(Core::MemoryProt(prot));
+    const u64 file_map_size =
+        offset < file_size ? std::min(size, Common::AlignUp(file_size - offset, host_page_size))
+                           : 0;
+    if (file_map_size < size) {
+        impl->Map(virtual_addr + file_map_size, -1, size - file_map_size, posix_prot,
+                  MAP_ANONYMOUS | MAP_PRIVATE);
+    }
+    if (file_map_size == 0) {
+        return reinterpret_cast<void*>(virtual_addr);
+    }
+    return impl->Map(virtual_addr, offset, file_map_size, posix_prot, ToPosixFlags(flags), fd);
 #endif
 }
 
