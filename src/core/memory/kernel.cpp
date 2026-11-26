@@ -14,6 +14,11 @@
 
 namespace Core {
 
+static s32 ResourceShortageError(u32 sdk_version) {
+    return sdk_version >= Common::ElfInfo::FW_350 ? ORBIS_KERNEL_ERROR_ENOMEM
+                                                  : ORBIS_KERNEL_ERROR_EINVAL;
+}
+
 MemoryManager::MemoryManager()
     : blockpool{impl}, dmem{impl}, vm_map{impl, dmem, blockpool, budget, flex_pool} {
     ASSERT_MSG(Libraries::Kernel::sceKernelGetCompiledSdkVersion(&sdk_version) == 0,
@@ -274,7 +279,7 @@ s32 MemoryManager::MapMemory(VAddr* out_addr, u64 size, MemoryProt prot, MemoryM
                 Kernel_Vmm,
                 "Out of flexible memory, available flexible memory = {:#x} requested size = {:#x}",
                 flex_pool.GetAvailableSize(), size);
-            return ORBIS_KERNEL_ERROR_EINVAL;
+            return ResourceShortageError(vm_map.SdkVersion());
         }
     } else {
         ASSERT(fd != -1);
@@ -292,22 +297,27 @@ s32 MemoryManager::MapMemory(VAddr* out_addr, u64 size, MemoryProt prot, MemoryM
             break;
         }
         case Core::FileSys::FileType::Regular: {
+            Core::FileSys::FileStat stat{};
+            file->handle->Stat(stat);
+            if (offset + size > Common::AlignUpPow2(stat.size, PAGE_SIZE)) {
+                return ORBIS_KERNEL_ERROR_EACCES;
+            }
             max_prot = MemoryProt::CpuReadWrite;
             auto* host_file = file->GetHostFile();
-            if (!host_file ||
-                (False(host_file->GetAccessMode() & Common::FS::FileAccessMode::Write) &&
-                 False(host_file->GetAccessMode() & Common::FS::FileAccessMode::Append))) {
+            if (True(flags & MemoryMapFlags::Shared) &&
+                (!host_file ||
+                 (False(host_file->GetAccessMode() & Common::FS::FileAccessMode::Write) &&
+                  False(host_file->GetAccessMode() & Common::FS::FileAccessMode::Append)))) {
                 // If the file does not have write access, ensure prot does not contain write
-                // permissions. On real hardware, these mappings succeed, but the memory cannot be
-                // written to.
+                // permissions. On real hardware, shared mappings succeed, but the memory cannot be
+                // written to. Private mappings are writable copies.
                 max_prot &= ~MemoryProt::CpuWrite;
             }
+            // On real hardware, protections outside of max_prot are silently removed.
+            prot &= max_prot;
             // Files in system folders don't count towards the budget.
             const bool is_app_file =
                 file->m_guest_name.contains("app0/") || file->m_guest_name.contains("download0/");
-            if (is_app_file && budget.ReserveWire(BudgetPtype::BigApp, size)) {
-                return ORBIS_KERNEL_ERROR_EINVAL;
-            }
             object = std::make_shared<VmObject>();
             object->type = VmObjectType::Vnode;
             object->size = size;
@@ -323,6 +333,8 @@ s32 MemoryManager::MapMemory(VAddr* out_addr, u64 size, MemoryProt prot, MemoryM
             object->blockpool.blocks.resize(Blockpool::ToBlocks(size));
             break;
         }
+        case Core::FileSys::FileType::Directory:
+            return ORBIS_KERNEL_ERROR_EINVAL;
         default:
             max_prot = MemoryProt::All;
             break;
@@ -341,7 +353,8 @@ s32 MemoryManager::MapMemory(VAddr* out_addr, u64 size, MemoryProt prot, MemoryM
         if (s32 ret =
                 vm_map.Wire(addr, addr + size, VmMapWireFlags::User | VmMapWireFlags::HolesOk)) {
             UnmapMemory(addr, size);
-            return ret;
+            return ret == ORBIS_KERNEL_ERROR_EINVAL ? ResourceShortageError(vm_map.SdkVersion())
+                                                    : ret;
         }
     }
 
@@ -351,7 +364,7 @@ s32 MemoryManager::MapMemory(VAddr* out_addr, u64 size, MemoryProt prot, MemoryM
 
 s32 MemoryManager::UnmapMemory(VAddr addr, u64 size) {
     std::scoped_lock lk{vm_map.lock};
-    size = Common::AlignUpPow2((addr & 0x3fff) + size, PAGE_SIZE);
+    size = Common::AlignUpPow2((addr & (PAGE_SIZE - 1)) + size, PAGE_SIZE);
     addr = Common::AlignDownPow2(addr, PAGE_SIZE);
     return vm_map.Delete(addr, addr + size);
 }
@@ -399,7 +412,7 @@ s32 MemoryManager::QueryProtection(VAddr addr, VAddr* out_start, VAddr* out_end,
 }
 
 s32 MemoryManager::Protect(VAddr start, u64 size, MemoryProt new_prot) {
-    size = Common::AlignUpPow2((start & 0x3fff) + size, PAGE_SIZE);
+    size = Common::AlignUpPow2((start & (PAGE_SIZE - 1)) + size, PAGE_SIZE);
     start = Common::AlignDownPow2(start, PAGE_SIZE);
     s32 result = vm_map.Protect(dmem, start, start + size, new_prot, 0);
     if (result == ORBIS_OK) {
@@ -493,7 +506,7 @@ s32 MemoryManager::VirtualQuery(VAddr addr, s32 flags,
 }
 
 void MemoryManager::NameVirtualRange(VAddr start, u64 size, std::string_view name) {
-    size = Common::AlignUpPow2((start & 0x3fff) + size, PAGE_SIZE);
+    size = Common::AlignUpPow2((start & (PAGE_SIZE - 1)) + size, PAGE_SIZE);
     start = Common::AlignDownPow2(start, PAGE_SIZE);
     return vm_map.NameRange(start, start + size, name);
 }

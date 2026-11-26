@@ -23,7 +23,7 @@ enum class VmFindSpace : u32 {
 };
 
 static VmFindSpace ComputeFindSpace(MemoryMapFlags flags, VmObject* object) {
-    const u32 align_log2 = (static_cast<u32>(flags) >> 24) & 0x1F;
+    const u32 align_log2 = GetMapAlignment(flags);
     if (align_log2 >= 14) {
         return static_cast<VmFindSpace>(align_log2);
     }
@@ -186,12 +186,21 @@ s32 VmMap::MapMemory(VAddr* out_addr, u64 size, MemoryProt prot, MemoryProt max_
         std::scoped_lock lk{lock};
 
         if (True(flags & MemoryMapFlags::Stack)) {
+            if ((addr >> 47) == 0 && (addr >= 0xfc00000001ULL || addr - size >= 0xfc00000001ULL) &&
+                m_sdk_version >= Common::ElfInfo::FW_300) {
+                return ORBIS_KERNEL_ERROR_ENOMEM;
+            }
             const auto [existing, found] = LookupEntry(addr);
             if (found) {
                 return ORBIS_KERNEL_ERROR_ENOMEM;
             }
             eflags |= VmEntryFlags::GrowsDown;
         } else if (True(flags & MemoryMapFlags::Fixed)) {
+            if ((addr >> 47) == 0 && False(flags & MemoryMapFlags::Sanitizer) &&
+                ((addr >> 34) >= 63 || addr + size > 0xfc00000000ULL) &&
+                m_sdk_version >= Common::ElfInfo::FW_300) {
+                return ORBIS_KERNEL_ERROR_EINVAL;
+            }
             if (False(flags & MemoryMapFlags::NoOverwrite)) {
                 Delete(addr, addr + size);
             } else {
@@ -304,9 +313,9 @@ s32 VmMap::FindAddress(VAddr* addr, u64 size, MemoryMapFlags flags, VmObject* ob
             }
         }
 
-        if ((False(flags & MemoryMapFlags::Sanitizer) && ((loop_start >> 34) >= 63) ||
-             ((loop_start + size) >= 0xfc00000001ULL) &&
-                 m_sdk_version >= Common::ElfInfo::FW_300)) {
+        if (False(flags & MemoryMapFlags::Sanitizer) &&
+            ((loop_start >> 34) >= 63 || (loop_start + size) >= 0xfc00000001ULL) &&
+            m_sdk_version >= Common::ElfInfo::FW_300) {
             return ORBIS_KERNEL_ERROR_ENOMEM;
         }
 
@@ -737,7 +746,11 @@ void VmMap::NameRange(VAddr start, VAddr end, std::string_view name) {
             auto len = std::min(name.size(), sizeof(entry->name) - 1);
             std::memcpy(entry->name, name.data(), len);
             entry->name[len] = '\0';
+            const VAddr next_start = entry->end;
             SimplifyEntry(m_sdk_version >= Common::ElfInfo::FW_700 ? entry : origin);
+            const auto [next, next_found] = m_tree.LookupEntry(next_start);
+            entry = next_found && next->start == next_start ? next : std::next(next);
+            continue;
         }
         ++entry;
     }

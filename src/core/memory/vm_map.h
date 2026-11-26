@@ -47,8 +47,20 @@ enum class MemoryMapFlags : u32 {
     Sanitizer = 0x200000,
     NoCoalesce = 0x400000,
     WriteWbGarlic = 0x800000,
+    AlignmentMask = 0x1f000000,
 };
 DECLARE_ENUM_FLAG_OPERATORS(MemoryMapFlags)
+
+constexpr u32 MAP_ALIGNMENT_SHIFT = 24;
+
+[[nodiscard]] constexpr MemoryMapFlags MapAlignment(u32 alignment_log2) {
+    return static_cast<MemoryMapFlags>(alignment_log2 << MAP_ALIGNMENT_SHIFT) &
+           MemoryMapFlags::AlignmentMask;
+}
+
+[[nodiscard]] constexpr u32 GetMapAlignment(MemoryMapFlags flags) {
+    return static_cast<u32>(flags & MemoryMapFlags::AlignmentMask) >> MAP_ALIGNMENT_SHIFT;
+}
 
 enum class VmInherit : u8 {
     Share = 0,
@@ -241,6 +253,10 @@ public:
     }
     VAddr MaxOffset() const {
         return m_max_offset;
+    }
+
+    u32 SdkVersion() const {
+        return m_sdk_version;
     }
 
     Tree& GetTree() {

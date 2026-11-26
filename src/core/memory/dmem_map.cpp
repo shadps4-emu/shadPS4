@@ -4,6 +4,7 @@
 #include <algorithm>
 #include "common/alignment.h"
 #include "common/assert.h"
+#include "common/elf_info.h"
 #include "core/libraries/kernel/orbis_error.h"
 #include "core/memory/address_space.h"
 #include "core/memory/dmem_map.h"
@@ -135,42 +136,57 @@ s32 DmemManager::MapDirectMemory(VmMap& map, VAddr* out_addr, u64 length,
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
-    // If the physical range already has virtual mappings and aliasing mode
-    // requires it, check for GPU write conflicts.
-    if (ChecksGpuWriteAlias() && True(prot & MemoryProt::GpuReadWrite)) {
+    if (False(m_aliasing_mode & DmemAliasingMode::AllowAll)) {
         std::scoped_lock lock{m_rmap_mutex};
 
-        const auto prot_mask =
-            True(prot & MemoryProt::GpuWrite) ? MemoryProt::GpuReadWrite : MemoryProt::GpuWrite;
         const s32 start_page = phys_addr >> PAGE_SHIFT;
         const s32 end_page = phys_end >> PAGE_SHIFT;
 
-        for (DmemRmap* rmap = m_rmap_head; rmap; rmap = rmap->next) {
-            if (!rmap->vmspace || rmap->tree.IsEmpty()) {
-                continue;
-            }
-
-            auto overlaps = rmap->tree.FindOverlappingAll(start_page, end_page);
-            for (auto cur = overlaps.begin(); cur != overlaps.end(); ++cur) {
-                // Compute overlapping page range.
-                s32 os = std::max(start_page, cur->p_start_idx);
-                s32 oe = std::min(end_page, cur->p_end_idx);
-
-                // Check if the existing mapping has GPU write on the overlapping range.
-                VAddr alias_vaddr = cur->vaddr + u64(os - cur->p_start_idx) * PAGE_SIZE;
-                u64 alias_size = u64(oe - os) * PAGE_SIZE;
-
-                // Look up the vm_map entries at the aliased virtual range.
-                auto [other, found] = map.LookupEntry(alias_vaddr);
-                if (!found) {
-                    ++other;
+        bool has_alias = false;
+        const auto has_gpu_alias = [&](MemoryProt prot_mask) {
+            for (DmemRmap* rmap = m_rmap_head; rmap; rmap = rmap->next) {
+                if (!rmap->vmspace || rmap->tree.IsEmpty()) {
+                    continue;
                 }
-                while (other != map.GetTree().end() && other->start < alias_vaddr + alias_size) {
-                    if (other->IsDmem2() && True(other->protection & prot_mask)) {
-                        return ORBIS_KERNEL_ERROR_EBUSY;
+                for (auto& cur : rmap->tree.FindOverlappingAll(start_page, end_page)) {
+                    has_alias = true;
+                    const s32 os = std::max(start_page, cur.p_start_idx);
+                    const s32 oe = std::min(end_page, cur.p_end_idx);
+                    const VAddr alias_vaddr = cur.vaddr + u64(os - cur.p_start_idx) * PAGE_SIZE;
+                    const u64 alias_size = u64(oe - os) * PAGE_SIZE;
+
+                    auto [other, found] = map.LookupEntry(alias_vaddr);
+                    if (!found) {
+                        ++other;
                     }
-                    ++other;
+                    while (other != map.GetTree().end() &&
+                           other->start < alias_vaddr + alias_size) {
+                        if (other->IsDmem2() && True(other->protection & prot_mask)) {
+                            return true;
+                        }
+                        ++other;
+                    }
                 }
+            }
+            return false;
+        };
+
+        const bool gpu_prot = True(prot & MemoryProt::GpuReadWrite);
+        const auto gpu_mask =
+            True(prot & MemoryProt::GpuWrite) ? MemoryProt::GpuReadWrite : MemoryProt::GpuWrite;
+        const bool gpu_conflict = has_gpu_alias(gpu_mask);
+        if (has_alias) {
+            if (False(m_aliasing_mode & (DmemAliasingMode::AllowGpuReadAliases |
+                                         DmemAliasingMode::AllowCpuAliases))) {
+                return ORBIS_KERNEL_ERROR_EBUSY;
+            }
+            if (True(m_aliasing_mode & DmemAliasingMode::AllowGpuReadAliases) && gpu_prot &&
+                gpu_conflict) {
+                return ORBIS_KERNEL_ERROR_EBUSY;
+            }
+            if (True(m_aliasing_mode & DmemAliasingMode::AllowCpuAliases) &&
+                (gpu_prot || has_gpu_alias(MemoryProt::GpuReadWrite))) {
+                return ORBIS_KERNEL_ERROR_EBUSY;
             }
         }
     }
@@ -217,6 +233,12 @@ s32 DmemManager::MapDirectMemory(VmMap& map, VAddr* out_addr, u64 length,
                 vaddr = Common::AlignUpPow2(found_addr2, align);
                 end = vaddr + length;
             }
+        }
+
+        if (False(flags & MemoryMapFlags::Sanitizer) && (vaddr >> 47) == 0 &&
+            end > 0xfc00000000ULL && map.SdkVersion() >= Common::ElfInfo::FW_300) {
+            return True(flags & MemoryMapFlags::Fixed) ? ORBIS_KERNEL_ERROR_EINVAL
+                                                       : ORBIS_KERNEL_ERROR_ENOMEM;
         }
 
         auto [prev, found] = map.LookupEntry(vaddr);
@@ -549,11 +571,11 @@ bool DmemManager::IsDmemBackingValid(PAddr addr, u64 size, DmemMemoryType mtype_
             return false;
         }
 
-        const bool wants_write = True(prot & (MemoryProt::CpuWrite | MemoryProt::GpuWrite));
         const auto effective_mtype =
             (mtype_override != DmemMemoryType::Invalid) ? mtype_override : dentry->mtype;
-        if (wants_write && effective_mtype == DmemMemoryType::WbGarlic &&
-            False(flags & MemoryMapFlags::WriteWbGarlic)) {
+        if (effective_mtype == DmemMemoryType::WbGarlic &&
+            (True(prot & MemoryProt::CpuWrite) ||
+             (True(prot & MemoryProt::GpuWrite) && False(flags & MemoryMapFlags::WriteWbGarlic)))) {
             return false;
         }
 

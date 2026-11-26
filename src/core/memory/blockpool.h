@@ -32,7 +32,10 @@ union DmemBlock {
     };
 
     u32 Props() const {
-        return raw & 0x3fc00000;
+        DmemBlock props = *this;
+        props.block = 0;
+        props.unk1 = 0;
+        return props.raw;
     }
 };
 

@@ -7,6 +7,7 @@
 #include <memory>
 #include <mutex>
 
+#include "common/enum.h"
 #include "common/types.h"
 #include "core/memory/rmap_splay_tree.h"
 #include "core/memory/splay_tree.h"
@@ -18,6 +19,14 @@ class Rasterizer;
 namespace Core {
 
 class MemoryManager;
+
+enum class DmemAliasingMode : u32 {
+    None = 0,
+    AllowAll = 1,
+    AllowGpuReadAliases = 2,
+    AllowCpuAliases = 4,
+};
+DECLARE_ENUM_FLAG_OPERATORS(DmemAliasingMode)
 
 enum class DmemMemoryType : s32 {
     Invalid = -1,
@@ -135,12 +144,13 @@ public:
         return m_total_size;
     }
 
-    void SetAliasing(s32 mode) {
+    void SetAliasing(DmemAliasingMode mode) {
         m_aliasing_mode |= mode;
     }
 
     bool ChecksGpuWriteAlias() const {
-        return (m_aliasing_mode & 1) == 0 && (m_aliasing_mode & 2) != 0;
+        return False(m_aliasing_mode & DmemAliasingMode::AllowAll) &&
+               True(m_aliasing_mode & DmemAliasingMode::AllowGpuReadAliases);
     }
 
     template <typename Func>
@@ -218,7 +228,7 @@ private:
     std::shared_ptr<VmObject> m_dmem_object;
 
     u64 m_total_size{};
-    u32 m_aliasing_mode{};
+    DmemAliasingMode m_aliasing_mode{};
     u32 m_entry_count{};
 };
 

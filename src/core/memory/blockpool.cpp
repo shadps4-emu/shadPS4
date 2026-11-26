@@ -116,12 +116,14 @@ static void ProtectCommittedRuns(AddressSpace& impl, VAddr base, const DmemBlock
 }
 
 static u32 BlockCpuProt(MemoryProt prot) {
-    const u32 raw = static_cast<u32>(prot);
-    return (raw & 3) | ((raw >> 1) & 1);
+    if (True(prot & MemoryProt::CpuWrite)) {
+        prot |= MemoryProt::CpuRead;
+    }
+    return static_cast<u32>(prot & MemoryProt::CpuReadWrite);
 }
 
 static u32 BlockGpuProt(MemoryProt prot) {
-    return (static_cast<u32>(prot) & 0x30) >> 4;
+    return static_cast<u32>(prot & MemoryProt::GpuReadWrite) >> 4;
 }
 
 s32 Blockpool::Protect(VmMapEntry& entry, u64 start_block, u64 end_block, MemoryProt prot) {

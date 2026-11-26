@@ -25,16 +25,17 @@ s32 BlockpoolDevice::ioctl(u32 cmd, void* args) {
         return ORBIS_KERNEL_ERROR_ENOTTY;
     }
     auto* data = reinterpret_cast<PoolExpandArgs*>(args);
-    if ((data->size & 0xffffu) != 0 || (data->flags & 0x1f000000u) != data->flags) {
+    const auto flags = static_cast<MemoryMapFlags>(data->flags);
+    if (!Common::Is64KBAligned(data->size) || True(flags & ~MemoryMapFlags::AlignmentMask)) {
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
     u32 alignment{};
     if (data->flags == 0) {
         alignment = 64_KB;
-    } else if (data->flags < 0x10000000) {
+    } else if (GetMapAlignment(flags) < 16) {
         return ORBIS_KERNEL_ERROR_EINVAL;
     } else {
-        alignment = 1u << (data->flags >> 24);
+        alignment = 1u << GetMapAlignment(flags);
     }
     if (data->size == 0) {
         return ORBIS_OK;
