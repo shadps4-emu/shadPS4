@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <limits>
+#include "core/emulator_settings.h"
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/ir/basic_block.h"
 #include "shader_recompiler/ir/ir_emitter.h"
@@ -934,6 +935,35 @@ void PatchImageArgs(IR::Inst& inst, Info& info) {
             inst.SetArg(4, converted);
         }
     }
+}
+
+void LowerUnflattenedReadConstBufferPass(ResourceDiscoveryList& resources, const Profile& profile) {
+    // The SRT walker can only fetch a V# whose dwords it can place in the flat buffer. When an
+    // s_buffer_load gets its V# from somewhere it can't follow (for example a pointer the shader
+    // itself loads in a loop), the fetch is invalid and the load is bound to a null buffer, so it
+    // reads 0. The V# is in the shader's registers anyway, so read the constants from the address
+    // in it through DMA instead. The DMA read checks the range the bound buffer would have had.
+    if (!EmulatorSettings.IsDirectMemoryAccessEnabled() || !profile.support_bda) {
+        return;
+    }
+    using Summary = SharpFetch<AmdGpu::Buffer>::Summary;
+    const auto lowered =
+        std::remove_if(resources.begin(), resources.end(), [](const ResourceDiscovery& usage) {
+            IR::Inst& inst = *usage.user;
+            // A load that is itself a source of a sharp belongs to the flattening pass.
+            if (inst.GetOpcode() != IR::Opcode::ReadConstBuffer ||
+                inst.Flags<IR::BufferInstInfo>().sharp_source) {
+                return false;
+            }
+            if (ConstructSharpFetch<AmdGpu::Buffer>(usage.sharps[0]).summary != Summary::Invalid) {
+                return false;
+            }
+            // Same arguments: the V# handle and the dword index.
+            inst.ReplaceOpcode(IR::Opcode::ReadConstBufferDma);
+            inst.SetFlags(u64{0});
+            return true;
+        });
+    resources.erase(lowered, resources.end());
 }
 
 void ResourcePatchingPass(Shader::Info& info, const ResourceDiscoveryList& resources,
