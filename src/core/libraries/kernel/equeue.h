@@ -4,6 +4,7 @@
 #pragma once
 
 #include <condition_variable>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <vector>
@@ -191,17 +192,19 @@ public:
     int WaitForSmallTimer(OrbisKernelEvent* ev, int num, u32 micros);
 
     bool EventExists(u64 id, s16 filter);
+    void Close();
 
 private:
     OrbisKernelEqueue m_handle;
     std::string m_name;
     std::mutex m_mutex;
+    bool m_closing = false;
     std::vector<EqueueEvent> m_events;
     std::condition_variable m_cond;
     std::unordered_map<u64, SmallTimer> m_small_timers;
 };
 
-EqueueInternal* GetEqueue(OrbisKernelEqueue eq);
+std::shared_ptr<EqueueInternal> GetEqueue(OrbisKernelEqueue eq);
 u64 PS4_SYSV_ABI sceKernelGetEventData(const OrbisKernelEvent* ev);
 
 void RegisterEventQueue(Core::Loader::SymbolsResolver* sym);

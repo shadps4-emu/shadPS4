@@ -156,7 +156,7 @@ s32 PS4_SYSV_ABI sceGnmAddEqEvent(OrbisKernelEqueue eq, u64 id, void* udata) {
                                  OrbisKernelEvent::Filter::GraphicsCore,
                                  reinterpret_cast<void*>(id));
         },
-        equeue);
+        equeue.get());
     return ORBIS_OK;
 }
 
@@ -289,7 +289,7 @@ s32 PS4_SYSV_ABI sceGnmDeleteEqEvent(OrbisKernelEqueue eq, u64 id) {
 
     equeue->RemoveEvent(id, OrbisKernelEvent::Filter::GraphicsCore);
 
-    Platform::IrqC::Instance()->Unregister(static_cast<Platform::InterruptId>(id), equeue);
+    Platform::IrqC::Instance()->Unregister(static_cast<Platform::InterruptId>(id), equeue.get());
     return ORBIS_OK;
 }
 
