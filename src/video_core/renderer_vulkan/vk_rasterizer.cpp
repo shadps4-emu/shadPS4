@@ -1352,6 +1352,9 @@ void Rasterizer::MapMemory(VAddr addr, u64 size) {
         std::scoped_lock lock{mapped_ranges_mutex};
         mapped_ranges += decltype(mapped_ranges)::interval_type::right_open(addr, addr + size);
     }
+    // A new mapping is writable, whatever the page watchers left on the range say.
+    buffer_cache.MapMemory(addr, size);
+    texture_cache.InvalidateMemory(addr, size);
 }
 
 void Rasterizer::RegisterMemory(VAddr addr, u64 size) {

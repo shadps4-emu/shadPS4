@@ -126,6 +126,10 @@ void BufferCache::InvalidateMemory(VAddr device_addr, u64 size, bool assume_lock
     });
 }
 
+void BufferCache::MapMemory(VAddr device_addr, u64 size) {
+    memory_tracker->MarkRegionAsCpuModified(device_addr, size);
+}
+
 void BufferCache::UnmarkRegionAsGpuModified(VAddr device_addr, u64 size, bool is_write) {
     memory_tracker->UnmarkRegionAsGpuModified(device_addr, size, is_write);
     gpu_modified_ranges.Subtract(device_addr, size);
