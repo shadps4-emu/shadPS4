@@ -106,8 +106,24 @@ bool HostFile::Map(VAddr addr, u64 size, u64 offset, MemoryMapFlags flags, Memor
     const auto& memory = Core::Memory::Instance();
     auto& vm_map = memory->GetVmMap();
     auto& address_space = memory->GetAddressSpace();
+    m_file.Flush();
+    const u64 file_size = m_file.GetSize();
+#ifdef _WIN32
+    if (False(flags & MemoryMapFlags::Shared)) {
+        // Windows cannot create copy-on-write views of read-only files, so copy the contents.
+        address_space.Map(addr, size);
+        if (offset < file_size) {
+            const s64 position = m_file.Tell();
+            m_file.Seek(offset);
+            m_file.ReadRaw<u8>(reinterpret_cast<void*>(addr), std::min(size, file_size - offset));
+            m_file.Seek(position);
+        }
+        address_space.Protect(addr, size, Core::ToHostPerm(raw_prot));
+        return true;
+    }
+#endif
     address_space.MapFile(addr, size, offset, flags, static_cast<u32>(raw_prot),
-                          m_file.GetFileMapping());
+                          m_file.GetFileMapping(), file_size);
     return true;
 }
 

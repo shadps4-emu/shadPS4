@@ -327,8 +327,17 @@ uintptr_t IOFile::GetFileMapping() {
     HANDLE mapping = nullptr;
 
     if (file_access_mode == FileAccessMode::ReadWrite) {
-        mapping = CreateFileMapping2(hfile, NULL, FILE_MAP_WRITE, PAGE_READWRITE, SEC_COMMIT, 0,
-                                     NULL, NULL, 0);
+        HANDLE exec_file = ReOpenFile(hfile, GENERIC_READ | GENERIC_WRITE | GENERIC_EXECUTE,
+                                      FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, 0);
+        if (exec_file != INVALID_HANDLE_VALUE) {
+            mapping = CreateFileMapping2(exec_file, NULL, FILE_MAP_ALL_ACCESS | FILE_MAP_EXECUTE,
+                                         PAGE_EXECUTE_READWRITE, SEC_COMMIT, 0, NULL, NULL, 0);
+            CloseHandle(exec_file);
+        }
+        if (!mapping) {
+            mapping = CreateFileMapping2(hfile, NULL, FILE_MAP_WRITE, PAGE_READWRITE, SEC_COMMIT, 0,
+                                         NULL, NULL, 0);
+        }
     } else {
         mapping = hfile;
     }

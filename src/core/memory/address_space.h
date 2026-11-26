@@ -5,7 +5,6 @@
 
 #include <memory>
 #include <boost/icl/separate_interval_set.hpp>
-#include "common/arch.h"
 #include "common/enum.h"
 #include "common/multi_level_page_table.h"
 #include "common/types.h"
@@ -92,7 +91,7 @@ public:
 
     /// Memory maps a specified file descriptor.
     void* MapFile(VAddr virtual_addr, u64 size, u64 offset, MemoryMapFlags flags, u32 prot,
-                  uintptr_t fd);
+                  uintptr_t fd, u64 file_size);
 
     /// Unmaps specified virtual memory area and marks it free in the address space.
     VAddr Unmap(VAddr virtual_addr, u64* size);
