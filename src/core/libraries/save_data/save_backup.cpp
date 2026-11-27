@@ -79,7 +79,7 @@ static void CopyShareReadWrite(const std::filesystem::path& from, const std::fil
 }
 
 // Use an emulated thread so guest callbacks have a valid guest TLS/stack context.
-static Kernel::Thread g_backup_thread;
+static Kernel::Thread g_backup_thread{1_MB, true};
 static std::counting_semaphore g_backup_thread_semaphore{0};
 
 static std::mutex g_backup_running_mutex;

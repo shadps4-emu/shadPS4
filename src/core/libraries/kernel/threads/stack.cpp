@@ -134,6 +134,20 @@ int ThreadState::CreateStack(PthreadAttr* attr) {
     return -1;
 }
 
+void* AllocateSystemStack(size_t size) {
+    auto* memory = Core::Memory::Instance();
+    VAddr addr = memory->GetAddressSpace().SystemReservedVirtualBase();
+    const s32 ret =
+        memory->MapMemory(&addr, size, Core::MemoryProt::CpuReadWrite,
+                          Core::MemoryMapFlags::Anon | Core::MemoryMapFlags::System, -1, 0, "");
+    ASSERT_MSG(ret == 0, "Unable to map system stack memory");
+    return reinterpret_cast<void*>(addr);
+}
+
+void FreeSystemStack(void* addr, size_t size) {
+    Core::Memory::Instance()->UnmapMemory(reinterpret_cast<VAddr>(addr), size);
+}
+
 void ThreadState::FreeStack(PthreadAttr* attr) {
     if (!attr || True(attr->flags & PthreadAttrFlags::StackUser) || !attr->stackaddr_attr) {
         return;

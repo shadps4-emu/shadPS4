@@ -328,7 +328,7 @@ struct PortOut {
     bool output_ready = false;
     bool closing = false;
     u32 output_waiters = 0;
-    Kernel::Thread output_thread{};
+    Kernel::Thread output_thread{1_MB, true};
 
     OrbisAudioOutPort type;
     AudioFormatInfo format_info;
