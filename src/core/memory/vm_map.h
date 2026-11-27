@@ -5,6 +5,7 @@
 
 #include <shared_mutex>
 #include <string_view>
+#include <vector>
 #include "common/enum.h"
 #include "common/sx_lock.h"
 #include "common/types.h"
@@ -237,6 +238,8 @@ public:
     s32 Delete(VAddr start, VAddr end);
 
     bool UpgradeLock();
+
+    bool UnmapFromGpu(const std::vector<std::pair<VAddr, u64>>& ranges);
 
     s32 Protect(DmemManager& dmem, VAddr start, VAddr end, MemoryProt new_prot, bool set_max);
 

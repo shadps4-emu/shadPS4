@@ -353,23 +353,25 @@ s32 VmMap::Delete(VAddr start, VAddr end) {
         ClipStart(entry, start);
     }
 
-    // Make sure no partial blockpool entries are unmapped
+    // Perform early GPU unmaps, these need to run before host unmaps
+    std::vector<std::pair<VAddr, u64>> gpu_unmaps;
     for (auto temp = entry; temp != m_tree.end() && temp->start < end; ++temp) {
+        // Also check for partial blockpool entries, these cannot be unmapped.
         if (end < temp->end && temp->IsBlockpool()) {
             return ORBIS_KERNEL_ERROR_EINTR;
         }
+        if (rasterizer && temp->IsGpuMapping()) {
+            gpu_unmaps.emplace_back(temp->start, std::min(temp->end, end) - temp->start);
+        }
+    }
+    if (!UnmapFromGpu(gpu_unmaps)) {
+        return Delete(start, end);
     }
 
+    // Unmap each area in range
     while (entry != m_tree.end() && entry->start < end) {
         if (!entry->IsBlockpool() && entry->end > end) {
             ClipEnd(entry, end);
-        }
-        if (entry->IsGpuMapping()) {
-            lock.downgrade();
-            rasterizer->UnmapMemory(entry->start, entry->Size());
-            if (!UpgradeLock()) {
-                return Delete(start, end);
-            }
         }
 
         if (entry->IsBlockpool()) {
@@ -422,6 +424,17 @@ bool VmMap::UpgradeLock() {
     return unchanged;
 }
 
+bool VmMap::UnmapFromGpu(const std::vector<std::pair<VAddr, u64>>& ranges) {
+    if (ranges.empty()) {
+        return true;
+    }
+    lock.downgrade();
+    for (const auto& [addr, size] : ranges) {
+        rasterizer->UnmapMemory(addr, size);
+    }
+    return UpgradeLock();
+}
+
 s32 VmMap::Protect(DmemManager& dmem, VAddr start, VAddr end, MemoryProt new_prot, bool set_max) {
     start = std::max(start, m_min_offset);
     end = std::min(end, m_max_offset);
@@ -430,84 +443,105 @@ s32 VmMap::Protect(DmemManager& dmem, VAddr start, VAddr end, MemoryProt new_pro
         new_prot |= MemoryProt::CpuRead;
     }
 
+    const auto resulting_prot = [&](const VmMapEntry& cur) {
+        return set_max ? static_cast<MemoryProt>(static_cast<u32>(cur.protection) &
+                                                 static_cast<u32>(new_prot))
+                       : new_prot;
+    };
+
     std::scoped_lock lk{lock};
 
-    auto [entry, found] = m_tree.LookupEntry(start);
-    if (!found) {
-        entry++;
-    } else if (!entry->IsBlockpool() && entry->start < start) {
-        ClipStart(entry, start);
-    }
+    for (;;) {
+        auto [entry, found] = m_tree.LookupEntry(start);
+        if (!found) {
+            entry++;
+        } else if (!entry->IsBlockpool() && entry->start < start) {
+            ClipStart(entry, start);
+        }
 
-    // Validation pass.
-    for (auto cur = entry; cur != m_tree.end() && cur->start < end; ++cur) {
-        if (set_max && cur->IsBlockpool()) {
-            return ORBIS_KERNEL_ERROR_EINTR;
-        }
-        MemoryProt eff = cur->max_protection;
-        if (True(cur->ext_flags & VmExtFlags::GpuOnly)) {
-            eff &= MemoryProt::GpuReadWrite;
-        }
-        if (True(cur->ext_flags & VmExtFlags::Hide)) {
-            eff = MemoryProt::NoAccess;
-        }
-        if (cur->IsDmem()) {
-            if (True(new_prot & (MemoryProt::GpuWrite | MemoryProt::CpuWrite))) {
-                const PAddr entry_start = std::max(start, cur->start);
-                const PAddr entry_end = std::min(end, cur->end);
-                if (entry_start <= entry_end && entry_end - entry_start != 0) {
-                    if (dmem.IncludesWbGarlicMemory(entry_start - cur->start + cur->offset,
-                                                    entry_end - entry_start)) {
-                        return ORBIS_KERNEL_ERROR_EACCES;
+        // Validate each area in range
+        for (auto cur = entry; cur != m_tree.end() && cur->start < end; ++cur) {
+            if (set_max && cur->IsBlockpool()) {
+                return ORBIS_KERNEL_ERROR_EINTR;
+            }
+            MemoryProt eff = cur->max_protection;
+            if (True(cur->ext_flags & VmExtFlags::GpuOnly)) {
+                eff &= MemoryProt::GpuReadWrite;
+            }
+            if (True(cur->ext_flags & VmExtFlags::Hide)) {
+                eff = MemoryProt::NoAccess;
+            }
+            if (cur->IsDmem()) {
+                if (True(new_prot & (MemoryProt::GpuWrite | MemoryProt::CpuWrite))) {
+                    const PAddr entry_start = std::max(start, cur->start);
+                    const PAddr entry_end = std::min(end, cur->end);
+                    if (entry_start <= entry_end && entry_end - entry_start != 0) {
+                        if (dmem.IncludesWbGarlicMemory(entry_start - cur->start + cur->offset,
+                                                        entry_end - entry_start)) {
+                            return ORBIS_KERNEL_ERROR_EACCES;
+                        }
                     }
                 }
-            }
-            VmMap& map = *this;
-            if (True(new_prot & MemoryProt::GpuReadWrite) &&
-                dmem.CheckGpuWriteAlias(map, *cur, end)) {
-                return ORBIS_KERNEL_ERROR_EACCES;
-            }
-        }
-    }
-
-    // Apply pass.
-    while (entry != m_tree.end() && entry->start < end) {
-        if (entry->IsBlockpool()) {
-            PAddr entry_start = std::max(start, entry->start);
-            entry_start = Common::AlignUpPow2(entry_start, Blockpool::BLOCK_SIZE);
-            PAddr entry_end = std::min(end, entry->end);
-            entry_end = Common::AlignDownPow2(entry_end, Blockpool::BLOCK_SIZE);
-            if (entry_start < entry_end) {
-                const VAddr vm_start = entry->start - entry->offset;
-                if (const s32 ret =
-                        blockpool.Protect(*entry, Blockpool::ToBlocks(entry_start - vm_start),
-                                          Blockpool::ToBlocks(entry_end - vm_start), new_prot)) {
-                    return ret;
+                VmMap& map = *this;
+                if (True(new_prot & MemoryProt::GpuReadWrite) &&
+                    dmem.CheckGpuWriteAlias(map, *cur, end)) {
+                    return ORBIS_KERNEL_ERROR_EACCES;
                 }
             }
-            ++entry;
+        }
+
+        // Apply GPU unmaps based on protections, these need to run before host protections
+        std::vector<std::pair<VAddr, u64>> gpu_unmaps;
+        for (auto cur = entry; rasterizer && cur != m_tree.end() && cur->start < end; ++cur) {
+            if (!cur->IsBlockpool() && cur->IsGpuMapping() &&
+                False(resulting_prot(*cur) & MemoryProt::GpuReadWrite)) {
+                gpu_unmaps.emplace_back(cur->start, std::min(cur->end, end) - cur->start);
+            }
+        }
+        if (!UnmapFromGpu(gpu_unmaps)) {
             continue;
         }
-        if (entry->end > end) {
-            ClipEnd(entry, end);
-        }
-        MemoryProt old = entry->protection;
-        if (set_max) {
-            entry->max_protection = new_prot;
-            entry->protection = static_cast<MemoryProt>(static_cast<u32>(entry->protection) &
-                                                        static_cast<u32>(new_prot));
-        } else {
-            entry->protection = new_prot;
-        }
 
-        if (auto prot = entry->protection; prot != old) {
-            impl.Protect(entry->start, entry->Size(), ToHostPerm(prot));
-        }
+        // Apply protection changes
+        while (entry != m_tree.end() && entry->start < end) {
+            if (entry->IsBlockpool()) {
+                PAddr entry_start = std::max(start, entry->start);
+                entry_start = Common::AlignUpPow2(entry_start, Blockpool::BLOCK_SIZE);
+                PAddr entry_end = std::min(end, entry->end);
+                entry_end = Common::AlignDownPow2(entry_end, Blockpool::BLOCK_SIZE);
+                if (entry_start < entry_end) {
+                    const VAddr vm_start = entry->start - entry->offset;
+                    if (const s32 ret = blockpool.Protect(
+                            *entry, Blockpool::ToBlocks(entry_start - vm_start),
+                            Blockpool::ToBlocks(entry_end - vm_start), new_prot)) {
+                        return ret;
+                    }
+                }
+                ++entry;
+                continue;
+            }
+            if (entry->end > end) {
+                ClipEnd(entry, end);
+            }
+            MemoryProt old = entry->protection;
+            const bool had_gpu = entry->IsGpuMapping();
+            entry->protection = resulting_prot(*entry);
+            if (set_max) {
+                entry->max_protection = new_prot;
+            }
 
-        SimplifyEntry(entry);
-        ++entry;
+            if (auto prot = entry->protection; prot != old) {
+                impl.Protect(entry->start, entry->Size(), ToHostPerm(prot));
+            }
+            if (rasterizer && !had_gpu && entry->IsGpuMapping()) {
+                rasterizer->MapMemory(entry->start, entry->Size());
+            }
+
+            SimplifyEntry(entry);
+            ++entry;
+        }
+        return 0;
     }
-    return 0;
 }
 
 s32 VmMap::ProtectType(DmemManager& dmem, VAddr start, VAddr end, DmemMemoryType new_mtype,
@@ -517,101 +551,101 @@ s32 VmMap::ProtectType(DmemManager& dmem, VAddr start, VAddr end, DmemMemoryType
         return ORBIS_KERNEL_ERROR_EACCES;
     }
 
-    std::vector<std::pair<VAddr, u64>> gpu_unmaps;
-    std::unique_lock lk{lock};
+    std::scoped_lock lk{lock};
 
     start = std::max(start, m_min_offset);
     end = std::min(end, m_max_offset);
 
-    auto [entry, found] = m_tree.LookupEntry(start);
-    if (!found) {
-        ++entry;
-    }
-
-    if (entry != m_tree.end() && entry->IsBlockpool()) {
-        if (!Common::Is64KBAligned(start) || !Common::Is64KBAligned(end) || end > entry->end) {
-            return ORBIS_KERNEL_ERROR_EINVAL;
-        }
-        if (start < end) {
-            const VAddr vm_start = entry->start - entry->offset;
-            blockpool.TypeProtect(*entry, Blockpool::ToBlocks(start - vm_start),
-                                  Blockpool::ToBlocks(end - vm_start), new_mtype, new_prot);
-        }
-        return ORBIS_OK;
-    }
-
-    auto& ent = *entry;
-
-    // Validation pass.
-    auto last_entry = m_tree.end();
-    for (auto cur = entry; cur != m_tree.end() && cur->start < end; ++cur) {
-        if (True(cur->eflags & VmEntryFlags::IsSubMap)) {
-            return ORBIS_KERNEL_ERROR_EINVAL;
-        }
-        if (True(cur->ext_flags & (VmExtFlags::GpuOnly | VmExtFlags::Hide))) {
-            return ORBIS_KERNEL_ERROR_EACCES;
-        }
-        if ((static_cast<u32>(new_prot) & ~static_cast<u32>(cur->max_protection)) != 0) {
-            return ORBIS_KERNEL_ERROR_EACCES;
-        }
-        if (!cur->object || !cur->IsDmem()) {
-            return ORBIS_KERNEL_ERROR_ENOTSUP;
+    for (;;) {
+        auto [entry, found] = m_tree.LookupEntry(start);
+        if (!found) {
+            ++entry;
         }
 
-        // Rmap alias check.
-        const VAddr vs = std::max(start, cur->start);
-        const VAddr ve = std::min(end, cur->end);
-        const PAddr ps = cur->offset + (vs - cur->start);
-        const PAddr pe = cur->offset + (ve - cur->start);
-        if (dmem.CheckRmapAlias(ps, pe, vs, ve)) {
-            return ORBIS_KERNEL_ERROR_EBUSY;
+        if (entry != m_tree.end() && entry->IsBlockpool()) {
+            if (!Common::Is64KBAligned(start) || !Common::Is64KBAligned(end) || end > entry->end) {
+                return ORBIS_KERNEL_ERROR_EINVAL;
+            }
+            if (start < end) {
+                const VAddr vm_start = entry->start - entry->offset;
+                blockpool.TypeProtect(*entry, Blockpool::ToBlocks(start - vm_start),
+                                      Blockpool::ToBlocks(end - vm_start), new_mtype, new_prot);
+            }
+            return ORBIS_OK;
         }
 
-        last_entry = cur;
-    }
+        // Validate each area in range
+        auto last_entry = m_tree.end();
+        for (auto cur = entry; cur != m_tree.end() && cur->start < end; ++cur) {
+            if (True(cur->eflags & VmEntryFlags::IsSubMap)) {
+                return ORBIS_KERNEL_ERROR_EINVAL;
+            }
+            if (True(cur->ext_flags & (VmExtFlags::GpuOnly | VmExtFlags::Hide))) {
+                return ORBIS_KERNEL_ERROR_EACCES;
+            }
+            if ((static_cast<u32>(new_prot) & ~static_cast<u32>(cur->max_protection)) != 0) {
+                return ORBIS_KERNEL_ERROR_EACCES;
+            }
+            if (!cur->object || !cur->IsDmem()) {
+                return ORBIS_KERNEL_ERROR_ENOTSUP;
+            }
 
-    if (entry == m_tree.end()) {
-        return ORBIS_OK;
-    }
+            // Rmap alias check.
+            const VAddr vs = std::max(start, cur->start);
+            const VAddr ve = std::min(end, cur->end);
+            const PAddr ps = cur->offset + (vs - cur->start);
+            const PAddr pe = cur->offset + (ve - cur->start);
+            if (dmem.CheckRmapAlias(ps, pe, vs, ve)) {
+                return ORBIS_KERNEL_ERROR_EBUSY;
+            }
 
-    if (entry->start < start) {
-        ClipStart(entry, start);
-    }
-    if (last_entry != m_tree.end() && last_entry->end > end) {
-        ClipEnd(last_entry, end);
-    }
+            last_entry = cur;
+        }
 
-    for (auto cur = entry; cur != m_tree.end() && cur->start < end;) {
-        const MemoryProt old_prot = cur->protection;
-        cur->protection = new_prot;
+        if (entry == m_tree.end()) {
+            return ORBIS_OK;
+        }
 
-        const bool had_gpu = True(old_prot & MemoryProt::GpuReadWrite);
-        const bool wants_gpu = True(new_prot & MemoryProt::GpuReadWrite);
-        if (rasterizer && had_gpu != wants_gpu) {
-            if (wants_gpu) {
-                rasterizer->MapMemory(cur->start, cur->Size());
-            } else {
-                gpu_unmaps.emplace_back(cur->start, cur->Size());
+        if (entry->start < start) {
+            ClipStart(entry, start);
+        }
+        if (last_entry != m_tree.end() && last_entry->end > end) {
+            ClipEnd(last_entry, end);
+        }
+
+        // Apply GPU unmaps based on protections, these need to run before host protections
+        std::vector<std::pair<VAddr, u64>> gpu_unmaps;
+        if (rasterizer && False(new_prot & MemoryProt::GpuReadWrite)) {
+            for (auto cur = entry; cur != m_tree.end() && cur->start < end; ++cur) {
+                if (cur->IsGpuMapping()) {
+                    gpu_unmaps.emplace_back(cur->start, cur->Size());
+                }
             }
         }
-
-        if (old_prot != new_prot) {
-            impl.Protect(cur->start, cur->Size(), ToHostPerm(new_prot));
+        if (!UnmapFromGpu(gpu_unmaps)) {
+            continue;
         }
-        dmem.UpdateMtype(cur->offset, cur->offset + cur->Size(), new_mtype);
 
-        SimplifyEntry(cur);
-        ++cur;
+        // Apply protection changes
+        for (auto cur = entry; cur != m_tree.end() && cur->start < end;) {
+            const MemoryProt old_prot = cur->protection;
+            const bool had_gpu = cur->IsGpuMapping();
+            cur->protection = new_prot;
+
+            if (old_prot != new_prot) {
+                impl.Protect(cur->start, cur->Size(), ToHostPerm(new_prot));
+            }
+            if (rasterizer && !had_gpu && cur->IsGpuMapping()) {
+                rasterizer->MapMemory(cur->start, cur->Size());
+            }
+            dmem.UpdateMtype(cur->offset, cur->offset + cur->Size(), new_mtype);
+
+            SimplifyEntry(cur);
+            ++cur;
+        }
+
+        return ORBIS_OK;
     }
-
-    lk.release();
-    lock.downgrade();
-    std::shared_lock shared_lk{lock, std::adopt_lock};
-    for (const auto& [unmap_addr, unmap_size] : gpu_unmaps) {
-        rasterizer->UnmapMemory(unmap_addr, unmap_size);
-    }
-
-    return ORBIS_OK;
 }
 
 s32 VmMap::Wire(VAddr start, VAddr end, VmMapWireFlags flags) {
