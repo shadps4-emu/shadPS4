@@ -203,6 +203,15 @@ s32 DmemManager::MapDirectMemory(VmMap& map, VAddr* out_addr, u64 length,
             }
             if (False(flags & MemoryMapFlags::NoOverwrite)) {
                 map.Delete(vaddr, end);
+            } else {
+                const auto [existing, found] = map.LookupEntry(vaddr);
+                if (found) {
+                    return ORBIS_KERNEL_ERROR_ENOMEM;
+                }
+                if (const auto next = std::next(existing);
+                    next != map.GetTree().end() && next->start < end) {
+                    return ORBIS_KERNEL_ERROR_ENOMEM;
+                }
             }
         } else {
             u64 align = PAGE_SIZE;
