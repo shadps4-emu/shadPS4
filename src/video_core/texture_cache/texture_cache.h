@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <atomic>
 #include <mutex>
 #include <optional>
 #include <thread>
@@ -17,6 +18,7 @@
 #include "common/multi_level_page_table.h"
 #include "common/slot_vector.h"
 #include "shader_recompiler/resource.h"
+#include "video_core/buffer_cache/range_set.h"
 #include "video_core/texture_cache/blit_helper.h"
 #include "video_core/texture_cache/image.h"
 #include "video_core/texture_cache/image_view.h"
@@ -382,6 +384,9 @@ private:
     void RegisterMeta(VAddr address, MetaDataInfo info);
     void UnregisterMeta(VAddr address, u64 owner_uid);
 
+    /// Frees the images of memory that was unmapped since the last call.
+    void FreeUnmappedImages();
+
     /// Removes the image and any views/surface metas that reference it.
     void DeleteImage(ImageId image_id);
 
@@ -429,6 +434,9 @@ private:
     Common::LRUCache<Sampler> sampler_lru_cache;
     const bool readback_linear_images;
     std::mutex download_images_mutex;
+    std::mutex unmap_mutex;
+    RangeSet unmapped_ranges;
+    std::atomic_bool has_unmapped_ranges{};
     absl::flat_hash_map<VAddr, MetaDataInfo> surface_metas;
 };
 DECLARE_ENUM_FLAG_OPERATORS(TextureCache::DownloadMemoryFlags)
