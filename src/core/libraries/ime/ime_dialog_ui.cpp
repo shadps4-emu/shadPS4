@@ -403,7 +403,8 @@ ImeDialogUi::ImeDialogUi(ImeDialogState* state, OrbisImeDialogStatus* status,
             kb_layout_selection, state->ext_option, pending_keyboard_row, pending_keyboard_col,
             last_keyboard_selected_row, last_keyboard_selected_col);
         direct_input_enabled = Libraries::Ime::IsImeDirectInputEnabled(
-            state->supported_languages, state->type, state->disable_device);
+            state->supported_languages, state->type, state->disable_device,
+            language_picker.requires_direct_input);
         native_input_active = direct_input_enabled;
         request_input_focus = native_input_active;
         AddLayer(this);
@@ -596,7 +597,8 @@ void ImeDialogUi::Draw() {
         edit_menu_popup = EditMenuPopup::None;
     } else if (keypanel_hidden) {
         native_input_active = Libraries::Ime::IsImeDirectInputEnabled(
-            state->supported_languages, state->type, state->disable_device);
+            state->supported_languages, state->type, state->disable_device,
+            language_picker.requires_direct_input);
         request_input_focus = native_input_active;
         panel_selection = PanelSelectionTarget::Keyboard;
     }
@@ -610,7 +612,8 @@ void ImeDialogUi::Draw() {
         request_input_focus = true;
     }
     direct_input_enabled = Libraries::Ime::IsImeDirectInputEnabled(
-                               state->supported_languages, state->type, state->disable_device) ||
+                               state->supported_languages, state->type, state->disable_device,
+                               language_picker.requires_direct_input) ||
                            hide_keypanel;
     const auto& ctx = *GetCurrentContext();
     const auto& io = ctx.IO;

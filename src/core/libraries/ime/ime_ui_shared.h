@@ -113,7 +113,8 @@ ImeKbLayoutSelection ResolveInitialKbLayoutSelection(OrbisImeExtOption ext_optio
 void NotifyImeKeyboardLayoutFallback(OrbisImeLanguage supported_languages, OrbisImeType type);
 bool IsImeKeyboardLayoutImplemented(OrbisImeLanguage supported_languages, OrbisImeType type);
 bool IsImeDirectInputEnabled(OrbisImeLanguage supported_languages, OrbisImeType type,
-                             OrbisImeDisableDevice disable_device);
+                             OrbisImeDisableDevice disable_device,
+                             bool requires_direct_input = false);
 void InitializeImeKeyboardLanguages(ImeKeyboardLanguagePicker& picker,
                                     ImeKbLayoutSelection& selection, OrbisImeLanguage languages,
                                     OrbisImeOption options, s32 user_id);

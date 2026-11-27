@@ -227,7 +227,8 @@ ImeUi::ImeUi(ImeState* state, const OrbisImeParam* param, const OrbisImeParamExt
                                             last_keyboard_selected_col);
         direct_input_enabled = IsImeDirectInputEnabled(
             param->supported_languages, param->type,
-            extended_param ? extended_param->disable_device : OrbisImeDisableDevice::DEFAULT);
+            extended_param ? extended_param->disable_device : OrbisImeDisableDevice::DEFAULT,
+            language_picker.requires_direct_input);
         native_input_active = direct_input_enabled;
         request_input_focus = native_input_active;
         AddLayer(this);
@@ -452,7 +453,8 @@ void ImeUi::Draw() {
     } else if (keypanel_hidden) {
         native_input_active = IsImeDirectInputEnabled(
             ime_param->supported_languages, ime_param->type,
-            extended_param ? extended_param->disable_device : OrbisImeDisableDevice::DEFAULT);
+            extended_param ? extended_param->disable_device : OrbisImeDisableDevice::DEFAULT,
+            language_picker.requires_direct_input);
         request_input_focus = native_input_active;
         panel_selection = PanelSelectionTarget::Keyboard;
     }

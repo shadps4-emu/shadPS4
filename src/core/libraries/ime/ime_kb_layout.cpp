@@ -26,8 +26,6 @@ constexpr float kLabelH = 57.0f;
 constexpr float kInputHSingle = 50.0f;
 constexpr float kInputHMulti = 151.0f;
 constexpr float kPredictH = 53.0f;
-constexpr float kPredictW = 740.0f;
-constexpr float kCloseW = 53.0f;
 constexpr float kKeysH = 316.0f;
 constexpr float kKeyGap = 9.0f;
 constexpr float kPadX = 26.0f;
@@ -219,7 +217,6 @@ ImePanelMetrics ComputeImePanelMetrics(const ImePanelMetricsConfig& config) {
     const float input_h = metrics.panel_h * input_base_h / panel_base_h;
     metrics.input_h = config.show_input ? input_h : 0.0f;
     metrics.predict_h = metrics.panel_h * kPredictH / panel_base_h;
-    metrics.close_w = metrics.panel_w * (kCloseW / panel_base_w);
     metrics.keys_h = metrics.panel_h * kKeysH / panel_base_h;
     metrics.key_gap = metrics.panel_w * (kKeyGap / panel_base_w);
     metrics.corner_radius = metrics.panel_w * kCornerRatio;
@@ -241,6 +238,10 @@ ImePanelMetrics ComputeImePanelMetrics(const ImePanelMetricsConfig& config) {
         metrics.padding_bottom = available - metrics.label_h;
     }
 
+    const float keyboard_gap =
+        config.hide_keyboard ? 0.0f : std::min(metrics.key_gap, metrics.predict_h);
+    metrics.predict_h -= keyboard_gap;
+
     const float base_font_size = config.base_font_size > 0.0f ? config.base_font_size : 1.0f;
     metrics.label_font_scale = (metrics.label_h * 0.85f) / base_font_size;
     metrics.input_font_scale = (kInputFontSize * panel_scale) / base_font_size;
@@ -253,20 +254,20 @@ ImePanelMetrics ComputeImePanelMetrics(const ImePanelMetricsConfig& config) {
 
     const float remaining_gap =
         metrics.panel_h - (metrics.label_h + metrics.input_h + metrics.predict_h + metrics.keys_h +
-                           metrics.padding_bottom);
+                           metrics.padding_bottom + keyboard_gap);
     metrics.predict_gap = std::max(0.0f, remaining_gap * 0.5f);
 
     metrics.predict_pos = {config.window_pos.x, config.window_pos.y + metrics.label_h +
                                                     metrics.input_h + metrics.predict_gap};
-    metrics.predict_size = {config.numeric ? metrics.panel_w - metrics.close_w
-                                           : metrics.panel_w * (kPredictW / kPanelBaseW),
-                            metrics.predict_h};
+    metrics.close_w = metrics.predict_h;
+    metrics.predict_size = {metrics.panel_w - metrics.close_w, metrics.predict_h};
     metrics.close_pos = {config.window_pos.x + metrics.panel_w - metrics.close_w,
                          metrics.predict_pos.y};
     metrics.close_size = {metrics.close_w, metrics.predict_h};
 
     metrics.kb_pos = {config.window_pos.x + metrics.padding_x,
-                      metrics.predict_pos.y + metrics.predict_h + metrics.predict_gap};
+                      metrics.predict_pos.y + metrics.predict_h + metrics.predict_gap +
+                          keyboard_gap};
     metrics.kb_size = {metrics.panel_w - metrics.padding_x * 2.0f, metrics.keys_h};
 
     metrics.key_h =

@@ -135,11 +135,18 @@ bool DrawImeCloseButton(const char* label, const ImePanelMetrics& metrics,
         metrics.close_pos, metrics.close_size,
         ImGui::GetColorU32(BrightenColor(ImeColorToImU32(style.color_button_function), brightness)),
         ImDrawFlags_RoundCornersRight);
-    constexpr const char* close_label = "\xE2\x9C\x95";
-    const ImVec2 text_size = ImGui::CalcTextSize(close_label, nullptr, true);
-    const ImVec2 text_pos{metrics.close_pos.x + (metrics.close_size.x - text_size.x) * 0.5f,
-                          metrics.close_pos.y + std::max(1.0f, metrics.close_size.y * 0.04f)};
-    draw->AddText(text_pos, ImeColorToImU32(style.color_text), close_label);
+    const ImVec2 center = metrics.close_pos + metrics.close_size * 0.5f;
+    const float extent = metrics.close_size.y * 0.15f;
+    const float thickness = std::max(1.0f, metrics.close_size.y * 0.04f);
+    const auto color = ImeColorToImU32(style.color_text);
+    const ImVec2 diagonal{extent, extent};
+    const ImVec2 opposite{extent, -extent};
+    draw->AddLine(center - diagonal, center + diagonal, color, thickness);
+    draw->AddLine(center - opposite, center + opposite, color, thickness);
+    for (const auto endpoint :
+         {center - diagonal, center + diagonal, center - opposite, center + opposite}) {
+        draw->AddCircleFilled(endpoint, thickness * 0.5f, color);
+    }
     return pressed;
 }
 
@@ -512,10 +519,11 @@ void InitializeImeKeyboardLanguages(ImeKeyboardLanguagePicker& picker,
         std::ranges::find_if(profiles, [&](const auto& profile) { return profile.name == last; });
     picker.languages = GetImeInputKeyboards(languages, options, user_id);
     const auto preferred = desired != profiles.end() ? desired->variant : selection.variant;
+    picker.requires_direct_input = false;
     if (std::ranges::find(picker.languages, preferred) != picker.languages.end() &&
         selection.input_type != OrbisImeType::Number) {
         const auto candidate = GetImeKeyboardLanguageSelection(selection, preferred);
-        CheckImeKeyboardDictionary(candidate);
+        picker.requires_direct_input = !CheckImeKeyboardDictionary(candidate);
     }
     std::erase_if(picker.languages, [&](const auto variant) {
         const auto candidate = GetImeKeyboardLanguageSelection(selection, variant);
@@ -745,9 +753,9 @@ void NotifyImeKeyboardLayoutFallback(OrbisImeLanguage supported_languages, Orbis
 }
 
 bool IsImeDirectInputEnabled(OrbisImeLanguage supported_languages, OrbisImeType type,
-                             OrbisImeDisableDevice disable_device) {
+                             OrbisImeDisableDevice disable_device, bool requires_direct_input) {
     return False(disable_device & OrbisImeDisableDevice::EXT_KEYBOARD) &&
-           (EmulatorSettings.IsImeDirectInput() ||
+           (EmulatorSettings.IsImeDirectInput() || requires_direct_input ||
             !IsImeKeyboardLayoutImplemented(supported_languages, type));
 }
 

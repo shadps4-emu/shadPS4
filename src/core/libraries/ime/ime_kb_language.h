@@ -90,6 +90,7 @@ struct ImeKeyboardLanguagePicker {
     std::vector<ImeKbVariant> languages;
     int index = -1;
     bool activate_armed = false;
+    bool requires_direct_input = false;
     float openness = 0.0f;
     float visual_index = 0.0f;
     float slide_origin = 0.0f;
