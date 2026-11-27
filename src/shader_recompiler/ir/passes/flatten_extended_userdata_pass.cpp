@@ -513,6 +513,28 @@ static bool ComputeOffset(Xbyak::CodeGenerator& c, Xbyak::Reg32 reg, PassInfo& p
     ASSERT(reg != ecx && reg != edx);
     auto inst = off_dw.Inst();
     switch (inst->GetOpcode()) {
+    case IR::Opcode::Phi: {
+        // A phi that merges one and the same value from every predecessor cannot change the
+        // offset, whatever path was taken. Titles built from branchy descriptor setup produce
+        // these often, and without folding them the walker gives up and leaves the flattened
+        // slot holding the raw user data - i.e. a guest pointer where a descriptor belongs.
+        const IR::Value first = inst->Arg(0);
+        bool all_same = true;
+        for (size_t i = 1; i < inst->NumArgs(); ++i) {
+            if (inst->Arg(i) != first) {
+                all_same = false;
+                break;
+            }
+        }
+        if (!all_same) {
+            return false;
+        }
+        if (first.IsImmediate()) {
+            c.mov(reg, first.U32());
+            return true;
+        }
+        return ComputeOffset(c, reg, pass_info, first);
+    }
     case IR::Opcode::GetUserData:
         c.mov(reg, ptr[rsi + (static_cast<u32>(inst->Arg(0).ScalarReg()) << 2)]);
         return true;
