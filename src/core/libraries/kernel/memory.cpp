@@ -266,7 +266,7 @@ s32 PS4_SYSV_ABI sceKernelInternalMapNamedDirectMemory(s32 pool_id, VAddr* addr,
 s32 PS4_SYSV_ABI sceKernelMapDirectMemory2(VAddr* addr, u64 len, s32 type, s32 prot, s32 flags,
                                            s64 phys_addr, u64 alignment) {
     LOG_INFO(Kernel_Vmm,
-             "in_addr = {}, len = {:#x}, prot = {:#x}, flags = {:#x}, "
+             "in_addr = {:#x}, len = {:#x}, prot = {:#x}, flags = {:#x}, "
              "phys_addr = {:#x}, alignment = {:#x}",
              *addr, len, prot, flags, phys_addr, alignment);
 
