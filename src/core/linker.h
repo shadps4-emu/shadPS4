@@ -164,7 +164,7 @@ public:
 
 private:
     MemoryManager* memory;
-    Libraries::Kernel::Thread main_thread;
+    Libraries::Kernel::Thread main_thread{Libraries::Kernel::ThrStackInitial};
     std::mutex mutex;
     u32 dtv_generation_counter{1};
     size_t static_tls_size{};

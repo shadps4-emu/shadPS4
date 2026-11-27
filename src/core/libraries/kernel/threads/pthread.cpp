@@ -316,12 +316,6 @@ int PS4_SYSV_ABI posix_pthread_create_name_np(PthreadT* thread, const PthreadAtt
     static std::atomic<int> TidCounter = 100001;
     new_thread->tid = ++TidCounter;
 
-    if (new_thread->attr.stackaddr_attr == nullptr) {
-        /* Add additional stack space for HLE */
-        static constexpr size_t AdditionalStack = 128_KB;
-        new_thread->attr.stacksize_attr += AdditionalStack;
-    }
-
     if (thread_state->CreateStack(&new_thread->attr) != 0) {
         /* Insufficient memory to create a stack: */
         thread_state->Free(curthread, new_thread);

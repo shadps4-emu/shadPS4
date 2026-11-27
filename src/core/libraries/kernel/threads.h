@@ -64,7 +64,7 @@ void RegisterThreads(Core::Loader::SymbolsResolver* sym);
 
 class Thread {
 public:
-    explicit Thread() = default;
+    explicit Thread(size_t stack_size = 1_MB) : stack_size{stack_size} {}
     ~Thread() {
         Stop();
     }
@@ -73,6 +73,7 @@ public:
         this->func = std::move(func);
         PthreadAttrT attr{};
         posix_pthread_attr_init(&attr);
+        posix_pthread_attr_setstacksize(&attr, stack_size);
         posix_pthread_create(&thread, &attr, HOST_CALL(RunWrapper), this);
         posix_pthread_attr_destroy(&attr);
     }
@@ -108,6 +109,7 @@ private:
     PthreadT thread{};
     std::function<void(std::stop_token)> func;
     std::stop_source stop;
+    size_t stack_size;
 };
 
 } // namespace Libraries::Kernel
