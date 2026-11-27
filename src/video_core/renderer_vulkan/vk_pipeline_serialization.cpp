@@ -12,8 +12,8 @@
 
 namespace Serialization {
 /* You should increment versions below once corresponding serialization scheme is changed. */
-static constexpr u32 ShaderBinaryVersion = 13u;
-static constexpr u32 ShaderMetaVersion = 7u;
+static constexpr u32 ShaderBinaryVersion = 37u;
+static constexpr u32 ShaderMetaVersion = 21u;
 static constexpr u32 PipelineKeyVersion = 4u;
 } // namespace Serialization
 
@@ -70,6 +70,7 @@ void RegisterShaderMeta(const Shader::Info& info,
 
     meta.Write(Serialization::ShaderMetaVersion);
     meta.Write(Serialization::ShaderBinaryVersion);
+    meta.Write(EmulatorSettings.IsFullDmaSyncEnabled());
 
     meta.Write(perm_hash);
     meta.Write(perm_idx);
@@ -104,6 +105,12 @@ bool LoadShaderMeta(Serialization::Archive& ar, Shader::Info& info,
     u32 binary_version{};
     meta.Read(binary_version);
     if (binary_version != Serialization::ShaderBinaryVersion) {
+        return false;
+    }
+
+    bool full_dma_sync{};
+    meta.Read(full_dma_sync);
+    if (full_dma_sync != EmulatorSettings.IsFullDmaSyncEnabled()) {
         return false;
     }
 
@@ -153,6 +160,13 @@ bool PipelineCache::LoadComputePipeline(Serialization::Archive& ar) {
     Serialization::Archive meta_ar{std::move(meta_blob)};
 
     if (!LoadPipelineStage(meta_ar, 0)) {
+        return false;
+    }
+
+    if (!CheckSampledImageArrayLimits(std::span{infos}.first<1>(), 0)) {
+        infos.fill(nullptr);
+        modules.fill(nullptr);
+        fetch_shader = nullptr;
         return false;
     }
 
@@ -231,6 +245,13 @@ bool PipelineCache::LoadGraphicsPipeline(Serialization::Archive& ar) {
         }
     }
 
+    if (!CheckSampledImageArrayLimits(infos, graphics_key.num_color_attachments)) {
+        infos.fill(nullptr);
+        modules.fill(nullptr);
+        fetch_shader = nullptr;
+        return false;
+    }
+
     const auto [it, is_new] = graphics_pipelines.try_emplace(graphics_key);
     ASSERT(is_new);
 
@@ -246,18 +267,17 @@ bool PipelineCache::LoadGraphicsPipeline(Serialization::Archive& ar) {
 }
 
 bool PipelineCache::LoadPipelineStage(Serialization::Archive& ar, size_t stage) {
-    auto program = std::make_unique<Program>();
+    auto info = std::make_unique<Shader::Info>();
     Shader::StageSpecialization spec{};
-    spec.info = &program->info;
+    spec.info = info.get();
     size_t perm_idx{};
-    if (!LoadShaderMeta(ar, program->info, spec, perm_idx)) {
+    if (!LoadShaderMeta(ar, *info, spec, perm_idx)) {
         return false;
     }
 
     std::vector<u32> spv{};
     Storage::DataBase::Instance().Load(Storage::BlobType::ShaderBinary,
-                                       fmt::format("{:#018x}_{}", program->info.pgm_hash, perm_idx),
-                                       spv);
+                                       fmt::format("{:#018x}_{}", info->pgm_hash, perm_idx), spv);
     if (spv.empty()) {
         return false;
     }
@@ -267,34 +287,36 @@ bool PipelineCache::LoadPipelineStage(Serialization::Archive& ar, size_t stage) 
 
     vk::ShaderModule module{};
 
-    auto [it_pgm, new_program] = program_cache.try_emplace(program->info.pgm_hash);
+    auto [it_pgm, new_program] = program_cache.try_emplace(info->pgm_hash);
     if (new_program) {
-        module = CompileSPV(spv, instance.GetDevice());
-        it_pgm.value() = std::move(program);
-    } else {
-        const auto& it = std::ranges::find(it_pgm.value()->modules, spec, &Program::Module::spec);
-        if (it != it_pgm.value()->modules.end()) {
-            // A matching permutation is valid only at its original index. A different index means
-            // the store holds entries from more than one cache generation, so this pipeline is
-            // left to compile at runtime.
-            const auto idx = std::distance(it_pgm.value()->modules.begin(), it);
-            if (perm_idx != idx) {
-                LOG_WARNING(Render_Vulkan,
-                            "Cached permutation {} of {}_{:x} conflicts with index {}, skipping "
-                            "preload",
-                            perm_idx, program->info.hw_stage, program->info.pgm_hash, idx);
-                return false;
-            }
-            module = it->module;
-        } else {
-            module = CompileSPV(spv, instance.GetDevice());
-        }
+        it_pgm.value() = std::make_unique<Program>();
     }
-    it_pgm.value()->InsertPermut(module, std::move(spec), perm_idx);
+    auto& program = *it_pgm.value();
+    const auto it = std::ranges::find(program.modules, spec, &Program::Module::spec);
+    if (it != program.modules.end()) {
+        // A matching permutation is valid only at its original index. A different index means
+        // the store holds entries from more than one cache generation, so this pipeline is
+        // left to compile at runtime.
+        const auto idx = std::distance(program.modules.begin(), it);
+        if (perm_idx != idx) {
+            LOG_WARNING(Render_Vulkan,
+                        "Cached permutation {} of {}_{:x} conflicts with index {}, skipping "
+                        "preload",
+                        perm_idx, info->hw_stage, info->pgm_hash, idx);
+            return false;
+        }
+        module = it->module;
+    } else {
+        if (perm_idx < program.modules.size() && program.modules[perm_idx].info) {
+            return false;
+        }
+        module = CompileSPV(spv, instance.GetDevice());
+        program.InsertPermut(module, std::move(spec), std::move(info), perm_idx);
+    }
 
-    infos[stage] = &it_pgm.value()->info;
+    infos[stage] = program.modules[perm_idx].info.get();
     modules[stage] = module;
-    if (auto& fetch = it_pgm.value()->modules[perm_idx].spec.fetch_shader_data; !fetch.Empty()) {
+    if (auto& fetch = program.modules[perm_idx].spec.fetch_shader_data; !fetch.Empty()) {
         fetch_shader = &fetch;
     }
 
@@ -390,6 +412,7 @@ void Info::Serialize(Serialization::Archive& ar) const {
 
     info.Write(this, sizeof(InfoPersistent));
     info.Write(flattened_ud_buf);
+    info.Write(srt_loop_touches);
     srt_info.Serialize(ar);
 }
 
@@ -398,6 +421,7 @@ bool Info::Deserialize(Serialization::Archive& ar) {
 
     info.Read(this, sizeof(Shader::InfoPersistent));
     info.Read(flattened_ud_buf);
+    info.Read(srt_loop_touches);
 
     return srt_info.Deserialize(ar);
 }

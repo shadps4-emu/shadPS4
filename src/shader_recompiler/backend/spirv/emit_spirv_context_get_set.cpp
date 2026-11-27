@@ -6,6 +6,7 @@
 #include "shader_recompiler/backend/spirv/emit_spirv_instructions.h"
 #include "shader_recompiler/backend/spirv/spirv_emit_context.h"
 #include "shader_recompiler/ir/attribute.h"
+#include "shader_recompiler/ir/helpers.h"
 #include "shader_recompiler/ir/microinstruction.h"
 #include "shader_recompiler/ir/patch.h"
 #include "shader_recompiler/runtime_info.h"
@@ -53,21 +54,44 @@ Id EmitGetUserData(EmitContext& ctx, IR::ScalarReg reg) {
 }
 
 Id EmitReadConst(EmitContext& ctx, IR::Inst* inst, Id addr, Id offset) {
-    const u32 flatbuf_off_dw = inst->Flags<u32>();
-    if (!EmulatorSettings.IsDirectMemoryAccessEnabled() || !ctx.profile.support_bda) {
-        return ctx.EmitFlatbufferLoad(ctx.ConstU32(flatbuf_off_dw));
+    const bool is_touched = IR::IsReadConstAddressTouched(inst);
+    if (is_touched) {
+        return ctx.OpFunctionCall(ctx.U32[1], ctx.read_const, addr, offset);
     }
-    if (flatbuf_off_dw == 0) {
-        return ctx.OpFunctionCall(ctx.U32[1], ctx.read_const_dynamic, addr, offset);
-    } else {
-        return ctx.EmitFlatbufferLoad(ctx.ConstU32(flatbuf_off_dw));
+    if (EmulatorSettings.IsFullDmaSyncEnabled()) {
+        return ctx.OpFunctionCall(ctx.U32[1], ctx.read_const_checked, addr, offset);
     }
+    const auto flags = inst->Flags<IR::ReadConstInstInfo>();
+    if (!flags.range_touch) {
+        return ctx.OpFunctionCall(ctx.U32[1], ctx.read_const_checked, addr, offset);
+    }
+
+    const auto size = ctx.EmitFlatbufferLoad(ctx.ConstU32(flags.flatbuf_off_dw.Value() + 2u));
+    const auto prepared = ctx.OpINotEqual(ctx.U1[1], size, ctx.u32_zero_value);
+    const auto touched_label = ctx.OpLabel();
+    const auto checked_label = ctx.OpLabel();
+    const auto merge_label = ctx.OpLabel();
+    ctx.OpSelectionMerge(merge_label, spv::SelectionControlMask::MaskNone);
+    ctx.OpBranchConditional(prepared, touched_label, checked_label);
+
+    ctx.AddLabel(touched_label);
+    const auto touched = ctx.OpFunctionCall(ctx.U32[1], ctx.read_const, addr, offset);
+    ctx.OpBranch(merge_label);
+    ctx.AddLabel(checked_label);
+    const auto checked = ctx.OpFunctionCall(ctx.U32[1], ctx.read_const_checked, addr, offset);
+    ctx.OpBranch(merge_label);
+    ctx.AddLabel(merge_label);
+    return ctx.OpPhi(ctx.U32[1], touched, touched_label, checked, checked_label);
 }
 
 Id EmitReadConstBuffer(EmitContext& ctx, u32 handle, Id index) {
     const Id ptr{ctx.EmitBufferAccess(handle, index, PointerType::U32)};
     const Id result{ctx.OpLoad(ctx.U32[1], ptr)};
     return result;
+}
+
+Id EmitReadConstArray(EmitContext& ctx, u32 base, Id offset) {
+    return ctx.EmitFlatbufferLoad(ctx.OpIAdd(ctx.U32[1], ctx.ConstU32(base), offset));
 }
 
 Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index) {
