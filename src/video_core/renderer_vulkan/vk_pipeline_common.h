@@ -7,6 +7,7 @@
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/renderer_vulkan/vk_common.h"
 
+#include <span>
 #include <boost/container/small_vector.hpp>
 
 namespace Shader {
@@ -24,6 +25,20 @@ static constexpr auto AllGraphicsStageBits =
 class Instance;
 class Scheduler;
 class DescriptorHeap;
+
+union DescriptorPayload {
+    DescriptorPayload(const vk::DescriptorBufferInfo& buffer_) : buffer{buffer_} {}
+    DescriptorPayload(const vk::DescriptorImageInfo& image_) : image{image_} {}
+
+    vk::DescriptorBufferInfo buffer;
+    vk::DescriptorImageInfo image;
+};
+static_assert(sizeof(vk::DescriptorBufferInfo) == sizeof(vk::DescriptorImageInfo));
+static_assert(sizeof(DescriptorPayload) == sizeof(vk::DescriptorBufferInfo));
+static_assert(std::is_trivially_copyable_v<DescriptorPayload>);
+
+using DescriptorTemplateEntries =
+    boost::container::small_vector<vk::DescriptorUpdateTemplateEntry, 32>;
 
 class Pipeline {
 public:
@@ -57,11 +72,15 @@ public:
         return is_compute;
     }
 
-    using DescriptorWrites = std::vector<vk::WriteDescriptorSet>;
-    void BindResources(DescriptorWrites& set_writes, const Shader::PushData& push_data) const;
+    void BindResources(std::span<const DescriptorPayload> payload,
+                       const Shader::PushData& push_data) const;
 
 protected:
     [[nodiscard]] std::string GetDebugString() const;
+
+    static DescriptorTemplateEntries MakeTemplateEntries(
+        std::span<const vk::DescriptorSetLayoutBinding> bindings);
+    void CreateDescriptorTemplate(std::span<const vk::DescriptorUpdateTemplateEntry> entries);
 
     const Instance& instance;
     Scheduler& scheduler;
@@ -70,6 +89,8 @@ protected:
     vk::UniquePipeline pipeline;
     vk::UniquePipelineLayout pipeline_layout;
     vk::UniqueDescriptorSetLayout desc_layout;
+    vk::UniqueDescriptorUpdateTemplate desc_template;
+    u32 num_descriptors{};
     std::array<const Shader::Info*, Shader::MaxStageTypes> stages{};
     bool uses_push_descriptors{};
     bool is_compute;

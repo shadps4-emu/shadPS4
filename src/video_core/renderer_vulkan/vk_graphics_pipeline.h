@@ -110,7 +110,7 @@ public:
                          u32 step_rate_1) const;
 
 private:
-    void BuildDescSetLayout(bool preloading);
+    DescriptorTemplateEntries BuildDescSetLayout(bool preloading);
 
 private:
     GraphicsPipelineKey key;

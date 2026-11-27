@@ -101,6 +101,7 @@ ComputePipeline::ComputePipeline(const Instance& instance, Scheduler& scheduler,
                "Failed to create compute pipeline layout: {}", vk::to_string(layout_result));
     pipeline_layout = std::move(layout);
     SetObjectName(device, *pipeline_layout, "Compute PipelineLayout {}", debug_str);
+    CreateDescriptorTemplate(MakeTemplateEntries(bindings));
 
     const vk::ComputePipelineCreateInfo compute_pipeline_ci = {
         .stage = shader_ci,
