@@ -62,7 +62,7 @@ private:
     uint32_t getOpMapOffset(InstEncoding encoding);
     uint32_t mapEncodingOp(InstEncoding encoding, Opcode opcode);
     void updateInstructionMeta(InstEncoding encoding);
-    uint32_t getMimgModifier(Opcode opcode);
+    uint32_t getMimgModifier(OpcodeMIMG opcode);
     void repairOperandType();
 
     OperandField getOperandField(uint32_t code);
