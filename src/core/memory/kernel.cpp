@@ -93,51 +93,40 @@ void MemoryManager::SetPrtArea(u32 id, VAddr address, u64 size) {
 }
 
 void MemoryManager::CopySparseMemory(VAddr virtual_addr, u8* dest, u64 size) {
-    std::shared_lock lk{vm_map.lock};
-    auto [entry, found] = vm_map.LookupEntryReadOnly(virtual_addr);
-    if (!found) {
-        ++entry;
-    }
-
-    // Unmapped space reads as zeros.
-    const auto zero_fill = [&](u64 fill_size) {
-        std::memset(dest, 0, fill_size);
-        size -= fill_size;
-        virtual_addr += fill_size;
-        dest += fill_size;
-    };
-
-    while (entry != vm_map.GetTree().end() && size) {
-        if (entry->start > virtual_addr) {
-            zero_fill(std::min<u64>(entry->start - virtual_addr, size));
-            if (size == 0) {
-                break;
-            }
-        }
-        const u64 copy_size = std::min<u64>(entry->end - virtual_addr, size);
-        if (entry->object && entry->object->HasPhysicalBacking()) {
-            // Backed objects read from their backing to avoid GPU tracking faults.
-            const u64 clip_start = virtual_addr - entry->start;
-            const u64 obj_offset = clip_start + (entry->IsBlockpool() ? 0 : entry->offset);
-            u8* backing_base = impl.BackingBase();
-            std::memset(dest, 0, copy_size);
-            entry->object->ForEachBacking(
-                obj_offset, copy_size, [&](u64 phys_addr, u64 backing_size, u64 range_offset) {
-                    std::memcpy(dest + range_offset, backing_base + phys_addr, backing_size);
-                });
-        } else if (entry->object) {
-            std::memcpy(dest, std::bit_cast<const u8*>(virtual_addr), copy_size);
+    const auto& backing_pages = impl.BackingPages();
+    while (size) {
+        const u64 page = virtual_addr >> GUEST_PAGE_BITS;
+        const u64 offset_in_page = virtual_addr % GUEST_PAGE_SIZE;
+        const u64 copy_size = std::min<u64>(GUEST_PAGE_SIZE - offset_in_page, size);
+        if (auto* entry = backing_pages.find(page); entry && *entry) {
+            std::memcpy(dest, *entry + offset_in_page, copy_size);
         } else {
             std::memset(dest, 0, copy_size);
         }
         size -= copy_size;
         virtual_addr += copy_size;
         dest += copy_size;
-        entry++;
     }
-    if (size) {
-        zero_fill(size);
+}
+
+bool MemoryManager::TryWriteBacking(void* address, const void* data, u64 size) {
+    const auto& backing_pages = impl.BackingPages();
+    VAddr virtual_addr = std::bit_cast<VAddr>(address);
+    const auto* src = static_cast<const u8*>(data);
+    bool written = false;
+    while (size) {
+        const u64 page = virtual_addr >> GUEST_PAGE_BITS;
+        const u64 offset_in_page = virtual_addr % GUEST_PAGE_SIZE;
+        const u64 copy_size = std::min<u64>(GUEST_PAGE_SIZE - offset_in_page, size);
+        if (auto* entry = backing_pages.find(page); entry && *entry) {
+            std::memcpy(*entry + offset_in_page, src, copy_size);
+            written = true;
+        }
+        size -= copy_size;
+        virtual_addr += copy_size;
+        src += copy_size;
     }
+    return written;
 }
 
 s32 MemoryManager::MapDirectMemory(VAddr* out_addr, u64 size, DmemMemoryType mtype, MemoryProt prot,

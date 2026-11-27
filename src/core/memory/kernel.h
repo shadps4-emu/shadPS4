@@ -103,13 +103,7 @@ public:
         return size <= vm_map.MaxOffset() - virtual_addr;
     }
 
-    bool TryWriteBacking(void* address, const void* data, u64 size) {
-        const auto* src = static_cast<const u8*>(data);
-        return ForEachBackingInRange(std::bit_cast<VAddr>(address), size,
-                                     [&](u64 offset, u64 backing_size, u8* backing) {
-                                         std::memcpy(backing, src + offset, backing_size);
-                                     });
-    }
+    bool TryWriteBacking(void* address, const void* data, u64 size);
 
     void SetPrtArea(u32 id, VAddr address, u64 size);
 
@@ -140,45 +134,6 @@ public:
     void NameVirtualRange(VAddr virtual_addr, u64 size, std::string_view name);
 
     void InvalidateMemory(VAddr addr, u64 size) const;
-
-    template <typename Func>
-    bool ForEachBackingInRange(VAddr addr, u64 size, Func&& func) {
-        std::shared_lock lk{vm_map.lock};
-        auto [entry, found] = vm_map.LookupEntryReadOnly(addr);
-        if (!found) {
-            return false;
-        }
-
-        u64 cursor = 0;
-        VAddr current = addr;
-        while (entry != vm_map.GetTree().end() && size) {
-            if (entry->start > current) {
-                // Skip unmapped space between entries.
-                const u64 gap = std::min<u64>(entry->start - current, size);
-                cursor += gap;
-                current += gap;
-                size -= gap;
-                if (size == 0) {
-                    break;
-                }
-            }
-            const u64 clip_start = current - entry->start;
-            const u64 clip_offset = clip_start + (entry->IsBlockpool() ? 0 : entry->offset);
-            const u64 clip_size = std::min<u64>(entry->end - current, size);
-            if (entry->object && entry->object->HasPhysicalBacking()) {
-                u8* backing_base = impl.BackingBase();
-                entry->object->ForEachBacking(
-                    clip_offset, clip_size, [&](u64 phys_addr, u64 backing_size, u64 range_offset) {
-                        func(cursor + range_offset, backing_size, backing_base + phys_addr);
-                    });
-            }
-            cursor += clip_size;
-            current += clip_size;
-            size -= clip_size;
-            entry++;
-        }
-        return true;
-    }
 
 private:
     AddressSpace impl;
