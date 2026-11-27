@@ -111,7 +111,7 @@ bool HostFile::Map(VAddr addr, u64 size, u64 offset, MemoryMapFlags flags, Memor
 #ifdef _WIN32
     if (False(flags & MemoryMapFlags::Shared) ||
         m_file.GetAccessMode() != Common::FS::FileAccessMode::ReadWrite) {
-        // Windows limits what's possible with read-only files, 
+        // Windows limits what's possible with read-only files,
         // so copy them into memory instead of mapping them.
         address_space.Map(addr, size);
         if (offset < file_size) {
