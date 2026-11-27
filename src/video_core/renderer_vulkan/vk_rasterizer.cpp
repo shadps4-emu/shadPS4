@@ -119,7 +119,8 @@ void Rasterizer::PrepareRenderState(const GraphicsPipeline* pipeline) {
     for (s32 cb = 0; cb < std::bit_width(key.mrt_mask); ++cb) {
         auto& [image_id, desc] = cb_descs[cb];
         const auto& col_buf = regs.color_buffers[cb];
-        const u32 target_mask = regs.color_target_mask.GetMask(cb);
+        const u32 target_mask =
+            regs.color_target_mask.GetMask(cb) & regs.color_shader_mask.GetMask(cb);
         if (skip_cb_binding || !col_buf || !target_mask || (key.mrt_mask & (1 << cb)) == 0) {
             image_id = {};
             continue;
