@@ -77,7 +77,7 @@ struct SamplerSpecialization {
  * after the first compilation of a module.
  */
 struct StageSpecialization {
-    static constexpr size_t MaxStageResources = 128;
+    static constexpr size_t MaxStageResources = NUM_BUFFERS + NUM_IMAGES + NUM_FMASKS;
 
     const Info* info{};
     RuntimeInfo runtime_info{};

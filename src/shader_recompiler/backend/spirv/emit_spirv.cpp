@@ -66,6 +66,9 @@ ArgType Arg(EmitContext& ctx, const IR::Value& arg) {
     } else if constexpr (std::is_same_v<ArgType, const IR::Value&>) {
         return arg;
     } else if constexpr (std::is_same_v<ArgType, u32>) {
+        if (!arg.IsImmediate() && arg.Inst()->GetOpcode() == IR::Opcode::ImageDescriptorHandle) {
+            return arg.Inst()->Arg(0).U32();
+        }
         return arg.U32();
     } else if constexpr (std::is_same_v<ArgType, u64>) {
         return arg.U64();
