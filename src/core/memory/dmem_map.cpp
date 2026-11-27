@@ -310,6 +310,7 @@ void DmemManager::RmapInsert(VmMap* vmspace, VAddr start, VAddr end, PAddr phys_
 }
 
 void DmemManager::RmapDelete(VmMap* vmspace, VAddr start, VAddr end, PAddr phys_offset) {
+    std::scoped_lock lock{m_rmap_mutex};
     const s32 start_offset = phys_offset >> PAGE_SHIFT;
     const s32 end_offset = (end - start + phys_offset) >> PAGE_SHIFT;
 
@@ -635,6 +636,7 @@ bool DmemManager::CheckGpuWriteAlias(VmMap& map, VmMapEntry& entry, VAddr protec
         return false;
     }
 
+    std::scoped_lock lock{m_rmap_mutex};
     auto* rmap = FindRmap(&map);
     if (!rmap) {
         return false;
@@ -741,20 +743,25 @@ void DmemManager::FreeEntry(Tree::iterator entry) {
             m_mutex.unlock();
             std::scoped_lock map_lock{rmap->vmspace->lock};
             for (;;) {
-                auto overlaps = tree.FindOverlappingAll(start_page, end_page);
-                const auto hit = overlaps.begin();
-                if (hit == overlaps.end()) {
-                    break;
+                VAddr unmap_start;
+                VAddr unmap_end;
+                {
+                    std::scoped_lock lock{m_rmap_mutex};
+                    auto overlaps = tree.FindOverlappingAll(start_page, end_page);
+                    const auto hit = overlaps.begin();
+                    if (hit == overlaps.end()) {
+                        break;
+                    }
+
+                    const s32 entry_start = hit->p_start_idx;
+                    const s32 entry_end = hit->p_end_idx;
+
+                    const s32 overlap_start = std::max(start_page, entry_start);
+                    const s32 overlap_end = std::min(end_page, entry_end);
+
+                    unmap_start = hit->vaddr + (overlap_start - entry_start) * PAGE_SIZE;
+                    unmap_end = hit->vaddr + (overlap_end - entry_start) * PAGE_SIZE;
                 }
-
-                const s32 entry_start = hit->p_start_idx;
-                const s32 entry_end = hit->p_end_idx;
-
-                const s32 overlap_start = std::max(start_page, entry_start);
-                const s32 overlap_end = std::min(end_page, entry_end);
-
-                const VAddr unmap_start = hit->vaddr + (overlap_start - entry_start) * PAGE_SIZE;
-                const VAddr unmap_end = hit->vaddr + (overlap_end - entry_start) * PAGE_SIZE;
 
                 if (rmap->vmspace->Delete(unmap_start, unmap_end) != ORBIS_OK) {
                     break;
