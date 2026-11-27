@@ -178,12 +178,20 @@ s32 MemoryManager::MapDirectMemory(VAddr* out_addr, u64 size, DmemMemoryType mty
 }
 
 s32 MemoryManager::PoolMap(VAddr virtual_addr, u64 size, MemoryProt prot, s32 mtype) {
+    if (!Common::Is64KBAligned(virtual_addr) || !Common::Is64KBAligned(size)) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
     std::shared_lock lk{vm_map.lock};
 
     auto [entry, found] = vm_map.LookupEntryReadOnly(virtual_addr);
     if (!found || !entry->IsBlockpool() || virtual_addr + size > entry->end) {
         LOG_ERROR(Kernel_Vmm, "Attempting to commit non-pooled memory at {:#x}", virtual_addr);
         return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
+    if (blockpool.HasCommittedBlocks(*entry, virtual_addr, size)) {
+        return ORBIS_KERNEL_ERROR_EBUSY;
     }
 
     if (size && !blockpool.Map(*entry, virtual_addr, size, prot, mtype)) {
@@ -194,6 +202,10 @@ s32 MemoryManager::PoolMap(VAddr virtual_addr, u64 size, MemoryProt prot, s32 mt
 }
 
 s32 MemoryManager::PoolUnmap(VAddr virtual_addr, u64 size) {
+    if (!Common::Is64KBAligned(virtual_addr) || !Common::Is64KBAligned(size)) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+
     std::shared_lock lk{vm_map.lock};
 
     auto [entry, found] = vm_map.LookupEntryReadOnly(virtual_addr);
@@ -330,6 +342,25 @@ s32 MemoryManager::MapMemory(VAddr* out_addr, u64 size, MemoryProt prot, MemoryM
             break;
         }
         case Core::FileSys::FileType::Blockpool: {
+            constexpr u32 BlockpoolMinAlignment = 21;
+            const u32 alignment = GetMapAlignment(flags);
+            if (alignment == 0) {
+                flags |= MapAlignment(BlockpoolMinAlignment);
+            } else if (alignment < BlockpoolMinAlignment) {
+                return ORBIS_KERNEL_ERROR_EINVAL;
+            }
+            constexpr auto BlockpoolProt = MemoryProt::CpuReadWrite | MemoryProt::GpuReadWrite;
+            if (offset != 0 || page_offset != 0 || !Common::Is2MBAligned(size) ||
+                (flags & (MemoryMapFlags::Shared | MemoryMapFlags::Private)) !=
+                    MemoryMapFlags::Shared ||
+                (prot & BlockpoolProt) != BlockpoolProt) {
+                return ORBIS_KERNEL_ERROR_EINVAL;
+            }
+            if (True(flags & MemoryMapFlags::Fixed) &&
+                (!Common::Is2MBAligned(addr) ||
+                 (addr < 0xff0000000ULL && addr + size > 0x7f0000000ULL))) {
+                return ORBIS_KERNEL_ERROR_EINVAL;
+            }
             max_prot = MemoryProt::All;
             object = std::make_shared<VmObject>();
             object->type = VmObjectType::Blockpool;

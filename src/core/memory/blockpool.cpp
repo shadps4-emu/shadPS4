@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
 #include <utility>
 #include "core/libraries/kernel/memory.h"
 #include "core/memory/address_space.h"
@@ -74,6 +75,13 @@ bool Blockpool::Map(VmMapEntry& entry, VAddr addr, u64 size, MemoryProt prot, s3
     }
 
     return true;
+}
+
+bool Blockpool::HasCommittedBlocks(const VmMapEntry& entry, VAddr addr, u64 size) const {
+    const DmemBlock* vm_blocks =
+        entry.object->blockpool.blocks.data() + ToBlocks(addr - entry.start);
+    return std::any_of(vm_blocks, vm_blocks + ToBlocks(size),
+                       [](DmemBlock block) { return block.valid != 0; });
 }
 
 void Blockpool::Unmap(VmMapEntry& entry, VAddr addr, u64 size) {
@@ -196,9 +204,10 @@ bool Blockpool::Commit(u32 count, bool onion, bool writeback, u32* out_blocks) {
                 break;
             }
             if (cached.available_blocks < 32) {
-                const u32 cached_count = count - flushed.available_blocks;
-                flushed.Allocate(flushed.allocated_blocks, out_blocks);
-                cached.Allocate(cached_count, out_blocks + flushed.allocated_blocks);
+                const u32 flushed_available = flushed.available_blocks;
+                const u32 cached_count = count - flushed_available;
+                cached.Allocate(cached_count, out_blocks);
+                flushed.Allocate(flushed_available, out_blocks + cached_count);
                 break;
             }
         }

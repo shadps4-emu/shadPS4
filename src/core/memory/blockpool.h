@@ -90,6 +90,8 @@ public:
 
     bool Map(VmMapEntry& entry, VAddr addr, u64 size, MemoryProt prot, s32 mtype);
 
+    bool HasCommittedBlocks(const VmMapEntry& entry, VAddr addr, u64 size) const;
+
     void Unmap(VmMapEntry& entry, VAddr addr, u64 size);
 
     s32 Protect(VmMapEntry& entry, u64 start_block, u64 end_block, MemoryProt prot);
@@ -144,10 +146,11 @@ private:
 
         constexpr void Insert(u32 start, u32 count) {
             available_blocks += count;
+            u32 end = start + count;
             for (auto* bits : {bits_l0.data(), bits_l1.data(), &bits_l2}) {
-                InsertLevel(start, count, bits);
+                InsertLevel(start, end - start, bits);
                 start >>= LEVEL_SHIFT;
-                count = (count + LEVEL_MASK) >> LEVEL_SHIFT;
+                end = ((end - 1) >> LEVEL_SHIFT) + 1;
             }
         }
 

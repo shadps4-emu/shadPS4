@@ -617,7 +617,7 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolReserve(VAddr addr_in, u64 size, u64 alignme
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
 
-    auto map_flags = static_cast<MemoryMapFlags>(flags);
+    auto map_flags = static_cast<MemoryMapFlags>(flags) | MemoryMapFlags::Shared;
     if (alignment != 0) {
         if (!std::has_single_bit(alignment)) {
             return ORBIS_KERNEL_ERROR_EINVAL;
