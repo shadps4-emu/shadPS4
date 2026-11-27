@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
+
 #include "common/serdes.h"
 #include "core/emulator_settings.h"
 #include "shader_recompiler/frontend/fetch_shader.h"
@@ -251,6 +253,22 @@ bool PipelineCache::LoadPipelineStage(Serialization::Archive& ar, size_t stage) 
     spec.info = &program->info;
     size_t perm_idx{};
     if (!LoadShaderMeta(ar, program->info, spec, perm_idx)) {
+        return false;
+    }
+
+    // A pipeline's descriptor set layout sizes dynamic mip arrays from the resource
+    // descriptors of the shader info. A cached info only holds the descriptors of the
+    // writing session, so the layout can end up with a different array size than the
+    // descriptors the dispatch later writes. Leave such pipelines to be compiled at
+    // first use instead.
+    const bool dynamic_mip_images =
+        std::ranges::any_of(program->info.images, [](const Shader::ImageResource& image) {
+            return image.mip_fallback_mode == Shader::MipStorageFallbackMode::DynamicIndex;
+        });
+    if (dynamic_mip_images) {
+        LOG_INFO(Render_Vulkan,
+                 "Not preloading {:#x}: its descriptor layout depends on runtime image descriptors",
+                 program->info.pgm_hash);
         return false;
     }
 
