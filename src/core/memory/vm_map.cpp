@@ -278,7 +278,7 @@ s32 VmMap::MapMemory(VAddr* out_addr, u64 size, MemoryProt prot, MemoryProt max_
         entry = Insert(prev, addr, addr + size, object, offset, prot, max_prot, eflags, name);
         entry->budget_ptype = budget_ptype;
 
-        if (object) {
+        if (object && False(eflags & VmEntryFlags::NoFault)) {
             switch (object->type) {
             case VmObjectType::Device:
                 impl.Map(addr, size, offset, True(prot & MemoryProt::CpuExec));
