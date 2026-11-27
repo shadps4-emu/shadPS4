@@ -10,6 +10,7 @@
 #include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/kernel/process.h"
 #include "core/memory/kernel.h"
+#include "core/tls.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
 
 namespace Core {
@@ -349,6 +350,10 @@ s32 MemoryManager::MapMemory(VAddr* out_addr, u64 size, MemoryProt prot, MemoryM
             return ret == ORBIS_KERNEL_ERROR_EINVAL ? ResourceShortageError(vm_map.SdkVersion())
                                                     : ret;
         }
+    }
+
+    if (const VAddr caller = Core::g_guest_caller_address; caller != 0) {
+        vm_map.NameRange(addr, addr + size, fmt::format("anon:{:012x}", caller));
     }
 
     *out_addr = addr + page_offset;
