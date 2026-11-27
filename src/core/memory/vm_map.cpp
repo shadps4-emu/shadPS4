@@ -86,7 +86,10 @@ MemoryPermission ToHostPerm(MemoryProt guest_prot) {
     return perms;
 }
 
-void VmMap::Init(VAddr min_offset, VAddr max_offset, u32 sdk_version) {
+void VmMap::Init(const boost::icl::interval_set<VAddr>& usable_regions, u32 sdk_version) {
+    const VAddr min_offset = usable_regions.begin()->lower();
+    const VAddr max_offset = usable_regions.rbegin()->upper();
+    m_usable_regions = usable_regions;
     m_min_offset = min_offset;
     m_max_offset = max_offset;
     m_sdk_version = sdk_version;
@@ -123,6 +126,19 @@ VmMap::Tree::iterator VmMap::Insert(Tree::iterator prev, VAddr start, VAddr end,
     m_size += entry->Size();
     auto it = m_tree.Link(prev, entry);
     return it;
+}
+
+VAddr VmMap::FindUsable(VAddr addr, u64 size) const {
+    for (const auto& region : m_usable_regions) {
+        if (region.upper() <= addr) {
+            continue;
+        }
+        const VAddr start = std::max(addr, region.lower());
+        if (start + size <= region.upper()) {
+            return start;
+        }
+    }
+    return 0;
 }
 
 bool VmMap::CoalescePrev(Tree::iterator prev, VAddr start, VAddr end, MemoryProt prot,
@@ -246,6 +262,9 @@ s32 VmMap::MapMemory(VAddr* out_addr, u64 size, MemoryProt prot, MemoryProt max_
                 ((addr >> 34) >= 63 || addr + size > 0xfc00000000ULL) &&
                 m_sdk_version >= Common::ElfInfo::FW_300) {
                 return ORBIS_KERNEL_ERROR_EINVAL;
+            }
+            if (FindUsable(addr, size) != addr) {
+                return ORBIS_KERNEL_ERROR_ENOMEM;
             }
             if (False(flags & MemoryMapFlags::NoOverwrite)) {
                 Delete(addr, addr + size);
@@ -377,6 +396,14 @@ s32 VmMap::FindAddress(VAddr* addr, u64 size, MemoryMapFlags flags, VmObject* ob
             *addr = Common::AlignUpPow2(*addr, 2_MB);
         } else if (static_cast<u32>(find_space) > 13) {
             *addr = Common::AlignUpPow2(*addr, alignment);
+        }
+
+        if (const VAddr usable = FindUsable(*addr, size); usable != *addr) {
+            if (!usable) {
+                return ORBIS_KERNEL_ERROR_ENOMEM;
+            }
+            initial_addr = usable;
+            continue;
         }
 
         initial_addr = *addr;

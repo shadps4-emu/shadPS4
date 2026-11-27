@@ -216,7 +216,7 @@ public:
         rasterizer = rasterizer_;
     }
 
-    void Init(VAddr min_offset, VAddr max_offset, u32 sdk_version);
+    void Init(const boost::icl::interval_set<VAddr>& usable_regions, u32 sdk_version);
 
     bool IsWireFuture() const {
         return m_wire_future;
@@ -309,6 +309,8 @@ private:
         entry->offset = 0;
     }
 
+    VAddr FindUsable(VAddr addr, u64 size) const;
+
     bool CoalescePrev(Tree::iterator prev, VAddr start, VAddr end, MemoryProt prot,
                       MemoryProt max_prot, VmEntryFlags eflags, BudgetPtype budget_ptype,
                       std::shared_ptr<VmObject>& object, u64& offset);
@@ -332,6 +334,7 @@ private:
     u32 m_sdk_version;
     bool m_wire_future{};
     VAddr m_heap_end{};
+    boost::icl::interval_set<VAddr> m_usable_regions;
     BudgetPtype m_process_budget{BudgetPtype::BigApp};
     bool m_wire_on_map{true};
 };

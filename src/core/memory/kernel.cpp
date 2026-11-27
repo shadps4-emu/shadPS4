@@ -26,10 +26,7 @@ MemoryManager::MemoryManager()
                "Failed to get compiled SDK version");
 
     // Construct vma_map using the regions reserved by the address space
-    const auto regions = impl.GetUsableRegions();
-    const VAddr min_offset = regions.begin()->lower();
-    const VAddr max_offset = regions.rbegin()->upper();
-    vm_map.Init(min_offset, max_offset, sdk_version);
+    vm_map.Init(impl.GetUsableRegions(), sdk_version);
     flex_pool.Init(ORBIS_KERNEL_TOTAL_MEM, 8_GB - ORBIS_KERNEL_TOTAL_MEM);
     budget.mlock_limit.fill(ORBIS_KERNEL_FLEXIBLE_MEMORY_SIZE);
 }
