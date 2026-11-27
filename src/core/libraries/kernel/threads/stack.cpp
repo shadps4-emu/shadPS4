@@ -82,7 +82,11 @@ int ThreadState::CreateStack(PthreadAttr* attr) {
     }
 
     /* Allocate a new stack. */
-    VAddr stackaddr = last_stack - stacksize - guardsize;
+    VAddr stackaddr = last_stack - stacksize;
+
+    /* Add additional stack space for HLE */
+    static constexpr size_t AdditionalStack = 128_KB;
+    VAddr reserve_addr = stackaddr - AdditionalStack - guardsize;
 
     /*
      * Even if stack allocation fails, we don't want to try to
@@ -91,25 +95,36 @@ int ThreadState::CreateStack(PthreadAttr* attr) {
      * likely reason for an mmap() error is a stack overflow of
      * the adjacent thread stack.
      */
-    last_stack -= (stacksize + guardsize);
+    last_stack -= (stacksize + AdditionalStack + guardsize);
 
     /* Release the lock before mmap'ing it. */
     thread_list_lock.unlock();
 
-    /* Map the stack and guard page together, and split guard
-       page from allocated space: */
+    /* Map the stack page */
     auto* memory = Core::Memory::Instance();
     s32 ret =
-        memory->MapMemory(&stackaddr, stacksize + guardsize, Core::MemoryProt::CpuReadWrite,
+        memory->MapMemory(&stackaddr, stacksize, Core::MemoryProt::CpuReadWrite,
                           Core::MemoryMapFlags::Stack | Core::MemoryMapFlags::Anon, -1, 0, "");
     ASSERT_MSG(ret == 0, "Unable to map stack memory");
 
-    if (guardsize != 0) {
-        ret = memory->Protect(stackaddr, guardsize, Core::MemoryProt::NoAccess);
-        ASSERT_MSG(ret == 0, "Unable to protect guard page");
-    }
+    /* Map the additional stack space as system memory, we don't want
+     * our additional space taking from the game's limited flexible size.
+     */
+    VAddr additional_addr = reserve_addr + guardsize;
+    ret = memory->MapMemory(&additional_addr, AdditionalStack, Core::MemoryProt::CpuReadWrite,
+                            Core::MemoryMapFlags::Fixed | Core::MemoryMapFlags::NoOverwrite |
+                                Core::MemoryMapFlags::Anon | Core::MemoryMapFlags::System,
+                            -1, 0, "");
+    ASSERT_MSG(ret == 0, "Unable to map additional stack space");
 
-    stackaddr += guardsize;
+    if (guardsize != 0) {
+        /* Map the guard page */
+        ret = memory->MapMemory(&reserve_addr, guardsize, Core::MemoryProt::NoAccess,
+                                Core::MemoryMapFlags::Fixed | Core::MemoryMapFlags::NoOverwrite |
+                                    Core::MemoryMapFlags::Void,
+                                -1, 0, "stack guard");
+        ASSERT_MSG(ret == 0, "Unable to map guard page");
+    }
     attr->stackaddr_attr = (void*)stackaddr;
 
     if (attr->stackaddr_attr != nullptr) {
