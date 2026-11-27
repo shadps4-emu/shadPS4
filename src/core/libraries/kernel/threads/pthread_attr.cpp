@@ -31,7 +31,7 @@ PthreadAttr PthreadAttrDefault = {
     .flags = PthreadAttrFlags::ScopeSystem,
     .stackaddr_attr = nullptr,
     .stacksize_attr = ThrStackDefault,
-    .guardsize_attr = 0,
+    .guardsize_attr = ThrGuardDefault,
     .cpusetsize = 0,
     .cpuset = nullptr,
 };
