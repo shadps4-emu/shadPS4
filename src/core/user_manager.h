@@ -14,6 +14,8 @@ struct User {
     u32 user_color = 1;
     int player_index = 0; // 1-4
     bool logged_in = false;
+    std::vector<int> ime_input_languages;
+    std::string ime_last_keyboard;
     // ShadNet settings
     std::string shadnet_npid = "";     // account identifier
     std::string shadnet_password = ""; // account password
@@ -32,6 +34,7 @@ struct Users {
     std::string commit_hash{};
 };
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(User, user_id, user_color, user_name, player_index,
+                                                ime_input_languages, ime_last_keyboard,
                                                 shadnet_npid, shadnet_password, shadnet_token,
                                                 shadnet_email, shadnet_enabled, np_country,
                                                 np_language, np_age, np_date_of_birth)

@@ -130,6 +130,7 @@ struct ImeKbLayoutSelection {
     OrbisImeType input_type = OrbisImeType::Default;
     u32 options = 0;
     OrbisImeExtOption ext_options = OrbisImeExtOption::DEFAULT;
+    OrbisImePanelPriority panel_priority = OrbisImePanelPriority::Default;
     bool multiple_languages = false;
     bool full_width = false;
     bool accessibility = false;
@@ -402,6 +403,7 @@ struct ImeKbDrawParams {
 
 struct ImeKbDrawState {
     bool done_pressed = false;
+    bool pressed_repeat = false;
     ImeKbKeyAction pressed_action = ImeKbKeyAction::None;
     const char* pressed_text = nullptr;
     // Logical grid cursor. If the cursor cell is disabled, selected_center points to the
@@ -418,8 +420,11 @@ struct ImePanelMetricsConfig {
     float panel_h = 0.0f;
     bool multiline = false;
     bool show_title = true;
+    bool show_input = true;
+    bool raw_panel = false;
     bool numeric = false;
     bool accessibility = false;
+    bool hide_keyboard = false;
     float base_font_size = 0.0f;
     ImVec2 window_pos{};
 };
@@ -453,6 +458,10 @@ struct ImePanelMetrics {
 };
 
 ImeViewportMetrics ComputeImeViewportMetrics(bool use_over2k);
+ImVec2 ReprojectImePanelPosition(const ImVec2& position, const ImeViewportMetrics& previous,
+                                 const ImeViewportMetrics& current);
+float ComputeImeRawPanelHeight(float requested_height, bool numeric, bool multiline,
+                               bool direct_input, bool hide_keyboard = false);
 ImePanelMetrics ComputeImePanelMetrics(const ImePanelMetricsConfig& config);
 const ImeKbLayoutModel& GetImeKeyboardLayout(const ImeKbLayoutSelection& selection);
 const ImeTopPanelLayoutConfig& GetImeTopPanelLayoutConfig(const ImeKbLayoutSelection& selection);
@@ -461,7 +470,6 @@ ImeStyleConfig ResolveImeStyleConfig(const OrbisImeParamExtended* extended);
 ImU32 ImeColorToImU32(const OrbisImeColor& color);
 ImVec4 ImeColorToImVec4(const OrbisImeColor& color);
 void ApplyImeStyleToKeyboardDrawParams(const ImeStyleConfig& style, ImeKbDrawParams& params);
-void AddImeKeyboardGlyphsToFontRanges(ImFontGlyphRangesBuilder& builder);
 
 void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& params,
                          ImeKbDrawState& state);

@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <array>
+#include <memory>
 #include <optional>
 #include <string>
 #include <imgui_internal.h>
@@ -12,10 +13,30 @@
 #include "common/types.h"
 #include "core/libraries/ime/ime_kb_language.h"
 #include "core/libraries/ime/ime_kb_layout.h"
+#include "core/libraries/ime/ime_keyboard.h"
 #include "core/libraries/pad/pad.h"
 #include "core/libraries/system/userservice.h"
 
 namespace Libraries::Ime {
+
+bool IsImeKeyPanelHidden(OrbisImeOption option, OrbisImeExtOption extended,
+                         OrbisImeDisableDevice disabled);
+void LockImeWindowScroll();
+void DrawImePanelBorder();
+void DrawImeTopPanelBackground(ImVec2 position, ImVec2 size, ImU32 color, ImDrawFlags corners);
+bool DrawImeCloseButton(const char* label, const ImePanelMetrics& metrics,
+                        const ImeStyleConfig& style, bool native_input_active);
+
+class ImeComposition;
+class ImeDictionary;
+std::shared_ptr<const ImeDictionary> LoadImeApplicationDictionary(
+    const OrbisImeParamExtended* extended);
+int DrawImeCandidates(const ImeComposition& composition, ImVec2 position, ImVec2 size,
+                      bool pointer_enabled, const ImeStyleConfig& style);
+void CaptureImeCompositionInput(ImeComposition& composition, std::vector<ImeKeyboardText>& pending,
+                                bool native_input_active,
+                                std::optional<ImeKeyboardContext> context = {},
+                                bool capture_direct = false);
 
 struct VirtualPadSnapshot {
     u32 buttons = 0;
@@ -72,6 +93,9 @@ struct SelectorFadeState {
     double press_pulse_started_at = -1.0;
 };
 
+void DrawImePanelSelector(SelectorFadeState& state, ImVec2 position, ImVec2 size,
+                          float corner_radius, bool selected, bool pulse_triggered,
+                          ImDrawFlags corners);
 void TriggerSelectorPressPulse(SelectorFadeState& state, double now);
 float ComputePressPulseExpand(double pulse_started_at, double now, float pulse_duration_sec,
                               float max_expand_px);
@@ -79,13 +103,27 @@ void UpdateSelectorFadeState(SelectorFadeState& state, ImVec2 pos, ImVec2 size, 
                              float corner_radius, bool selected, double now);
 void DrawSelectorFadeState(const SelectorFadeState& state, ImDrawList* draw_list,
                            ImU32 overlay_color, ImU32 border_color, float border_thickness,
-                           float fade_duration_sec, double now, float current_expand_px = 0.0f);
+                           float fade_duration_sec, double now, float current_expand_px = 0.0f,
+                           ImDrawFlags corners = ImDrawFlags_RoundCornersAll);
 
 ImeKbLayoutSelection ResolveInitialKbLayoutSelection(OrbisImeExtOption ext_option,
                                                      OrbisImePanelPriority panel_priority,
                                                      OrbisImeLanguage supported_languages,
                                                      OrbisImeType type = OrbisImeType::Default);
 void NotifyImeKeyboardLayoutFallback(OrbisImeLanguage supported_languages, OrbisImeType type);
+bool IsImeKeyboardLayoutImplemented(OrbisImeLanguage supported_languages, OrbisImeType type);
+bool IsImeDirectInputEnabled(OrbisImeLanguage supported_languages, OrbisImeType type,
+                             OrbisImeDisableDevice disable_device);
+void InitializeImeKeyboardLanguages(ImeKeyboardLanguagePicker& picker,
+                                    ImeKbLayoutSelection& selection, OrbisImeLanguage languages,
+                                    OrbisImeOption options, s32 user_id);
+void InitializeImeKeyboardCase(ImeKbLayoutSelection& selection, bool empty, OrbisImeOption options);
+bool DrawImeKeyboardLanguagePicker(ImeKeyboardLanguagePicker& picker,
+                                   ImeKbLayoutSelection& selection, const ImePanelMetrics& metrics,
+                                   const ImeKbGridLayout& keyboard_layout,
+                                   const ImeKbDrawParams& keyboard_params, bool left, bool right,
+                                   bool cross_down, bool activate, bool& cancel, bool opened,
+                                   bool pointer_enabled);
 void InitializeDefaultOskSelectionAnchor(const ImeKbLayoutSelection& layout_selection,
                                          OrbisImeExtOption ext_option, int& pending_row,
                                          int& pending_col, int& last_row, int& last_col);
@@ -178,6 +216,7 @@ struct OskShortcutRepeatState {
 };
 
 struct OskShortcutActionResult {
+    bool repeat = false;
     ImeKbKeyAction action = ImeKbKeyAction::None;
     bool clear_all = false;
 };

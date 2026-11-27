@@ -16,6 +16,19 @@ variants across 31 input languages:
 - Japanese with QWERTY and Gojuon variants, Korean, simplified Chinese, and
   traditional Chinese with Hong Kong, Taiwan, Zhuyin and Cangjie variants.
 
+Settings > Input > Text Input (IME) groups the text-entry preferences. Direct
+Input is off by default (`Input.ime_direct_input`). When enabled, a PC keyboard
+can edit the text field. Raw IME shows this additional emulator field only when
+Direct Input is available; otherwise the application displays its own text.
+IME Dialog retains its normal text display without PC-style editing. Games can
+disable external-keyboard editing. The direct-typing fallback for an
+unimplemented keyboard layout remains available.
+
+Select languages opens a separate picker with a compact summary on the settings
+page. The configuration keeps only selected language IDs in
+`Input.ime_input_languages`; an empty array uses English and the console language.
+Individual users can override this list in User Manager.
+
 `ime_kb_data.cpp` stores shared character records and mode-specific page maps.
 Layouts retain their paired text, blank cells and spanning keys. Combining-mark labels include a dotted circle; inserting the key
 adds only its actual character. Both IME interfaces use the same page builder.
@@ -27,16 +40,28 @@ over language profiles and alphabet-panel priority. Enter labels still
 come from the selected language profile. Alphabet and symbol shortcuts are
 disabled while the numeric keypad is active.
 
-The initial selection prefers the configured console language when its profile
-is allowed by the application's supported-language mask. Otherwise it selects an
-allowed registered profile. A zero mask permits the configured profile. Requests
-with no implemented matching profile retain the shared English fallback.
-The keyboard-change control appears when the application enables multiple
-languages. It cycles through allowed language profiles and their variants.
-The `Input.ime_keyboard_layout` setting can select a named variant of the active
-language, such as `Japanese (Gojuon)`, `Chinese (Zhuyin)` or `Chinese (Cangjie)`.
-An empty or unrecognized name uses the language's default variant. The preference
-does not enable a language excluded by the application.
+Enabled input keyboards are configured separately from the console display
+language, including individual Japanese and Chinese variants. The launcher
+provides a global checklist under Settings > Input, and per-user overrides in
+the User Manager context menu. Empty settings use English (US) plus the console
+language; this is an emulator default, not an imported console configuration.
+
+An application's supported-language mask restricts the enabled keyboards. If
+there is no overlap, the application mask takes precedence. `LANGUAGES_FORCED`
+uses the application's languages regardless of user language preferences;
+selected input methods within an enabled language are retained. A zero mask
+permits the API-supported languages before applying these rules.
+
+The initial keyboard restores that user's last-used layout when available,
+then falls back within the permitted keyboards. With no saved selection, the
+console language and `Input.ime_keyboard_layout` preference determine the
+initial choice. The keyboard-change control appears when multiple keyboard
+variants are available. It shrinks the keyboard into a horizontal carousel
+with neighboring previews and a language title. D-pad or left-stick navigation
+moves between choices in console-language order; Cross confirms and Circle
+cancels. Preview casing follows capitalization and the caller's panel priority. The
+picker stops at each end without wrapping. Previewing does not edit the text or
+save a preference. Confirmed selections are saved separately for each user.
 
 Default, Basic Latin, URL, email and number input select separate page maps.
 Internal dialog modes also have separate social-name and password page maps;
@@ -67,17 +92,32 @@ To integrate another keyboard language:
    main script; `Alternate` selects accents or the Latin counterpart. The common
    builder adds function keys from the selected labels and caller options.
 4. Verify lowercase, Shift, Caps Lock, symbols, accents, controller navigation,
-   function keys, and both IME interfaces against console output. Font collection
-   includes all character records and translated controls. Confirm that the font
-   stack supplies the new script.
+   function keys, and both IME interfaces against console output. Confirm that
+   the font stack supplies the new script and translated controls.
 
 Profiles define virtual-keyboard presentation and key text. Japanese Gojuon
 controls edit small and voiced kana and cycle punctuation through the normal
-bounded editing path. Prediction dictionaries, native composition/conversion
-engines, speech output and a keyboard-language settings screen remain separate
-features. Layout coverage alone does not establish native conversion support.
+bounded editing path. Conversion uses locally installed dictionaries as
+described below. Speech output remains unavailable.
 Arabic button labels use shaped visual forms; the editable text field still
 shares the renderer's limitations for bidirectional text and complex shaping.
+
+The console display language and text-input keyboards are separate settings.
+In the Qt launcher, Settings > Input > Text Input Languages selects the enabled
+keyboards. Automatic mode uses English (US) plus the console language as an
+emulator default; a custom list is saved globally as `Input.ime_input_languages`
+using the console-language IDs. It does not override the application's language
+request. The initial keyboard prefers the console language when it is allowed.
+
+For ordinary requests, available keyboards are the intersection of the configured
+list and the application's `supported_languages`. If there is no overlap, the
+application's requested languages take priority. An omitted application mask uses
+the configured list, subject to the application's API version. With
+`LANGUAGES_FORCED`, the application's list is used directly; a zero mask makes all
+API-supported languages available. The switch control appears only when the
+effective list contains multiple languages. Dictionary-dependent layouts still
+require the user's dumped dictionaries. Exact last-used-keyboard/resume ordering
+and separate per-user keyboard lists are not implemented.
 
 The raw IME and dialog share character limits, character restrictions, password
 masking, and clipboard policy. Basic Latin, URL and Mail fields accept printable
@@ -91,11 +131,64 @@ Japanese character membership uses the public
 and its user-defined character range. The mapping's license is included in
 `LICENSES/Unicode-3.0.txt`.
 
-Committed Chinese and Japanese text from the host input system can be inserted
-into an eligible field. Pinyin, Zhuyin, Cangjie and kana-to-kanji conversion on
-the virtual keyboard require a conversion backend and candidate UI, which are
-not implemented. Candidate APIs report `NOT_OPENED` when closed and
-`INVALID_PARAM` while open without candidates.
+Japanese romaji/kana, simplified and traditional Chinese Pinyin, Hong Kong
+Jyutping, Zhuyin and Cangjie use users' own dumped IME dictionaries. In the Qt
+launcher, open Settings > Paths > PS4 IME Dictionaries Path and select the
+console dump's `preinst/priv/ime/dic` folder. The folder is read directly,
+including its language subdirectories, just like the configured fonts folder.
+The path is saved as `General.ime_dictionary_dir` in `config.json`; the default
+is `user/ime/dic`. The configured root is also available to guest code at
+`/priv/ime/dic` as a read-only mount. Restart the emulator after replacing
+dictionary files.
+Dictionary data is not embedded in or distributed with the emulator. If the
+selected layout's dictionaries are missing, unreadable or empty, the keyboard
+shows a notification and opens in English (US). Switching languages skips
+layouts whose dictionaries are unavailable and keeps the current layout if none
+are available. Korean syllable assembly works without dictionaries.
+
+Typing in a conversion layout starts pre-edit text. The application buffer keeps
+the previously confirmed text while the work buffer and raw IME events describe
+the preview and its pre-edit range. Space cycles candidates, Enter confirms the
+current preview, and a subsequent Enter completes the field. Backspace removes
+the last input component; cancel restores the text preceding composition.
+Candidates can also be selected with the mouse or the controller's prediction
+row; the mouse wheel or horizontal navigation reaches further candidates.
+Raw candidate events are enabled by `DISABLE_LIST_FOR_EXT_KEYBOARD`; the native
+candidate row is hidden during external-keyboard input in that mode. Candidate
+APIs act on the delivered list and reject stale or unavailable selections.
+Application text replacement cancels pre-edit and discards older queued events.
+
+Dictionary candidates support whole-reading lookup and prefix suggestions.
+Sentence segmentation, adaptive learning and user dictionaries remain
+unimplemented; candidate ordering is not guaranteed to match the console.
+When no explicit initial keyboard mode is requested, committed Chinese and
+Japanese text from the host input system can also enter an eligible field. Candidate APIs report `NOT_OPENED` when closed
+and `INVALID_PARAM` for an unavailable candidate. After confirmation or
+cancellation, candidate APIs report `INVALID_TIMING` until another list is sent.
+Pre-edit supports 30 UTF-16 units, or 120 for Japanese when the application
+requests expanded pre-edit. Lists contain up to 100 candidates. Pre-edit can
+exceed the committed-text limit without overwriting the confirmed buffer.
+Applications can provide an additional dictionary through a mounted guest path.
+The loader validates the file size, checksum, record bounds and UTF-16 text.
+Its terms feed the existing conversion layouts and are combined with system
+candidates without duplicates; the priority
+option places application terms first. The additional dictionary is loaded for
+the current session and does not replace the user's dumped system dictionaries.
+Latin-language predictive typing remains unavailable.
+
+Applications can request initial external-keyboard input modes independently of
+the on-screen keyboard. Supported modes include native-language input,
+Japanese unconfirmed alphabet/hiragana/katakana, full-width Japanese and Chinese
+text, and Arabic numeral and format-character options. Numeric-keypad digits
+remain ASCII. Mode-specific options for other languages are ignored. Explicit initial modes use physical key events after application filtering,
+so multi-character keys and repeats do not depend on host text composition.
+Ordinary direct input retains the host keyboard layout.
+
+When a connected external keyboard has precedence and the application requests
+a hidden key panel, the grid and its navigation targets are removed. The text
+and candidate fields use the compact panel dimensions. Raw IME still accepts
+keyboard input without displaying the optional PC editor. Accessibility panels
+retain their fixed layout and ignore this hide option.
 
 Raw callbacks own text snapshots and report
 selection ranges; programmatic text replacement invalidates older pending edits.
@@ -112,3 +205,25 @@ Queued keyboard input belongs to the reception client that captured it and is
 not delivered to a later client after close/reopen. Pending keyboard events are
 bounded; the owning update call reports `EVENT_OVERFLOW` if events were lost.
 The application must resynchronize its input state after that error.
+
+External-keyboard filters receive the current pre-edit, candidate and native
+method state. Accepted native, script and width changes persist for subsequent
+keys. Input-method gestures and keyboard-reception output modes have separate
+state. Reception supports automatic/manual native switching, partial or composed
+characters, kana variants, Arabic numeral and format-character options, and
+replacement/continuous character events. The physical layout currently defaults
+to the console-language profile; there is no separate physical-layout setting.
+
+With both OSK reception options enabled, virtual character and editing keys enter
+the same bounded, client-owned queue as physical keys. Events identify OSK origin;
+shortcuts retain their origin flag. Editing at a different position finishes the
+previous pre-edit before inserting or replacing text. Korean Space confirms the
+current syllable and inserts the delimiter within the field's text limit.
+
+Managed physical input keeps its layout and method state independently of the
+virtual keyboard selection. Each input event retains that context through the
+UI queue, including mode-only changes, so composition does not depend on how
+characters are grouped into frames. Text belonging to a closed IME session is
+not applied to a later session. Physical composition may use a different language
+from the displayed virtual keyboard; both still obey field type, text limits
+and the existing dumped-dictionary requirements.

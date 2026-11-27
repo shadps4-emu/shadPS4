@@ -1,23 +1,238 @@
 // SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "core/libraries/ime/ime_composition.h"
 #include "core/libraries/ime/ime_japanese_charset.h"
 #include "core/libraries/ime/ime_ui_shared.h"
 
 #include <cmath>
 #include <cstring>
+#include <limits>
 #include <numbers>
 #include <string>
+#include <SDL3/SDL_keyboard.h>
 #include <magic_enum/magic_enum_flags.hpp>
 
 #include "common/scope_exit.h"
 #include "common/singleton.h"
 #include "core/emulator_settings.h"
+#include "core/file_sys/fs.h"
+#include "core/libraries/ime/ime.h"
 #include "core/libraries/ime/ime_kb_language.h"
+#include "core/memory.h"
 #include "imgui/notifications_layer.h"
 #include "input/controller.h"
 
 namespace Libraries::Ime {
+
+std::shared_ptr<const ImeDictionary> LoadImeApplicationDictionary(
+    const OrbisImeParamExtended* extended) {
+    if (!extended || False(extended->option & OrbisImeExtOption::ENABLE_ADDITIONAL_DICTIONARY) ||
+        !extended->additional_dictionary_path) {
+        return {};
+    }
+    auto* memory = ::Core::Memory::Instance();
+    std::string path;
+    for (std::size_t i = 0; i < 1024; ++i) {
+        const auto* character = extended->additional_dictionary_path + i;
+        if (!memory->IsValidMapping(reinterpret_cast<VAddr>(character), 1)) {
+            return {};
+        }
+        if (*character == 0) {
+            auto* mounts = Common::Singleton<::Core::FileSys::MntPoints>::Instance();
+            return !path.empty() && mounts->GetMount(path)
+                       ? ImeDictionary::LoadApplication(mounts->GetHostPath(path))
+                       : nullptr;
+        }
+        if (static_cast<unsigned char>(*character) > 0x7f) {
+            return {};
+        }
+        path += *character;
+    }
+    return {};
+}
+
+bool IsImeKeyPanelHidden(OrbisImeOption option, OrbisImeExtOption extended,
+                         OrbisImeDisableDevice disabled) {
+    const bool accessibility = True(extended & OrbisImeExtOption::ENABLE_ACCESSIBILITY) &&
+                               (True(extended & OrbisImeExtOption::ACCESSIBILITY_PANEL_FORCED) ||
+                                EmulatorSettings.IsImeAccessibilityEnabled());
+    return !accessibility && True(option & OrbisImeOption::EXT_KEYBOARD) &&
+           True(extended & OrbisImeExtOption::HIDE_KEYPANEL_IF_EXT_KEYBOARD) &&
+           False(disabled & OrbisImeDisableDevice::EXT_KEYBOARD) && SDL_HasKeyboard();
+}
+
+void LockImeWindowScroll() {
+    ImGui::SetScrollX(0.0f);
+    ImGui::SetScrollY(0.0f);
+    auto* window = ImGui::GetCurrentWindow();
+    window->Scroll = ImVec2(0.0f, 0.0f);
+    const float max_f = std::numeric_limits<float>::max();
+    window->ScrollTarget = ImVec2(max_f, max_f);
+}
+
+void DrawImePanelSelector(SelectorFadeState& state, ImVec2 position, ImVec2 size,
+                          float corner_radius, bool selected, bool pulse_triggered,
+                          ImDrawFlags corners) {
+    constexpr float border_thickness = 2.0f;
+    constexpr float inset = 2.0f;
+    const double now = ImGui::GetTime();
+    if (selected && pulse_triggered) {
+        TriggerSelectorPressPulse(state, now);
+    }
+    UpdateSelectorFadeState(state, position, size, inset, std::max(0.0f, corner_radius - inset),
+                            selected, now);
+    const float expand =
+        selected ? ComputePressPulseExpand(state.press_pulse_started_at, now,
+                                           kSelectorPressPulseDurationSec,
+                                           border_thickness * kSelectorPressPulseExpandBorderFactor)
+                 : 0.0f;
+    DrawSelectorFadeState(state, ImGui::GetWindowDrawList(), IM_COL32(255, 255, 255, 18),
+                          IM_COL32(248, 248, 248, 255), border_thickness,
+                          kSelectorFadeOutDurationSec, now, expand, corners);
+}
+
+void DrawImePanelBorder() {
+    const auto position = ImGui::GetWindowPos();
+    const auto size = ImGui::GetWindowSize();
+    auto* draw = ImGui::GetWindowDrawList();
+    constexpr float thickness = 1.5f;
+    constexpr ImVec2 inset{thickness * 0.5f, thickness * 0.5f};
+    draw->PushClipRect(position, position + size, false);
+    draw->AddRect(position + inset, position + size - inset, IM_COL32(160, 160, 160, 210),
+                  ImGui::GetStyle().WindowRounding, 0, thickness);
+    draw->PopClipRect();
+}
+
+void DrawImeTopPanelBackground(ImVec2 position, ImVec2 size, ImU32 color, ImDrawFlags corners) {
+    const auto window_pos = ImGui::GetWindowPos();
+    const auto window_max = window_pos + ImGui::GetWindowSize();
+    constexpr float inset = 1.5f;
+    const ImVec2 minimum{std::max(position.x, window_pos.x + inset), position.y};
+    const ImVec2 maximum{std::min(position.x + size.x, window_max.x - inset), position.y + size.y};
+    auto* draw = ImGui::GetWindowDrawList();
+    draw->PushClipRect(window_pos, window_max, false);
+    draw->AddRectFilled(minimum, maximum, color,
+                        std::max(0.0f, ImGui::GetStyle().WindowRounding - inset), corners);
+    draw->PopClipRect();
+}
+
+bool DrawImeCloseButton(const char* label, const ImePanelMetrics& metrics,
+                        const ImeStyleConfig& style, bool native_input_active) {
+    ImGui::SetCursorScreenPos(metrics.close_pos);
+    ImGui::PushItemFlag(ImGuiItemFlags_NoNav, !native_input_active);
+    ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0.0f);
+    for (const auto color : {ImGuiCol_Button, ImGuiCol_ButtonHovered, ImGuiCol_ButtonActive}) {
+        ImGui::PushStyleColor(color, ImVec4{});
+    }
+    const bool pressed = ImGui::Button(label, metrics.close_size);
+    ImGui::PopStyleColor(3);
+    ImGui::PopStyleVar();
+    ImGui::PopItemFlag();
+    const float brightness = ImGui::IsItemActive() ? 0.16f : ImGui::IsItemHovered() ? 0.08f : 0.0f;
+    auto* draw = ImGui::GetWindowDrawList();
+    DrawImeTopPanelBackground(
+        metrics.close_pos, metrics.close_size,
+        ImGui::GetColorU32(BrightenColor(ImeColorToImU32(style.color_button_function), brightness)),
+        ImDrawFlags_RoundCornersRight);
+    constexpr const char* close_label = "\xE2\x9C\x95";
+    const ImVec2 text_size = ImGui::CalcTextSize(close_label, nullptr, true);
+    const ImVec2 text_pos{metrics.close_pos.x + (metrics.close_size.x - text_size.x) * 0.5f,
+                          metrics.close_pos.y + std::max(1.0f, metrics.close_size.y * 0.04f)};
+    draw->AddText(text_pos, ImeColorToImU32(style.color_text), close_label);
+    return pressed;
+}
+
+int DrawImeCandidates(const ImeComposition& composition, ImVec2 position, ImVec2 size,
+                      bool pointer_enabled, const ImeStyleConfig& style) {
+    const auto& candidates = composition.Candidates();
+    if (candidates.empty()) {
+        return -1;
+    }
+    auto* draw = ImGui::GetWindowDrawList();
+    draw->PushClipRect(position, {position.x + size.x, position.y + size.y}, true);
+    const int selected = std::max(0, composition.Selected());
+    constexpr int visible = 5;
+    const int page = selected / visible;
+    const float cell = size.x / visible;
+    int chosen = -1;
+    for (int i = page * visible;
+         i < std::min(static_cast<int>(candidates.size()), (page + 1) * visible); ++i) {
+        const ImVec2 minimum{position.x + (i % visible) * cell, position.y};
+        const ImVec2 maximum{minimum.x + cell, minimum.y + size.y};
+        if (i == composition.Selected()) {
+            draw->AddRectFilled(minimum, maximum, ImeColorToImU32(style.color_special));
+        }
+        const auto label = std::to_string(i + 1) + " " + candidates[i];
+        draw->PushClipRect(minimum, maximum, true);
+        draw->AddText({minimum.x + 4, minimum.y + (size.y - ImGui::GetFontSize()) * 0.5f},
+                      ImeColorToImU32(style.color_text), label.c_str());
+        draw->PopClipRect();
+        if (pointer_enabled && ImGui::IsMouseHoveringRect(minimum, maximum) &&
+            ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+            chosen = i;
+        }
+    }
+    draw->PopClipRect();
+    return chosen;
+}
+
+void CaptureImeCompositionInput(ImeComposition& composition, std::vector<ImeKeyboardText>& pending,
+                                bool native_input_active, std::optional<ImeKeyboardContext> context,
+                                bool capture_direct) {
+    auto& io = ImGui::GetIO();
+    const bool shortcut = io.KeyCtrl || io.KeyAlt || io.KeySuper;
+    const bool enabled =
+        native_input_active && (composition.Enabled() || context || capture_direct);
+    const auto append = [&](std::string_view text,
+                            std::optional<ImeKeyboardContext> input_context) {
+        if (pending.empty() || pending.back().context != input_context) {
+            pending.push_back({{}, input_context});
+        }
+        pending.back().text += text;
+    };
+    std::vector<bool> captured(io.InputQueueCharacters.Size);
+    const auto capture = [&](int index, std::optional<ImeKeyboardContext> input_context) {
+        if (!enabled || (shortcut && !input_context &&
+                         (io.InputQueueCharacters[index] < 0x200c ||
+                          io.InputQueueCharacters[index] > 0x200f))) {
+            return;
+        }
+        char text[5]{};
+        ImTextCharToUtf8(text, io.InputQueueCharacters[index]);
+        if (capture_direct || input_context || composition.Accepts(text) || composition.Active() ||
+            !pending.empty()) {
+            append(text, input_context);
+            captured[index] = true;
+        }
+    };
+    int character = 0;
+    for (const auto& event : ImGui::GetCurrentContext()->InputEventsTrail) {
+        const auto input_context = TakeImeKeyboardContext(event.EventId);
+        const bool stale =
+            input_context && (!context || input_context->generation != context->generation);
+        if (event.Type == ImGuiInputEventType_Text) {
+            if (character < io.InputQueueCharacters.Size &&
+                event.Text.Char == io.InputQueueCharacters[character]) {
+                if (stale) {
+                    captured[character++] = true;
+                } else {
+                    capture(character++, input_context ? input_context : context);
+                }
+            }
+        } else if (enabled && input_context && !stale) {
+            append({}, input_context);
+        }
+    }
+    while (character < io.InputQueueCharacters.Size) {
+        capture(character++, context);
+    }
+    for (int i = io.InputQueueCharacters.Size - 1; i >= 0; --i) {
+        if (captured[i]) {
+            io.InputQueueCharacters.erase(io.InputQueueCharacters.Data + i);
+        }
+    }
+}
 
 namespace {
 
@@ -190,7 +405,8 @@ void UpdateSelectorFadeState(SelectorFadeState& state, ImVec2 pos, ImVec2 size, 
 
 void DrawSelectorFadeState(const SelectorFadeState& state, ImDrawList* draw_list,
                            ImU32 overlay_color, ImU32 border_color, float border_thickness,
-                           float fade_duration_sec, double now, float current_expand_px) {
+                           float fade_duration_sec, double now, float current_expand_px,
+                           ImDrawFlags corners) {
     if (!draw_list) {
         return;
     }
@@ -203,10 +419,10 @@ void DrawSelectorFadeState(const SelectorFadeState& state, ImDrawList* draw_list
             if (alpha > 0.0f) {
                 draw_list->AddRectFilled(state.previous_min, state.previous_max,
                                          ScaleColorAlpha(overlay_color, alpha),
-                                         state.previous_corner_radius);
+                                         state.previous_corner_radius, corners);
                 draw_list->AddRect(state.previous_min, state.previous_max,
                                    ScaleColorAlpha(border_color, alpha),
-                                   state.previous_corner_radius, 0, border_thickness);
+                                   state.previous_corner_radius, corners, border_thickness);
             }
         }
     }
@@ -218,9 +434,30 @@ void DrawSelectorFadeState(const SelectorFadeState& state, ImDrawList* draw_list
     const ImVec2 current_min{state.current_min.x - expand, state.current_min.y - expand};
     const ImVec2 current_max{state.current_max.x + expand, state.current_max.y + expand};
     const float corner_radius = state.current_corner_radius + expand;
-    draw_list->AddRectFilled(current_min, current_max, overlay_color, corner_radius);
-    draw_list->AddRect(current_min, current_max, border_color, corner_radius, 0, border_thickness);
+    draw_list->AddRectFilled(current_min, current_max, overlay_color, corner_radius, corners);
+    draw_list->AddRect(current_min, current_max, border_color, corner_radius, corners,
+                       border_thickness);
 }
+
+namespace {
+
+bool CheckImeKeyboardDictionary(const ImeKbLayoutSelection& selection, bool notify = true) {
+    const auto dictionary =
+        ImeDictionary::Load(EmulatorSettings.GetImeDictionaryDir(), selection.variant);
+    if (!dictionary || !dictionary->Empty()) {
+        return true;
+    }
+    if (notify) {
+        const auto& profile = GetImeKeyboardLanguageProfile(selection.language, selection.variant);
+        shadNotifications::QueueNotification(
+            std::string("IME dictionaries unavailable for ") + profile.name +
+                ".\nSelect your dumped dictionaries in Settings > Paths.",
+            6.0f, shadNotifications::position::BottomRight, shadNotifications::stockIcons::Input);
+    }
+    return false;
+}
+
+} // namespace
 
 ImeKbLayoutSelection ResolveInitialKbLayoutSelection(OrbisImeExtOption ext_option,
                                                      OrbisImePanelPriority panel_priority,
@@ -234,6 +471,7 @@ ImeKbLayoutSelection ResolveInitialKbLayoutSelection(OrbisImeExtOption ext_optio
             .variant;
     selection.input_type = type;
     selection.ext_options = ext_option;
+    selection.panel_priority = panel_priority;
     selection.multiple_languages = HasMultipleImeKeyboardLanguages(supported_languages);
     if (type == OrbisImeType::Number) {
         selection.family = ImeKbLayoutFamily::Numeric;
@@ -265,25 +503,252 @@ ImeKbLayoutSelection ResolveInitialKbLayoutSelection(OrbisImeExtOption ext_optio
     return selection;
 }
 
-void NotifyImeKeyboardLayoutFallback(OrbisImeLanguage supported_languages, OrbisImeType type) {
-    if (type == OrbisImeType::Number) {
+void InitializeImeKeyboardLanguages(ImeKeyboardLanguagePicker& picker,
+                                    ImeKbLayoutSelection& selection, OrbisImeLanguage languages,
+                                    OrbisImeOption options, s32 user_id) {
+    const auto profiles = GetImeKeyboardLanguageProfiles();
+    const auto last = GetLastImeKeyboard(user_id);
+    const auto desired =
+        std::ranges::find_if(profiles, [&](const auto& profile) { return profile.name == last; });
+    picker.languages = GetImeInputKeyboards(languages, options, user_id);
+    const auto preferred = desired != profiles.end() ? desired->variant : selection.variant;
+    if (std::ranges::find(picker.languages, preferred) != picker.languages.end() &&
+        selection.input_type != OrbisImeType::Number) {
+        const auto candidate = GetImeKeyboardLanguageSelection(selection, preferred);
+        CheckImeKeyboardDictionary(candidate);
+    }
+    std::erase_if(picker.languages, [&](const auto variant) {
+        const auto candidate = GetImeKeyboardLanguageSelection(selection, variant);
+        return selection.input_type != OrbisImeType::Number &&
+               !CheckImeKeyboardDictionary(candidate, false);
+    });
+    selection.multiple_languages =
+        selection.input_type != OrbisImeType::Number && picker.languages.size() > 1;
+    if (picker.languages.empty()) {
+        selection.language = OrbisImeLanguage::ENGLISH_US;
+        selection.variant = ImeKbVariant::English_US;
         return;
+    }
+    const auto variant = desired != profiles.end() ? desired->variant : selection.variant;
+    auto selected = std::ranges::find(picker.languages, variant);
+    const auto choose_language = [&](OrbisImeLanguage language) {
+        return std::ranges::find_if(picker.languages, [&](const auto choice) {
+            return GetImeKeyboardLanguageProfile(choice).language == language;
+        });
+    };
+    if (selected == picker.languages.end()) {
+        selected = choose_language(GetImeKeyboardLanguageProfile(variant).language);
+    }
+    if (selected == picker.languages.end()) {
+        selected = choose_language(OrbisImeLanguage::ENGLISH_GB);
+    }
+    if (selected == picker.languages.end()) {
+        selected = choose_language(OrbisImeLanguage::ENGLISH_US);
+    }
+    if (selected == picker.languages.end()) {
+        selected = picker.languages.begin();
+    }
+    selection.variant = *selected;
+    selection.language = GetImeKeyboardLanguageProfile(*selected).language;
+}
+
+void InitializeImeKeyboardCase(ImeKbLayoutSelection& selection, bool empty,
+                               OrbisImeOption options) {
+    if (!empty || selection.input_type != OrbisImeType::Default ||
+        selection.case_state != ImeKbCaseState::Lower ||
+        True(options & (OrbisImeOption::NO_AUTO_CAPITALIZATION | OrbisImeOption::PASSWORD))) {
+        return;
+    }
+    switch (selection.language) {
+    case OrbisImeLanguage::JAPANESE:
+    case OrbisImeLanguage::KOREAN:
+    case OrbisImeLanguage::SIMPLIFIED_CHINESE:
+    case OrbisImeLanguage::TRADITIONAL_CHINESE:
+    case OrbisImeLanguage::ARABIC:
+    case OrbisImeLanguage::THAI:
+        return;
+    default:
+        selection.case_state = ImeKbCaseState::Upper;
+    }
+}
+
+bool DrawImeKeyboardLanguagePicker(ImeKeyboardLanguagePicker& picker,
+                                   ImeKbLayoutSelection& selection, const ImePanelMetrics& metrics,
+                                   const ImeKbGridLayout& keyboard_layout,
+                                   const ImeKbDrawParams& keyboard_params, bool left, bool right,
+                                   bool cross_down, bool activate, bool& cancel, bool opened,
+                                   bool pointer_enabled) {
+    if (!picker.IsVisible()) {
+        return false;
+    }
+    constexpr float transition_duration = 0.12f;
+    constexpr float slide_duration = 0.1f;
+    constexpr float preview_scale = 0.8f;
+    const auto smooth = [](float value) { return value * value * (3.0f - 2.0f * value); };
+    const float delta = ImGui::GetIO().DeltaTime / transition_duration;
+    picker.openness = std::clamp(picker.openness + (picker.IsOpen() ? delta : -delta), 0.0f, 1.0f);
+    const float opening = smooth(picker.openness);
+    const double now = ImGui::GetTime();
+    if (cancel) {
+        picker.index = -1;
+        cancel = false;
+    } else if (picker.IsOpen() && !opened && picker.openness == 1.0f &&
+               now - picker.slide_started_at >= slide_duration) {
+        picker.Move(static_cast<int>(right) - static_cast<int>(left));
+    }
+    if (picker.IsOpen() && picker.slide_target != picker.index) {
+        picker.slide_origin = picker.visual_index;
+        picker.slide_target = picker.index;
+        picker.slide_started_at = now;
+    }
+    const float slide_progress = std::clamp(
+        static_cast<float>((now - picker.slide_started_at) / slide_duration), 0.0f, 1.0f);
+    picker.visual_index = ImLerp(picker.slide_origin, static_cast<float>(picker.slide_target),
+                                 smooth(slide_progress));
+    const bool interactive =
+        picker.IsOpen() && !opened && picker.openness == 1.0f && slide_progress == 1.0f;
+    if (!cross_down) {
+        picker.activate_armed = true;
+    }
+    auto* draw = ImGui::GetWindowDrawList();
+    const float scale = ImLerp(1.0f, preview_scale, opening);
+    const ImVec2 size{keyboard_layout.size.x * scale, keyboard_layout.size.y * scale};
+    const ImVec2 position{keyboard_layout.pos.x + (keyboard_layout.size.x - size.x) * 0.5f,
+                          keyboard_layout.pos.y + keyboard_layout.size.y - size.y};
+    const float gap = metrics.key_gap * scale * 2.0f;
+    const float stride = size.x + gap;
+    const ImVec2 clip_min{metrics.kb_pos.x - metrics.padding_x, metrics.predict_pos.y};
+    const ImVec2 clip_max{metrics.kb_pos.x + metrics.kb_size.x + metrics.padding_x,
+                          metrics.kb_pos.y + metrics.kb_size.y + metrics.padding_bottom};
+    draw->PushClipRect(clip_min, clip_max, true);
+    const float font_scale = ImGui::GetCurrentWindow()->FontWindowScale;
+    ImGui::SetWindowFontScale(metrics.key_font_scale * scale);
+    const int center = picker.IsOpen() ? picker.index : picker.slide_target;
+    bool clicked_confirm = false;
+    int clicked_direction = 0;
+    for (int i = std::max(0, center - 2);
+         i < std::min(static_cast<int>(picker.languages.size()), center + 3); ++i) {
+        if (!picker.IsOpen() && i != center) {
+            continue;
+        }
+        const float offset = picker.IsOpen() ? static_cast<float>(i) - picker.visual_index : 0.0f;
+        const float card_x = position.x + offset * stride;
+        if (card_x + size.x + gap < clip_min.x || card_x - gap > clip_max.x) {
+            continue;
+        }
+        auto params = keyboard_params;
+        params.selection = selection;
+        if (picker.IsOpen()) {
+            params.selection = GetImeKeyboardLanguageSelection(selection, picker.languages[i]);
+        }
+        params.layout_model = &GetImeKeyboardLayout(params.selection);
+        params.allow_nav_input = params.allow_activate_input = params.allow_pointer_input = false;
+        params.show_selection_highlight = false;
+        auto grid = keyboard_layout;
+        grid.pos = {card_x, position.y};
+        grid.size = size;
+        grid.cols = params.layout_model->cols;
+        grid.rows = params.layout_model->rows;
+        grid.key_gap_x *= scale;
+        grid.key_gap_y *= scale;
+        grid.corner_radius *= scale;
+        grid.fixed_bottom_rows =
+            std::min(static_cast<int>(params.layout_model->function_rows), grid.rows - 1);
+        grid.bottom_row_h = metrics.key_h * scale;
+        grid.key_h = (size.y - grid.key_gap_y * (grid.rows - 1) -
+                      grid.bottom_row_h * grid.fixed_bottom_rows) /
+                     (grid.rows - grid.fixed_bottom_rows);
+        ImGui::PushID(i + 3000);
+        ImeKbDrawState ignored;
+        ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+        DrawImeKeyboardGrid(grid, params, ignored);
+        ImGui::PopItemFlag();
+        const ImVec2 card_min{grid.pos.x - gap * 0.4f, grid.pos.y - gap * 0.4f};
+        const ImVec2 card_max{grid.pos.x + size.x + gap * 0.4f, grid.pos.y + size.y + gap * 0.4f};
+        const bool selected = i == center;
+        if (!selected) {
+            draw->AddRectFilled(card_min, card_max, IM_COL32(0, 0, 0, 110));
+        }
+        draw->AddRect(
+            card_min, card_max,
+            ScaleColorAlpha(selected ? IM_COL32(235, 235, 235, 255) : IM_COL32(100, 100, 100, 255),
+                            opening),
+            0.0f, 0, std::max(1.0f, metrics.corner_radius * 0.5f));
+        ImGui::SetCursorScreenPos(card_min);
+        ImGui::PushItemFlag(ImGuiItemFlags_NoNav, true);
+        ImGui::InvisibleButton("##ImeLanguageCard", card_max - card_min);
+        ImGui::PopItemFlag();
+        if (interactive && pointer_enabled && ImGui::IsItemClicked()) {
+            clicked_confirm = selected;
+            clicked_direction = i < center ? -1 : i > center ? 1 : 0;
+        }
+        ImGui::PopID();
+    }
+    ImGui::SetWindowFontScale(metrics.input_font_scale * 1.05f);
+    if (picker.IsOpen()) {
+        const auto* label =
+            GetImeKeyboardLanguageProfile(picker.languages[picker.index]).GetDisplayName();
+        const ImVec2 text_size = ImGui::CalcTextSize(label);
+        const float title_y = position.y - text_size.y - metrics.key_gap * 1.8f;
+        draw->AddText(
+            {keyboard_layout.pos.x + (keyboard_layout.size.x - text_size.x) * 0.5f, title_y},
+            ScaleColorAlpha(IM_COL32(240, 240, 240, 255), opening), label);
+        const float marker_width = std::max(2.0f, metrics.key_gap * 0.5f);
+        const float marker_gap = marker_width * 0.5f;
+        const float marker_left =
+            keyboard_layout.pos.x +
+            (keyboard_layout.size.x - picker.languages.size() * (marker_width + marker_gap)) * 0.5f;
+        for (std::size_t i = 0; i < picker.languages.size(); ++i) {
+            const ImVec2 marker{marker_left + i * (marker_width + marker_gap),
+                                title_y - metrics.key_gap};
+            draw->AddRectFilled(marker, {marker.x + marker_width, marker.y + 1.0f},
+                                ScaleColorAlpha(i == picker.index ? IM_COL32(240, 240, 240, 255)
+                                                                  : IM_COL32(100, 100, 100, 255),
+                                                opening));
+        }
+    }
+    ImGui::SetWindowFontScale(font_scale);
+    draw->PopClipRect();
+    if (clicked_direction != 0) {
+        picker.Move(clicked_direction);
+    }
+    if (interactive && (clicked_confirm || (activate && picker.activate_armed))) {
+        picker.Confirm(selection);
+        return true;
+    }
+    return false;
+}
+
+bool IsImeKeyboardLayoutImplemented(OrbisImeLanguage supported_languages, OrbisImeType type) {
+    if (type == OrbisImeType::Number) {
+        return true;
     }
     const bool console_default = static_cast<u64>(supported_languages) == 0;
     const int console_language = EmulatorSettings.GetConsoleLanguage();
-    const bool implemented = std::ranges::any_of(
+    return std::ranges::any_of(
         GetImeKeyboardLanguageProfiles(), [&](const ImeKbLanguageProfile& profile) {
             return console_default ? profile.console_language == console_language
                                    : True(supported_languages & profile.language);
         });
-    if (implemented) {
+}
+
+void NotifyImeKeyboardLayoutFallback(OrbisImeLanguage supported_languages, OrbisImeType type) {
+    if (IsImeKeyboardLayoutImplemented(supported_languages, type)) {
         return;
     }
+    const bool console_default = static_cast<u64>(supported_languages) == 0;
     const std::string requested =
         console_default ? "console language" : magic_enum::enum_flags_name(supported_languages);
     shadNotifications::QueueNotification(
         "IME keyboard layout not implemented: " + requested + ".\nUsing English (US).", 6.0f,
         shadNotifications::position::BottomRight, shadNotifications::stockIcons::Input);
+}
+
+bool IsImeDirectInputEnabled(OrbisImeLanguage supported_languages, OrbisImeType type,
+                             OrbisImeDisableDevice disable_device) {
+    return False(disable_device & OrbisImeDisableDevice::EXT_KEYBOARD) &&
+           (EmulatorSettings.IsImeDirectInput() ||
+            !IsImeKeyboardLayoutImplemented(supported_languages, type));
 }
 
 void InitializeDefaultOskSelectionAnchor(const ImeKbLayoutSelection& layout_selection,
@@ -1293,6 +1758,7 @@ OskShortcutActionResult EvaluateOskShortcutAction(bool allow_osk_shortcuts, bool
         result.action = ImeKbKeyAction::SymbolsMode;
     } else if (!numeric && tri_space_pressed) {
         result.action = ImeKbKeyAction::Space;
+        result.repeat = !tri_edge_pressed;
     } else if (!numeric && selection.family != ImeKbLayoutFamily::Symbols &&
                virtual_pad_input.Pressed(Libraries::Pad::OrbisPadButtonDataOffset::L3)) {
         result.action = ImeKbKeyAction::AlternateMode;
@@ -1302,10 +1768,13 @@ OskShortcutActionResult EvaluateOskShortcutAction(bool allow_osk_shortcuts, bool
         result.clear_all = true;
     } else if (square_repeat_pressed) {
         result.action = ImeKbKeyAction::Backspace;
+        result.repeat = !square_edge_pressed;
     } else if (l1_repeat_pressed) {
         result.action = ImeKbKeyAction::ArrowLeft;
+        result.repeat = !l1_edge_pressed;
     } else if (r1_repeat_pressed) {
         result.action = ImeKbKeyAction::ArrowRight;
+        result.repeat = !virtual_pad_input.Pressed(Libraries::Pad::OrbisPadButtonDataOffset::R1);
     } else if (!numeric &&
                virtual_pad_input.Pressed(Libraries::Pad::OrbisPadButtonDataOffset::R3)) {
         result.action = ImeKbKeyAction::Settings;

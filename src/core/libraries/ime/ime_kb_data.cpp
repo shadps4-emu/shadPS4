@@ -1176,11 +1176,4 @@ const ImeKbCharacter& GetImeKeyboardCharacter(u16 index) {
     return kCharacters[index];
 }
 
-void AddImeKeyboardDataGlyphs(ImFontGlyphRangesBuilder& builder) {
-    for (const auto& character : kCharacters) {
-        builder.AddText(character.text);
-        builder.AddText(character.label);
-    }
-}
-
 } // namespace Libraries::Ime

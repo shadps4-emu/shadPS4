@@ -30,6 +30,7 @@ enum class PathType {
     HomeDir,          // PS4 home directory
     CustomModulesDir, // Where custom modules are stored.
     LicensesDir,      // Where license files are stored.
+    ImeDictionaryDir,
 };
 
 constexpr auto PORTABLE_DIR = "user";
@@ -50,6 +51,7 @@ constexpr auto CUSTOM_TROPHY = "custom_trophy";
 constexpr auto CUSTOM_CONFIGS = "custom_configs";
 constexpr auto CACHE_DIR = "cache";
 constexpr auto FONTS_DIR = "fonts";
+constexpr auto IME_DICTIONARY_DIR = "ime/dic";
 constexpr auto TROPHY_DIR = "trophy";
 constexpr auto HOME_DIR = "home";
 constexpr auto CUSTOM_MODULES_DIR = "custom_modules";

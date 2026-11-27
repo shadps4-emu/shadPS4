@@ -9,6 +9,7 @@
 #include <queue>
 #include "common/logging/log.h"
 #include "common/scope_exit.h"
+#include "core/emulator_settings.h"
 #include "core/libraries/ime/ime.h"
 #include "core/libraries/ime/ime_dialog.h"
 #include "core/libraries/ime/ime_error.h"
@@ -179,10 +180,100 @@ bool HasInvalidWorkOverlap(const OrbisImeParam* param) {
 
 } // namespace
 
-OrbisImeLanguage GetImeInputLanguages(OrbisImeLanguage supported_languages) {
-    return static_cast<u64>(supported_languages) != 0
-               ? supported_languages
-               : static_cast<OrbisImeLanguage>(GetImeLanguageMask() & kValidOrbisImeLanguageMask);
+static std::vector<ImeKbVariant> GetConfiguredImeKeyboards(s32 user_id) {
+    const auto* user = UserManagement.GetUserByID(user_id);
+    const auto configured = user && !user->ime_input_languages.empty()
+                                ? user->ime_input_languages
+                                : EmulatorSettings.GetImeInputLanguages();
+    const bool ukrainian_available =
+        (GetImeLanguageMask() & static_cast<u64>(OrbisImeLanguage::UKRAINIAN)) != 0;
+    const auto compatible_variant = [ukrainian_available](ImeKbVariant variant) {
+        return variant == ImeKbVariant::Ukrainian && !ukrainian_available ? ImeKbVariant::English_GB
+                                                                          : variant;
+    };
+    std::vector<ImeKbVariant> result;
+    for (const int id : configured) {
+        if (const auto* profile = FindImeKeyboardSetting(id)) {
+            const auto variant = compatible_variant(profile->variant);
+            if (std::ranges::find(result, variant) == result.end()) {
+                result.push_back(variant);
+            }
+        }
+    }
+    if (result.empty()) {
+        result.push_back(ImeKbVariant::English_US);
+        const auto language = ResolveImeKeyboardLanguage(static_cast<OrbisImeLanguage>(0),
+                                                         EmulatorSettings.GetConsoleLanguage());
+        const auto variant = compatible_variant(
+            GetImeKeyboardLanguageProfile(language, EmulatorSettings.GetImeKeyboardLayout())
+                .variant);
+        if (variant != result.front()) {
+            result.push_back(variant);
+        }
+    }
+    return result;
+}
+
+OrbisImeLanguage GetImeInputLanguages(OrbisImeLanguage supported_languages, OrbisImeOption options,
+                                      s32 user_id) {
+    const auto supported =
+        static_cast<u64>(supported_languages) != 0
+            ? supported_languages
+            : static_cast<OrbisImeLanguage>(GetImeLanguageMask() & kValidOrbisImeLanguageMask);
+    if (user_id == 0xfe) {
+        return supported;
+    }
+    auto configured = static_cast<OrbisImeLanguage>(0);
+    for (const auto variant : GetConfiguredImeKeyboards(user_id)) {
+        configured |= GetImeKeyboardLanguageProfile(variant).language;
+    }
+    return ResolveImeInputLanguages(supported, configured, options);
+}
+
+std::vector<ImeKbVariant> GetImeInputKeyboards(OrbisImeLanguage languages, OrbisImeOption options,
+                                               s32 user_id) {
+    auto result = GetOrderedImeKeyboardLanguages(languages, EmulatorSettings.GetConsoleLanguage());
+    if (user_id == 0xfe) {
+        return result;
+    }
+    const auto configured = GetConfiguredImeKeyboards(user_id);
+    const bool forced = True(options & OrbisImeOption::LANGUAGES_FORCED);
+    const bool overlap = std::ranges::any_of(configured, [&](const auto variant) {
+        return True(GetImeKeyboardLanguageProfile(variant).language & languages);
+    });
+    std::erase_if(result, [&](const auto variant) {
+        const auto language = GetImeKeyboardLanguageProfile(variant).language;
+        const bool language_enabled = std::ranges::any_of(configured, [&](const auto enabled) {
+            return GetImeKeyboardLanguageProfile(enabled).language == language;
+        });
+        if (language_enabled) {
+            return std::ranges::find(configured, variant) == configured.end();
+        }
+        if (!forced && overlap) {
+            return true;
+        }
+        return language == OrbisImeLanguage::JAPANESE &&
+               variant != (forced ? ImeKbVariant::Japanese : ImeKbVariant::Japanese_Gojuon);
+    });
+    return result;
+}
+
+std::string GetLastImeKeyboard(s32 user_id) {
+    const auto* user = UserManagement.GetUserByID(user_id);
+    return user ? user->ime_last_keyboard : std::string{};
+}
+
+void RememberImeKeyboard(s32 user_id, const ImeKbLayoutSelection& selection) {
+    if (selection.input_type == OrbisImeType::Number) {
+        return;
+    }
+    if (auto* user = UserManagement.GetUserByID(user_id)) {
+        const auto* name = GetImeKeyboardLanguageProfile(selection.variant).name;
+        if (user->ime_last_keyboard != name) {
+            user->ime_last_keyboard = name;
+            UserManagement.Save();
+        }
+    }
 }
 
 class ImeHandler {
@@ -190,7 +281,7 @@ public:
     ImeHandler(const OrbisImeParam* param, const OrbisImeParamExtended* extended = nullptr) {
         m_param.ime = *param;
         m_param.ime_ext = extended ? *extended : OrbisImeParamExtended{};
-        g_ime_state = std::make_shared<ImeState>(&m_param.ime, &m_param.ime_ext);
+        g_ime_state = std::make_shared<ImeState>(&m_param.ime);
         g_ime_ui = std::make_shared<ImeUi>(g_ime_state.get(), &m_param.ime, &m_param.ime_ext);
         OrbisImeEvent event{};
         event.id = OrbisImeEventId::Open;
@@ -224,8 +315,13 @@ public:
                 state->event_queue.pop();
             }
             auto& event = queued.event;
-            const bool text_event =
-                event.id == OrbisImeEventId::UpdateText || event.id == OrbisImeEventId::UpdateCaret;
+            const bool candidate_event = event.id >= OrbisImeEventId::CandidateListStart &&
+                                         event.id <= OrbisImeEventId::CandidateCancel;
+            if (candidate_event && queued.candidate_revision != state->candidate_revision) {
+                continue;
+            }
+            const bool text_event = event.id == OrbisImeEventId::UpdateText ||
+                                    event.id == OrbisImeEventId::UpdateCaret || candidate_event;
             if (text_event && queued.revision != state->text_revision) {
                 continue;
             }
@@ -242,7 +338,7 @@ public:
                 queued.text = state->reported_text;
                 event.param.text.caret_index =
                     std::min(event.param.text.caret_index, static_cast<u32>(queued.text.size()));
-            } else if (event.id == OrbisImeEventId::UpdateText && filter) {
+            } else if (event.id == OrbisImeEventId::UpdateText && filter && !queued.preedit) {
                 const auto original = queued.text;
                 auto caret = event.param.text.caret_index;
                 const bool filtered = FilterImeText(filter, queued.text, max_length, caret);
@@ -302,13 +398,23 @@ public:
                 std::copy(queued.text.begin(), queued.text.end(), text);
                 text[queued.text.size()] = 0;
                 event.param.text.str = text;
-                std::copy(queued.text.begin(), queued.text.end(), state->text_buffer);
-                state->text_buffer[queued.text.size()] = 0;
+                const auto& committed = queued.preedit ? queued.committed_text : queued.text;
+                std::copy(committed.begin(), committed.end(), state->text_buffer);
+                state->text_buffer[committed.size()] = 0;
                 state->reported_text = queued.text;
                 state->reported_caret_index = event.param.text.caret_index;
                 if (preserve_caret) {
                     ui->SetCaret(event.param.text.caret_index);
                 }
+            }
+            if (event.id == OrbisImeEventId::CandidateListStart) {
+                state->candidate_count = 0;
+            } else if (event.id == OrbisImeEventId::CandidateWord) {
+                ++state->candidate_count;
+                event.param.candidate_word = queued.text.data();
+            } else if (event.id == OrbisImeEventId::CandidateDone ||
+                       event.id == OrbisImeEventId::CandidateCancel) {
+                state->candidate_count = -1;
             }
             const bool was_dispatching_caret = ui->dispatching_caret_move;
             ui->dispatching_caret_move = event.id == OrbisImeEventId::UpdateCaret;
@@ -319,14 +425,6 @@ public:
         }
 
         return Error::OK;
-    }
-
-    void Execute(OrbisImeEventHandler handler, OrbisImeEvent* event, bool use_param_handler) {
-        const auto param = m_param.ime;
-        const auto callback = use_param_handler ? param.handler : handler;
-        if (callback) {
-            callback(param.arg, event);
-        }
     }
 
     Error SetText(const char16_t* text, u32 length) {
@@ -341,11 +439,26 @@ public:
         auto ui = g_ime_ui;
         std::scoped_lock lock(ui->draw_mutex);
         g_ime_state->SetText(text, length);
+        ui->published_candidates.clear();
+        ui->candidate_events_active = false;
         ui->text_select_mode = false;
         ui->text_select_anchor_utf16 = ui->text_select_focus_utf16 = g_ime_state->caret_index;
         ui->last_input_text.clear();
         ui->last_input_caret = -1;
         return Error::OK;
+    }
+
+    Error SelectCandidate(s32 index, bool confirm) {
+        auto state = g_ime_state;
+        auto ui = g_ime_ui;
+        std::scoped_lock lock(ui->draw_mutex);
+        if (state->candidate_count < 0) {
+            return Error::INVALID_TIMING;
+        }
+        if (index < 0 || index >= state->candidate_count) {
+            return Error::INVALID_PARAM;
+        }
+        return ui->SelectCandidate(index, confirm) ? Error::OK : Error::INVALID_PARAM;
     }
 
     Error SetCaret(const OrbisImeCaret* caret) {
@@ -389,7 +502,9 @@ public:
             event.param.text.str[state->reported_text.size()] = 0;
             std::copy(state->reported_text.begin(), state->reported_text.end(), state->text_buffer);
             state->text_buffer[state->reported_text.size()] = 0;
-            Execute(m_param.ime.handler, &event, false);
+            if (m_param.ime.handler) {
+                m_param.ime.handler(m_param.ime.arg, &event);
+            }
         }
         return Error::OK;
     }
@@ -413,10 +528,6 @@ public:
 
     u32 GetImeOptionBits() const {
         return static_cast<u32>(m_param.ime.option);
-    }
-
-    u32 GetImeMaxTextLength() const {
-        return m_param.ime.maxTextLength;
     }
 
     u32 GetImeCurrentTextLength() const {
@@ -525,12 +636,8 @@ Error PS4_SYSV_ABI sceImeClose() {
 
     ConfigureImeKeyboard(false);
     g_ime_handler.reset();
-    if (g_ime_handler) {
-        LOG_ERROR(Lib_Ime, "Failed to close IME handler, it is still open");
-        return Error::INTERNAL;
-    }
-    g_ime_ui = std::make_shared<ImeUi>();
-    g_ime_state = std::make_shared<ImeState>();
+    g_ime_ui.reset();
+    g_ime_state.reset();
     ReleaseImeFrontend(ImeFrontend::Ime);
 
     LOG_DEBUG(Lib_Ime, "IME closed successfully");
@@ -550,7 +657,10 @@ int PS4_SYSV_ABI sceImeConfigSet() {
 int PS4_SYSV_ABI sceImeConfirmCandidate(s32 index) {
     std::scoped_lock api_lock(g_ime_api_mutex);
     LOG_TRACE(Lib_Ime, "index={}", index);
-    return static_cast<int>(g_ime_handler ? Error::INVALID_PARAM : Error::NOT_OPENED);
+    if (!g_ime_handler) {
+        return static_cast<int>(Error::NOT_OPENED);
+    }
+    return static_cast<int>(g_ime_handler->SelectCandidate(index, true));
 }
 
 int PS4_SYSV_ABI sceImeDicAddWord() {
@@ -934,7 +1044,10 @@ void PS4_SYSV_ABI sceImeParamInit(OrbisImeParam* param) {
 int PS4_SYSV_ABI sceImeSetCandidateIndex(s32 index) {
     std::scoped_lock api_lock(g_ime_api_mutex);
     LOG_TRACE(Lib_Ime, "index={}", index);
-    return static_cast<int>(g_ime_handler ? Error::INVALID_PARAM : Error::NOT_OPENED);
+    if (!g_ime_handler) {
+        return static_cast<int>(Error::NOT_OPENED);
+    }
+    return static_cast<int>(g_ime_handler->SelectCandidate(index, false));
 }
 
 Error PS4_SYSV_ABI sceImeSetCaret(const OrbisImeCaret* caret) {

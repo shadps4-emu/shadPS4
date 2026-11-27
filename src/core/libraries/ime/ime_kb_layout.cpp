@@ -12,7 +12,6 @@
 #include <vector>
 
 #include "core/debug_state.h"
-#include "core/libraries/ime/ime_kb_data.h"
 #include "core/libraries/ime/ime_kb_language.h"
 #include "core/libraries/ime/ime_ui_shared.h"
 
@@ -32,16 +31,15 @@ constexpr float kCloseW = 53.0f;
 constexpr float kKeysH = 316.0f;
 constexpr float kKeyGap = 9.0f;
 constexpr float kPadX = 26.0f;
-constexpr float kPadBottomSingle = 26.0f;
-constexpr float kPadBottomMulti = 26.0f;
+constexpr float kPadBottom = 26.0f;
+constexpr float kRawPanelBaseH = 408.0f;
+constexpr float kRawNumericPanelBaseH = 402.0f;
 constexpr float kKeyFontRatio = 0.042f;
 constexpr float kTypingKeyLabelScale = 1.60f;
 constexpr float kFunctionKeyLabelScale = 1.26f;
 constexpr float kHotkeyLabelScale = 0.74f;
 constexpr float kCornerRatio = 0.004f;
-constexpr float kSingleLineTextFill = 0.85f;
-constexpr float kMultiLineTextFill = 0.85f;
-constexpr int kMultiLineVisibleLines = 4;
+constexpr float kInputFontSize = 32.0f;
 constexpr int kKeyRows = 6;
 u16 Utf8FirstCodeUnit(const char* text) {
     if (!text || text[0] == '\0') {
@@ -129,41 +127,7 @@ constexpr std::array<ImeTopPanelElementSpec, 1> kTopPanelNumericElements = {{
 constexpr ImeTopPanelLayoutConfig kTopPanelNumericLayout{kTopPanelNumericElements.data(),
                                                          kTopPanelNumericElements.size(), 3, 0, 1};
 
-void AddImeKeyLabelGlyphs(ImFontGlyphRangesBuilder& builder, const char* label) {
-    if (!label || label[0] == '\0') {
-        return;
-    }
-    builder.AddText(label);
-}
-
 } // namespace
-
-void AddImeKeyboardGlyphsToFontRanges(ImFontGlyphRangesBuilder& builder) {
-    AddImeKeyboardDataGlyphs(builder);
-    builder.AddText("△▢");
-    for (const auto& profile : GetImeKeyboardLanguageProfiles()) {
-        const auto& labels = profile.GetLabels();
-        AddImeKeyLabelGlyphs(builder, labels.space_label);
-        AddImeKeyLabelGlyphs(builder, labels.accents_label);
-        AddImeKeyLabelGlyphs(builder, labels.letters_label);
-        AddImeKeyLabelGlyphs(builder, labels.symbols_label);
-        for (const char* label : labels.enter_labels) {
-            AddImeKeyLabelGlyphs(builder, label);
-        }
-        for (const char* label : labels.main_menu_items) {
-            AddImeKeyLabelGlyphs(builder, label);
-        }
-        for (const char* label : labels.action_menu_items) {
-            AddImeKeyLabelGlyphs(builder, label);
-        }
-        for (const char* label : labels.width_labels) {
-            AddImeKeyLabelGlyphs(builder, label);
-        }
-        for (const char* label : labels.script_action_labels) {
-            AddImeKeyLabelGlyphs(builder, label);
-        }
-    }
-}
 
 ImeViewportMetrics ComputeImeViewportMetrics(bool use_over2k) {
     ImeViewportMetrics metrics{};
@@ -210,36 +174,77 @@ ImeViewportMetrics ComputeImeViewportMetrics(bool use_over2k) {
     return metrics;
 }
 
+ImVec2 ReprojectImePanelPosition(const ImVec2& position, const ImeViewportMetrics& previous,
+                                 const ImeViewportMetrics& current) {
+    if (previous.size.x <= 0.0f || previous.size.y <= 0.0f ||
+        (previous.size.x == current.size.x && previous.size.y == current.size.y &&
+         previous.offset.x == current.offset.x && previous.offset.y == current.offset.y)) {
+        return position;
+    }
+    return {current.offset.x + (position.x - previous.offset.x) * current.size.x / previous.size.x,
+            current.offset.y + (position.y - previous.offset.y) * current.size.y / previous.size.y};
+}
+
+float ComputeImeRawPanelHeight(float requested_height, bool numeric, bool multiline,
+                               bool direct_input, bool hide_keyboard) {
+    if (!direct_input) {
+        return requested_height;
+    }
+    const float base_height =
+        (numeric ? kRawNumericPanelBaseH : kRawPanelBaseH) - (hide_keyboard ? kKeysH : 0.0f);
+    const float input_height = multiline ? kInputHMulti : kInputHSingle;
+    return requested_height * (1.0f + input_height / base_height);
+}
+
 ImePanelMetrics ComputeImePanelMetrics(const ImePanelMetricsConfig& config) {
     ImePanelMetrics metrics{};
     metrics.panel_w = config.panel_w;
     metrics.panel_h = config.panel_h;
+    const bool raw_panel = config.raw_panel;
+    const float raw_base_h = config.numeric ? kRawNumericPanelBaseH : kRawPanelBaseH;
+    const float input_base_h = config.multiline ? kInputHMulti : kInputHSingle;
+    const float panel_base_h = raw_panel
+                                   ? raw_base_h + (config.show_input ? input_base_h : 0.0f)
+                                   : (config.multiline ? kPanelBaseHMulti : kPanelBaseHSingle);
     const float panel_base_w = config.numeric ? kNumericPanelBaseW : kPanelBaseW;
     metrics.padding_x = metrics.panel_w * (kPadX / panel_base_w);
-    metrics.padding_bottom =
-        metrics.panel_h * (config.multiline ? (kPadBottomMulti / kPanelBaseHMulti)
-                                            : (kPadBottomSingle / kPanelBaseHSingle));
+    metrics.padding_bottom = metrics.panel_h * kPadBottom / panel_base_h;
 
     const float panel_scale = metrics.panel_w / panel_base_w;
     metrics.label_h = config.show_title ? (kLabelH * panel_scale) : metrics.padding_bottom;
-    metrics.input_h = metrics.panel_h * (config.multiline ? (kInputHMulti / kPanelBaseHMulti)
-                                                          : (kInputHSingle / kPanelBaseHSingle));
-    metrics.predict_h = metrics.panel_h * (config.multiline ? (kPredictH / kPanelBaseHMulti)
-                                                            : (kPredictH / kPanelBaseHSingle));
+    if (raw_panel) {
+        metrics.label_h =
+            metrics.panel_h * (raw_base_h - kPredictH - kKeysH - kPadBottom) / panel_base_h;
+    }
+    const float input_h = metrics.panel_h * input_base_h / panel_base_h;
+    metrics.input_h = config.show_input ? input_h : 0.0f;
+    metrics.predict_h = metrics.panel_h * kPredictH / panel_base_h;
     metrics.close_w = metrics.panel_w * (kCloseW / panel_base_w);
-    metrics.keys_h = metrics.panel_h * (config.multiline ? (kKeysH / kPanelBaseHMulti)
-                                                         : (kKeysH / kPanelBaseHSingle));
+    metrics.keys_h = metrics.panel_h * kKeysH / panel_base_h;
     metrics.key_gap = metrics.panel_w * (kKeyGap / panel_base_w);
     metrics.corner_radius = metrics.panel_w * kCornerRatio;
 
+    if (config.hide_keyboard) {
+        metrics.keys_h = 0.0f;
+        metrics.predict_h = std::min(metrics.panel_h, kPredictH * panel_scale);
+        metrics.input_h = config.show_input
+                              ? std::min(input_base_h * panel_scale,
+                                         std::max(0.0f, metrics.panel_h - metrics.predict_h))
+                              : 0.0f;
+        const float available =
+            std::max(0.0f, metrics.panel_h - metrics.predict_h - metrics.input_h);
+        metrics.label_h = std::min((raw_panel ? raw_base_h - kPredictH - kKeysH - kPadBottom
+                                    : config.show_title ? kLabelH
+                                                        : 0.0f) *
+                                       panel_scale,
+                                   available);
+        metrics.padding_bottom = available - metrics.label_h;
+    }
+
     const float base_font_size = config.base_font_size > 0.0f ? config.base_font_size : 1.0f;
     metrics.label_font_scale = (metrics.label_h * 0.85f) / base_font_size;
-    metrics.input_font_scale =
-        (metrics.input_h * (config.multiline
-                                ? (kMultiLineTextFill / static_cast<float>(kMultiLineVisibleLines))
-                                : kSingleLineTextFill)) /
-        base_font_size;
-    metrics.key_font_scale = (metrics.panel_h * kKeyFontRatio) / base_font_size;
+    metrics.input_font_scale = (kInputFontSize * panel_scale) / base_font_size;
+    metrics.key_font_scale = (kPanelBaseHSingle * kKeyFontRatio * panel_scale) / base_font_size;
 
     metrics.input_pos_local = {metrics.padding_x, metrics.label_h};
     metrics.input_size = {metrics.panel_w - metrics.padding_x * 2.0f, metrics.input_h};
@@ -266,11 +271,13 @@ ImePanelMetrics ComputeImePanelMetrics(const ImePanelMetricsConfig& config) {
 
     metrics.key_h =
         (metrics.kb_size.y - metrics.key_gap * static_cast<float>(kKeyRows - 1)) / kKeyRows;
-    if (metrics.key_h < 8.0f) {
+    if (config.hide_keyboard) {
+        metrics.key_h = 0.0f;
+    } else if (metrics.key_h < 8.0f) {
         metrics.key_h = 8.0f;
     }
 
-    if (config.accessibility) {
+    if (config.accessibility && !config.hide_keyboard) {
         const float scale = std::min(config.panel_w / 1920.0f, config.panel_h / 1080.0f);
         const float keyboard_width = (config.numeric ? 510.0f : 1161.0f) * scale;
         metrics.key_gap = 9.0f * scale;
@@ -343,6 +350,7 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
     const auto& language_profile =
         GetImeKeyboardLanguageProfile(params.selection.language, params.selection.variant);
     state.done_pressed = false;
+    state.pressed_repeat = false;
     state.pressed_action = ImeKbKeyAction::None;
     state.pressed_text = nullptr;
     state.selected_row = -1;
@@ -839,6 +847,7 @@ void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& p
             nav_state.press_pulse_col = render_key.col;
             nav_state.press_pulse_started_at = ImGui::GetTime();
         }
+        state.pressed_repeat = !trigger_press_pulse;
         state.pressed_action = render_key.key->action;
         state.pressed_text = render_key.key->text;
         if (render_key.is_done) {

@@ -37,6 +37,5 @@ struct ImeKbPageData {
 const ImeKbPageData* GetImeKeyboardPageData(ImeKbVariant variant, OrbisImeType type,
                                             ImeKbPage page);
 const ImeKbCharacter& GetImeKeyboardCharacter(u16 index);
-void AddImeKeyboardDataGlyphs(ImFontGlyphRangesBuilder& builder);
 
 } // namespace Libraries::Ime

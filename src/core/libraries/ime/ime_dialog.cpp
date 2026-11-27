@@ -1093,25 +1093,6 @@ static Error SetupDialogState(OrbisImeDialogParam* param, OrbisImeParamExtended*
     return Error::OK;
 }
 
-static Error InitDialogCommon(OrbisImeDialogParam* param, OrbisImeParamExtended* extended,
-                              bool internal) {
-    if (param == nullptr) {
-        LOG_ERROR(Lib_ImeDialog, "param is null");
-        return Error::INVALID_ADDRESS;
-    }
-    if (g_ime_dlg_client != nullptr || g_ime_dlg_status != OrbisImeDialogStatus::None) {
-        LOG_ERROR(Lib_ImeDialog, "busy (status={})", (u32)g_ime_dlg_status);
-        return Error::BUSY;
-    }
-
-    const Error vret = ValidateImeDialogParam(param, extended, internal);
-    if (vret != Error::OK) {
-        return vret;
-    }
-
-    return SetupDialogState(param, extended, internal);
-}
-
 Error PS4_SYSV_ABI sceImeDialogInit(OrbisImeDialogParam* param, OrbisImeParamExtended* extended) {
     std::scoped_lock api_lock(GetDialogMutex());
     LOG_INFO(Lib_ImeDialog, "Init called, param={}, extended={}", static_cast<void*>(param),
@@ -1184,9 +1165,8 @@ Error PS4_SYSV_ABI sceImeDialogInit(OrbisImeDialogParam* param, OrbisImeParamExt
                   static_cast<u32>(extended->disable_device));
         LOG_DEBUG(Lib_ImeDialog, "extended->ext_keyboard_mode: {:032b}",
                   static_cast<u32>(extended->ext_keyboard_mode));
-        LOG_DEBUG(Lib_ImeDialog, "extended->additional_dictionary_path: {}",
-                  extended->additional_dictionary_path ? extended->additional_dictionary_path
-                                                       : "NULL");
+        LOG_DEBUG(Lib_ImeDialog, "extended->additional_dictionary_path: {:p}",
+                  static_cast<const void*>(extended->additional_dictionary_path));
     } else {
         LOG_DEBUG(Lib_ImeDialog, "extended: NULL");
     }

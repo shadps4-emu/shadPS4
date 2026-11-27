@@ -2,12 +2,11 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstring>
 #include <cwchar>
-#include <limits>
 #include <string>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 #include <imgui.h>
@@ -23,6 +22,7 @@
 #include "core/libraries/ime/ime_dialog.h"
 #include "core/libraries/ime/ime_dialog_ui.h"
 #include "core/libraries/ime/ime_kb_layout.h"
+#include "core/libraries/ime/ime_keyboard.h"
 #include "core/libraries/ime/ime_ui_shared.h"
 #include "core/libraries/pad/pad.h"
 #include "core/memory.h"
@@ -34,15 +34,7 @@ using namespace ImGui;
 
 namespace Libraries::ImeDialog {
 namespace {
-constexpr ImU32 kSelectorBorderColor = IM_COL32(248, 248, 248, 255);
-constexpr ImU32 kSelectorOverlayColor = IM_COL32(255, 255, 255, 18);
-constexpr float kSelectorBorderThickness = 2.0f;
-constexpr float kSelectorInnerMargin = 2.0f;
-constexpr const char* kSelectorInputId = "##ImeDialogSelectorInput";
-constexpr const char* kSelectorPredictId = "##ImeDialogSelectorPredict";
-constexpr const char* kSelectorCloseId = "##ImeDialogSelectorClose";
 
-using Libraries::Ime::BrightenColor;
 using Libraries::Ime::ClampInputBufferToUtf16Limit;
 using Libraries::Ime::CommitOskPadInputFrame;
 using Libraries::Ime::ComputeOskPadInputFrame;
@@ -107,10 +99,12 @@ ImeDialogState::ImeDialogState(const OrbisImeDialogParam* param,
     is_numeric = param->type == OrbisImeType::Number;
     type = param->type;
     supported_languages = param->supported_languages;
-    input_languages = Libraries::Ime::GetImeInputLanguages(supported_languages);
+    input_languages = Libraries::Ime::GetImeInputLanguages(supported_languages, option, user_id);
     enter_label = param->enter_label;
     text_filter = param->filter;
     keyboard_filter = extended ? extended->ext_keyboard_filter : nullptr;
+    application_dictionary = Libraries::Ime::LoadImeApplicationDictionary(extended);
+    ext_keyboard_mode = extended ? extended->ext_keyboard_mode : 0;
     ext_option = extended ? extended->option : OrbisImeExtOption::DEFAULT;
     disable_device = extended ? extended->disable_device : OrbisImeDisableDevice::DEFAULT;
     panel_priority = extended ? extended->priority : OrbisImePanelPriority::Default;
@@ -184,28 +178,14 @@ ImeDialogState::ImeDialogState(const OrbisImeDialogParam* param,
     caret_dirty = true;
     panel_layout_valid = (sceImeDialogGetPanelPositionAndForm(&panel_layout) == ORBIS_OK);
     (void)GetImeDialogPanelSize(param, extended, &panel_req_width, &panel_req_height);
+    panel_full_height = panel_req_height;
+    if (extended && True(extended->option & OrbisImeExtOption::HIDE_KEYPANEL_IF_EXT_KEYBOARD)) {
+        auto visible = *extended;
+        visible.option &= ~OrbisImeExtOption::HIDE_KEYPANEL_IF_EXT_KEYBOARD;
+        u32 width = 0;
+        (void)GetImeDialogPanelSize(param, &visible, &width, &panel_full_height);
+    }
     LOG_DEBUG(Lib_ImeDialog, "ImeDialogState: initial_text_len={}", current_text.size());
-}
-
-ImeDialogState::ImeDialogState(ImeDialogState&& other) noexcept
-    : input_changed(other.input_changed), generation(other.generation), option(other.option),
-      caret_index(other.caret_index), caret_byte_index(other.caret_byte_index),
-      caret_dirty(other.caret_dirty), use_over2k(other.use_over2k),
-      panel_layout(other.panel_layout), panel_layout_valid(other.panel_layout_valid),
-      displayed_layout(other.displayed_layout),
-      displayed_layout_valid(other.displayed_layout_valid), panel_req_width(other.panel_req_width),
-      panel_req_height(other.panel_req_height), ext_option(other.ext_option),
-      disable_device(other.disable_device), panel_priority(other.panel_priority),
-      style_config(other.style_config), user_id(other.user_id), is_multi_line(other.is_multi_line),
-      is_numeric(other.is_numeric), fixed_position(other.fixed_position), type(other.type),
-      supported_languages(other.supported_languages), input_languages(other.input_languages),
-      enter_label(other.enter_label), text_filter(other.text_filter),
-      keyboard_filter(other.keyboard_filter), max_text_length(other.max_text_length),
-      text_buffer(other.text_buffer), original_text(std::move(other.original_text)),
-      title(std::move(other.title)), placeholder(std::move(other.placeholder)),
-      current_text(other.current_text) {
-
-    other.text_buffer = nullptr;
 }
 
 ImeDialogState& ImeDialogState::operator=(ImeDialogState&& other) {
@@ -223,7 +203,9 @@ ImeDialogState& ImeDialogState::operator=(ImeDialogState&& other) {
         displayed_layout_valid = other.displayed_layout_valid;
         panel_req_width = other.panel_req_width;
         panel_req_height = other.panel_req_height;
+        panel_full_height = other.panel_full_height;
         ext_option = other.ext_option;
+        ext_keyboard_mode = other.ext_keyboard_mode;
         disable_device = other.disable_device;
         panel_priority = other.panel_priority;
         style_config = other.style_config;
@@ -234,6 +216,8 @@ ImeDialogState& ImeDialogState::operator=(ImeDialogState&& other) {
         type = other.type;
         supported_languages = other.supported_languages;
         input_languages = other.input_languages;
+        composition = std::move(other.composition);
+        application_dictionary = std::move(other.application_dictionary);
         enter_label = other.enter_label;
         text_filter = other.text_filter;
         keyboard_filter = other.keyboard_filter;
@@ -251,6 +235,10 @@ ImeDialogState& ImeDialogState::operator=(ImeDialogState&& other) {
 }
 
 bool ImeDialogState::CopyTextToOrbisBuffer(bool use_original) {
+    if (!use_original && composition.Active()) {
+        const auto& text = composition.CommittedText();
+        return ConvertUTF8ToOrbis(text.data(), text.size(), text_buffer, max_text_length + 1);
+    }
     if (!text_buffer) {
         LOG_DEBUG(Lib_ImeDialog, "CopyTextToOrbisBuffer: no text_buffer");
         return false;
@@ -323,7 +311,7 @@ bool ImeDialogState::ClampCurrentTextToMaxLen() {
 }
 
 bool ImeDialogState::CallTextFilter() {
-    if (!text_filter || !input_changed) {
+    if (composition.Active() || !text_filter || !input_changed) {
         return true;
     }
 
@@ -385,8 +373,21 @@ ImeDialogUi::ImeDialogUi(ImeDialogState* state, OrbisImeDialogStatus* status,
 
     if (state && *status == OrbisImeDialogStatus::Running) {
         kb_layout_selection = Libraries::Ime::ResolveInitialKbLayoutSelection(
-            state->ext_option, state->panel_priority, state->supported_languages, state->type);
+            state->ext_option, state->panel_priority, state->input_languages, state->type);
+        Libraries::Ime::InitializeImeKeyboardLanguages(language_picker, kb_layout_selection,
+                                                       state->input_languages, state->option,
+                                                       state->user_id);
         kb_layout_selection.multiline = state->is_multi_line;
+        Libraries::Ime::InitializeImeKeyboardCase(kb_layout_selection,
+                                                  state->current_text.size() == 0, state->option);
+        if (state->type == OrbisImeType::Default &&
+            False(state->option & OrbisImeOption::PASSWORD)) {
+            state->composition.Configure(
+                kb_layout_selection.variant, EmulatorSettings.GetImeDictionaryDir(),
+                True(state->option & OrbisImeOption::EXPANDED_PREEDIT_BUFFER),
+                state->application_dictionary,
+                True(state->ext_option & OrbisImeExtOption::ADDITIONAL_DICTIONARY_PRIORITY_MODE));
+        }
         kb_layout_selection.options = static_cast<u32>(state->option);
         kb_layout_selection.accessibility =
             True(state->ext_option & OrbisImeExtOption::ENABLE_ACCESSIBILITY) &&
@@ -401,11 +402,12 @@ ImeDialogUi::ImeDialogUi(ImeDialogState* state, OrbisImeDialogStatus* status,
         Libraries::Ime::InitializeDefaultOskSelectionAnchor(
             kb_layout_selection, state->ext_option, pending_keyboard_row, pending_keyboard_col,
             last_keyboard_selected_row, last_keyboard_selected_col);
-        native_input_active = True(state->option & OrbisImeOption::EXT_KEYBOARD) &&
-                              False(state->disable_device & OrbisImeDisableDevice::EXT_KEYBOARD);
+        direct_input_enabled = Libraries::Ime::IsImeDirectInputEnabled(
+            state->supported_languages, state->type, state->disable_device);
+        native_input_active = direct_input_enabled;
         request_input_focus = native_input_active;
         AddLayer(this);
-        Libraries::Ime::NotifyImeKeyboardLayoutFallback(state->supported_languages, state->type);
+        Libraries::Ime::NotifyImeKeyboardLayoutFallback(state->input_languages, state->type);
         if (False(state->disable_device & OrbisImeDisableDevice::CONTROLLER)) {
             ImGui::Core::AcquireGamepadInputCapture();
             gamepad_input_capture_active = true;
@@ -419,112 +421,6 @@ ImeDialogUi::~ImeDialogUi() {
     Free();
 }
 
-ImeDialogUi::ImeDialogUi(ImeDialogUi&& other) noexcept
-    : state(other.state), status(other.status), result(other.result),
-      first_render(other.first_render), accept_armed(other.accept_armed),
-      native_input_active(other.native_input_active),
-      native_accept_pressed(other.native_accept_pressed),
-      native_newline_pressed(other.native_newline_pressed),
-      preferred_caret_column(other.preferred_caret_column),
-      pointer_navigation_active(other.pointer_navigation_active),
-      edit_menu_popup(other.edit_menu_popup), menu_activate_armed(other.menu_activate_armed),
-      l2_shortcut_armed(other.l2_shortcut_armed), request_input_focus(other.request_input_focus),
-      request_input_select_all(other.request_input_select_all),
-      text_select_mode(other.text_select_mode),
-      pending_input_selection_apply(other.pending_input_selection_apply),
-      prev_virtual_cross_down(other.prev_virtual_cross_down),
-      prev_virtual_lstick_left_down(other.prev_virtual_lstick_left_down),
-      prev_virtual_lstick_right_down(other.prev_virtual_lstick_right_down),
-      prev_virtual_lstick_up_down(other.prev_virtual_lstick_up_down),
-      prev_virtual_lstick_down_down(other.prev_virtual_lstick_down_down),
-      left_stick_repeat_dir(other.left_stick_repeat_dir),
-      left_stick_next_repeat_time(other.left_stick_next_repeat_time),
-      virtual_cross_next_repeat_time(other.virtual_cross_next_repeat_time),
-      virtual_triangle_next_repeat_time(other.virtual_triangle_next_repeat_time),
-      prev_virtual_buttons(other.prev_virtual_buttons),
-      prev_virtual_square_down(other.prev_virtual_square_down),
-      prev_virtual_l1_down(other.prev_virtual_l1_down),
-      prev_virtual_r1_down(other.prev_virtual_r1_down),
-      prev_virtual_dpad_left_down(other.prev_virtual_dpad_left_down),
-      prev_virtual_dpad_right_down(other.prev_virtual_dpad_right_down),
-      prev_virtual_dpad_up_down(other.prev_virtual_dpad_up_down),
-      prev_virtual_dpad_down_down(other.prev_virtual_dpad_down_down),
-      virtual_square_next_repeat_time(other.virtual_square_next_repeat_time),
-      virtual_l1_next_repeat_time(other.virtual_l1_next_repeat_time),
-      virtual_r1_next_repeat_time(other.virtual_r1_next_repeat_time),
-      virtual_dpad_left_next_repeat_time(other.virtual_dpad_left_next_repeat_time),
-      virtual_dpad_right_next_repeat_time(other.virtual_dpad_right_next_repeat_time),
-      virtual_dpad_up_next_repeat_time(other.virtual_dpad_up_next_repeat_time),
-      virtual_dpad_down_next_repeat_time(other.virtual_dpad_down_next_repeat_time),
-      panel_vertical_nav_state(other.panel_vertical_nav_state),
-      panel_position_initialized(other.panel_position_initialized),
-      panel_layout_anchor_initialized(other.panel_layout_anchor_initialized),
-      panel_drag_active(other.panel_drag_active), panel_position(other.panel_position),
-      panel_layout_anchor(other.panel_layout_anchor),
-      panel_drag_press_offset(other.panel_drag_press_offset),
-      input_cursor_utf16(other.input_cursor_utf16), input_cursor_byte(other.input_cursor_byte),
-      input_selection_start_byte(other.input_selection_start_byte),
-      input_selection_end_byte(other.input_selection_end_byte),
-      text_select_anchor_utf16(other.text_select_anchor_utf16),
-      text_select_focus_utf16(other.text_select_focus_utf16),
-      top_virtual_col(other.top_virtual_col), panel_selection(other.panel_selection),
-      pending_keyboard_row(other.pending_keyboard_row),
-      pending_keyboard_col(other.pending_keyboard_col),
-      last_keyboard_selected_row(other.last_keyboard_selected_row),
-      last_keyboard_selected_col(other.last_keyboard_selected_col),
-      edit_menu_index(other.edit_menu_index), kb_layout_selection(other.kb_layout_selection),
-      last_nav_layout_selection(other.last_nav_layout_selection),
-      nav_layout_selection_initialized(other.nav_layout_selection_initialized),
-      kb_alpha_family(other.kb_alpha_family),
-      gamepad_input_capture_active(other.gamepad_input_capture_active) {
-
-    std::scoped_lock lock(draw_mutex, other.draw_mutex);
-    other.state = nullptr;
-    other.status = nullptr;
-    other.result = nullptr;
-    other.menu_activate_armed = true;
-    other.l2_shortcut_armed = true;
-    other.prev_virtual_lstick_left_down = false;
-    other.prev_virtual_lstick_right_down = false;
-    other.prev_virtual_lstick_up_down = false;
-    other.prev_virtual_lstick_down_down = false;
-    other.left_stick_repeat_dir = 0;
-    other.left_stick_next_repeat_time = 0.0;
-    other.virtual_cross_next_repeat_time = 0.0;
-    other.virtual_triangle_next_repeat_time = 0.0;
-    other.prev_virtual_buttons = 0;
-    other.prev_virtual_square_down = false;
-    other.prev_virtual_l1_down = false;
-    other.prev_virtual_r1_down = false;
-    other.prev_virtual_dpad_left_down = false;
-    other.prev_virtual_dpad_right_down = false;
-    other.prev_virtual_dpad_up_down = false;
-    other.prev_virtual_dpad_down_down = false;
-    other.virtual_square_next_repeat_time = 0.0;
-    other.virtual_l1_next_repeat_time = 0.0;
-    other.virtual_r1_next_repeat_time = 0.0;
-    other.virtual_dpad_left_next_repeat_time = 0.0;
-    other.virtual_dpad_right_next_repeat_time = 0.0;
-    other.virtual_dpad_up_next_repeat_time = 0.0;
-    other.virtual_dpad_down_next_repeat_time = 0.0;
-    Libraries::Ime::ResetImeEdgeWrapHold(other.panel_vertical_nav_state);
-    other.nav_layout_selection_initialized = false;
-    other.panel_layout_anchor_initialized = false;
-    other.panel_layout_anchor = {};
-    other.panel_drag_press_offset = {};
-    other.kb_alpha_family = Libraries::Ime::ImeKbLayoutFamily::Alphabet;
-    other.gamepad_input_capture_active = false;
-
-    if (state && *status == OrbisImeDialogStatus::Running) {
-        AddLayer(this);
-        if (!gamepad_input_capture_active &&
-            False(state->disable_device & OrbisImeDisableDevice::CONTROLLER)) {
-            ImGui::Core::AcquireGamepadInputCapture();
-            gamepad_input_capture_active = true;
-        }
-    }
-}
-
 ImeDialogUi& ImeDialogUi::operator=(ImeDialogUi&& other) {
     std::scoped_lock lock(draw_mutex, other.draw_mutex);
     Free();
@@ -533,8 +429,15 @@ ImeDialogUi& ImeDialogUi::operator=(ImeDialogUi&& other) {
     status = other.status;
     result = other.result;
     first_render = other.first_render;
+    keypanel_hidden = other.keypanel_hidden;
     accept_armed = other.accept_armed;
     native_input_active = other.native_input_active;
+    direct_input_enabled = other.direct_input_enabled;
+    native_accept_pressed = other.native_accept_pressed;
+    native_newline_pressed = other.native_newline_pressed;
+    composition_input = std::move(other.composition_input);
+    input_context = other.input_context;
+    preferred_caret_column = other.preferred_caret_column;
     pointer_navigation_active = other.pointer_navigation_active;
     edit_menu_popup = other.edit_menu_popup;
     menu_activate_armed = other.menu_activate_armed;
@@ -572,6 +475,7 @@ ImeDialogUi& ImeDialogUi::operator=(ImeDialogUi&& other) {
     panel_layout_anchor_initialized = other.panel_layout_anchor_initialized;
     panel_drag_active = other.panel_drag_active;
     panel_position = other.panel_position;
+    panel_viewport = other.panel_viewport;
     panel_layout_anchor = other.panel_layout_anchor;
     panel_drag_press_offset = other.panel_drag_press_offset;
     input_cursor_utf16 = other.input_cursor_utf16;
@@ -588,6 +492,7 @@ ImeDialogUi& ImeDialogUi::operator=(ImeDialogUi&& other) {
     last_keyboard_selected_col = other.last_keyboard_selected_col;
     edit_menu_index = other.edit_menu_index;
     kb_layout_selection = other.kb_layout_selection;
+    language_picker = std::move(other.language_picker);
     last_nav_layout_selection = other.last_nav_layout_selection;
     nav_layout_selection_initialized = other.nav_layout_selection_initialized;
     kb_alpha_family = other.kb_alpha_family;
@@ -682,8 +587,54 @@ void ImeDialogUi::Draw() {
         return;
     }
 
+    const bool hide_keypanel = Libraries::Ime::IsImeKeyPanelHidden(state->option, state->ext_option,
+                                                                   state->disable_device);
+    if (hide_keypanel) {
+        panel_selection = PanelSelectionTarget::Input;
+        language_picker.index = -1;
+        language_picker.openness = 0.0f;
+        edit_menu_popup = EditMenuPopup::None;
+    } else if (keypanel_hidden) {
+        native_input_active = Libraries::Ime::IsImeDirectInputEnabled(
+            state->supported_languages, state->type, state->disable_device);
+        request_input_focus = native_input_active;
+        panel_selection = PanelSelectionTarget::Keyboard;
+    }
+    keypanel_hidden = hide_keypanel;
+    const auto external_context = Libraries::Ime::GetImeExternalKeyboardContext();
+    if (!input_context) {
+        input_context = external_context;
+    }
+    if (hide_keypanel && !native_input_active) {
+        native_input_active = true;
+        request_input_focus = true;
+    }
+    direct_input_enabled = Libraries::Ime::IsImeDirectInputEnabled(
+                               state->supported_languages, state->type, state->disable_device) ||
+                           hide_keypanel;
     const auto& ctx = *GetCurrentContext();
     const auto& io = ctx.IO;
+    const bool shortcut_modifier = io.ConfigMacOSXBehaviors ? io.KeySuper : io.KeyCtrl;
+    const bool clipboard_allowed = False(state->option & OrbisImeOption::DISABLE_COPY_PASTE);
+    if (native_input_active && state->composition.Active() && shortcut_modifier &&
+        (IsKeyPressed(ImGuiKey_A, false) ||
+         (clipboard_allowed &&
+          (IsKeyPressed(ImGuiKey_C, false) || IsKeyPressed(ImGuiKey_X, false) ||
+           IsKeyPressed(ImGuiKey_V, false))))) {
+        ConfirmComposition();
+    }
+    const bool cancel_composition_key =
+        native_input_active && state->composition.Active() && IsKeyPressed(ImGuiKey_Escape, false);
+    Libraries::Ime::CaptureImeCompositionInput(state->composition, composition_input,
+                                               native_input_active, external_context);
+    if (native_input_active) {
+        const auto& queued_context =
+            composition_input.empty() ? input_context : composition_input.back().context;
+        if (const auto settled = Libraries::Ime::GetImeExternalKeyboardContext(true);
+            settled && settled != queued_context) {
+            composition_input.push_back({{}, settled});
+        }
+    }
     const bool imgui_typing_mode_active =
         native_input_active || request_input_focus || pending_input_selection_apply;
     const bool ps4_typing_mode_active = !imgui_typing_mode_active;
@@ -695,6 +646,11 @@ void ImeDialogUi::Draw() {
     OrbisImePositionAndForm layout = state->panel_layout;
     const bool has_layout = state->panel_layout_valid;
     const auto viewport = Libraries::Ime::ComputeImeViewportMetrics(state->use_over2k);
+    panel_position =
+        Libraries::Ime::ReprojectImePanelPosition(panel_position, panel_viewport, viewport);
+    panel_layout_anchor =
+        Libraries::Ime::ReprojectImePanelPosition(panel_layout_anchor, panel_viewport, viewport);
+    panel_viewport = viewport;
     const ImVec2 viewport_size = viewport.size;
     const ImVec2 viewport_offset = viewport.offset;
     const float scale_x = viewport.scale_x;
@@ -718,6 +674,15 @@ void ImeDialogUi::Draw() {
         window_size.y = std::max(window_size.y, 240.0f);
     }
 
+    const bool restore_keypanel_size =
+        !hide_keypanel && !kb_layout_selection.accessibility &&
+        True(state->option & OrbisImeOption::EXT_KEYBOARD) &&
+        True(state->ext_option & OrbisImeExtOption::HIDE_KEYPANEL_IF_EXT_KEYBOARD);
+    const u32 displayed_height =
+        restore_keypanel_size ? state->panel_full_height : state->panel_req_height;
+    if (restore_keypanel_size) {
+        window_size.y = displayed_height * scale_y;
+    }
     const float panel_w = window_size.x;
     const float panel_h = window_size.y;
 
@@ -767,7 +732,7 @@ void ImeDialogUi::Draw() {
     } else {
         panel_position.x += layout_anchor_delta.x;
         panel_position.y += layout_anchor_delta.y;
-        if (!ps4_typing_mode_active) {
+        if (!ps4_typing_mode_active || language_picker.IsVisible()) {
             panel_drag_active = false;
         } else {
             const ImVec2 mouse_pos = io.MousePos;
@@ -806,7 +771,7 @@ void ImeDialogUi::Draw() {
                                OrbisImeHorizontalAlignment::Left,
                                OrbisImeVerticalAlignment::Top,
                                state->panel_req_width,
-                               state->panel_req_height};
+                               displayed_height};
     state->displayed_layout_valid = true;
     SetNextWindowPos(panel_position);
     SetNextWindowSize(window_size);
@@ -817,25 +782,13 @@ void ImeDialogUi::Draw() {
         SetNextWindowFocus();
     }
 
-    const auto lock_window_scroll = []() {
-        SetScrollX(0.0f);
-        SetScrollY(0.0f);
-        ImGuiWindow* window = GetCurrentWindow();
-        if (!window) {
-            return;
-        }
-        window->Scroll = ImVec2(0.0f, 0.0f);
-        const float max_f = std::numeric_limits<float>::max();
-        window->ScrollTarget = ImVec2(max_f, max_f);
-    };
-
     ImGuiWindowFlags window_flags =
         ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoSavedSettings |
         ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse |
         ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoDocking;
     window_flags |= ImGuiWindowFlags_NoNavInputs;
     if (Begin("IME Dialog##ImeDialog", nullptr, window_flags)) {
-        lock_window_scroll();
+        Libraries::Ime::LockImeWindowScroll();
         KeepNavHighlight();
         DrawPrettyBackground();
         const Libraries::Ime::ImePanelMetricsConfig metrics_cfg{
@@ -845,6 +798,7 @@ void ImeDialogUi::Draw() {
             .show_title = !state->title.empty(),
             .numeric = state->is_numeric,
             .accessibility = kb_layout_selection.accessibility,
+            .hide_keyboard = hide_keypanel,
             .base_font_size = GetFontSize(),
             .window_pos = GetWindowPos(),
         };
@@ -853,7 +807,8 @@ void ImeDialogUi::Draw() {
 
         const bool controller_shortcuts_disabled =
             True(state->disable_device & OrbisImeDisableDevice::CONTROLLER);
-        const bool allow_osk_shortcuts = ps4_typing_mode_active && !controller_shortcuts_disabled;
+        const bool allow_osk_shortcuts =
+            ps4_typing_mode_active && !controller_shortcuts_disabled && !hide_keypanel;
         OskPadInputState panel_pad_state{
             prev_virtual_buttons,
             prev_virtual_cross_down,
@@ -930,7 +885,8 @@ void ImeDialogUi::Draw() {
             (panel_activate_pressed_raw || panel_activate_repeat_raw);
 
         using SelectionIndex = Libraries::Ime::ImeSelectionGridIndex;
-        const auto& selected_kb_layout = Libraries::Ime::GetImeKeyboardLayout(kb_layout_selection);
+        const auto display_selection = language_picker.Preview(kb_layout_selection);
+        const auto& selected_kb_layout = Libraries::Ime::GetImeKeyboardLayout(display_selection);
         const bool nav_layout_changed =
             nav_layout_selection_initialized &&
             (last_nav_layout_selection.family != kb_layout_selection.family ||
@@ -955,8 +911,7 @@ void ImeDialogUi::Draw() {
                                                                  from_col, step_row, 0);
         };
 
-        const auto& top_layout_cfg =
-            Libraries::Ime::GetImeTopPanelLayoutConfig(kb_layout_selection);
+        const auto& top_layout_cfg = Libraries::Ime::GetImeTopPanelLayoutConfig(display_selection);
         const int top_panel_row =
             SelectionIndex::PanelTopRowFromConfig(static_cast<int>(top_layout_cfg.row));
         const int top_panel_rows =
@@ -1076,7 +1031,8 @@ void ImeDialogUi::Draw() {
             const auto& element = top_elements[static_cast<std::size_t>(target_idx)];
             return std::clamp(clamped_col, element.min_col, element.max_col);
         };
-        const bool menu_modal = (edit_menu_popup != EditMenuPopup::None);
+        const bool menu_modal =
+            edit_menu_popup != EditMenuPopup::None || language_picker.IsVisible();
         const int keyboard_row_before_panel_nav_raw =
             (pending_keyboard_row >= keyboard_min_row && pending_keyboard_row <= keyboard_max_row)
                 ? pending_keyboard_row
@@ -1144,7 +1100,7 @@ void ImeDialogUi::Draw() {
                      window_size.x, window_size.y);
         }
 
-        if (!state->title.empty()) {
+        if (!state->title.empty() && metrics.label_h > 0.0f) {
             SetCursorPosY(0.0f);
             SetCursorPosX(metrics.padding_x);
             SetWindowFontScale(metrics.label_font_scale);
@@ -1154,57 +1110,48 @@ void ImeDialogUi::Draw() {
 
         bool input_hovered = false;
         if (state->is_multi_line) {
-            input_hovered = DrawMultiLineInputText(metrics, pointer_navigation_active);
+            input_hovered =
+                DrawMultiLineInputText(metrics, pointer_navigation_active && !menu_modal);
         } else {
-            input_hovered = DrawInputText(metrics, pointer_navigation_active);
+            input_hovered = DrawInputText(metrics, pointer_navigation_active && !menu_modal);
         }
-        const bool input_selected =
-            pointer_navigation_active && (input_hovered || native_input_active);
+        const bool input_selected = metrics.input_h > 0.0f && pointer_navigation_active &&
+                                    (input_hovered || native_input_active);
         const bool input_clicked = pointer_navigation_active && input_hovered &&
                                    IsMouseClicked(ImGuiMouseButton_Left, false);
-        static std::unordered_map<ImGuiID, Libraries::Ime::SelectorFadeState>
-            s_selector_fade_states;
-        const auto draw_selector = [&](const char* selector_id, ImVec2 pos, ImVec2 size,
+        static std::array<Libraries::Ime::SelectorFadeState, 3> selector_fade_states;
+        const auto draw_selector = [&](PanelSelectionTarget target, ImVec2 pos, ImVec2 size,
                                        bool selected, bool pulse_triggered) {
-            auto& fade_state = s_selector_fade_states[ImGui::GetID(selector_id)];
-            const double now = ImGui::GetTime();
-            if (selected && pulse_triggered) {
-                Libraries::Ime::TriggerSelectorPressPulse(fade_state, now);
-            }
-            const float selector_corner_radius =
-                std::max(0.0f, metrics.corner_radius - kSelectorInnerMargin);
-            Libraries::Ime::UpdateSelectorFadeState(fade_state, pos, size, kSelectorInnerMargin,
-                                                    selector_corner_radius, selected, now);
-            const float press_pulse_expand =
-                selected ? Libraries::Ime::ComputePressPulseExpand(
-                               fade_state.press_pulse_started_at, now,
-                               Libraries::Ime::kSelectorPressPulseDurationSec,
-                               kSelectorBorderThickness *
-                                   Libraries::Ime::kSelectorPressPulseExpandBorderFactor)
-                         : 0.0f;
-            Libraries::Ime::DrawSelectorFadeState(
-                fade_state, GetWindowDrawList(), kSelectorOverlayColor, kSelectorBorderColor,
-                kSelectorBorderThickness, Libraries::Ime::kSelectorFadeOutDurationSec, now,
-                press_pulse_expand);
+            const ImDrawFlags corners =
+                target == PanelSelectionTarget::Prediction ? ImDrawFlags_RoundCornersLeft
+                : target == PanelSelectionTarget::Close    ? ImDrawFlags_RoundCornersRight
+                                                           : ImDrawFlags_RoundCornersAll;
+            Libraries::Ime::DrawImePanelSelector(
+                selector_fade_states[static_cast<std::size_t>(target)], pos, size,
+                target == PanelSelectionTarget::Input
+                    ? metrics.corner_radius
+                    : std::max(0.0f, GetStyle().WindowRounding - 1.5f),
+                selected, pulse_triggered, corners);
         };
-        draw_selector(kSelectorInputId, metrics.input_pos_screen, metrics.input_size,
+        draw_selector(PanelSelectionTarget::Input, metrics.input_pos_screen, metrics.input_size,
                       input_selected,
                       input_clicked || (panel_selection == PanelSelectionTarget::Input &&
                                         panel_activate_pressed_raw));
 
         auto* draw = GetWindowDrawList();
         const ImU32 pane_bg = Libraries::Ime::ImeColorToImU32(state->style_config.color_base);
-        draw->AddRectFilled(metrics.predict_pos,
-                            {metrics.predict_pos.x + metrics.predict_size.x,
-                             metrics.predict_pos.y + metrics.predict_size.y},
-                            pane_bg, metrics.corner_radius);
+        Libraries::Ime::DrawImeTopPanelBackground(metrics.predict_pos, metrics.predict_size,
+                                                  pane_bg, ImDrawFlags_RoundCornersLeft);
         SetCursorScreenPos(metrics.predict_pos);
         PushID("##ImeDialogPredict");
         PushItemFlag(ImGuiItemFlags_NoNav, !native_input_active);
-        InvisibleButton("##ImeDialogPredict", metrics.predict_size);
+        if (!language_picker.IsVisible()) {
+            InvisibleButton("##ImeDialogPredict", metrics.predict_size);
+        }
         PopItemFlag();
-        const bool prediction_clicked =
-            IsMouseClicked(ImGuiMouseButton_Left, false) && IsItemHovered();
+        const bool prediction_clicked = !language_picker.IsVisible() &&
+                                        IsMouseClicked(ImGuiMouseButton_Left, false) &&
+                                        IsItemHovered();
         const int prediction_element_idx =
             element_index_for_target(PanelSelectionTarget::Prediction);
         if (pointer_navigation_active && prediction_clicked && prediction_element_idx >= 0) {
@@ -1216,28 +1163,12 @@ void ImeDialogUi::Draw() {
                                   prediction_element.min_col, prediction_element.max_col));
         }
         PopID();
-        draw_selector(kSelectorPredictId, metrics.predict_pos, metrics.predict_size,
+        draw_selector(PanelSelectionTarget::Prediction, metrics.predict_pos, metrics.predict_size,
                       panel_selection == PanelSelectionTarget::Prediction,
                       prediction_clicked || (panel_selection == PanelSelectionTarget::Prediction &&
                                              panel_activate_pressed_raw));
-        const ImU32 close_button_bg =
-            Libraries::Ime::ImeColorToImU32(state->style_config.color_button_function);
-        PushStyleColor(ImGuiCol_Button, BrightenColor(close_button_bg, 0.0f));
-        PushStyleColor(ImGuiCol_ButtonHovered, BrightenColor(close_button_bg, 0.08f));
-        PushStyleColor(ImGuiCol_ButtonActive, BrightenColor(close_button_bg, 0.16f));
-        SetCursorScreenPos(metrics.close_pos);
-        PushItemFlag(ImGuiItemFlags_NoNav, !native_input_active);
-        bool cancel_pressed =
-            Button("##ImeDialogClose", {metrics.close_size.x, metrics.close_size.y});
-        PopItemFlag();
-        constexpr const char* kCloseLabel = "\xE2\x9C\x95";
-        const ImVec2 close_label_size = CalcTextSize(kCloseLabel, nullptr, true);
-        const float close_pad_y = std::max(1.0f, metrics.close_size.y * 0.04f);
-        const ImVec2 close_label_pos{metrics.close_pos.x +
-                                         (metrics.close_size.x - close_label_size.x) * 0.5f,
-                                     metrics.close_pos.y + close_pad_y};
-        draw->AddText(close_label_pos,
-                      Libraries::Ime::ImeColorToImU32(state->style_config.color_text), kCloseLabel);
+        bool cancel_pressed = Libraries::Ime::DrawImeCloseButton(
+            "##ImeDialogClose", metrics, state->style_config, native_input_active);
         cancel_pressed = cancel_pressed || cancel_shortcut_pressed;
         const bool close_clicked = IsMouseClicked(ImGuiMouseButton_Left, false) && IsItemHovered();
         const int close_element_idx = element_index_for_target(PanelSelectionTarget::Close);
@@ -1245,12 +1176,11 @@ void ImeDialogUi::Draw() {
             const auto& close_element = top_elements[static_cast<std::size_t>(close_element_idx)];
             set_top_selection(PanelSelectionTarget::Close, close_element.min_col);
         }
-        PopStyleColor(3);
-        draw_selector(kSelectorCloseId, metrics.close_pos, metrics.close_size,
+        draw_selector(PanelSelectionTarget::Close, metrics.close_pos, metrics.close_size,
                       panel_selection == PanelSelectionTarget::Close,
                       close_clicked || (panel_selection == PanelSelectionTarget::Close &&
                                         panel_activate_pressed_raw));
-        if (!cancel_pressed && panel_selection == PanelSelectionTarget::Close &&
+        if (!menu_modal && !cancel_pressed && panel_selection == PanelSelectionTarget::Close &&
             panel_activate_pressed) {
             cancel_pressed = true;
         }
@@ -1375,6 +1305,7 @@ void ImeDialogUi::Draw() {
         };
         const auto apply_text_edit = [&](int start_utf16, int end_utf16,
                                          const char* insert_utf8) -> bool {
+            ConfirmComposition();
             const std::string current = state->current_text.to_string();
             const char* current_text = current.c_str();
             const int len_utf16 = Utf16CountFromUtf8Range(
@@ -1500,10 +1431,11 @@ void ImeDialogUi::Draw() {
         kb_layout.corner_radius = metrics.corner_radius;
 
         Libraries::Ime::ImeKbDrawParams kb_params{};
-        kb_params.selection = kb_layout_selection;
+        kb_params.selection = display_selection;
         kb_params.layout_model = &selected_kb_layout;
         kb_params.enter_label = state->enter_label;
-        kb_params.show_selection_highlight = (panel_selection == PanelSelectionTarget::Keyboard);
+        kb_params.show_selection_highlight =
+            !language_picker.IsVisible() && panel_selection == PanelSelectionTarget::Keyboard;
         kb_params.allow_nav_input = allow_osk_shortcuts && !menu_modal && !text_select_mode &&
                                     (panel_selection == PanelSelectionTarget::Keyboard) &&
                                     !entered_keyboard_from_top;
@@ -1525,7 +1457,9 @@ void ImeDialogUi::Draw() {
 
         Libraries::Ime::ImeKbDrawState kb_state{};
         SetWindowFontScale(metrics.key_font_scale);
-        Libraries::Ime::DrawImeKeyboardGrid(kb_layout, kb_params, kb_state);
+        if (!hide_keypanel && !language_picker.IsVisible()) {
+            Libraries::Ime::DrawImeKeyboardGrid(kb_layout, kb_params, kb_state);
+        }
         SetWindowFontScale(metrics.input_font_scale);
         if (kb_state.selected_row >= 0 && kb_state.selected_col >= 0) {
             last_keyboard_selected_row = kb_state.selected_row;
@@ -1533,6 +1467,150 @@ void ImeDialogUi::Draw() {
         }
         if (pointer_navigation_active && kb_state.clicked) {
             panel_selection = PanelSelectionTarget::Keyboard;
+        }
+
+        const auto prepare_composition = [&](Libraries::Ime::ImeKbVariant variant,
+                                             std::optional<u32> mode) {
+            auto& composition = state->composition;
+            if (composition.Variant() != variant) {
+                ConfirmComposition();
+                if (state->type == OrbisImeType::Default &&
+                    False(state->option & OrbisImeOption::PASSWORD)) {
+                    composition.Configure(
+                        variant, EmulatorSettings.GetImeDictionaryDir(),
+                        True(state->option & OrbisImeOption::EXPANDED_PREEDIT_BUFFER),
+                        state->application_dictionary,
+                        True(state->ext_option &
+                             OrbisImeExtOption::ADDITIONAL_DICTIONARY_PRIORITY_MODE));
+                }
+            }
+            if (mode && composition.ExternalMode() && composition.SetExternalMode(*mode)) {
+                UpdateComposition();
+            }
+        };
+        const auto insert_composed_text =
+            [&](const char* input,
+                std::optional<Libraries::Ime::ImeKeyboardContext> external = {}) {
+                const auto variant = external ? external->variant : kb_layout_selection.variant;
+                const std::optional<u32> external_mode =
+                    external ? std::optional<u32>{external->mode} : std::nullopt;
+                prepare_composition(variant, external_mode);
+                bool changed = false;
+                if (!input) {
+                    return false;
+                }
+                for (const char* p = input; *p;) {
+                    unsigned int character = 0;
+                    const int bytes = ImTextCharFromUtf8(&character, p, nullptr);
+                    if (bytes <= 0) {
+                        break;
+                    }
+                    std::string part(p, bytes);
+                    p += bytes;
+
+                    auto& composition = state->composition;
+                    const auto [start, end] = selection_utf16_range();
+                    if (part == " " && composition.Active()) {
+                        if (composition.Korean()) {
+                            ConfirmComposition();
+                        } else {
+                            if (composition.Cycle(1)) {
+                                UpdateComposition();
+                            }
+                            changed = true;
+                            continue;
+                        }
+                    }
+                    if ((external || kb_layout_selection.family ==
+                                         Libraries::Ime::ImeKbLayoutFamily::Alphabet) &&
+                        (external_mode ? composition.AcceptsExternal(part, *external_mode)
+                                       : composition.Accepts(part))) {
+                        if (composition.Active() &&
+                            (start != composition.Caret() || end != start ||
+                             composition.ExternalMode() != (external_mode))) {
+                            ConfirmComposition();
+                        }
+                        if (composition.Insert(state->current_text.to_string(), start, end, part,
+                                               static_cast<int>(state->max_text_length),
+                                               external_mode)) {
+                            UpdateComposition();
+                            changed = true;
+                        }
+                    } else {
+                        ConfirmComposition();
+                        const auto text = external_mode ? Libraries::Ime::TransformImeExternalText(
+                                                              part, variant, *external_mode, false)
+                                                        : part;
+                        changed |= apply_text_edit(start, end, text.c_str());
+                    }
+                }
+                return changed;
+            };
+        const auto backspace_composition = [&]() {
+            auto [first, last] = selection_utf16_range();
+            if (state->composition.Active() &&
+                (first != state->composition.Caret() || last != first)) {
+                ConfirmComposition();
+                if (first == last && first > 0) {
+                    const auto text = state->current_text.to_string();
+                    int previous = Libraries::Ime::Utf8ByteIndexFromUtf16Index(text.c_str(), first);
+                    do {
+                        --previous;
+                    } while (previous > 0 &&
+                             (static_cast<unsigned char>(text[previous]) & 0xc0U) == 0x80U);
+                    first = Libraries::Ime::Utf16CountFromUtf8Range(text.c_str(),
+                                                                    text.c_str() + previous);
+                }
+                (void)apply_text_edit(first, last, "");
+                return;
+            }
+            if (state->composition.Active()) {
+                state->composition.Backspace();
+                if (state->composition.Reading().empty()) {
+                    CancelComposition();
+                } else {
+                    UpdateComposition();
+                }
+            } else {
+                (void)backspace_at_caret();
+            }
+        };
+        if (!composition_input.empty()) {
+            for (const auto& input : std::exchange(composition_input, {})) {
+                if (input.context) {
+                    if (input.text.empty()) {
+                        prepare_composition(input.context->variant, input.context->mode);
+                    }
+                    input_context = input.context;
+                }
+                if (!input.text.empty()) {
+                    (void)insert_composed_text(input.text.c_str(), input.context);
+                }
+            }
+        }
+        if (native_input_active && state->composition.Active()) {
+            if (IsKeyPressed(ImGuiKey_Backspace)) {
+                backspace_composition();
+            }
+            if (IsKeyPressed(ImGuiKey_DownArrow) || IsKeyPressed(ImGuiKey_RightArrow)) {
+                if (state->composition.Cycle(1)) {
+                    UpdateComposition();
+                }
+            } else if (IsKeyPressed(ImGuiKey_UpArrow) || IsKeyPressed(ImGuiKey_LeftArrow)) {
+                if (state->composition.Cycle(-1)) {
+                    UpdateComposition();
+                }
+            }
+        }
+        if (state->composition.Active() && panel_selection == PanelSelectionTarget::Prediction) {
+            if (nav_left || nav_right) {
+                if (state->composition.Cycle(nav_left ? -1 : 1)) {
+                    UpdateComposition();
+                }
+            }
+            if (panel_activate_pressed_raw) {
+                ConfirmComposition(std::max(0, state->composition.Selected()));
+            }
         }
 
         const auto consume_temporary_uppercase = [&](bool typed_character) {
@@ -1720,19 +1798,43 @@ void ImeDialogUi::Draw() {
             kb_state.pressed_action != Libraries::Ime::ImeKbKeyAction::ArrowDown) {
             preferred_caret_column = -1;
         }
+        Libraries::Ime::QueueImeOskKey(
+            kb_state.pressed_action, kb_state.pressed_text, kb_layout_selection.variant,
+            kb_layout_selection.case_state != Libraries::Ime::ImeKbCaseState::Lower,
+            keyboard_action_from_hotkey ? shortcut_action.repeat : kb_state.pressed_repeat,
+            keyboard_action_from_hotkey);
         switch (kb_state.pressed_action) {
         case Libraries::Ime::ImeKbKeyAction::Character:
-            consume_temporary_uppercase(insert_text_at_caret(kb_state.pressed_text));
+            consume_temporary_uppercase(insert_composed_text(kb_state.pressed_text));
             break;
         case Libraries::Ime::ImeKbKeyAction::Tab:
             (void)insert_text_at_caret("\t");
             break;
         case Libraries::Ime::ImeKbKeyAction::FullWidth:
+            ConfirmComposition();
             kb_layout_selection.full_width = !kb_layout_selection.full_width;
             break;
         case Libraries::Ime::ImeKbKeyAction::JapaneseVoicing:
         case Libraries::Ime::ImeKbKeyAction::JapaneseSmall:
         case Libraries::Ime::ImeKbKeyAction::JapanesePunctuation: {
+            if (state->composition.Active()) {
+                const auto& reading = state->composition.Reading();
+                const int end = Libraries::Ime::Utf16CountFromUtf8Range(
+                    reading.data(), reading.data() + reading.size());
+                if (const auto edit = Libraries::Ime::GetImeJapaneseKeyEdit(
+                        reading.c_str(), end, end, kb_state.pressed_action)) {
+                    auto updated = reading;
+                    const int first =
+                        Libraries::Ime::Utf8ByteIndexFromUtf16Index(reading.c_str(), edit->start);
+                    const int last =
+                        Libraries::Ime::Utf8ByteIndexFromUtf16Index(reading.c_str(), edit->end);
+                    updated.replace(first, last - first, edit->text);
+                    if (state->composition.Rewrite(updated)) {
+                        UpdateComposition();
+                    }
+                }
+                break;
+            }
             const auto [start, end] = selection_utf16_range();
             if (const auto edit = Libraries::Ime::GetImeJapaneseKeyEdit(
                     state->current_text.begin(), start, end, kb_state.pressed_action)) {
@@ -1741,14 +1843,18 @@ void ImeDialogUi::Draw() {
             break;
         }
         case Libraries::Ime::ImeKbKeyAction::Keyboard:
-            Libraries::Ime::CycleImeKeyboardLanguage(kb_layout_selection,
-                                                     state->supported_languages);
-            kb_alpha_family = Libraries::Ime::ImeKbLayoutFamily::Alphabet;
+            ConfirmComposition();
+            language_picker.Open(kb_layout_selection);
+            opened_menu_this_frame = language_picker.IsOpen();
+            native_input_active = false;
+            request_input_focus = false;
+            ImGui::ClearActiveID();
             break;
         case Libraries::Ime::ImeKbKeyAction::Shift:
             Libraries::Ime::CycleKeyboardCaseState(kb_layout_selection);
             break;
         case Libraries::Ime::ImeKbKeyAction::SymbolsMode:
+            ConfirmComposition();
             Libraries::Ime::ToggleKeyboardFamilyMode(kb_layout_selection, kb_alpha_family,
                                                      Libraries::Ime::ImeKbLayoutFamily::Symbols);
             if (!keyboard_action_from_hotkey &&
@@ -1761,6 +1867,7 @@ void ImeDialogUi::Draw() {
             }
             break;
         case Libraries::Ime::ImeKbKeyAction::AlternateMode:
+            ConfirmComposition();
             Libraries::Ime::ToggleKeyboardFamilyMode(kb_layout_selection, kb_alpha_family,
                                                      Libraries::Ime::ImeKbLayoutFamily::Alternate);
             if (!keyboard_action_from_hotkey &&
@@ -1773,9 +1880,11 @@ void ImeDialogUi::Draw() {
             }
             break;
         case Libraries::Ime::ImeKbKeyAction::ArrowLeft:
+            ConfirmComposition();
             (void)move_text_caret(OrbisImeCaretMovementDirection::Left, text_select_mode);
             break;
         case Libraries::Ime::ImeKbKeyAction::ArrowRight:
+            ConfirmComposition();
             (void)move_text_caret(OrbisImeCaretMovementDirection::Right, text_select_mode);
             break;
         case Libraries::Ime::ImeKbKeyAction::ArrowUp:
@@ -1790,12 +1899,13 @@ void ImeDialogUi::Draw() {
             Libraries::Ime::CycleKeyboardSymbolPage(kb_layout_selection);
             break;
         case Libraries::Ime::ImeKbKeyAction::Space:
-            (void)insert_text_at_caret(" ");
+            (void)insert_composed_text(" ");
             break;
         case Libraries::Ime::ImeKbKeyAction::Backspace:
-            (void)backspace_at_caret();
+            backspace_composition();
             break;
         case Libraries::Ime::ImeKbKeyAction::NewLine:
+            ConfirmComposition();
             if (state->is_multi_line) {
                 (void)insert_text_at_caret("\n");
             } else {
@@ -1803,6 +1913,7 @@ void ImeDialogUi::Draw() {
             }
             break;
         case Libraries::Ime::ImeKbKeyAction::Menu:
+            ConfirmComposition();
             if (edit_menu_popup == EditMenuPopup::None) {
                 if (text_select_mode) {
                     open_actions_menu();
@@ -1882,9 +1993,60 @@ void ImeDialogUi::Draw() {
             }
         }
 
+        const bool language_picker_was_open = language_picker.IsOpen();
+        if (!hide_keypanel &&
+            Libraries::Ime::DrawImeKeyboardLanguagePicker(
+                language_picker, kb_layout_selection, metrics, kb_layout, kb_params, nav_left,
+                nav_right, cross_down, panel_activate_pressed_raw, cancel_pressed,
+                opened_menu_this_frame, pointer_navigation_active)) {
+            Libraries::Ime::RememberImeKeyboard(state->user_id, kb_layout_selection);
+            if (state->type == OrbisImeType::Default &&
+                False(state->option & OrbisImeOption::PASSWORD)) {
+                state->composition.Configure(
+                    kb_layout_selection.variant, EmulatorSettings.GetImeDictionaryDir(),
+                    True(state->option & OrbisImeOption::EXPANDED_PREEDIT_BUFFER),
+                    state->application_dictionary,
+                    True(state->ext_option &
+                         OrbisImeExtOption::ADDITIONAL_DICTIONARY_PRIORITY_MODE));
+            }
+            kb_alpha_family =
+                kb_layout_selection.family == Libraries::Ime::ImeKbLayoutFamily::Alternate
+                    ? Libraries::Ime::ImeKbLayoutFamily::Alternate
+                    : Libraries::Ime::ImeKbLayoutFamily::Alphabet;
+        }
+        if (language_picker_was_open && !language_picker.IsOpen()) {
+            accept_armed = false;
+        }
+
         Dummy({metrics.kb_size.x, metrics.kb_size.y + metrics.padding_bottom});
 
+        if (state->composition.Active()) {
+            const int chosen = Libraries::Ime::DrawImeCandidates(
+                state->composition, metrics.predict_pos, metrics.predict_size,
+                pointer_navigation_active && !menu_modal, state->style_config);
+            if (chosen >= 0) {
+                ConfirmComposition(chosen);
+            }
+            if (pointer_navigation_active &&
+                IsMouseHoveringRect(metrics.predict_pos,
+                                    {metrics.predict_pos.x + metrics.predict_size.x,
+                                     metrics.predict_pos.y + metrics.predict_size.y}) &&
+                io.MouseWheel != 0) {
+                if (state->composition.Cycle(io.MouseWheel < 0 ? 1 : -1)) {
+                    UpdateComposition();
+                }
+            }
+        }
+        cancel_pressed |= cancel_composition_key;
         accept_pressed |= std::exchange(native_accept_pressed, false);
+        if (state->composition.Active() && accept_pressed) {
+            ConfirmComposition();
+            accept_pressed = false;
+        }
+        if (state->composition.Active() && cancel_pressed) {
+            CancelComposition();
+            cancel_pressed = false;
+        }
         if (accept_pressed) {
             LOG_INFO(Lib_ImeDialog, "ImeDialog OK (length={})", state->current_text.size());
             FinishDialog(OrbisImeDialogEndStatus::Ok, false, "OK");
@@ -1892,12 +2054,67 @@ void ImeDialogUi::Draw() {
             FinishDialog(OrbisImeDialogEndStatus::UserCanceled, true, "Cancel");
         }
         CommitOskPadInputFrame(panel_input, panel_pad_state);
-        lock_window_scroll();
+        Libraries::Ime::LockImeWindowScroll();
+        Libraries::Ime::SetImeKeyboardCompositionState(state->composition.Active(),
+                                                       state->composition.Selected() >= 0);
+        Libraries::Ime::DrawImePanelBorder();
         SetWindowFontScale(1.0f);
     }
     End();
 
     first_render = false;
+}
+
+void ImeDialogUi::UpdateComposition() {
+    auto& composition = state->composition;
+    const auto text = composition.Preview();
+    state->current_text.FromString(text);
+    state->caret_index = composition.Caret();
+    state->caret_byte_index =
+        Libraries::Ime::Utf8ByteIndexFromUtf16Index(text.c_str(), state->caret_index);
+    state->caret_dirty = true;
+    input_cursor_utf16 = state->caret_index;
+    input_cursor_byte = input_selection_start_byte = input_selection_end_byte =
+        state->caret_byte_index;
+    text_select_mode = false;
+    state->CopyTextToOrbisBuffer(false);
+}
+
+void ImeDialogUi::ConfirmComposition(int index) {
+    auto& composition = state->composition;
+    if (!composition.Active() || (index >= 0 && !composition.Select(index))) {
+        return;
+    }
+    const auto text = composition.Confirm();
+    state->current_text.FromString(text);
+    state->caret_index = composition.Caret();
+    state->caret_byte_index =
+        Libraries::Ime::Utf8ByteIndexFromUtf16Index(text.c_str(), state->caret_index);
+    state->caret_dirty = true;
+    request_input_focus = native_input_active;
+    input_cursor_utf16 = state->caret_index;
+    input_cursor_byte = input_selection_start_byte = input_selection_end_byte =
+        state->caret_byte_index;
+    state->input_changed = true;
+    state->CopyTextToOrbisBuffer(false);
+}
+
+void ImeDialogUi::CancelComposition() {
+    auto& composition = state->composition;
+    if (!composition.Active()) {
+        return;
+    }
+    const auto text = composition.Cancel();
+    state->current_text.FromString(text);
+    state->caret_index = composition.Caret();
+    state->caret_byte_index =
+        Libraries::Ime::Utf8ByteIndexFromUtf16Index(text.c_str(), state->caret_index);
+    state->caret_dirty = true;
+    request_input_focus = native_input_active;
+    input_cursor_utf16 = state->caret_index;
+    input_cursor_byte = input_selection_start_byte = input_selection_end_byte =
+        state->caret_byte_index;
+    state->CopyTextToOrbisBuffer(false);
 }
 
 bool ImeDialogUi::DrawInputText(const Libraries::Ime::ImePanelMetrics& metrics,
@@ -1913,7 +2130,8 @@ bool ImeDialogUi::DrawInputText(const Libraries::Ime::ImePanelMetrics& metrics,
     SetCursorPos(metrics.input_pos_local);
     const ImVec2 rect_min = metrics.input_pos_screen;
     const ImVec2 rect_max{rect_min.x + input_size.x, rect_min.y + input_size.y};
-    const bool clicked_input = IsMouseClicked(ImGuiMouseButton_Left, false) &&
+    const bool clicked_input = direct_input_enabled && pointer_selection_enabled &&
+                               IsMouseClicked(ImGuiMouseButton_Left, false) &&
                                IsMouseHoveringRect(rect_min, rect_max, false);
     if (clicked_input) {
         preferred_caret_column = -1;
@@ -1986,9 +2204,12 @@ bool ImeDialogUi::DrawInputText(const Libraries::Ime::ImePanelMetrics& metrics,
                    Libraries::Ime::ImeColorToImVec4(state->style_config.color_preedit));
     PushStyleColor(ImGuiCol_Text, Libraries::Ime::ImeColorToImVec4(state->style_config.color_text));
     PushItemFlag(ImGuiItemFlags_NoNav, !native_input_active);
+    PushItemFlag(ImGuiItemFlags_Disabled, language_picker.IsVisible() || !direct_input_enabled);
     if (Libraries::Ime::DrawImeInputText(
             "##ImeDialogInput", placeholder, state->current_text.begin(),
-            state->max_text_length * 4 + 1, input_size, flags, InputTextCallback, this,
+            state->composition.Active() ? state->current_text.capacity()
+                                        : state->max_text_length * 4 + 1,
+            input_size, flags, InputTextCallback, this,
             True(state->option & OrbisImeOption::PASSWORD),
             True(state->option & OrbisImeOption::DISABLE_COPY_PASTE))) {
         state->input_changed = true;
@@ -2008,6 +2229,7 @@ bool ImeDialogUi::DrawInputText(const Libraries::Ime::ImePanelMetrics& metrics,
         }
         state->CopyTextToOrbisBuffer(false);
     }
+    PopItemFlag();
     PopItemFlag();
     const ImRect frame_rect = {GetItemRectMin(), GetItemRectMax()};
     if (!IsItemActive()) {
@@ -2037,7 +2259,8 @@ bool ImeDialogUi::DrawMultiLineInputText(const Libraries::Ime::ImePanelMetrics& 
     SetCursorPos(metrics.input_pos_local);
     const ImVec2 rect_min = metrics.input_pos_screen;
     const ImVec2 rect_max{rect_min.x + input_size.x, rect_min.y + input_size.y};
-    const bool clicked_input = IsMouseClicked(ImGuiMouseButton_Left, false) &&
+    const bool clicked_input = direct_input_enabled && pointer_selection_enabled &&
+                               IsMouseClicked(ImGuiMouseButton_Left, false) &&
                                IsMouseHoveringRect(rect_min, rect_max, false);
     if (clicked_input) {
         preferred_caret_column = -1;
@@ -2110,9 +2333,12 @@ bool ImeDialogUi::DrawMultiLineInputText(const Libraries::Ime::ImePanelMetrics& 
                    Libraries::Ime::ImeColorToImVec4(state->style_config.color_preedit));
     PushStyleColor(ImGuiCol_Text, Libraries::Ime::ImeColorToImVec4(state->style_config.color_text));
     PushItemFlag(ImGuiItemFlags_NoNav, !native_input_active);
+    PushItemFlag(ImGuiItemFlags_Disabled, language_picker.IsVisible() || !direct_input_enabled);
     if (Libraries::Ime::DrawImeInputText(
             "##ImeDialogInput", placeholder, state->current_text.begin(),
-            state->max_text_length * 4 + 1, input_size, flags, InputTextCallback, this,
+            state->composition.Active() ? state->current_text.capacity()
+                                        : state->max_text_length * 4 + 1,
+            input_size, flags, InputTextCallback, this,
             True(state->option & OrbisImeOption::PASSWORD),
             True(state->option & OrbisImeOption::DISABLE_COPY_PASTE))) {
         state->input_changed = true;
@@ -2132,6 +2358,7 @@ bool ImeDialogUi::DrawMultiLineInputText(const Libraries::Ime::ImePanelMetrics& 
         }
         state->CopyTextToOrbisBuffer(false);
     }
+    PopItemFlag();
     PopItemFlag();
     const ImRect frame_rect = {GetItemRectMin(), GetItemRectMax()};
     if (!IsItemActive()) {
@@ -2153,6 +2380,18 @@ int ImeDialogUi::InputTextCallback(ImGuiInputTextCallbackData* data) {
     ASSERT(ui);
     if (!ui->state) {
         return 1;
+    }
+    if (ui->state->composition.Active()) {
+        if (data->EventFlag == ImGuiInputTextFlags_CallbackAlways) {
+            const auto* preview = ui->state->current_text.begin();
+            if (std::strcmp(data->Buf, preview) != 0) {
+                data->DeleteChars(0, data->BufTextLen);
+                data->InsertChars(0, preview);
+            }
+            data->CursorPos = data->SelectionStart = data->SelectionEnd =
+                ui->state->caret_byte_index;
+        }
+        return data->EventFlag == ImGuiInputTextFlags_CallbackCharFilter ? 1 : 0;
     }
 
     if (data->EventFlag == ImGuiInputTextFlags_CallbackAlways &&

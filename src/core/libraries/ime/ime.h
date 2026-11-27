@@ -4,9 +4,11 @@
 #pragma once
 
 #include <mutex>
+#include <string>
 #include "common/enum.h"
 #include "common/types.h"
 #include "core/libraries/ime/ime_common.h"
+#include "core/libraries/ime/ime_kb_language.h"
 
 namespace Core::Loader {
 class SymbolsResolver;
@@ -22,7 +24,13 @@ enum class ImeFrontend : u8 {
 
 std::recursive_mutex& GetImeMutex();
 bool IsRegisteredImeUser(s32 user_id);
-OrbisImeLanguage GetImeInputLanguages(OrbisImeLanguage supported_languages);
+OrbisImeLanguage GetImeInputLanguages(OrbisImeLanguage supported_languages,
+                                      OrbisImeOption options = OrbisImeOption::DEFAULT,
+                                      s32 user_id = -1);
+std::vector<ImeKbVariant> GetImeInputKeyboards(OrbisImeLanguage languages, OrbisImeOption options,
+                                               s32 user_id);
+std::string GetLastImeKeyboard(s32 user_id);
+void RememberImeKeyboard(s32 user_id, const ImeKbLayoutSelection& selection);
 bool TryAcquireImeFrontend(ImeFrontend frontend);
 void ReleaseImeFrontend(ImeFrontend frontend);
 

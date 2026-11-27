@@ -6,6 +6,7 @@
 #include <array>
 #include <span>
 #include <string_view>
+#include <vector>
 
 #include "core/libraries/ime/ime_common.h"
 
@@ -73,16 +74,47 @@ struct ImeKbLanguageProfile {
     const char* name = "English (US)";
 
     const ImeKbLabels& GetLabels() const;
+    const char* GetDisplayName() const;
 };
 
 std::span<const ImeKbLanguageProfile> GetImeKeyboardLanguageProfiles();
+std::vector<ImeKbVariant> GetOrderedImeKeyboardLanguages(OrbisImeLanguage languages,
+                                                         int console_language);
+int GetImeKeyboardSettingId(const ImeKbLanguageProfile& profile);
+const ImeKbLanguageProfile* FindImeKeyboardSetting(int id);
+const ImeKbLanguageProfile& GetImeKeyboardLanguageProfile(ImeKbVariant variant);
+ImeKbLayoutSelection GetImeKeyboardLanguageSelection(const ImeKbLayoutSelection& selection,
+                                                     ImeKbVariant variant);
+
+struct ImeKeyboardLanguagePicker {
+    std::vector<ImeKbVariant> languages;
+    int index = -1;
+    bool activate_armed = false;
+    float openness = 0.0f;
+    float visual_index = 0.0f;
+    float slide_origin = 0.0f;
+    int slide_target = 0;
+    double slide_started_at = 0.0;
+
+    bool IsOpen() const {
+        return index >= 0;
+    }
+    bool IsVisible() const {
+        return IsOpen() || openness > 0.0f;
+    }
+    void Open(const ImeKbLayoutSelection& selection);
+    void Move(int direction);
+    ImeKbLayoutSelection Preview(const ImeKbLayoutSelection& selection) const;
+    void Confirm(ImeKbLayoutSelection& selection);
+};
 const ImeKbLanguageProfile& GetImeKeyboardLanguageProfile(
     OrbisImeLanguage language, ImeKbVariant variant = ImeKbVariant::Automatic);
 const ImeKbLanguageProfile& GetImeKeyboardLanguageProfile(OrbisImeLanguage language,
                                                           std::string_view preferred_layout);
+OrbisImeLanguage ResolveImeInputLanguages(OrbisImeLanguage supported_languages,
+                                          OrbisImeLanguage configured_languages,
+                                          OrbisImeOption options);
 bool HasMultipleImeKeyboardLanguages(OrbisImeLanguage supported_languages);
-void CycleImeKeyboardLanguage(ImeKbLayoutSelection& selection,
-                              OrbisImeLanguage supported_languages);
 OrbisImeLanguage ResolveImeKeyboardLanguage(OrbisImeLanguage supported_languages,
                                             int console_language);
 

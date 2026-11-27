@@ -8,8 +8,10 @@
 #include <imgui.h>
 #include "common/cstring.h"
 #include "common/types.h"
+#include "core/libraries/ime/ime_composition.h"
 #include "core/libraries/ime/ime_dialog.h"
 #include "core/libraries/ime/ime_kb_layout.h"
+#include "core/libraries/ime/ime_keyboard.h"
 #include "imgui/imgui_layer.h"
 
 namespace Libraries::ImeDialog {
@@ -39,6 +41,8 @@ class ImeDialogState final {
     bool displayed_layout_valid = false;
     u32 panel_req_width = 0;
     u32 panel_req_height = 0;
+    u32 panel_full_height = 0;
+    u32 ext_keyboard_mode = 0;
     OrbisImeExtOption ext_option = OrbisImeExtOption::DEFAULT;
     OrbisImeDisableDevice disable_device = OrbisImeDisableDevice::DEFAULT;
     OrbisImePanelPriority panel_priority = OrbisImePanelPriority::Default;
@@ -51,6 +55,8 @@ class ImeDialogState final {
     OrbisImeType type{};
     OrbisImeLanguage supported_languages{};
     OrbisImeLanguage input_languages{};
+    Libraries::Ime::ImeComposition composition;
+    std::shared_ptr<const Libraries::Ime::ImeDictionary> application_dictionary;
     OrbisImeEnterLabel enter_label{};
     OrbisImeTextFilter text_filter{};
     OrbisImeExtKeyboardFilter keyboard_filter{};
@@ -61,19 +67,14 @@ class ImeDialogState final {
     std::vector<char> placeholder;
 
     // A character can hold up to 4 bytes in UTF-8
-    Common::CString<ORBIS_IME_DIALOG_MAX_TEXT_LENGTH * 4 + 1> current_text;
+    Common::CString<(ORBIS_IME_DIALOG_MAX_TEXT_LENGTH + ORBIS_IME_MAX_EXPANDED_PREEDIT_LENGTH) * 4 +
+                    1>
+        current_text;
 
 public:
-    /*
-     * Use default constructor ImeDialogState() to initialize default values instead of
-     * ImeDialogState(const OrbisImeDialogParam* param = nullptr,const OrbisImeParamExtended*
-     * extended = nullptr) to avoid validation errors in log
-     */
     ImeDialogState();
-    ImeDialogState(const OrbisImeDialogParam* param /*= nullptr*/,
-                   const OrbisImeParamExtended* extended /*= nullptr*/);
+    ImeDialogState(const OrbisImeDialogParam* param, const OrbisImeParamExtended* extended);
     ImeDialogState(const ImeDialogState& other) = delete;
-    ImeDialogState(ImeDialogState&& other) noexcept;
     ImeDialogState& operator=(ImeDialogState&& other);
 
     bool CopyTextToOrbisBuffer(bool use_original);
@@ -106,11 +107,15 @@ class ImeDialogUi final : public ImGui::Layer {
     OrbisImeDialogStatus* status{};
     OrbisImeDialogResult* result{};
 
+    bool keypanel_hidden = false;
     bool first_render = true;
     bool accept_armed = false;
     bool native_input_active = false;
+    bool direct_input_enabled = false;
     bool native_accept_pressed = false;
     bool native_newline_pressed = false;
+    std::vector<Libraries::Ime::ImeKeyboardText> composition_input;
+    std::optional<Libraries::Ime::ImeKeyboardContext> input_context;
     int preferred_caret_column = -1;
     bool pointer_navigation_active = true;
     EditMenuPopup edit_menu_popup = EditMenuPopup::None;
@@ -150,6 +155,7 @@ class ImeDialogUi final : public ImGui::Layer {
     bool panel_drag_active = false;
     bool gamepad_input_capture_active = false;
     ImVec2 panel_position{};
+    Libraries::Ime::ImeViewportMetrics panel_viewport{};
     ImVec2 panel_layout_anchor{};
     ImVec2 panel_drag_press_offset{};
     int input_cursor_utf16 = 0;
@@ -166,6 +172,7 @@ class ImeDialogUi final : public ImGui::Layer {
     int last_keyboard_selected_col = 0;
     int edit_menu_index = 0;
     Libraries::Ime::ImeKbLayoutSelection kb_layout_selection{};
+    Libraries::Ime::ImeKeyboardLanguagePicker language_picker;
     Libraries::Ime::ImeKbLayoutSelection last_nav_layout_selection{};
     bool nav_layout_selection_initialized = false;
     Libraries::Ime::ImeKbLayoutFamily kb_alpha_family = Libraries::Ime::ImeKbLayoutFamily::Alphabet;
@@ -176,7 +183,6 @@ public:
                          OrbisImeDialogResult* result = nullptr);
     ~ImeDialogUi() override;
     ImeDialogUi(const ImeDialogUi& other) = delete;
-    ImeDialogUi(ImeDialogUi&& other) noexcept;
     ImeDialogUi& operator=(ImeDialogUi&& other);
 
     void Draw() override;
@@ -185,6 +191,9 @@ public:
 private:
     void FinishDialog(OrbisImeDialogEndStatus endstatus, bool restore_original, const char* reason);
     void Free();
+    void UpdateComposition();
+    void ConfirmComposition(int index = -1);
+    void CancelComposition();
 
     bool DrawInputText(const Libraries::Ime::ImePanelMetrics& metrics,
                        bool pointer_selection_enabled);

@@ -420,6 +420,72 @@ constexpr ImeKbLabels kUkrainianLabels = {
     .script_action_labels = kEnglishLabels.script_action_labels,
 };
 
+constexpr auto kKeyboardLanguageOrder = [] {
+    using enum ImeKbVariant;
+    constexpr std::array variants = {English_US,
+                                     English_GB,
+                                     Polish,
+                                     Spanish,
+                                     German,
+                                     SpanishLatinAmerica,
+                                     Dutch,
+                                     Danish,
+                                     Russian,
+                                     Swedish,
+                                     Finnish,
+                                     French_CA,
+                                     French,
+                                     Italian,
+                                     Norwegian,
+                                     Portuguese_PT,
+                                     Portuguese_BR,
+                                     Turkish,
+                                     Japanese,
+                                     Japanese_Gojuon,
+                                     Korean,
+                                     Chinese_CN,
+                                     Chinese_HK,
+                                     Chinese_TW,
+                                     Chinese_TW_Zhuyin,
+                                     Chinese_TW_Cangjie,
+                                     Arabic,
+                                     Thai,
+                                     Czech,
+                                     Greek,
+                                     Hungarian,
+                                     Indonesian,
+                                     Romanian,
+                                     Vietnamese,
+                                     Ukrainian};
+    constexpr std::array<std::string_view, 31> encoded = {
+        "qdvy6t935rs74heuabcx2gfw801klomnpji", "qlomnps7610abc4tuvdjike2gfw8539rhyx",
+        "401qlomnpk753abctuvdji6e2gfw89srhyx", "4qslomnpk735abctuv01dji6e2gfw89rhyx",
+        "qomnpl7410acbtvdjik6e2gfw8953rshyux", "qslomnpk7abcjitv10de62gfw85394rhyux",
+        "qomnpl7410abctuvdjik6ey2gfw853rshx9", "4qslomnpk753abctuv01dji6e2gfw89rhyx",
+        "10quxt7v35domnplk46e2gfw8rhyabcs9ji", "t6e748wx953q01ydvjilomnpsrhgf2bcaku",
+        "h7jiuv35tbc2aq801erys6x9dgf4omnpklw", "q2748cbomnpak6lswegfji9rhy53tudv01x",
+        "q10356vdjiomnplktegf2bcw94a7rshyu8x", "q710acbt6vdjilomnpke2gfw8539rsh4yux",
+        "q710abct6vdjilomnpke2gfw8539rsh4yux", "q710abctvdjilomnpk6e2gfw8539rsh4yux",
+        "01qomnpls7acbt536vjik4e2gf8w9rhyuxd", "4qlomnpk753abct6uv01djie2gfw89rshyx",
+        "qlomnps7610abc4tuvdjike2gfw8539rhyx", "4qslomnp7vacb601359djik2uegfw8rhyxt",
+        "4qslomnpk753abctuv01dji6e2gfw89rhyx", "35410vydgf2rhs78w9omnplqcbaxkue6jit",
+        "401qlomnpk753abctuvdji6e2gfw89srhyx", "10qsomnpl7acbvdjiku46e2gfw8t539rhyx",
+        "01qs7acbt6vjilomnpk2u4ed8gfw539rhyx", "01qxcb47tjiv35dlomnpke6uy2gfw89rhsa",
+        "qslomnpk710abc4tvdjiue62gfw8539rhyx", "ks74x2fgwrtomnplji6hebcay853901qdvu",
+        "10q2fg746kutve8jibcaws53rh9lomnpyxd", "q6s7auv01dji4ke2gfbcw8359rlomnphyxt",
+        "10qxt7v35dlomnpk64e2gf8wrhuyabcs9ji",
+    };
+    std::array<std::array<ImeKbVariant, variants.size()>, encoded.size()> result{};
+    for (std::size_t language = 0; language < encoded.size(); ++language) {
+        for (std::size_t index = 0; index < variants.size(); ++index) {
+            const char code = encoded[language][index];
+            const auto variant = code <= '9' ? code - '0' : code - 'a' + 10;
+            result[language][index] = variants[variant];
+        }
+    }
+    return result;
+}();
+
 constexpr std::array<ImeKbLanguageProfile, 35> kLanguageProfiles = {{
     {
         .language = OrbisImeLanguage::ENGLISH_US,
@@ -679,6 +745,124 @@ std::span<const ImeKbLanguageProfile> GetImeKeyboardLanguageProfiles() {
     return kLanguageProfiles;
 }
 
+const char* ImeKbLanguageProfile::GetDisplayName() const {
+    switch (variant) {
+    case ImeKbVariant::English_US:
+        return "English (United States)";
+    case ImeKbVariant::English_GB:
+        return "English (United Kingdom)";
+    default:
+        return name;
+    }
+}
+
+std::vector<ImeKbVariant> GetOrderedImeKeyboardLanguages(OrbisImeLanguage languages,
+                                                         int console_language) {
+    const auto order =
+        kKeyboardLanguageOrder[console_language >= 0 && console_language < 31 ? console_language
+                                                                              : 1];
+    std::vector<ImeKbVariant> result;
+    result.reserve(order.size());
+    for (const auto variant : order) {
+        if (True(GetImeKeyboardLanguageProfile(variant).language & languages)) {
+            result.push_back(variant);
+        }
+    }
+    return result;
+}
+
+int GetImeKeyboardSettingId(const ImeKbLanguageProfile& profile) {
+    if (profile.console_language >= 0) {
+        return profile.console_language;
+    }
+    switch (profile.variant) {
+    case ImeKbVariant::Japanese_Gojuon:
+        return 31;
+    case ImeKbVariant::Chinese_HK:
+        return 32;
+    case ImeKbVariant::Chinese_TW_Zhuyin:
+        return 33;
+    case ImeKbVariant::Chinese_TW_Cangjie:
+        return 34;
+    default:
+        return -1;
+    }
+}
+
+const ImeKbLanguageProfile* FindImeKeyboardSetting(int id) {
+    const auto profile = std::ranges::find_if(kLanguageProfiles, [id](const auto& profile) {
+        return id >= 0 && GetImeKeyboardSettingId(profile) == id;
+    });
+    return profile != kLanguageProfiles.end() ? &*profile : nullptr;
+}
+
+const ImeKbLanguageProfile& GetImeKeyboardLanguageProfile(ImeKbVariant variant) {
+    const auto profile =
+        std::ranges::find(kLanguageProfiles, variant, &ImeKbLanguageProfile::variant);
+    return profile != kLanguageProfiles.end() ? *profile : kLanguageProfiles.front();
+}
+
+void ImeKeyboardLanguagePicker::Open(const ImeKbLayoutSelection& selection) {
+    if (languages.size() < 2) {
+        return;
+    }
+    const auto current = std::ranges::find(languages, selection.variant);
+    index = current != languages.end() ? static_cast<int>(current - languages.begin()) : 0;
+    activate_armed = false;
+    visual_index = slide_origin = static_cast<float>(index);
+    slide_target = index;
+    slide_started_at = 0.0;
+}
+
+void ImeKeyboardLanguagePicker::Move(int direction) {
+    if (IsOpen()) {
+        index = std::clamp(index + direction, 0, static_cast<int>(languages.size()) - 1);
+    }
+}
+
+ImeKbLayoutSelection ImeKeyboardLanguagePicker::Preview(
+    const ImeKbLayoutSelection& selection) const {
+    return IsOpen() ? GetImeKeyboardLanguageSelection(selection, languages[index]) : selection;
+}
+
+ImeKbLayoutSelection GetImeKeyboardLanguageSelection(const ImeKbLayoutSelection& selection,
+                                                     ImeKbVariant variant) {
+    if (variant == selection.variant) {
+        return selection;
+    }
+    auto preview = selection;
+    preview.variant = variant;
+    preview.language = GetImeKeyboardLanguageProfile(preview.variant).language;
+    preview.family = preview.input_type == OrbisImeType::Number ? ImeKbLayoutFamily::Numeric
+                                                                : ImeKbLayoutFamily::Alphabet;
+    const bool set_priority = True(selection.ext_options & OrbisImeExtOption::SET_PRIORITY);
+    if (set_priority && preview.input_type != OrbisImeType::Number) {
+        if (selection.panel_priority == OrbisImePanelPriority::Symbol) {
+            preview.family = ImeKbLayoutFamily::Symbols;
+        } else if (selection.panel_priority == OrbisImePanelPriority::Accent) {
+            preview.family = ImeKbLayoutFamily::Alternate;
+        }
+    }
+    preview.page = 0;
+    preview.case_state = selection.case_state == ImeKbCaseState::Upper ? ImeKbCaseState::Upper
+                                                                       : ImeKbCaseState::Lower;
+    if (set_priority && True(selection.ext_options & OrbisImeExtOption::PRIORITY_SHIFT) &&
+        preview.family != ImeKbLayoutFamily::Symbols &&
+        preview.family != ImeKbLayoutFamily::Numeric) {
+        preview.case_state = ImeKbCaseState::CapsLock;
+    }
+    preview.full_width =
+        set_priority && True(selection.ext_options & OrbisImeExtOption::PRIORITY_FULL_WIDTH);
+    return preview;
+}
+
+void ImeKeyboardLanguagePicker::Confirm(ImeKbLayoutSelection& selection) {
+    if (IsOpen() && languages[index] != selection.variant) {
+        selection = Preview(selection);
+    }
+    index = -1;
+}
+
 const ImeKbLanguageProfile& GetImeKeyboardLanguageProfile(OrbisImeLanguage language,
                                                           ImeKbVariant variant) {
     const auto profile = std::ranges::find_if(kLanguageProfiles, [&](const auto& profile) {
@@ -713,31 +897,18 @@ OrbisImeLanguage ResolveImeKeyboardLanguage(OrbisImeLanguage supported_languages
                                                 : kLanguageProfiles.front().language;
 }
 
-bool HasMultipleImeKeyboardLanguages(OrbisImeLanguage supported_languages) {
-    return std::popcount(static_cast<u64>(supported_languages) & kValidOrbisImeLanguageMask) > 1;
+OrbisImeLanguage ResolveImeInputLanguages(OrbisImeLanguage supported_languages,
+                                          OrbisImeLanguage configured_languages,
+                                          OrbisImeOption options) {
+    if (True(options & OrbisImeOption::LANGUAGES_FORCED)) {
+        return supported_languages;
+    }
+    const auto matching = supported_languages & configured_languages;
+    return True(matching) ? matching : supported_languages;
 }
 
-void CycleImeKeyboardLanguage(ImeKbLayoutSelection& selection,
-                              OrbisImeLanguage supported_languages) {
-    if (!HasMultipleImeKeyboardLanguages(supported_languages)) {
-        return;
-    }
-    const auto& current = GetImeKeyboardLanguageProfile(selection.language, selection.variant);
-    const auto index = static_cast<std::size_t>(&current - kLanguageProfiles.data());
-    for (std::size_t offset = 1; offset <= kLanguageProfiles.size(); ++offset) {
-        const auto& next = kLanguageProfiles[(index + offset) % kLanguageProfiles.size()];
-        if (True(next.language & supported_languages)) {
-            selection.language = next.language;
-            selection.variant = next.variant;
-            selection.family = selection.input_type == OrbisImeType::Number
-                                   ? ImeKbLayoutFamily::Numeric
-                                   : ImeKbLayoutFamily::Alphabet;
-            selection.page = 0;
-            selection.case_state = ImeKbCaseState::Lower;
-            selection.full_width = false;
-            return;
-        }
-    }
+bool HasMultipleImeKeyboardLanguages(OrbisImeLanguage supported_languages) {
+    return std::popcount(static_cast<u64>(supported_languages) & kValidOrbisImeLanguageMask) > 1;
 }
 
 } // namespace Libraries::Ime

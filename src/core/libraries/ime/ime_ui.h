@@ -12,7 +12,9 @@
 #include "common/cstring.h"
 #include "common/types.h"
 
+#include "core/libraries/ime/ime_composition.h"
 #include "core/libraries/ime/ime_kb_layout.h"
+#include "core/libraries/ime/ime_keyboard.h"
 #include "ime.h"
 
 namespace Libraries::Ime {
@@ -29,13 +31,17 @@ class ImeState {
     char16_t* text_buffer{};
     u32 max_text_length = 0;
     OrbisImeLanguage input_languages{};
+    ImeComposition composition;
 
     // A character can hold up to 4 bytes in UTF-8
-    Common::CString<ORBIS_IME_MAX_TEXT_LENGTH * 4 + 1> current_text;
+    Common::CString<(ORBIS_IME_MAX_TEXT_LENGTH + ORBIS_IME_MAX_EXPANDED_PREEDIT_LENGTH) * 4 + 1>
+        current_text;
     std::u16string reported_text;
     u32 reported_caret_index = 0;
     u64 text_revision = 0;
     u64 caret_revision = 0;
+    u64 candidate_revision = 0;
+    s32 candidate_count = 0;
     OrbisImePositionAndForm panel_layout{};
     OrbisImeCaret caret_geometry{};
     std::array<OrbisImeTextGeometry, 4> text_geometry{};
@@ -53,19 +59,19 @@ class ImeState {
         u64 revision;
         int selection_anchor = -1;
         u64 caret_revision = 0;
+        std::u16string committed_text;
+        bool preedit = false;
+        u64 candidate_revision = 0;
     };
     std::queue<QueuedEvent> event_queue;
     std::mutex queue_mutex;
 
 public:
     ImeState() = default;
-    ImeState(const OrbisImeParam* param, const OrbisImeParamExtended* extended = nullptr);
-    ImeState(ImeState&& other) noexcept;
-    ImeState& operator=(ImeState&& other) noexcept;
+    explicit ImeState(const OrbisImeParam* param);
 
     void SendEvent(OrbisImeEvent* event, bool text_edit = true, int selection_anchor = -1);
-    void SendEnterEvent();
-    void SendCloseEvent();
+    void SendFinishEvent(OrbisImeEventId id);
 
     void SetText(const char16_t* text, u32 length);
     void SetCaret(u32 position);
@@ -99,13 +105,21 @@ class ImeUi : public ImGui::Layer {
     const OrbisImeParam* ime_param{};
     const OrbisImeParamExtended* extended_param{};
     ImeStyleConfig style_config{};
+    std::shared_ptr<const ImeDictionary> application_dictionary;
 
+    u32 input_method_state = ~0U;
+    bool keypanel_hidden = false;
     bool first_render = true;
     bool accept_armed = false;
     bool native_input_active = false;
+    bool direct_input_enabled = false;
     bool dispatching_caret_move = false;
     bool native_accept_pressed = false;
     bool native_newline_pressed = false;
+    std::vector<Libraries::Ime::ImeKeyboardText> composition_input;
+    std::optional<Libraries::Ime::ImeKeyboardContext> input_context;
+    std::vector<std::string> published_candidates;
+    bool candidate_events_active = false;
     std::u16string last_input_text;
     int last_input_caret = -1;
     bool pointer_navigation_active = true;
@@ -145,6 +159,7 @@ class ImeUi : public ImGui::Layer {
     bool panel_drag_active = false;
     bool gamepad_input_capture_active = false;
     ImVec2 panel_position{};
+    Libraries::Ime::ImeViewportMetrics panel_viewport{};
     int input_cursor_utf16 = 0;
     int input_cursor_byte = 0;
     int input_selection_start_byte = 0;
@@ -159,6 +174,7 @@ class ImeUi : public ImGui::Layer {
     int last_keyboard_selected_col = 0;
     int edit_menu_index = 0;
     ImeKbLayoutSelection kb_layout_selection{};
+    ImeKeyboardLanguagePicker language_picker;
     ImeKbLayoutSelection last_nav_layout_selection{};
     bool nav_layout_selection_initialized = false;
     ImeKbLayoutFamily kb_alpha_family = ImeKbLayoutFamily::Alphabet;
@@ -169,15 +185,18 @@ public:
                    const OrbisImeParamExtended* extended = nullptr);
     ~ImeUi() override;
     ImeUi(const ImeUi& other) = delete;
-    ImeUi& operator=(ImeUi&& other);
 
     void Draw() override;
     void DisableController();
+    bool SelectCandidate(s32 index, bool confirm);
 
 private:
     void Free();
     void RequestCaretMove(OrbisImeCaretMovementDirection direction, bool selecting);
     void SetCaret(u32 position);
+    void UpdateComposition();
+    void ConfirmComposition(int index = -1);
+    void CancelComposition();
 
     bool DrawInputText(const ImePanelMetrics& metrics, bool pointer_selection_enabled);
 

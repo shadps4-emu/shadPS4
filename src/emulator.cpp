@@ -670,6 +670,16 @@ void Emulator::Run(std::filesystem::path file, std::vector<std::string> args,
     }
     mnt->Mount(host_font2_dir, guest_font_dir);
 
+    const auto dictionaries_dir = EmulatorSettings.GetImeDictionaryDir();
+    std::error_code dictionary_error;
+    std::filesystem::create_directories(dictionaries_dir, dictionary_error);
+    if (!dictionary_error) {
+        mnt->Mount(dictionaries_dir, "/priv/ime/dic", true);
+    } else {
+        LOG_WARNING(Loader, "Unable to create IME dictionary directory: {}",
+                    dictionary_error.message());
+    }
+
     for (auto const& mount_pair : mounts) {
         LOG_INFO(Loader, "Mounting {} to {}", mount_pair.first.string(), mount_pair.second);
         mnt->Mount(mount_pair.first, mount_pair.second);

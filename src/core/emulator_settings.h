@@ -183,6 +183,7 @@ struct GeneralSettings {
     Setting<std::filesystem::path> home_dir;
     Setting<std::filesystem::path> sys_modules_dir;
     Setting<std::filesystem::path> font_dir;
+    Setting<std::filesystem::path> ime_dictionary_dir;
 
     Setting<int> volume_slider{100};
     Setting<bool> neo_mode{false};
@@ -222,9 +223,10 @@ struct GeneralSettings {
 };
 
 NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(GeneralSettings, install_dirs, addon_install_dir, home_dir,
-                                   sys_modules_dir, font_dir, volume_slider, neo_mode, dev_kit_mode,
-                                   extra_dmem_in_mbytes, extra_fmem_in_mbytes,
-                                   trophy_popup_disabled, trophy_notification_duration, show_splash,
+                                   sys_modules_dir, font_dir, ime_dictionary_dir, volume_slider,
+                                   neo_mode, dev_kit_mode, extra_dmem_in_mbytes,
+                                   extra_fmem_in_mbytes, trophy_popup_disabled,
+                                   trophy_notification_duration, show_splash,
                                    trophy_notification_side, discord_rpc_enabled, show_fps_counter,
                                    console_language, big_picture_scale, big_picture_folder_depth,
                                    redzone_patches)
@@ -338,7 +340,9 @@ struct InputSettings {
     Setting<std::string> default_controller_id{""};
     Setting<bool> background_controller_input{false}; // specific
     Setting<bool> ime_accessibility_enabled{false};   // specific
-    Setting<bool> ime_url_mail_short_panel{false};    // specific
+    Setting<bool> ime_direct_input{false};            // specific
+    Setting<std::vector<int>> ime_input_languages;
+    Setting<bool> ime_url_mail_short_panel{false}; // specific
     Setting<std::string> ime_keyboard_layout{""};
     Setting<bool> is_circle_enter{false}; // specific
     Setting<s32> camera_id{-1};
@@ -355,6 +359,7 @@ struct InputSettings {
                                          &InputSettings::motion_controls_enabled),
             make_override<InputSettings>("background_controller_input",
                                          &InputSettings::background_controller_input),
+            make_override<InputSettings>("ime_direct_input", &InputSettings::ime_direct_input),
             make_override<InputSettings>("ime_accessibility_enabled",
                                          &InputSettings::ime_accessibility_enabled),
             make_override<InputSettings>("ime_url_mail_short_panel",
@@ -372,9 +377,9 @@ NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(InputSettings, cursor_state, cursor_hide_time
                                    usb_device_backend, use_special_pad, special_pad_class,
                                    motion_controls_enabled, use_unified_input_config,
                                    default_controller_id, background_controller_input,
-                                   ime_accessibility_enabled, ime_url_mail_short_panel,
-                                   ime_keyboard_layout, camera_id, is_circle_enter,
-                                   use_mice_as_mice, use_keyboard_as_keyboard)
+                                   ime_accessibility_enabled, ime_direct_input, ime_input_languages,
+                                   ime_url_mail_short_panel, ime_keyboard_layout, camera_id,
+                                   is_circle_enter, use_mice_as_mice, use_keyboard_as_keyboard)
 // -------------------------------
 // Audio settings
 // -------------------------------
@@ -568,6 +573,8 @@ public:
     void SetSysModulesDir(const std::filesystem::path& dir);
     std::filesystem::path GetFontsDir();
     void SetFontsDir(const std::filesystem::path& dir);
+    std::filesystem::path GetImeDictionaryDir();
+    void SetImeDictionaryDir(const std::filesystem::path& dir);
     std::filesystem::path GetAddonInstallDir();
     void SetAddonInstallDir(const std::filesystem::path& dir);
 
@@ -807,6 +814,8 @@ public:
     SETTING_FORWARD_BOOL(m_input, MotionControlsEnabled, motion_controls_enabled)
     SETTING_FORWARD_BOOL(m_input, BackgroundControllerInput, background_controller_input)
     SETTING_FORWARD_BOOL(m_input, ImeAccessibilityEnabled, ime_accessibility_enabled)
+    SETTING_FORWARD_BOOL(m_input, ImeDirectInput, ime_direct_input)
+    SETTING_FORWARD(m_input, ImeInputLanguages, ime_input_languages)
     SETTING_FORWARD_BOOL(m_input, ImeUrlMailShortPanel, ime_url_mail_short_panel)
     SETTING_FORWARD(m_input, ImeKeyboardLayout, ime_keyboard_layout)
     SETTING_FORWARD(m_input, DefaultControllerId, default_controller_id)

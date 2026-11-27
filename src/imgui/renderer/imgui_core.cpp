@@ -12,6 +12,7 @@
 #include "core/debug_state.h"
 #include "core/devtools/layer.h"
 #include "core/emulator_settings.h"
+#include "core/libraries/ime/ime_keyboard.h"
 #include "font_data.h"
 #include "font_stack.h"
 #include "imgui/imgui_layer.h"
@@ -178,7 +179,12 @@ void Shutdown(const vk::Device& device) {
 }
 
 bool ProcessEvent(SDL_Event* event) {
+    const auto* context = GetCurrentContext();
+    const auto first_event = context ? context->InputEventsNextEventId : 0;
     Sdl::ProcessEvent(event);
+    if (context) {
+        Libraries::Ime::TrackImeKeyboardEvents(event, first_event, context->InputEventsNextEventId);
+    }
     switch (event->type) {
     // Don't block release/up events
     case SDL_EVENT_MOUSE_MOTION:
@@ -250,6 +256,7 @@ ImGuiID NewFrame(bool is_reusing_frame) {
         layer->Draw();
     }
 
+    Libraries::Ime::DiscardImeKeyboardContexts();
     return dockId;
 }
 
