@@ -371,16 +371,20 @@ VideoCore::ImageView& Runtime::FindSubrectView(VideoCore::Image& image,
     return image.FindView(view_info, crop);
 }
 
-void Runtime::CopyImageWithBuffer(VideoCore::Image* src, VideoCore::Image* dst,
-                                  const VideoCore::Buffer* buffer, u64 offset) {
+void Runtime::CopyImageWithBuffer(VideoCore::Image* src, VideoCore::Image* dst) {
     const u32 num_mips = std::min(src->info.resources.levels, dst->info.resources.levels);
     const u32 num_layers = std::min(src->info.resources.layers, dst->info.resources.layers);
 
     SetBackingSamples(dst, dst->info.num_samples, false);
     SetBackingSamples(src, src->info.num_samples);
 
+    const auto copy_size_of = [&](const vk::BufferImageCopy& copy) {
+        return std::max(BufferImageCopySize(copy, src->info.pixel_format),
+                        BufferImageCopySize(copy, dst->info.pixel_format));
+    };
+
     vk::BufferImageCopy buffer_copy = {
-        .bufferOffset = offset,
+        .bufferOffset = 0,
         .bufferRowLength = 0,
         .bufferImageHeight = 0,
         .imageSubresource{
@@ -392,19 +396,26 @@ void Runtime::CopyImageWithBuffer(VideoCore::Image* src, VideoCore::Image* dst,
         .imageOffset = {0, 0, 0},
         .imageExtent = {src->info.size.width, src->info.size.height, src->info.size.depth},
     };
-    u64 copy_size = BufferImageCopySize(buffer_copy, src->info.pixel_format);
+    u64 copy_size = copy_size_of(buffer_copy);
     SmallVector<vk::BufferImageCopy, 8> buffer_copies;
     buffer_copies.push_back(buffer_copy);
     for (u32 mip = 1; mip < num_mips; ++mip) {
         auto mip_copy = buffer_copy;
-        mip_copy.bufferOffset = Common::AlignUp(offset + copy_size, 16);
+        mip_copy.bufferOffset = Common::AlignUp(copy_size, 16);
         mip_copy.imageSubresource.mipLevel = mip;
         mip_copy.imageExtent = vk::Extent3D{std::max(src->info.size.width >> mip, 1u),
                                             std::max(src->info.size.height >> mip, 1u),
                                             std::max(src->info.size.depth >> mip, 1u)};
-        copy_size =
-            mip_copy.bufferOffset - offset + BufferImageCopySize(mip_copy, src->info.pixel_format);
+        copy_size = mip_copy.bufferOffset + copy_size_of(mip_copy);
         buffer_copies.push_back(mip_copy);
+    }
+
+    const auto copy_ref =
+        staging_pool.Request(copy_size, VideoCore::MemoryType::DeviceLocal, 16, false, true);
+    const auto* buffer = copy_ref.buffer;
+    const u64 offset = copy_ref.offset;
+    for (auto& copy : buffer_copies) {
+        copy.bufferOffset += offset;
     }
 
     scheduler.EndRendering();
@@ -414,7 +425,7 @@ void Runtime::CopyImageWithBuffer(VideoCore::Image* src, VideoCore::Image* dst,
                 vk::AccessFlagBits2::eTransferRead);
     needs_flush |= Transit(dst, vk::ImageLayout::eTransferDstOptimal,
                            vk::PipelineStageFlagBits2::eCopy, vk::AccessFlagBits2::eTransferWrite);
-    needs_flush |= IsBufferAccessed(buffer, offset, copy_size);
+    needs_flush |= IsBufferAccessed(buffer, offset, copy_size, true);
     if (needs_flush) {
         FlushBarriers();
     }
@@ -440,6 +451,8 @@ void Runtime::CopyImageWithBuffer(VideoCore::Image* src, VideoCore::Image* dst,
     }
     cmdbuf.copyBufferToImage(buffer->Handle(), dst->GetImage(),
                              vk::ImageLayout::eTransferDstOptimal, buffer_copies);
+    AccessBuffer(buffer, offset, copy_size, vk::PipelineStageFlagBits2::eCopy,
+                 vk::AccessFlagBits2::eTransferWrite | vk::AccessFlagBits2::eTransferRead);
 
     dst->flags |= (src->flags & VideoCore::ImageFlagBits::GpuModified);
     dst->flags &= ~VideoCore::ImageFlagBits::Dirty;
@@ -505,10 +518,7 @@ void Runtime::CopyColorAndDepth(VideoCore::Image* src, VideoCore::Image* dst) {
             CopyImage(src, dst);
         } else {
             // Perform depth from/to color copy using the intermediate copy buffer.
-            static constexpr size_t COPY_BUFFER_SIZE = 128_MB;
-            const auto copy_ref =
-                staging_pool.Request(COPY_BUFFER_SIZE, VideoCore::MemoryType::DeviceLocal);
-            CopyImageWithBuffer(src, dst, copy_ref.buffer, copy_ref.offset);
+            CopyImageWithBuffer(src, dst);
         }
     } else if (src->info.num_samples == 1 && dst->info.num_samples > 1 &&
                dst->info.props.is_depth) {
