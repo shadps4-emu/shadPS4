@@ -77,37 +77,6 @@ void MemoryManager::SetupMemoryRegions(u64 flexible_size, bool use_extended_mem1
              total_flexible_size, total_direct_size);
 }
 
-u64 MemoryManager::ClampRangeSize(VAddr virtual_addr, u64 size) {
-    static constexpr u64 MinSizeToClamp = 1_GB;
-    // Dont bother with clamping if the size is small so we dont pay a map lookup on every buffer.
-    if (size < MinSizeToClamp) {
-        return size;
-    }
-
-    std::shared_lock lk{vm_map.lock};
-
-    auto [entry, found] = vm_map.LookupEntryReadOnly(virtual_addr);
-    if (!found) {
-        return size;
-    }
-
-    u64 clamped_size = entry->end - virtual_addr;
-    ++entry;
-
-    // Keep adding to the size while there is contigious virtual address space.
-    while (entry != vm_map.GetTree().end() && entry->adj_free == 0 && clamped_size < size) {
-        clamped_size += entry->Size();
-        ++entry;
-    }
-    clamped_size = std::min(clamped_size, size);
-
-    if (size != clamped_size) {
-        LOG_DEBUG(Kernel_Vmm, "Clamped requested buffer range addr={:#x}, size={:#x} to {:#x}",
-                  virtual_addr, size, clamped_size);
-    }
-    return clamped_size;
-}
-
 void MemoryManager::SetPrtArea(u32 id, VAddr address, u64 size) {
     PrtArea& area = prt_areas[id];
     if (area.mapped) {

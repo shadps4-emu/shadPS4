@@ -107,6 +107,12 @@ struct PageManager::Impl {
 
     virtual void Protect(VAddr address, size_t size, Core::MemoryPermission perms) = 0;
 
+    void ProtectMapped(VAddr address, size_t size, Core::MemoryPermission perms) {
+        rasterizer->ForEachMappedRangeInRange(address, size, [&](const auto& range) {
+            Protect(range.lower(), range.upper() - range.lower(), perms);
+        });
+    }
+
     void EnsurePages(VAddr begin, VAddr end) {
         end = std::min(end, VAddr{1} << ADDRESS_BITS) - 1;
         const size_t start_page = begin >> PM_PAGE_BITS;
@@ -126,7 +132,7 @@ struct PageManager::Impl {
 
         const auto release_pending = [&] {
             if (range_pages > 0) {
-                Protect(range_begin << PM_PAGE_BITS, range_pages << PM_PAGE_BITS, perms);
+                ProtectMapped(range_begin << PM_PAGE_BITS, range_pages << PM_PAGE_BITS, perms);
                 range_pages = 0;
                 potential_pages = 0;
             }
@@ -201,7 +207,7 @@ struct PageManager::Impl {
 
         const auto release_pending = [&] {
             if (range_pages > 0) {
-                Protect(range_begin << PM_PAGE_BITS, range_pages << PM_PAGE_BITS, perms);
+                ProtectMapped(range_begin << PM_PAGE_BITS, range_pages << PM_PAGE_BITS, perms);
                 range_pages = 0;
                 potential_pages = 0;
             }
