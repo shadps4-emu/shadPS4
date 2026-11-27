@@ -37,7 +37,13 @@ asm(R"(
   movq %rsp, %r12
   movq %rbp, %r13
   movq %rdx, %rsp
-  movq %rdx, %rbp
+
+  # setup initial stack frame
+  pushq $0
+  pushq $0
+  movq %rsp, %rbp
+  subq $32, %rsp
+
   callq *%rsi
   movq %r13, %rbp
   movq %r12, %rsp
