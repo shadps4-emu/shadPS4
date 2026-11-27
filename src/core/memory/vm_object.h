@@ -63,6 +63,23 @@ struct VmObject {
         size = std::max(size, new_size);
     }
 
+    bool AppendBacking(u64 at, const std::vector<PhysRange>& ranges) {
+        u64 cursor = 0;
+        auto it = anon.backing.begin();
+        for (; it != anon.backing.end() && cursor < at; ++it) {
+            cursor += it->size;
+        }
+        if (cursor < at) {
+            return false;
+        }
+        anon.backing.erase(it, anon.backing.end());
+        if (cursor > at) {
+            anon.backing.back().size -= cursor - at;
+        }
+        anon.backing.insert(anon.backing.end(), ranges.begin(), ranges.end());
+        return true;
+    }
+
     bool IsPageable() const {
         return type == VmObjectType::Default || type == VmObjectType::Swap ||
                type == VmObjectType::Vnode || type == VmObjectType::JitShm ||

@@ -297,9 +297,12 @@ public:
 
 private:
     void EnsureObject(VmMapEntry* entry) {
-        if (entry->object) {
-            return;
+        if (!entry->object) {
+            ReplaceObject(entry);
         }
+    }
+
+    void ReplaceObject(VmMapEntry* entry) {
         entry->object = std::make_shared<VmObject>();
         entry->object->type = VmObjectType::Default;
         entry->object->size = entry->Size();

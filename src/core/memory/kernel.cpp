@@ -278,7 +278,7 @@ s32 MemoryManager::MapMemory(VAddr* out_addr, u64 size, MemoryProt prot, MemoryM
             if (offset + size > Common::AlignUpPow2(stat.size, PAGE_SIZE)) {
                 return ORBIS_KERNEL_ERROR_EACCES;
             }
-            max_prot = MemoryProt::CpuReadWrite;
+            max_prot = MemoryProt::CpuReadWrite | MemoryProt::GpuReadWrite;
             auto* host_file = file->GetHostFile();
             if (True(flags & MemoryMapFlags::Shared) &&
                 (!host_file ||
@@ -287,7 +287,7 @@ s32 MemoryManager::MapMemory(VAddr* out_addr, u64 size, MemoryProt prot, MemoryM
                 // If the file does not have write access, ensure prot does not contain write
                 // permissions. On real hardware, shared mappings succeed, but the memory cannot be
                 // written to. Private mappings are writable copies.
-                max_prot &= ~MemoryProt::CpuWrite;
+                max_prot &= ~(MemoryProt::CpuWrite | MemoryProt::GpuWrite);
             }
             // On real hardware, protections outside of max_prot are silently removed.
             prot &= max_prot;

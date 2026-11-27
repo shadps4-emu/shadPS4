@@ -135,16 +135,22 @@ bool VmMap::CoalescePrev(Tree::iterator prev, VAddr start, VAddr end, MemoryProt
 
     const u64 prev_object_end = prev->offset + prev->Size();
     if (const auto& prev_object = prev->object) {
-        if (prev_object->type != VmObjectType::Default || !prev_object->anon.backing.empty()) {
+        if (prev_object->type != VmObjectType::Default) {
             return false;
         }
         if (prev_object.use_count() > 1 && prev_object->size != prev_object_end) {
             return false;
         }
-        prev_object->ExtendSize(prev_object_end + (end - start));
+        if (object ? !prev_object->AppendBacking(prev_object_end, object->anon.backing)
+                   : !prev_object->anon.backing.empty()) {
+            return false;
+        }
+        prev_object->size = prev_object_end + (end - start);
+    } else if (object) {
+        return false;
     }
 
-    if (prev->inheritance != VmInherit::Copy || prev->protection != prot ||
+    if (object || prev->inheritance != VmInherit::Copy || prev->protection != prot ||
         prev->max_protection != max_prot || True(eflags & VmEntryFlags::NoCoalesce)) {
         object = prev->object;
         offset = prev_object_end;
@@ -194,7 +200,7 @@ s32 VmMap::MapMemory(VAddr* out_addr, u64 size, MemoryProt prot, MemoryProt max_
     VAddr addr = *out_addr;
 
     VmEntryFlags eflags = VmEntryFlags::None;
-    if (True(flags & MemoryMapFlags::Private) && object) {
+    if (False(flags & (MemoryMapFlags::Shared | MemoryMapFlags::Anon)) && object) {
         eflags |= VmEntryFlags::CopyOnWrite | VmEntryFlags::NeedsCopy;
     }
     if (True(flags & MemoryMapFlags::NoSync)) {
@@ -261,7 +267,9 @@ s32 VmMap::MapMemory(VAddr* out_addr, u64 size, MemoryProt prot, MemoryProt max_
         }
 
         auto [prev, found] = LookupEntry(addr);
-        if (!object && False(flags & MemoryMapFlags::Stack) &&
+        const bool fresh_anon = !object || (True(flags & MemoryMapFlags::Anon) &&
+                                            object->type == VmObjectType::Default);
+        if (fresh_anon && False(flags & MemoryMapFlags::Stack) &&
             CoalescePrev(prev, addr, addr + size, prot, max_prot, eflags, budget_ptype, object,
                          offset)) {
             *out_addr = addr;
@@ -576,6 +584,14 @@ s32 VmMap::Protect(DmemManager& dmem, VAddr start, VAddr end, MemoryProt new_pro
                 entry->max_protection = new_prot;
             }
 
+            constexpr auto WriteProt = MemoryProt::CpuWrite | MemoryProt::GpuWrite;
+            if (False(old & WriteProt) && True(entry->protection & WriteProt) &&
+                True(entry->eflags & VmEntryFlags::CopyOnWrite) && entry->wired_count != 0 &&
+                entry->object->IsPageable()) {
+                ReplaceObject(std::addressof(*entry));
+                entry->eflags &= ~(VmEntryFlags::CopyOnWrite | VmEntryFlags::NeedsCopy);
+            }
+
             if (auto prot = entry->protection; prot != old) {
                 impl.Protect(entry->start, entry->Size(), ToHostPerm(prot));
             }
@@ -750,6 +766,13 @@ s32 VmMap::Wire(VAddr start, VAddr end, VmMapWireFlags flags) {
             entry->wired_count = 1;
         } else {
             entry->wired_count++;
+        }
+
+        if (!entry->object ||
+            (entry->object->IsPageable() && True(entry->eflags & VmEntryFlags::NeedsCopy) &&
+             True(entry->protection & MemoryProt::CpuWrite))) {
+            ReplaceObject(std::addressof(*entry));
+            entry->eflags &= ~VmEntryFlags::NeedsCopy;
         }
 
         if (False(flags & VmMapWireFlags::HolesOk)) {
