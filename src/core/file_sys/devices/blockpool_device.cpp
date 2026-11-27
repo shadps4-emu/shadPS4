@@ -13,8 +13,8 @@ std::shared_ptr<BaseDevice> BlockpoolDevice::Create(u32 handle, const char*, s32
 }
 
 s32 BlockpoolDevice::ioctl(u32 cmd, void* args) {
-    LOG_ERROR(Kernel_Fs, "called, cmd = {:#x}", cmd);
     if (cmd == GetBlockStats) {
+        LOG_INFO(Kernel_Fs, "cmd GetBlockStats", cmd);
         auto* memory = Core::Memory::Instance();
         auto& blockpool = memory->GetBlockpool();
         auto* data = reinterpret_cast<BlockStats*>(args);
@@ -22,6 +22,7 @@ s32 BlockpoolDevice::ioctl(u32 cmd, void* args) {
         return ORBIS_OK;
     }
     if (cmd != PoolExpand) {
+        LOG_ERROR(Kernel_Fs, "unexpected cmd {:#x}", cmd);
         return ORBIS_KERNEL_ERROR_ENOTTY;
     }
     auto* data = reinterpret_cast<PoolExpandArgs*>(args);

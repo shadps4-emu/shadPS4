@@ -118,12 +118,6 @@ s32 DmemManager::Free(PAddr start, u64 size, bool is_checked) {
             entry = next;
         }
     }
-
-    if (m_tree.Root()) {
-        LOG_INFO(Kernel_Vmm, "DmemFree: freed [{:#x},{:#x}) root->max_free={:#x}", start,
-                 start + size, m_tree.Root()->max_free);
-    }
-
     return ORBIS_OK;
 }
 

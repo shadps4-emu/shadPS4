@@ -13,7 +13,7 @@ std::shared_ptr<BaseDevice> DmemDevice::Create(u32 handle, const char*, s32, u16
 }
 
 s32 DmemDevice::ioctl(u32 cmd, void* args) {
-    LOG_INFO(Kernel_Vmm, "called, cmd = {:#x}", cmd);
+    LOG_DEBUG(Kernel_Vmm, "called, cmd = {:#x}", cmd);
     auto* memory = Core::Memory::Instance();
     auto& dmem = memory->GetDmemManager();
 
@@ -50,7 +50,7 @@ s32 DmemDevice::ioctl(u32 cmd, void* args) {
         return dmem.Query(data->addr, data->flags & 1, &info->start, &info->end, &info->memoryType);
     }
     default:
-        LOG_WARNING(Kernel_Fs, "Unknown ioctl");
+        LOG_WARNING(Kernel_Fs, "Unhandled ioctl {:#x}", cmd);
     }
 
     return 0;

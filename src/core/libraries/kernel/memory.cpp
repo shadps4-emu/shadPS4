@@ -410,7 +410,7 @@ s32 PS4_SYSV_ABI sceKernelQueryMemoryProtection(void* addr, VAddr* start, VAddr*
 }
 
 s32 PS4_SYSV_ABI sceKernelMprotect(VAddr addr, u64 size, s32 prot) {
-    LOG_INFO(Kernel_Vmm, "called addr = {}, size = {:#x}, prot = {:#x}", addr, size, prot);
+    LOG_INFO(Kernel_Vmm, "called addr = {:#x}, size = {:#x}, prot = {:#x}", addr, size, prot);
     const auto mem_prot = static_cast<MemoryProt>(prot);
     return g_memory->Protect(addr, size, mem_prot);
 }
@@ -472,7 +472,7 @@ s32 PS4_SYSV_ABI sceKernelGetDirectMemoryType(u64 addr, s32* out_memory_type, VA
 }
 
 s32 PS4_SYSV_ABI sceKernelIsStack(VAddr addr, VAddr* out_start, VAddr* out_end) {
-    LOG_DEBUG(Kernel_Vmm, "called, addr = {}", addr);
+    LOG_DEBUG(Kernel_Vmm, "called, addr = {:#x}", addr);
 
     VAddr start, end;
     u32 prot_raw;
@@ -599,11 +599,10 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolExpand(u64 search_start, u64 search_end, u64
         g_blockpool_device->ioctl(Core::Devices::BlockpoolDevice::PoolExpand, &expand_args);
     if (ret == ORBIS_OK) {
         *phys_addr_out = expand_args.start;
-        LOG_INFO(
-            Kernel_Vmm,
-            "search_start = {:#x}, search_end = {:#x}, len = {:#x}, alignment = {:#x}, physAddrOut "
-            "= {:#x}",
-            search_start, search_end, size, alignment, expand_args.start);
+        LOG_INFO(Kernel_Vmm,
+                 "search_start = {:#x}, search_end = {:#x}, len = {:#x}, alignment = {:#x}, "
+                 "out_addr = {:#x}",
+                 search_start, search_end, size, alignment, expand_args.start);
     }
     return ret;
 }
@@ -775,7 +774,7 @@ s32 PS4_SYSV_ABI sceKernelMunmap(VAddr addr, u64 len) {
 s32 PS4_SYSV_ABI posix_munmap(VAddr addr, u64 len) {
     s32 result = sceKernelMunmap(addr, len);
     if (result < 0) {
-        LOG_ERROR(Kernel_Pthread, "posix_munmap: error = {}", result);
+        LOG_ERROR(Kernel_Pthread, "error = {}", result);
         ErrSceToPosix(result);
         return -1;
     }

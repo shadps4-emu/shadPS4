@@ -485,13 +485,12 @@ s32 MemoryManager::VirtualQuery(VAddr addr, s32 flags,
             info->end = std::min<u64>(dmem_end - relofs, entry->end);
             info->memory_type = memory_type;
             info->offset = info->start + relofs;
-            LOG_WARNING(
-                Kernel_Vmm,
-                "start={:#x}, end={:#x}, offset={:#x}, prot={:#x}, mtype={}, is_flexible={}, "
-                "is_direct={}, is_stack={}, is_pooled={}, is_commited={}, name={}",
-                info->start, info->end, info->offset, info->protection, info->memory_type,
-                u32(info->is_flexible), u32(info->is_direct), u32(info->is_stack),
-                u32(info->is_pooled), u32(info->is_committed), info->name);
+            LOG_DEBUG(Kernel_Vmm,
+                      "start={:#x}, end={:#x}, offset={:#x}, prot={:#x}, mtype={}, is_flexible={}, "
+                      "is_direct={}, is_stack={}, is_pooled={}, is_commited={}, name={}",
+                      info->start, info->end, info->offset, info->protection, info->memory_type,
+                      u32(info->is_flexible), u32(info->is_direct), u32(info->is_stack),
+                      u32(info->is_pooled), u32(info->is_committed), info->name);
             return ORBIS_OK;
         }
         if (!entry->object->IsPageable()) {
