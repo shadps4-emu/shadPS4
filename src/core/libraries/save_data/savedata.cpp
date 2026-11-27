@@ -438,9 +438,8 @@ static Error saveDataMount(const OrbisSaveDataMount2* mount_info,
             if (slot_name == dir_name) {
                 return Error::BUSY;
             }
-        } else {
+        } else if (slot_num == -1) {
             slot_num = static_cast<int>(i);
-            break;
         }
     }
     if (slot_num == -1) {
