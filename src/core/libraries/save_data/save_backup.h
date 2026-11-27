@@ -4,6 +4,7 @@
 #pragma once
 
 #include <filesystem>
+#include <mutex>
 #include <optional>
 
 #include <core/libraries/system/userservice.h>
@@ -49,6 +50,8 @@ bool NewRequest(Libraries::UserService::OrbisUserServiceUserId user_id, std::str
                 std::string_view dir_name, OrbisSaveDataEventType origin);
 
 bool Restore(const std::filesystem::path& save_path);
+
+std::unique_lock<std::mutex> LockForWrite();
 
 WorkerStatus GetWorkerStatus();
 

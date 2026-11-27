@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2025-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include "winresrc.h"
@@ -11,6 +11,9 @@ LANGUAGE LANG_NEUTRAL, 0x8
 
 // ICON
 IDI_ICON1 ICON "shadps4.ico"
+
+// MANIFEST
+CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "shadps4.manifest"
 
 // VERSION
 VS_VERSION_INFO VERSIONINFO
@@ -30,7 +33,7 @@ BEGIN
             VALUE "FileDescription", "shadPS4 - PlayStation 4 Emulator\0"
             VALUE "FileVersion", xstr(EMULATOR_VERSION_MAJOR) "." xstr(EMULATOR_VERSION_MINOR) "." xstr(EMULATOR_VERSION_PATCH) ".0\0"
             VALUE "InternalName", "shadPS4\0"
-            VALUE "LegalCopyright", "Copyright 2025 shadPS4 Team\0"
+            VALUE "LegalCopyright", "Copyright 2026 shadPS4 Team\0"
             VALUE "OriginalFilename", "shadPS4.exe\0"
             VALUE "ProductName", "shadPS4\0"
             VALUE "ProductVersion", xstr(EMULATOR_VERSION_MAJOR) "." xstr(EMULATOR_VERSION_MINOR) "." xstr(EMULATOR_VERSION_PATCH) ".0\0"
