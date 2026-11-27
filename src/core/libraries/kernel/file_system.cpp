@@ -900,7 +900,7 @@ s64 PS4_SYSV_ABI posix_lseek(s32 fd, s64 offset, s32 whence) {
         origin = Common::FS::SeekOrigin::End;
     } else if (whence == 3 || whence == 4) {
         // SEEK_DATA / SEEK_HOLE not supported by the backend
-        *__Error() = POSIX_EINVAL;
+        *__Error() = POSIX_ENOTTY;
         return -1;
     } else {
         // whence parameter is invalid
@@ -1161,8 +1161,13 @@ s32 PS4_SYSV_ABI posix_access(const char* path, s32 mode) {
 }
 
 s32 PS4_SYSV_ABI posix_chdir(const char* path) {
-    LOG_ERROR(Kernel_Fs, "(STUBBED) path = {}", path ? path : "null");
-    return 0;
+    if (path == nullptr) {
+        *__Error() = POSIX_EFAULT;
+        return -1;
+    }
+    LOG_DEBUG(Kernel_Fs, "path = {} denied in sandbox", path);
+    *__Error() = POSIX_EPERM;
+    return -1;
 }
 
 s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
@@ -1180,7 +1185,8 @@ s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
         return -1;
     }
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    const auto path_name = mnt->GetHostPath(path);
+    bool is_read_only = false;
+    const auto path_name = mnt->GetHostPath(path, &is_read_only);
     std::memset(sb, 0, sizeof(OrbisKernelStat));
 
     const bool is_dir = mnt->IsDirectory(path);
@@ -1237,7 +1243,7 @@ s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
         sb->st_blksize = 65536;
         sb->st_blocks = 128;
     } else {
-        sb->st_mode = 0000777u | 0100000u;
+        sb->st_mode = (is_read_only ? 0000555u : 0000666u) | 0100000u;
         sb->st_nlink = 1;
         Core::FileSys::FileStat fst{};
         if (!mnt->Stat(path, fst)) {
@@ -1249,7 +1255,7 @@ s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
             *__Error() = POSIX_EIO;
             return -1;
         }
-        sb->st_blksize = 512;
+        sb->st_blksize = is_read_only ? 65536 : 32768;
         sb->st_blocks = (sb->st_size + 511) / 512;
         // TODO incomplete
     }
@@ -1397,9 +1403,10 @@ s32 PS4_SYSV_ABI fstat(s32 fd, OrbisKernelStat* sb) {
         return result;
     }
     case Core::FileSys::FileType::Regular: {
-        sb->st_mode = 0000777u | 0100000u;
+        const bool is_read_only = file->handle ? file->handle->IsReadOnly() : file->IsReadOnly();
+        sb->st_mode = (is_read_only ? 0000555u : 0000666u) | 0100000u;
         sb->st_nlink = 1;
-        sb->st_blksize = 512;
+        sb->st_blksize = is_read_only ? 65536 : 32768;
         Core::FileSys::FileStat fst{};
         if (file->handle) {
             file->handle->Stat(fst);
