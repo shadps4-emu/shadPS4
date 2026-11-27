@@ -25,6 +25,14 @@ class SxLock {
     static constexpr u64 SX_ONE_SHARER = 1ULL << SX_SHARERS_SHIFT;
     static constexpr u64 SX_LOCK_UNLOCKED = Shared;
 
+    static u64 CurrentTid() {
+        if (Libraries::Kernel::g_curthread) {
+            return std::bit_cast<u64>(Libraries::Kernel::g_curthread);
+        }
+        alignas(16) static thread_local u8 host_thread_id;
+        return reinterpret_cast<u64>(&host_thread_id);
+    }
+
     u64 Owner() const {
         return raw & ~FlagMask;
     };
@@ -34,12 +42,12 @@ class SxLock {
     }
 
     bool IsXLocked() const {
-        return (raw & ~(FlagMask & ~Shared)) == std::bit_cast<u64>(Libraries::Kernel::g_curthread);
+        return (raw & ~(FlagMask & ~Shared)) == CurrentTid();
     }
 
 public:
     void lock() {
-        u64 tid = std::bit_cast<u64>(Libraries::Kernel::g_curthread);
+        u64 tid = CurrentTid();
         u64 expected = SX_LOCK_UNLOCKED;
         if (!raw_atomic.compare_exchange_weak(expected, tid, std::memory_order_acquire)) {
             return xlock_hard(tid);
@@ -52,13 +60,13 @@ public:
             raw_atomic |= Recursed;
             return true;
         }
-        u64 tid = std::bit_cast<u64>(Libraries::Kernel::g_curthread);
+        u64 tid = CurrentTid();
         u64 expected = SX_LOCK_UNLOCKED;
         return raw_atomic.compare_exchange_weak(expected, tid, std::memory_order_acquire);
     }
 
     void unlock() {
-        u64 tid = std::bit_cast<u64>(Libraries::Kernel::g_curthread);
+        u64 tid = CurrentTid();
         if (!raw_atomic.compare_exchange_weak(tid, SX_LOCK_UNLOCKED, std::memory_order_release)) {
             return xunlock_hard(tid);
         }
@@ -94,7 +102,7 @@ public:
     }
 
     bool try_upgrade() {
-        u64 tid = std::bit_cast<u64>(Libraries::Kernel::g_curthread);
+        u64 tid = CurrentTid();
         u64 x = raw & ExclusiveWaiters;
         u64 expected = SX_ONE_SHARER | Shared | x;
         return raw_atomic.compare_exchange_weak(expected, tid | x);
@@ -110,7 +118,7 @@ private:
 
     union {
         std::atomic<u64> raw_atomic;
-        volatile u64 raw{};
+        volatile u64 raw{SX_LOCK_UNLOCKED};
     };
     bool recursable{};
     u32 recurse{};
