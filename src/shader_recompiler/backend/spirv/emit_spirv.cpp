@@ -66,6 +66,9 @@ ArgType Arg(EmitContext& ctx, const IR::Value& arg) {
     } else if constexpr (std::is_same_v<ArgType, const IR::Value&>) {
         return arg;
     } else if constexpr (std::is_same_v<ArgType, u32>) {
+        if (!arg.IsImmediate() && arg.Inst()->GetOpcode() == IR::Opcode::ImageDescriptorHandle) {
+            return arg.Inst()->Arg(0).U32();
+        }
         return arg.U32();
     } else if constexpr (std::is_same_v<ArgType, u64>) {
         return arg.U64();
@@ -366,7 +369,7 @@ void SetupCapabilities(const Info& info, const Profile& profile, const RuntimeIn
     } else if (stage == SwStage::Geometry && info.stores.GetAny(IR::Attribute::ViewportIndex)) {
         ctx.AddCapability(spv::Capability::MultiViewport);
     }
-    if (info.uses_dma) {
+    if (True(info.readconst_types)) {
         ctx.AddCapability(spv::Capability::PhysicalStorageBufferAddresses);
         ctx.AddExtension("SPV_KHR_physical_storage_buffer");
     }

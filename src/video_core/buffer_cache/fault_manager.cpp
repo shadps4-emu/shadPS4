@@ -1,7 +1,9 @@
 // SPDX-FileCopyrightText: Copyright 2025 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
 #include "common/div_ceil.h"
+#include "core/memory.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/buffer_cache/fault_manager.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
@@ -164,15 +166,25 @@ void FaultManager::ProcessFaultBuffer() {
     scheduler.DeferOperation([this, mapped, area = current_area] {
         fault_ranges.Clear();
         const u64* fault_buf = std::bit_cast<const u64*>(mapped);
-        const u32 fault_count = fault_buf[0];
+        const u64 fault_count = std::min<u64>(fault_buf[0], MaxPageFaults - 1);
+        const auto& backing_pages = Core::Memory::Instance()->GetAddressSpace().BackingPages();
         for (u32 i = 1; i <= fault_count; ++i) {
-            fault_ranges.Add(fault_buf[i], sparse_pagesize);
-            LOG_INFO(Render_Vulkan, "Accessed non-GPU cached memory at {:#x}", fault_buf[i]);
+            const VAddr address = fault_buf[i];
+            const u64 first_page = address >> Core::GUEST_PAGE_BITS;
+            const u64 page_count = sparse_pagesize >> Core::GUEST_PAGE_BITS;
+            for (u64 page = first_page; page < first_page + page_count; ++page) {
+                if (const auto* entry = backing_pages.find(page); entry && *entry) {
+                    fault_ranges.Add(address, sparse_pagesize);
+                    LOG_INFO(Render_Vulkan, "Accessed non-GPU cached memory at {:#x}", address);
+                    break;
+                }
+            }
         }
         fault_ranges.ForEach([&](VAddr start, VAddr end) {
             ASSERT_MSG((end - start) <= std::numeric_limits<u32>::max(),
                        "Buffer size is too large");
-            (void)buffer_cache.ObtainBuffer(start, end - start);
+            (void)buffer_cache.ObtainBuffer(start, end - start,
+                                            ObtainBufferFlags::IgnoreStreamBuffer);
         });
         fault_areas[area] = 0;
     });

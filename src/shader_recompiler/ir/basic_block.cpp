@@ -5,6 +5,7 @@
 #include <initializer_list>
 #include <map>
 #include "shader_recompiler/ir/basic_block.h"
+#include "shader_recompiler/ir/operand_helper.h"
 #include "shader_recompiler/ir/shared_memory.h"
 #include "shader_recompiler/ir/value.h"
 
@@ -175,12 +176,14 @@ std::string DumpBlock(const Block& block, const std::map<const Block*, size_t>& 
             }
         };
 
-        if (op == Opcode::ReadConst || op == Opcode::ImageSampleRaw) {
+        if (op == Opcode::ImageSampleRaw) {
             ret += fmt::format(" (flags={:#x}) ", inst.Flags<u32>());
-        } else if (op == Opcode::ReadConstBuffer) {
+        } else if (op == Opcode::ReadConst || op == Opcode::ReadConstBuffer) {
             const auto info = inst.Flags<BufferInstInfo>();
-            ret += fmt::format(" (sharp_source={}, flatbuf_off_dw={:#x}) ", bool(info.sharp_source),
-                               info.flatbuf_off_dw.Value());
+            const bool is_touch = IR::IsReadConstAddressTouched(&inst);
+            const u16 offset = IR::GetFlatBufferOffset(&inst);
+            ret += fmt::format(" (sharp_source={}, userdatabuf_off={:#x}, touch_buf={}) ",
+                               bool(info.sharp_source), offset, is_touch);
         } else if (maybe_shared_scratch(op)) {
             const auto info = inst.Flags<SharedMemory::Flags>();
             if (info.is_scratch) {
