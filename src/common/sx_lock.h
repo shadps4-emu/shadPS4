@@ -7,10 +7,11 @@
 #pragma once
 
 #include <atomic>
+#include <chrono>
+#include <thread>
 #include "common/types.h"
-#include "core/libraries/kernel/threads/pthread.h"
 
-namespace Core {
+namespace Common {
 
 class SxLock {
     enum Flags : u64 {
@@ -26,11 +27,8 @@ class SxLock {
     static constexpr u64 SX_LOCK_UNLOCKED = Shared;
 
     static u64 CurrentTid() {
-        if (Libraries::Kernel::g_curthread) {
-            return std::bit_cast<u64>(Libraries::Kernel::g_curthread);
-        }
-        alignas(16) static thread_local u8 host_thread_id;
-        return reinterpret_cast<u64>(&host_thread_id);
+        alignas(16) static thread_local u8 thread_id;
+        return reinterpret_cast<u64>(&thread_id);
     }
 
     u64 Owner() const {
@@ -62,7 +60,18 @@ public:
         }
         u64 tid = CurrentTid();
         u64 expected = SX_LOCK_UNLOCKED;
-        return raw_atomic.compare_exchange_weak(expected, tid, std::memory_order_acquire);
+        return raw_atomic.compare_exchange_strong(expected, tid, std::memory_order_acquire);
+    }
+
+    template <typename Clock, typename Duration>
+    bool try_lock_until(const std::chrono::time_point<Clock, Duration>& abs_time) {
+        while (!try_lock()) {
+            if (Clock::now() >= abs_time) {
+                return false;
+            }
+            std::this_thread::yield();
+        }
+        return true;
     }
 
     void unlock() {
@@ -91,6 +100,17 @@ public:
             }
         }
         return false;
+    }
+
+    template <typename Clock, typename Duration>
+    bool try_lock_shared_until(const std::chrono::time_point<Clock, Duration>& abs_time) {
+        while (!try_lock_shared()) {
+            if (Clock::now() >= abs_time) {
+                return false;
+            }
+            std::this_thread::yield();
+        }
+        return true;
     }
 
     void unlock_shared() {
@@ -124,4 +144,4 @@ private:
     u32 recurse{};
 };
 
-} // namespace Core
+} // namespace Common

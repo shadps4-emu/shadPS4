@@ -4,7 +4,7 @@
 #pragma once
 
 #include "common/recursive_lock.h"
-#include "common/shared_first_mutex.h"
+#include "common/sx_lock.h"
 #include "video_core/buffer_cache/buffer_cache.h"
 #include "video_core/page_manager.h"
 #include "video_core/renderer_vulkan/vk_pipeline_cache.h"
@@ -147,7 +147,7 @@ private:
     AmdGpu::Liverpool* liverpool;
     Core::MemoryManager* memory;
     boost::icl::interval_set<VAddr> mapped_ranges;
-    Common::SharedFirstMutex mapped_ranges_mutex;
+    Common::SxLock mapped_ranges_mutex;
     PipelineCache pipeline_cache;
     const bool host_markers_enabled;
     const bool guest_markers_enabled;

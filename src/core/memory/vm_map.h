@@ -3,12 +3,13 @@
 
 #pragma once
 
+#include <shared_mutex>
 #include <string_view>
 #include "common/enum.h"
+#include "common/sx_lock.h"
 #include "common/types.h"
 #include "core/memory/budget.h"
 #include "core/memory/splay_tree.h"
-#include "core/memory/sx_lock.h"
 #include "core/memory/vm_object.h"
 
 namespace Vulkan {
@@ -176,7 +177,7 @@ enum class MemoryPermission : u32;
 
 MemoryPermission ToHostPerm(MemoryProt guest_prot);
 
-class VmMapLock : public SxLock {
+class VmMapLock : public Common::SxLock {
 public:
     void lock() {
         SxLock::lock();

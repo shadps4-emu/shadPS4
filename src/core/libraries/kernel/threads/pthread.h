@@ -12,7 +12,7 @@
 #include <shared_mutex>
 
 #include "common/enum.h"
-#include "common/shared_first_mutex.h"
+#include "common/sx_lock.h"
 #include "core/libraries/kernel/sync/mutex.h"
 #include "core/libraries/kernel/sync/semaphore.h"
 #include "core/libraries/kernel/threads/exception.h"
@@ -229,7 +229,7 @@ struct PthreadRwlockAttr {
 using PthreadRwlockAttrT = PthreadRwlockAttr*;
 
 struct PthreadRwlock {
-    Common::SharedFirstMutex lock;
+    Common::SxLock lock;
     Pthread* owner;
     std::string name;
 

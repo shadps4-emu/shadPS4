@@ -5,12 +5,13 @@
 // SPDX-License-Identifier: BSD-2-Clause
 
 #include <xmmintrin.h>
-#include "core/memory/sx_lock.h"
+#include "common/assert.h"
+#include "common/sx_lock.h"
 
 constexpr u32 ASX_RETRIES = 10;
 constexpr u32 ASX_LOOPS = 64;
 
-namespace Core {
+namespace Common {
 
 void SxLock::downgrade() {
     u64 x = raw;
@@ -32,7 +33,6 @@ void SxLock::downgrade() {
 }
 
 void SxLock::xlock_hard(u64 tid) {
-    using Pthread = ::Libraries::Kernel::Pthread;
     u32 i, spintries = 0;
 
     /* If we already hold an exclusive lock, then recurse. */
@@ -252,4 +252,4 @@ void SxLock::sunlock_hard() {
     }
 }
 
-} // namespace Core
+} // namespace Common
