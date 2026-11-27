@@ -11,6 +11,7 @@
 #include "common/singleton.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/kernel/equeue.h"
+#include "core/libraries/kernel/file_system.h"
 #include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/kernel/posix_error.h"
@@ -606,19 +607,38 @@ int PS4_SYSV_ABI sceKernelCreateEqueue(OrbisKernelEqueue* eq, const char* name) 
     return ORBIS_OK;
 }
 
-int PS4_SYSV_ABI sceKernelDeleteEqueue(OrbisKernelEqueue eq) {
+bool CloseEqueue(OrbisKernelEqueue eq) {
     std::shared_ptr<EqueueInternal> equeue;
     {
         std::scoped_lock lock{kqueues_mutex};
         const auto it = kqueues.find(eq);
         if (it == kqueues.end()) {
-            return ORBIS_KERNEL_ERROR_EBADF;
+            return false;
         }
         equeue = std::move(it->second);
         kqueues.erase(it);
     }
 
     equeue->Close();
+    return true;
+}
+
+s32 FstatEqueue(s32 fd, OrbisKernelStat* sb) {
+    if (sb == nullptr) {
+        return ORBIS_KERNEL_ERROR_EFAULT;
+    }
+    if (!GetEqueue(fd)) {
+        return ORBIS_KERNEL_ERROR_EBADF;
+    }
+    std::memset(sb, 0, sizeof(OrbisKernelStat));
+    sb->st_mode = 0010000u;
+    return ORBIS_OK;
+}
+
+int PS4_SYSV_ABI sceKernelDeleteEqueue(OrbisKernelEqueue eq) {
+    if (!CloseEqueue(eq)) {
+        return ORBIS_KERNEL_ERROR_EBADF;
+    }
     auto* handles = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     handles->DeleteHandle(eq);
     return ORBIS_OK;
@@ -930,7 +950,9 @@ int PS4_SYSV_ABI sceKernelDeleteFileEvent(OrbisKernelEqueue eq, int fd) {
 
 void RegisterEventQueue(Core::Loader::SymbolsResolver* sym) {
     LIB_FUNCTION("nh2IFMgKTv8", "libScePosix", 1, "libkernel", posix_kqueue);
+    LIB_FUNCTION("nh2IFMgKTv8", "libkernel", 1, "libkernel", posix_kqueue);
     LIB_FUNCTION("RW-GEfpnsqg", "libScePosix", 1, "libkernel", posix_kevent);
+    LIB_FUNCTION("RW-GEfpnsqg", "libkernel", 1, "libkernel", posix_kevent);
     LIB_FUNCTION("D0OdFMjp46I", "libkernel", 1, "libkernel", sceKernelCreateEqueue);
     LIB_FUNCTION("jpFjmgAC5AE", "libkernel", 1, "libkernel", sceKernelDeleteEqueue);
     LIB_FUNCTION("fzyMKs9kim0", "libkernel", 1, "libkernel", sceKernelWaitEqueue);

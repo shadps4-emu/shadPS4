@@ -22,6 +22,7 @@ namespace Libraries::Kernel {
 
 class EqueueInternal;
 struct EqueueEvent;
+struct OrbisKernelStat;
 
 struct OrbisKernelBintime {
     s64 sec;
@@ -205,6 +206,8 @@ private:
 };
 
 std::shared_ptr<EqueueInternal> GetEqueue(OrbisKernelEqueue eq);
+bool CloseEqueue(OrbisKernelEqueue eq);
+s32 FstatEqueue(s32 fd, OrbisKernelStat* sb);
 u64 PS4_SYSV_ABI sceKernelGetEventData(const OrbisKernelEvent* ev);
 
 void RegisterEventQueue(Core::Loader::SymbolsResolver* sym);
