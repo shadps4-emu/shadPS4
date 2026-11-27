@@ -45,8 +45,11 @@ public:
                  vk::PipelineStageFlags2 dst_stage, vk::AccessFlags2 dst_access,
                  std::optional<VideoCore::SubresourceRange> subres_range = {});
 
+    /// Uploads buffer contents into the image. The source data is laid out as buffer_format,
+    /// which only differs from the image format when a single aspect is uploaded.
     void UploadImage(VideoCore::Image* dst, const VideoCore::Buffer* src,
-                     std::span<const vk::BufferImageCopy> upload_copies);
+                     std::span<const vk::BufferImageCopy> upload_copies,
+                     vk::Format buffer_format = vk::Format::eUndefined);
     void DownloadImage(VideoCore::Image* src, const VideoCore::Buffer* dst,
                        std::span<const vk::BufferImageCopy> download_copies);
 

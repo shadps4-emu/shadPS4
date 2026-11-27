@@ -178,6 +178,12 @@ public:
     /// Reuploads image contents.
     void RefreshImage(Image& image);
 
+    /// Reuploads the stencil plane of a depth image from guest memory.
+    void RefreshStencil(Image& image);
+
+    /// Carries guest writes to the stencil plane over to the depth image that owns it.
+    void InheritStencilWrites(Image& stencil_image, Image& depth_image);
+
     /// Retrieves the sampler that matches the provided S# descriptor.
     [[nodiscard]] vk::Sampler GetSampler(const AmdGpu::Sampler& sampler,
                                          AmdGpu::BorderColorBuffer border_color_base,
@@ -204,6 +210,7 @@ public:
             auto& depth_image = slot_images[image.depth_id];
             if (depth_image.image_uid == image.depth_uid &&
                 depth_image.flags & ImageFlagBits::Registered) {
+                InheritStencilWrites(image, depth_image);
                 return image.depth_id;
             }
         }
