@@ -354,6 +354,12 @@ void DiscoverImageSharp(IR::Block& block, IR::Inst& inst, ResourceDiscoveryList&
         tsharp.post_op = SharpFetchPostOp::ConvertCubeTo2DArray;
         tsharp.dwords[3] = tsharp_dw3;
         tsharp.dwords[4] = tsharp_dw4;
+    } else if (IR::Inst* dw1 = tsharp.dwords[1].TryInst();
+               dw1 && dw1->GetOpcode() == IR::Opcode::BitwiseAnd32 && dw1->Arg(1).IsImmediate()) {
+        // s_and_b32 on T# dword 1, e.g. 0xc3ffffff clears NUM_FORMAT to read the image as unorm
+        tsharp.post_op = SharpFetchPostOp::BitwiseAndDw1WithImm;
+        tsharp.post_op_data.dw1_mask = dw1->Arg(1).U32();
+        tsharp.dwords[1] = dw1->Arg(0);
     }
 
     MarkReadConstBufferSharpSources(tsharp);
