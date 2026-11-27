@@ -1486,10 +1486,13 @@ if (WIN32)
     else()
         target_link_options(shadps4 PRIVATE -Wl,--image-base=0x700000000000)
     endif()
-endif()
 
-if (WIN32)
+    # Set resources
     target_sources(shadps4 PRIVATE src/dist/shadps4.rc)
+    if (MSVC)
+        # The resources provide a manifest, so exclude what the linker provides
+        target_link_options(shadps4 PRIVATE /MANIFEST:NO)
+    endif()
 endif()
 
 if (NOT MSVC)

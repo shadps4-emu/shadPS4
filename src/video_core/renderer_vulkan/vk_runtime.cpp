@@ -163,12 +163,18 @@ void Runtime::InlineData(VideoCore::Buffer* dst, u64 offset, u32 value) {
 bool Runtime::Transit(VideoCore::Image* image, vk::ImageLayout dst_layout,
                       vk::PipelineStageFlags2 dst_stage, vk::AccessFlags2 dst_access,
                       std::optional<VideoCore::SubresourceRange> subres_range) {
+    return Transit(image, image->backing, dst_layout, dst_stage, dst_access, subres_range);
+}
+
+bool Runtime::Transit(VideoCore::Image* image, VideoCore::Image::BackingImage* backing,
+                      vk::ImageLayout dst_layout, vk::PipelineStageFlags2 dst_stage,
+                      vk::AccessFlags2 dst_access,
+                      std::optional<VideoCore::SubresourceRange> subres_range) {
     const size_t prev_num_barriers = static_cast<size_t>(image_barriers.size());
-    if (dst_access & vk::AccessFlagBits2::eTransferWrite) {
+    if (dst_access & vk::AccessFlagBits2::eTransferWrite && image->backing == backing) {
         image->InvalidateSubrects();
     }
-    image->GetBarriers(image_barriers, *image->backing, dst_layout, dst_access, dst_stage,
-                       subres_range);
+    image->GetBarriers(image_barriers, *backing, dst_layout, dst_access, dst_stage, subres_range);
     return image_barriers.size() != prev_num_barriers;
 }
 
@@ -324,51 +330,6 @@ void Runtime::CopyImage(VideoCore::Image* src, VideoCore::Image* dst) {
 
     dst->flags |= (src->flags & VideoCore::ImageFlagBits::GpuModified);
     dst->flags &= ~VideoCore::ImageFlagBits::Dirty;
-}
-
-VideoCore::ImageView& Runtime::FindSubrectView(VideoCore::Image& image,
-                                               const VideoCore::ImageInfo& info,
-                                               const VideoCore::ImageViewInfo& view_info) {
-    ASSERT(info.IsSubrectOf(image.info));
-    SetBackingSamples(&image, info.num_samples);
-
-    auto create_info = image.backing->image.image_ci;
-    create_info.extent = vk::Extent3D{info.size.width, info.size.height, 1};
-    auto it = std::ranges::find_if(image.backing_images, [&](const auto& backing) {
-        return backing.image.image_ci.extent == create_info.extent &&
-               backing.num_samples == info.num_samples;
-    });
-    auto& crop =
-        it != image.backing_images.end() ? *it : image.AddBacking(create_info, info.num_samples);
-    if (!crop.subrect_valid) {
-        scheduler.EndRendering();
-        const auto source_state = image.backing->state;
-        Transit(&image, vk::ImageLayout::eTransferSrcOptimal, vk::PipelineStageFlagBits2::eCopy,
-                vk::AccessFlagBits2::eTransferRead);
-        image.GetBarriers(image_barriers, crop, vk::ImageLayout::eTransferDstOptimal,
-                          vk::AccessFlagBits2::eTransferWrite, vk::PipelineStageFlagBits2::eCopy);
-        FlushBarriers();
-
-        const vk::ImageCopy copy{
-            .srcSubresource = {vk::ImageAspectFlagBits::eColor, 0, 0, 1},
-            .dstSubresource = {vk::ImageAspectFlagBits::eColor, 0, 0, 1},
-            .extent = create_info.extent,
-        };
-        scheduler.CommandBuffer().copyImage(image.GetImage(), vk::ImageLayout::eTransferSrcOptimal,
-                                            crop.image, vk::ImageLayout::eTransferDstOptimal, copy);
-
-        // A full-size view can already be bound in the same draw.
-        if (image.binding.is_bound && source_state.layout != vk::ImageLayout::eUndefined) {
-            Transit(&image, source_state.layout, source_state.pl_stage, source_state.access_mask);
-        }
-        image.GetBarriers(image_barriers, crop, vk::ImageLayout::eShaderReadOnlyOptimal,
-                          vk::AccessFlagBits2::eShaderRead,
-                          vk::PipelineStageFlagBits2::eAllCommands);
-        FlushBarriers();
-        crop.subrect_valid = true;
-    }
-
-    return image.FindView(view_info, crop);
 }
 
 void Runtime::CopyImageWithBuffer(VideoCore::Image* src, VideoCore::Image* dst,
@@ -574,6 +535,31 @@ void Runtime::CopyDepthStencil(VideoCore::Image* src, VideoCore::Image* dst,
     dst->flags &= ~VideoCore::ImageFlagBits::Dirty;
 }
 
+void Runtime::RefreshSubrect(VideoCore::Image& image, const VideoCore::ImageInfo& info) {
+    ASSERT(info.IsSubrectOf(image.info));
+    SetBackingSamples(&image, info.num_samples);
+
+    auto& crop = image.FindBacking({info.size.width, info.size.height, 1}, info.num_samples);
+    if (!crop.subrect_valid) {
+        scheduler.EndRendering();
+        Transit(&image, vk::ImageLayout::eTransferSrcOptimal, vk::PipelineStageFlagBits2::eCopy,
+                vk::AccessFlagBits2::eTransferRead);
+        image.GetBarriers(image_barriers, crop, vk::ImageLayout::eTransferDstOptimal,
+                          vk::AccessFlagBits2::eTransferWrite, vk::PipelineStageFlagBits2::eCopy);
+        FlushBarriers();
+
+        const vk::ImageCopy copy{
+            .srcSubresource = {vk::ImageAspectFlagBits::eColor, 0, 0, 1},
+            .dstSubresource = {vk::ImageAspectFlagBits::eColor, 0, 0, 1},
+            .extent = crop.image.image_ci.extent,
+        };
+        scheduler.CommandBuffer().copyImage(image.GetImage(), vk::ImageLayout::eTransferSrcOptimal,
+                                            crop.image, vk::ImageLayout::eTransferDstOptimal, copy);
+
+        crop.subrect_valid = true;
+    }
+}
+
 void Runtime::ResolveImage(VideoCore::Image* src, VideoCore::Image* dst,
                            const VideoCore::SubresourceRange& src_range,
                            const VideoCore::SubresourceRange& dst_range) {
@@ -668,31 +654,12 @@ void Runtime::ClearImage(VideoCore::Image* dst, const VideoCore::SubresourceRang
 
 void Runtime::SetBackingSamples(VideoCore::Image* image, u32 num_samples, bool copy_backing) {
     auto& backing = image->backing;
-    auto& backing_images = image->backing_images;
     const auto& info = image->info;
     if (!backing || backing->num_samples == num_samples) {
         return;
     }
     ASSERT_MSG(!image->info.props.is_depth, "Swapping samples is only valid for color images");
-    VideoCore::Image::BackingImage* new_backing;
-    const auto extent = backing->image.image_ci.extent;
-    auto it = std::ranges::find_if(backing_images, [&](const auto& candidate) {
-        return candidate.num_samples == num_samples && candidate.image.image_ci.extent == extent;
-    });
-    if (it == backing_images.end()) {
-        auto new_image_ci = backing->image.image_ci;
-        new_image_ci.samples = LiverpoolToVK::NumSamples(num_samples, image->supported_samples);
-        new_backing = &image->AddBacking(new_image_ci, num_samples);
-
-        Vulkan::SetObjectName(instance.GetDevice(), new_backing->image.image,
-                              "Image {}x{}x{} {} {} {:#x}:{:#x} L:{} M:{} S:{} (backing)",
-                              info.size.width, info.size.height, info.size.depth,
-                              AmdGpu::NameOf(info.tile_mode), vk::to_string(info.pixel_format),
-                              info.guest_address, info.guest_size, info.resources.layers,
-                              info.resources.levels, num_samples);
-    } else {
-        new_backing = std::addressof(*it);
-    }
+    auto* new_backing = &image->FindBacking(backing->image.image_ci.extent, num_samples);
 
     if (copy_backing) {
         scheduler.EndRendering();
