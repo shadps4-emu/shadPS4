@@ -80,7 +80,7 @@ static void KernelServiceThread(std::stop_token stoken) {
 }
 
 static PS4_SYSV_ABI void stack_chk_fail() {
-    void* caller = __builtin_return_address(0);
+    void* caller = reinterpret_cast<void*>(Core::g_guest_caller_address);
     auto* linker = Common::Singleton<Core::Linker>::Instance();
     auto* mod = linker ? linker->FindByAddress(reinterpret_cast<VAddr>(caller)) : nullptr;
     if (mod) {

@@ -1296,7 +1296,7 @@ int PS4_SYSV_ABI posix_pthread_get_user_context_np(PthreadT thread, Ucontext* ct
         asm volatile("movq %%rsp, %0\n movq %%rbp, %1\n" : "=r"(cur_rsp), "=r"(cur_rbp));
         ctx->uc_mcontext.mc_rsp = cur_rsp;
         ctx->uc_mcontext.mc_rbp = cur_rbp;
-        ctx->uc_mcontext.mc_rip = reinterpret_cast<uint64_t>(__builtin_return_address(0));
+        ctx->uc_mcontext.mc_rip = Core::g_guest_caller_address;
         got_state = true;
 #endif
     } else {

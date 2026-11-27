@@ -208,7 +208,8 @@ s32 PS4_SYSV_ABI sceKernelGetModuleInfoFromAddr(VAddr addr, s32 flags,
 
     LOG_DEBUG(Lib_Kernel,
               "called addr = {:#x}, flags = {:#x}, caller = {:p}, info = {:p}, st_size = {:#x}",
-              addr, flags, __builtin_return_address(0), static_cast<void*>(info), info->st_size);
+              addr, flags, reinterpret_cast<void*>(Core::g_guest_caller_address),
+              static_cast<void*>(info), info->st_size);
     auto* linker = Common::Singleton<Core::Linker>::Instance();
     auto* module = linker->FindByAddress(addr);
     if (!module) {

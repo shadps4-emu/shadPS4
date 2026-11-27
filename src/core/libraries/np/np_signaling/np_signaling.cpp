@@ -272,7 +272,7 @@ s32 PS4_SYSV_ABI sceNpSignalingActivateConnection(OrbisNpSignalingContextId ctxI
                                                   const void* peerNpId,
                                                   OrbisNpSignalingConnectionId* outConnId) {
     const s64 call_time = NowMs();
-    const void* caller = __builtin_return_address(0);
+    const void* caller = reinterpret_cast<void*>(Core::g_guest_caller_address);
     const void* frame = __builtin_frame_address(0);
     LOG_INFO(Lib_NpSignaling, "t={} ctxId={} peerNpId={:p} outConnId={:p}", call_time, ctxId,
              peerNpId, fmt::ptr(outConnId));
