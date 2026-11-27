@@ -556,3 +556,124 @@ target_link_libraries(shadps4_net_kernel_test PRIVATE
     tsl::robin_map         # fs.h
     miniupnpc::miniupnpc   # UPnP forwarding of the P2P port
 )
+
+# ===========================================================================
+# SaveData & SaveDataDialog tests (real FileSys MntPoints/HandleTable + SQLite)
+# ===========================================================================
+
+set(SAVE_DATA_TEST_SOURCES
+    # Under test
+    ${CMAKE_SOURCE_DIR}/src/core/libraries/save_data/save_db.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/libraries/save_data/save_instance.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/libraries/save_data/save_backup.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/libraries/save_data/save_memory.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/libraries/save_data/savedata.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/libraries/save_data/dialog/savedatadialog.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/libraries/save_data/dialog/savedatadialog_ui.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/libraries/system/commondialog.cpp
+
+    # Real FileSys, PSF, UserManager, Settings
+    ${CMAKE_SOURCE_DIR}/src/core/file_sys/fs.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/file_sys/ifile.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/file_sys/backends/host_fs.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/file_sys/backends/zarchive_fs.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/file_sys/devices/base_device.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/file_sys/devices/logger.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/file_sys/directories/base_directory.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/file_sys/directories/normal_directory.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/file_sys/directories/pfs_directory.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/file_format/psf.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/user_manager.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/user_settings.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/emulator_settings.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/emulator_state.cpp
+
+    # Common support
+    ${CMAKE_SOURCE_DIR}/src/common/io_file.cpp
+    ${CMAKE_SOURCE_DIR}/src/common/path_util.cpp
+    ${CMAKE_SOURCE_DIR}/src/common/assert.cpp
+    ${CMAKE_SOURCE_DIR}/src/common/error.cpp
+    ${CMAKE_SOURCE_DIR}/src/common/string_util.cpp
+    ${CMAKE_SOURCE_DIR}/src/common/thread.cpp
+    ${CMAKE_SOURCE_DIR}/src/common/logging/classes.cpp
+    ${CMAKE_SOURCE_DIR}/src/common/logging/log.cpp
+
+    # Test stubs
+    stubs/scm_rev_stub.cpp
+    stubs/sdl_stub.cpp
+    stubs/loader_stub.cpp
+    stubs/core_stub.cpp
+    stubs/signals_stub.cpp
+    stubs/kernel_stub.cpp
+    stubs/save_data_stub.cpp
+
+    # Tests
+    test_save_data.cpp
+)
+
+add_executable(shadps4_save_data_test ${SAVE_DATA_TEST_SOURCES})
+list(APPEND TEST_TARGETS shadps4_save_data_test)
+
+target_include_directories(shadps4_save_data_test PRIVATE
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}
+)
+target_compile_features(shadps4_save_data_test PRIVATE cxx_std_23)
+target_compile_definitions(shadps4_save_data_test PRIVATE
+    BOOST_ASIO_STANDALONE
+    IMGUI_USER_CONFIG="imgui/imgui_config.h"
+)
+target_compile_definitions(Dear_ImGui PRIVATE
+    IMGUI_USER_CONFIG="${CMAKE_SOURCE_DIR}/src/imgui/imgui_config.h"
+)
+
+target_link_libraries(shadps4_save_data_test PRIVATE
+    GTest::gtest_main
+    fmt::fmt
+    magic_enum::magic_enum
+    nlohmann_json::nlohmann_json
+    toml11::toml11
+    tsl::robin_map
+    SDL3::SDL3
+    spdlog::spdlog
+    ZLIB::ZLIB
+    PNG::PNG
+    pugixml::pugixml
+    Dear_ImGui
+    ZArchive::zarchive
+    SQLite3::SQLite3
+)
+
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
+    CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+    include(CheckCXXSymbolExists)
+    check_cxx_symbol_exists(_LIBCPP_VERSION version LIBCPP)
+    if (LIBCPP)
+        target_compile_options(shadps4_save_data_test PRIVATE -fexperimental-library)
+    endif()
+endif()
+
+if (WIN32)
+    target_sources(shadps4_save_data_test PRIVATE ${CMAKE_SOURCE_DIR}/src/common/ntapi.cpp)
+    target_link_libraries(shadps4_save_data_test PRIVATE onecore)
+    target_compile_definitions(shadps4_save_data_test PRIVATE
+        NOMINMAX
+        WIN32_LEAN_AND_MEAN
+        NTDDI_VERSION=0x0A000006
+        _WIN32_WINNT=0x0A00
+        WINVER=0x0A00
+    )
+    if (MSVC)
+        target_compile_definitions(shadps4_save_data_test PRIVATE
+            _CRT_SECURE_NO_WARNINGS
+            _CRT_NONSTDC_NO_DEPRECATE
+            _SCL_SECURE_NO_WARNINGS
+            _TIMESPEC_DEFINED
+        )
+    endif()
+endif()
+
+gtest_discover_tests(shadps4_save_data_test
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+    DISCOVERY_TIMEOUT 60
+)

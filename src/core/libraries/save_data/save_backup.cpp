@@ -1,31 +1,29 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include "save_backup.h"
+
 #include <algorithm>
-#include <condition_variable>
+#include <chrono>
 #include <deque>
 #include <mutex>
 #include <ranges>
 #include <semaphore>
+#include <system_error>
+#include <vector>
 
+#include <fmt/format.h>
 #include <magic_enum/magic_enum.hpp>
-
-#include "core/libraries/kernel/threads.h"
-#include "core/libraries/kernel/threads/pthread.h"
-#include "save_backup.h"
-#include "save_instance.h"
-#include "savedata_error.h"
 
 #include "common/io_file.h"
 #include "common/logging/formatter.h"
 #include "common/logging/log.h"
-#include "common/polyfill_thread.h"
 #include "common/thread.h"
-
-constexpr std::string_view sce_sys = "sce_sys";               // system folder inside save
-constexpr std::string_view backup_prefix = "sce_bu_";         // backup folder prefix
-constexpr std::string_view backup_prefix_tmp = "sce_bu_tmp_"; // in-progress backup folder prefix
-constexpr std::string_view backup_prefix_old = "sce_bu_old_"; // previous backup folder prefix
+#include "core/libraries/kernel/threads.h"
+#include "core/libraries/kernel/threads/pthread.h"
+#include "save_db.h"
+#include "save_instance.h"
+#include "savedata_error.h"
 
 namespace fs = std::filesystem;
 
@@ -35,7 +33,28 @@ void DispatchBackupEvent(const Backup::BackupRequest& request);
 
 namespace Libraries::SaveData::Backup {
 
-static void CopyShareReadWrite(const std::filesystem::path& from, const std::filesystem::path& to) {
+namespace {
+
+constexpr std::string_view BackupPrefix = "sce_bu_";
+constexpr std::string_view BackupPrefixTmp = "sce_bu_tmp_";
+constexpr std::string_view BackupPrefixOld = "sce_bu_old_";
+
+Kernel::Thread g_backup_thread;
+std::counting_semaphore g_backup_thread_semaphore{0};
+
+std::mutex g_backup_running_mutex;
+std::mutex g_backup_queue_mutex;
+std::deque<BackupRequest> g_backup_queue;
+std::deque<BackupRequest> g_result_queue;
+
+std::atomic_int g_backup_progress = 0;
+std::atomic<WorkerStatus> g_backup_status = WorkerStatus::NotStarted;
+std::atomic_bool g_backup_stopping = false;
+
+void CopyShareReadWrite(const fs::path& from, const fs::path& to) {
+    if (from.extension() == ".tmp") {
+        return;
+    }
     std::error_code ec;
     if (fs::is_directory(from, ec)) {
         fs::create_directories(to);
@@ -54,11 +73,9 @@ static void CopyShareReadWrite(const std::filesystem::path& from, const std::fil
     }
     const u64 size = src.GetSize();
     std::vector<u8> buf(size);
-    if (size > 0) {
-        if (src.ReadRaw<u8>(buf.data(), size) != size) {
-            throw fs::filesystem_error("backup source read failed", from,
-                                       std::make_error_code(std::errc::io_error));
-        }
+    if (size > 0 && src.ReadRaw<u8>(buf.data(), size) != size) {
+        throw fs::filesystem_error("backup source read failed", from,
+                                   std::make_error_code(std::errc::io_error));
     }
     src.Close();
 
@@ -69,64 +86,76 @@ static void CopyShareReadWrite(const std::filesystem::path& from, const std::fil
         throw fs::filesystem_error("backup destination open failed", to,
                                    std::make_error_code(std::errc::io_error));
     }
-    if (size > 0) {
-        if (dst.WriteRaw<u8>(buf.data(), size) != size) {
-            throw fs::filesystem_error("backup destination write failed", to,
-                                       std::make_error_code(std::errc::io_error));
-        }
+    if (size > 0 && dst.WriteRaw<u8>(buf.data(), size) != size) {
+        throw fs::filesystem_error("backup destination write failed", to,
+                                   std::make_error_code(std::errc::io_error));
     }
     dst.Close();
 }
 
-// Use an emulated thread so guest callbacks have a valid guest TLS/stack context.
-static Kernel::Thread g_backup_thread;
-static std::counting_semaphore g_backup_thread_semaphore{0};
+void SyncBackupMeta(const BackupRequest& req, const fs::path& backup_dir) {
+    if (req.title_id.empty() || req.dir_name.empty()) {
+        return;
+    }
+    std::error_code ec;
+    const fs::path meta_dir = GetMetaTitlePath(req.user_id, req.title_id);
+    fs::create_directories(meta_dir, ec);
 
-static std::mutex g_backup_running_mutex;
+    const fs::path src_sfo = SaveInstance::GetParamSFOPath(backup_dir);
+    if (fs::exists(src_sfo, ec)) {
+        fs::copy_file(src_sfo, GetMetaBackupSfoPath(req.user_id, req.title_id, req.dir_name),
+                      fs::copy_options::overwrite_existing, ec);
+    }
 
-static std::mutex g_backup_queue_mutex;
-static std::deque<BackupRequest> g_backup_queue;
-static std::deque<BackupRequest> g_result_queue;
+    const fs::path src_icon = SaveInstance::GetIconPath(backup_dir);
+    const fs::path dst_icon = GetMetaBackupIconPath(req.user_id, req.title_id, req.dir_name);
+    if (fs::exists(src_icon, ec)) {
+        fs::copy_file(src_icon, dst_icon, fs::copy_options::overwrite_existing, ec);
+    } else {
+        fs::remove(dst_icon, ec);
+    }
+}
 
-static std::atomic_int g_backup_progress = 0;
-static std::atomic g_backup_status = WorkerStatus::NotStarted;
-static std::atomic_bool g_backup_stopping = false;
-static std::mutex g_backup_stop_mutex;
-static std::condition_variable g_backup_stop_cv;
-
-static void backup(const std::filesystem::path& dir_name) {
+void PerformBackup(const fs::path& save_path) {
     std::unique_lock lk{g_backup_running_mutex};
-    if (!fs::exists(dir_name)) {
-        throw fs::filesystem_error("backup source directory missing", dir_name,
+    if (!fs::exists(save_path)) {
+        throw fs::filesystem_error("backup source directory missing", save_path,
                                    std::make_error_code(std::errc::no_such_file_or_directory));
     }
 
-    const auto parent = dir_name.parent_path();
-    const auto name = dir_name.filename().string();
-    const auto backup_dir = parent / (std::string(backup_prefix) + name);
-    const auto backup_dir_tmp = parent / (std::string(backup_prefix_tmp) + name);
-    const auto backup_dir_old = parent / (std::string(backup_prefix_old) + name);
+    const auto parent = save_path.parent_path();
+    const auto name = save_path.filename().string();
+    const auto backup_dir = parent / (std::string(BackupPrefix) + name);
+    const auto backup_dir_tmp = parent / (std::string(BackupPrefixTmp) + name);
+    const auto backup_dir_old = parent / (std::string(BackupPrefixOld) + name);
 
     fs::remove_all(backup_dir_tmp);
     fs::remove_all(backup_dir_old);
 
-    std::vector<std::filesystem::path> backup_files;
-    for (const auto& entry : fs::directory_iterator(dir_name)) {
+    std::vector<fs::path> backup_files;
+    for (const auto& entry : fs::directory_iterator(save_path)) {
+        if (entry.path().extension() == ".tmp") {
+            continue;
+        }
         backup_files.push_back(entry.path());
     }
 
     g_backup_progress = 0;
 
-    int total_count = static_cast<int>(backup_files.size());
+    const int total_count = static_cast<int>(backup_files.size());
     int current_count = 0;
 
     fs::create_directory(backup_dir_tmp);
     for (const auto& file : backup_files) {
         CopyShareReadWrite(file, backup_dir_tmp / file.filename());
         current_count++;
-        g_backup_progress = current_count * 100 / total_count;
+        g_backup_progress = total_count > 0 ? (current_count * 100 / total_count) : 100;
     }
-    bool has_existing_backup = fs::exists(backup_dir);
+    if (total_count == 0) {
+        g_backup_progress = 100;
+    }
+
+    const bool has_existing_backup = fs::exists(backup_dir);
     if (has_existing_backup) {
         fs::rename(backup_dir, backup_dir_old);
     }
@@ -136,53 +165,50 @@ static void backup(const std::filesystem::path& dir_name) {
     }
 }
 
-static void BackupThreadBody() {
+void BackupThreadBody() {
     Common::SetCurrentThreadName("shadPS4:SaveData:BackupThread");
     while (!g_backup_stopping) {
         g_backup_status = WorkerStatus::Waiting;
 
-        bool wait;
         BackupRequest req;
+        bool has_item = false;
         {
             std::scoped_lock lk{g_backup_queue_mutex};
-            wait = g_backup_queue.empty();
-            if (!wait) {
+            if (!g_backup_queue.empty()) {
                 req = g_backup_queue.front();
+                has_item = true;
             }
         }
-        if (wait) {
+        if (!has_item) {
             g_backup_thread_semaphore.acquire();
-            {
-                std::scoped_lock lk{g_backup_queue_mutex};
-                if (g_backup_queue.empty()) {
-                    continue;
-                }
-                req = g_backup_queue.front();
+            std::scoped_lock lk{g_backup_queue_mutex};
+            if (g_backup_queue.empty()) {
+                continue;
             }
+            req = g_backup_queue.front();
         }
         if (req.save_path.empty()) {
             break;
         }
         g_backup_status = WorkerStatus::Running;
 
-        LOG_INFO(Lib_SaveData, "Backing up the following directory: {}",
-                 fmt::UTF(req.save_path.u8string()));
+        LOG_INFO(Lib_SaveData, "Backing up {}", fmt::UTF(req.save_path.u8string()));
         try {
-            backup(req.save_path);
+            PerformBackup(req.save_path);
+            SyncBackupMeta(req, MakeBackupPath(req.save_path));
         } catch (const std::exception& err) {
-            req.error_code = static_cast<s32>(Error::INTERNAL);
+            req.error_code = static_cast<s32>(OrbisSaveDataError::INTERNAL);
             LOG_ERROR(Lib_SaveData, "Failed to backup {}: {}", fmt::UTF(req.save_path.u8string()),
                       err.what());
         }
-        LOG_INFO(Lib_SaveData, "Backup finished: {}, error={}", fmt::UTF(req.save_path.u8string()),
-                 req.error_code);
+        LOG_INFO(Lib_SaveData, "Backup finished: {}, error=0x{:08x}",
+                 fmt::UTF(req.save_path.u8string()), static_cast<u32>(req.error_code));
         {
             std::scoped_lock lk{g_backup_queue_mutex};
-            g_backup_queue.front().done = true;
-        }
-        {
-            std::scoped_lock lk{g_backup_queue_mutex};
-            g_backup_queue.pop_front();
+            if (!g_backup_queue.empty()) {
+                g_backup_queue.front().done = true;
+                g_backup_queue.pop_front();
+            }
             if (req.origin != OrbisSaveDataEventType::__DO_NOT_SAVE) {
                 g_result_queue.push_back(req);
                 if (g_result_queue.size() > 20) {
@@ -193,15 +219,11 @@ static void BackupThreadBody() {
         if (req.origin != OrbisSaveDataEventType::__DO_NOT_SAVE) {
             DispatchBackupEvent(req);
         }
-        {
-            // Don't backup too often, but wake immediately on StopThread().
-            std::unique_lock lk{g_backup_stop_mutex};
-            g_backup_stop_cv.wait_for(lk, std::chrono::seconds(5),
-                                      [] { return g_backup_stopping.load(); });
-        }
     }
     g_backup_status = WorkerStatus::NotStarted;
 }
+
+} // namespace
 
 void StartThread() {
     if (g_backup_status != WorkerStatus::NotStarted) {
@@ -221,11 +243,7 @@ void StopThread() {
         return;
     }
     LOG_DEBUG(Lib_SaveData, "Stopping backup thread");
-    {
-        std::scoped_lock lk{g_backup_stop_mutex};
-        g_backup_stopping = true;
-    }
-    g_backup_stop_cv.notify_all();
+    g_backup_stopping = true;
     g_backup_status = WorkerStatus::Stopping;
     {
         std::scoped_lock lk{g_backup_queue_mutex};
@@ -233,21 +251,20 @@ void StopThread() {
     }
     g_backup_thread_semaphore.release();
     if (Kernel::g_curthread != nullptr) {
-        // Called from a guest thread (sceSaveDataTerminate): a guest join is valid here.
         g_backup_thread.Join();
     } else {
-        // Called from a host thread (Emulator::Shutdown via at_quick_exit).
         for (int i = 0; i < 100 && g_backup_status != WorkerStatus::NotStarted; ++i) {
             std::this_thread::sleep_for(std::chrono::milliseconds(50));
         }
     }
     std::scoped_lock lk{g_backup_queue_mutex};
     g_backup_queue.clear();
+    g_result_queue.clear();
 }
 
 bool NewRequest(Libraries::UserService::OrbisUserServiceUserId user_id, std::string_view title_id,
                 std::string_view dir_name, OrbisSaveDataEventType origin) {
-    auto save_path = SaveInstance::MakeDirSavePath(user_id, title_id, dir_name);
+    auto save_path = GetSaveDirPath(user_id, title_id, dir_name);
 
     if (g_backup_stopping ||
         (g_backup_status != WorkerStatus::Waiting && g_backup_status != WorkerStatus::Running)) {
@@ -258,7 +275,7 @@ bool NewRequest(Libraries::UserService::OrbisUserServiceUserId user_id, std::str
     {
         std::scoped_lock lk{g_backup_queue_mutex};
         for (const auto& it : g_backup_queue) {
-            if (it.dir_name == dir_name) {
+            if (it.user_id == user_id && it.title_id == title_id && it.dir_name == dir_name) {
                 LOG_TRACE(Lib_SaveData, "Backup request to {} ignored. Already queued", dir_name);
                 return false;
             }
@@ -275,21 +292,41 @@ bool NewRequest(Libraries::UserService::OrbisUserServiceUserId user_id, std::str
     return true;
 }
 
-bool Restore(const std::filesystem::path& save_path) {
+bool Restore(const fs::path& save_path) {
     LOG_INFO(Lib_SaveData, "Restoring backup for {}", fmt::UTF(save_path.u8string()));
     std::unique_lock lk{g_backup_running_mutex};
     const auto backup_dir = MakeBackupPath(save_path);
-    if (!fs::exists(save_path) || !fs::exists(backup_dir)) {
+    std::error_code ec;
+    if (!fs::exists(backup_dir, ec) || !fs::exists(SaveInstance::GetParamSFOPath(backup_dir), ec)) {
         return false;
     }
-    for (const auto& entry : fs::directory_iterator(save_path)) {
-        fs::remove_all(entry.path());
-    }
 
-    for (const auto& entry : fs::directory_iterator(backup_dir)) {
-        fs::copy(entry.path(), save_path / entry.path().filename(), fs::copy_options::recursive);
-    }
+    const fs::path restore_tmp =
+        save_path.parent_path() / fmt::format("sce_restore_tmp_{}", save_path.filename().string());
+    const fs::path restore_old =
+        save_path.parent_path() / fmt::format("sce_restore_old_{}", save_path.filename().string());
+    fs::remove_all(restore_tmp, ec);
+    fs::remove_all(restore_old, ec);
 
+    try {
+        fs::create_directories(restore_tmp);
+        for (const auto& entry : fs::directory_iterator(backup_dir)) {
+            CopyShareReadWrite(entry.path(), restore_tmp / entry.path().filename());
+        }
+        const bool had_save = fs::exists(save_path, ec);
+        if (had_save) {
+            fs::rename(save_path, restore_old);
+        }
+        fs::rename(restore_tmp, save_path);
+        if (had_save) {
+            fs::remove_all(restore_old, ec);
+        }
+    } catch (const std::exception& err) {
+        LOG_ERROR(Lib_SaveData, "Restore failed for {}: {}", fmt::UTF(save_path.u8string()),
+                  err.what());
+        fs::remove_all(restore_tmp, ec);
+        return false;
+    }
     return true;
 }
 
@@ -297,13 +334,84 @@ std::unique_lock<std::mutex> LockForWrite() {
     return std::unique_lock{g_backup_running_mutex};
 }
 
+bool Restore(Libraries::UserService::OrbisUserServiceUserId user_id, std::string_view title_id,
+             std::string_view dir_name) {
+    const fs::path save_path = GetSaveDirPath(user_id, title_id, dir_name);
+    if (!Restore(save_path)) {
+        return false;
+    }
+
+    PSF sfo;
+    if (!sfo.Open(SaveInstance::GetParamSFOPath(save_path))) {
+        return false;
+    }
+    SaveDb::Finalize(user_id,
+                     SaveInstance::BuildDbEntryFromSfo(sfo, user_id, title_id, title_id, dir_name,
+                                                       save_path, 96, false, false));
+
+    std::error_code ec;
+    const fs::path live_icon = SaveInstance::GetIconPath(save_path);
+    const fs::path meta_icon = GetMetaIconPath(user_id, title_id, dir_name);
+    if (fs::exists(live_icon, ec)) {
+        fs::create_directories(meta_icon.parent_path(), ec);
+        fs::copy_file(live_icon, meta_icon, fs::copy_options::overwrite_existing, ec);
+    } else {
+        fs::remove(meta_icon, ec);
+    }
+    return true;
+}
+
+bool DeleteBackup(Libraries::UserService::OrbisUserServiceUserId user_id, std::string_view title_id,
+                  std::string_view dir_name) {
+    std::unique_lock lk{g_backup_running_mutex};
+    std::error_code ec;
+    fs::remove_all(GetBackupDirPath(user_id, title_id, dir_name), ec);
+    fs::remove(GetMetaBackupSfoPath(user_id, title_id, dir_name), ec);
+    fs::remove(GetMetaBackupIconPath(user_id, title_id, dir_name), ec);
+    return !ec;
+}
+
+bool HasBackup(Libraries::UserService::OrbisUserServiceUserId user_id, std::string_view title_id,
+               std::string_view dir_name) {
+    std::error_code ec;
+    const fs::path backup_dir = GetBackupDirPath(user_id, title_id, dir_name);
+    return fs::exists(backup_dir, ec) && fs::exists(SaveInstance::GetParamSFOPath(backup_dir), ec);
+}
+
+bool CheckBackup(Libraries::UserService::OrbisUserServiceUserId user_id, std::string_view title_id,
+                 std::string_view dir_name, PSF& out_sfo, fs::path& out_icon_path) {
+    std::unique_lock lk{g_backup_running_mutex};
+    std::error_code ec;
+    const fs::path backup_dir = GetBackupDirPath(user_id, title_id, dir_name);
+    const fs::path backup_sfo = SaveInstance::GetParamSFOPath(backup_dir);
+    if (fs::exists(backup_sfo, ec) && out_sfo.Open(backup_sfo)) {
+        const fs::path container_icon = SaveInstance::GetIconPath(backup_dir);
+        const fs::path meta_icon = GetMetaBackupIconPath(user_id, title_id, dir_name);
+        if (fs::exists(container_icon, ec)) {
+            out_icon_path = container_icon;
+        } else if (fs::exists(meta_icon, ec)) {
+            out_icon_path = meta_icon;
+        } else {
+            out_icon_path.clear();
+        }
+        return true;
+    }
+    const fs::path meta_sfo = GetMetaBackupSfoPath(user_id, title_id, dir_name);
+    if (fs::exists(meta_sfo, ec) && out_sfo.Open(meta_sfo)) {
+        const fs::path meta_icon = GetMetaBackupIconPath(user_id, title_id, dir_name);
+        out_icon_path = fs::exists(meta_icon, ec) ? meta_icon : fs::path{};
+        return true;
+    }
+    return false;
+}
+
 WorkerStatus GetWorkerStatus() {
     return g_backup_status;
 }
 
-bool IsBackupExecutingFor(const std::filesystem::path& save_path) {
+bool IsBackupExecutingFor(const fs::path& save_path) {
     std::scoped_lock lk{g_backup_queue_mutex};
-    const auto& it =
+    const auto it =
         std::ranges::find(g_backup_queue, save_path, [](const auto& v) { return v.save_path; });
     return it != g_backup_queue.end() && !it->done;
 }
@@ -313,8 +421,8 @@ bool HasPendingEvents() {
     return !g_backup_queue.empty() || g_backup_status == WorkerStatus::Running;
 }
 
-std::filesystem::path MakeBackupPath(const std::filesystem::path& save_path) {
-    return save_path.parent_path() / (std::string(backup_prefix) + save_path.filename().string());
+fs::path MakeBackupPath(const fs::path& save_path) {
+    return save_path.parent_path() / (std::string(BackupPrefix) + save_path.filename().string());
 }
 
 std::optional<BackupRequest> PopLastEvent() {

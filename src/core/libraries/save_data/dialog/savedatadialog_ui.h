@@ -1,9 +1,13 @@
-// SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
+// SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
 
+#include <array>
+#include <chrono>
 #include <mutex>
+#include <optional>
+#include <string>
 #include <variant>
 #include <vector>
 
@@ -15,9 +19,7 @@
 
 namespace Libraries::SaveData::Dialog {
 
-using OrbisUserServiceUserId = s32;
-
-enum class SaveDataDialogMode : u32 {
+enum class OrbisSaveDataDialogMode : u32 {
     INVALID = 0,
     LIST = 1,
     USER_MSG = 2,
@@ -26,37 +28,37 @@ enum class SaveDataDialogMode : u32 {
     PROGRESS_BAR = 5,
 };
 
-enum class DialogType : u32 {
+enum class OrbisSaveDataDialogType : u32 {
     SAVE = 1,
     LOAD = 2,
     DELETE = 3,
 };
 
-enum class DialogAnimation : u32 {
+enum class OrbisSaveDataDialogAnimation : u32 {
     ON = 0,
     OFF = 1,
 };
 
-enum class ButtonId : u32 {
+enum class OrbisSaveDataDialogButtonId : u32 {
     INVALID = 0,
     OK = 1,
     YES = 1,
     NO = 2,
 };
 
-enum class ButtonType : u32 {
+enum class OrbisSaveDataDialogButtonType : u32 {
     OK = 0,
     YESNO = 1,
     NONE = 2,
     OKCANCEL = 3,
 };
 
-enum class UserMessageType : u32 {
+enum class OrbisSaveDataDialogUserMessageType : u32 {
     NORMAL = 0,
     ERROR = 1,
 };
 
-enum class FocusPos : u32 {
+enum class OrbisSaveDataDialogFocusPos : u32 {
     LISTHEAD = 0,
     LISTTAIL = 1,
     DATAHEAD = 2,
@@ -66,13 +68,13 @@ enum class FocusPos : u32 {
     DIRNAME = 6,
 };
 
-enum class ItemStyle : u32 {
+enum class OrbisSaveDataDialogItemStyle : u32 {
     TITLE_DATASIZE_SUBTITLE = 0,
     TITLE_SUBTITLE_DATESIZE = 1,
     TITLE_DATESIZE = 2,
 };
 
-enum class SystemMessageType : u32 {
+enum class OrbisSaveDataDialogSystemMessageType : u32 {
     NODATA = 1,
     CONFIRM = 2,
     OVERWRITE = 3,
@@ -87,17 +89,17 @@ enum class SystemMessageType : u32 {
     TOTAL_SIZE_EXCEEDED = 14,
 };
 
-enum class ProgressBarType : u32 {
+enum class OrbisSaveDataDialogProgressBarType : u32 {
     PERCENTAGE = 0,
 };
 
-enum class ProgressSystemMessageType : u32 {
+enum class OrbisSaveDataDialogProgressSystemMessageType : u32 {
     INVALID = 0,
     PROGRESS = 1,
     RESTORE = 2,
 };
 
-enum class OptionBack : u32 {
+enum class OrbisSaveDataDialogOptionBack : u32 {
     ENABLE = 0,
     DISABLE = 1,
 };
@@ -106,98 +108,106 @@ enum class OrbisSaveDataDialogProgressBarTarget : u32 {
     DEFAULT = 0,
 };
 
-struct AnimationParam {
-    DialogAnimation userOK;
-    DialogAnimation userCancel;
+struct OrbisSaveDataDialogAnimationParam {
+    OrbisSaveDataDialogAnimation userOK;
+    OrbisSaveDataDialogAnimation userCancel;
     std::array<u8, 32> _reserved;
 };
 
-struct SaveDialogNewItem {
+struct OrbisSaveDataDialogCloseParam {
+    OrbisSaveDataDialogAnimation anim;
+    std::array<u8, 32> _reserved;
+};
+static_assert(sizeof(OrbisSaveDataDialogCloseParam) == 0x24);
+
+struct OrbisSaveDataDialogNewItem {
     const char* title;
     void* iconBuf;
     size_t iconSize;
     std::array<u8, 32> _reserved;
 };
 
-struct SaveDialogItems {
-    OrbisUserServiceUserId userId;
+struct OrbisSaveDataDialogItems {
+    Libraries::UserService::OrbisUserServiceUserId userId;
     s32 : 32;
     const OrbisSaveDataTitleId* titleId;
     const OrbisSaveDataDirName* dirName;
     u32 dirNameNum;
     s32 : 32;
-    const SaveDialogNewItem* newItem;
-    FocusPos focusPos;
+    const OrbisSaveDataDialogNewItem* newItem;
+    OrbisSaveDataDialogFocusPos focusPos;
     s32 : 32;
     const OrbisSaveDataDirName* focusPosDirName;
-    ItemStyle itemStyle;
+    OrbisSaveDataDialogItemStyle itemStyle;
     std::array<u8, 32> _reserved;
 };
 
-struct UserMessageParam {
-    ButtonType buttonType;
-    UserMessageType msgType;
+struct OrbisSaveDataDialogUserMessageParam {
+    OrbisSaveDataDialogButtonType buttonType;
+    OrbisSaveDataDialogUserMessageType msgType;
     const char* msg;
     std::array<u8, 32> _reserved;
 };
 
-struct SystemMessageParam {
-    SystemMessageType msgType;
+struct OrbisSaveDataDialogSystemMessageParam {
+    OrbisSaveDataDialogSystemMessageType msgType;
     s32 : 32;
     u64 value;
     std::array<u8, 32> _reserved;
 };
 
-struct ErrorCodeParam {
+struct OrbisSaveDataDialogErrorCodeParam {
     u32 errorCode;
     std::array<u8, 32> _reserved;
 };
 
-struct ProgressBarParam {
-    ProgressBarType barType;
+struct OrbisSaveDataDialogProgressBarParam {
+    OrbisSaveDataDialogProgressBarType barType;
     s32 : 32;
     const char* msg;
-    ProgressSystemMessageType sysMsgType;
+    OrbisSaveDataDialogProgressSystemMessageType sysMsgType;
     std::array<u8, 28> _reserved;
 };
 
-struct OptionParam {
-    OptionBack back;
+struct OrbisSaveDataDialogOptionParam {
+    OrbisSaveDataDialogOptionBack back;
     std::array<u8, 32> _reserved;
 };
 
 struct OrbisSaveDataDialogParam {
     CommonDialog::BaseParam baseParam;
     s32 size;
-    SaveDataDialogMode mode;
-    DialogType dispType;
+    OrbisSaveDataDialogMode mode;
+    OrbisSaveDataDialogType dispType;
     s32 : 32;
-    AnimationParam* animParam;
-    SaveDialogItems* items;
-    UserMessageParam* userMsgParam;
-    SystemMessageParam* sysMsgParam;
-    ErrorCodeParam* errorCodeParam;
-    ProgressBarParam* progressBarParam;
+    OrbisSaveDataDialogAnimationParam* animParam;
+    OrbisSaveDataDialogItems* items;
+    OrbisSaveDataDialogUserMessageParam* userMsgParam;
+    OrbisSaveDataDialogSystemMessageParam* sysMsgParam;
+    OrbisSaveDataDialogErrorCodeParam* errorCodeParam;
+    OrbisSaveDataDialogProgressBarParam* progressBarParam;
     void* userData;
-    OptionParam* optionParam;
+    OrbisSaveDataDialogOptionParam* optionParam;
     std::array<u8, 24> _reserved;
 };
+static_assert(sizeof(OrbisSaveDataDialogParam) == 0x98);
 
 struct OrbisSaveDataDialogResult {
-    SaveDataDialogMode mode{};
+    OrbisSaveDataDialogMode mode{};
     CommonDialog::Result result{};
-    ButtonId buttonId{};
+    OrbisSaveDataDialogButtonId buttonId{};
     s32 : 32;
     OrbisSaveDataDirName* dirName;
     OrbisSaveDataParam* param;
     void* userData;
     std::array<u8, 32> _reserved;
 };
+static_assert(sizeof(OrbisSaveDataDialogResult) == 0x48);
 
 struct SaveDialogResult {
-    SaveDataDialogMode mode{};
+    OrbisSaveDataDialogMode mode{};
     CommonDialog::Result result{CommonDialog::Result::OK};
-    ButtonId button_id{ButtonId::INVALID};
+    OrbisSaveDataDialogButtonId button_id{OrbisSaveDataDialogButtonId::INVALID};
     std::string dir_name{};
     PSF param{};
     void* user_data{};
@@ -210,8 +220,8 @@ class SaveDialogState {
 
 public:
     struct UserState {
-        ButtonType type{};
-        UserMessageType msg_type{};
+        OrbisSaveDataDialogButtonType type{};
+        OrbisSaveDataDialogUserMessageType msg_type{};
         std::string msg{};
 
         UserState(const OrbisSaveDataDialogParam& param);
@@ -254,16 +264,17 @@ public:
     };
 
 private:
-    SaveDataDialogMode mode{};
-    DialogType type{};
+    OrbisSaveDataDialogMode mode{};
+    OrbisSaveDataDialogType type{};
     void* user_data{};
     std::optional<bool> enable_back{};
 
-    OrbisUserServiceUserId user_id{};
+    Libraries::UserService::OrbisUserServiceUserId user_id{};
     std::string title_id{};
     std::vector<Item> save_list{};
-    std::variant<FocusPos, std::string, std::monostate> focus_pos{std::monostate{}};
-    ItemStyle style{};
+    std::variant<OrbisSaveDataDialogFocusPos, std::string, std::monostate> focus_pos{
+        std::monostate{}};
+    OrbisSaveDataDialogItemStyle style{};
 
     std::optional<Item> new_item{};
 
@@ -275,8 +286,28 @@ public:
 
     SaveDialogState() = default;
 
-    [[nodiscard]] SaveDataDialogMode GetMode() const {
+    [[nodiscard]] OrbisSaveDataDialogMode GetMode() const {
         return mode;
+    }
+
+    [[nodiscard]] OrbisSaveDataDialogType GetType() const {
+        return type;
+    }
+
+    [[nodiscard]] Libraries::UserService::OrbisUserServiceUserId GetUserId() const {
+        return user_id;
+    }
+
+    [[nodiscard]] const std::string& GetTitleId() const {
+        return title_id;
+    }
+
+    [[nodiscard]] const std::vector<Item>& GetItems() const {
+        return save_list;
+    }
+
+    [[nodiscard]] const std::optional<Item>& GetNewItem() const {
+        return new_item;
     }
 
     template <typename T>
@@ -303,7 +334,8 @@ public:
     SaveDialogUi& operator=(SaveDialogUi& other) = delete;
     SaveDialogUi& operator=(SaveDialogUi&& other) noexcept;
 
-    void Finish(ButtonId buttonId, CommonDialog::Result r = CommonDialog::Result::OK);
+    void Finish(OrbisSaveDataDialogButtonId buttonId,
+                CommonDialog::Result r = CommonDialog::Result::OK);
 
     void Draw() override;
 
@@ -317,4 +349,4 @@ private:
     void DrawProgressBar();
 };
 
-}; // namespace Libraries::SaveData::Dialog
+} // namespace Libraries::SaveData::Dialog

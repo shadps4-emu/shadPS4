@@ -6,6 +6,7 @@
 #include <unordered_set>
 #include "common/assert.h"
 #include "common/logging/log.h"
+#include "common/singleton.h"
 #include "common/string_util.h"
 #include "core/file_sys/backends/host_fs.h"
 #include "core/file_sys/backends/zarchive_fs.h"
@@ -164,13 +165,55 @@ void MntPoints::Mount(const std::filesystem::path& host_folder, const std::strin
     LOG_INFO(Kernel_Fs, "Mounted '{}' -> '{}'", guest_folder_sanitized, host_folder.string());
 }
 
-void MntPoints::Unmount(const std::string& guest_folder) {
-    std::scoped_lock lock{m_mutex};
+bool MntPoints::Unmount(const std::string& guest_folder) {
+    auto* handle_table = Common::Singleton<HandleTable>::Instance();
+    std::scoped_lock lock{m_mutex, handle_table->m_mutex};
     const auto guest_folder_sanitized = RemoveTrailingSlashes(guest_folder);
-    auto it = std::remove_if(m_mnt_pairs.begin(), m_mnt_pairs.end(), [&](const MntPair& pair) {
+    const std::string guest_prefix = guest_folder_sanitized + "/";
+
+    auto match_it = std::find_if(m_mnt_pairs.begin(), m_mnt_pairs.end(), [&](const MntPair& pair) {
         return pair.mount == guest_folder_sanitized;
     });
-    m_mnt_pairs.erase(it, m_mnt_pairs.end());
+    if (match_it == m_mnt_pairs.end()) {
+        return true;
+    }
+
+    for (const auto* file : handle_table->m_files) {
+        if (file == nullptr || !file->is_opened) {
+            continue;
+        }
+        if (file->type != FileType::Regular && file->type != FileType::Directory) {
+            continue;
+        }
+        const auto norm = SanitizeGuestPath(file->m_guest_name);
+        if (norm && (*norm == guest_folder_sanitized || norm->starts_with(guest_prefix))) {
+            return false;
+        }
+    }
+
+    for (auto it = m_mnt_pairs.begin(); it != m_mnt_pairs.end();) {
+        if (it->mount == guest_folder_sanitized) {
+            const std::string host_str = it->host_path.generic_string();
+            const std::string host_prefix = host_str + "/";
+            for (auto cache_it = path_cache.begin(); cache_it != path_cache.end();) {
+                const std::string cached = cache_it->first.generic_string();
+                if (cached == guest_folder_sanitized || cached.starts_with(guest_prefix) ||
+                    (!host_str.empty() &&
+                     (cached == host_str || cached.starts_with(host_prefix)))) {
+                    cache_it = path_cache.erase(cache_it);
+                } else {
+                    ++cache_it;
+                }
+            }
+            for (const auto& backend : it->backends) {
+                backend->InvalidateCache();
+            }
+            it = m_mnt_pairs.erase(it);
+        } else {
+            ++it;
+        }
+    }
+    return true;
 }
 
 void MntPoints::UnmountAll() {

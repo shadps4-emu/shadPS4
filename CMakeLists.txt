@@ -250,6 +250,7 @@ if (ENABLE_SYSTEM_LIBRARIES)
     find_package(LibreSSL 4.3.1 MODULE)
     find_package(RenderDoc 1.6.0 MODULE)
     find_package(SDL3 3.1.2 CONFIG)
+    find_package(SQLite3 MODULE)
     find_package(stb MODULE)
     find_package(toml11 4.2.0 CONFIG)
     find_package(tsl-robin-map 1.3.0 CONFIG)
@@ -418,6 +419,8 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/system/msgdialog_ui.cpp
                 src/core/libraries/save_data/save_backup.cpp
                 src/core/libraries/save_data/save_backup.h
+                src/core/libraries/save_data/save_db.cpp
+                src/core/libraries/save_data/save_db.h
                 src/core/libraries/save_data/save_instance.cpp
                 src/core/libraries/save_data/save_instance.h
                 src/core/libraries/save_data/save_memory.cpp
@@ -1370,6 +1373,7 @@ target_link_libraries(shadps4 PRIVATE Freetype::Freetype)
 target_link_libraries(shadps4 PRIVATE libprotobuf)
 target_link_libraries(shadps4 PRIVATE ZArchive::zarchive)
 target_link_libraries(shadps4 PRIVATE zstd::libzstd)
+target_link_libraries(shadps4 PRIVATE SQLite3::SQLite3)
 target_include_directories(shadps4 PRIVATE "${SHADNET_PROTO_OUT}")
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")

@@ -2,11 +2,18 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #pragma once
+#include <cstdio>
 #include <filesystem>
 #include <string>
 #include <vector>
 #include <nlohmann/json.hpp>
 #include "common/types.h"
+
+[[nodiscard]] inline std::string FormatUidHex(u32 user_id) {
+    char buf[16];
+    std::snprintf(buf, sizeof(buf), "%08x", user_id);
+    return std::string(buf);
+}
 
 struct User {
     s32 user_id = -1;
