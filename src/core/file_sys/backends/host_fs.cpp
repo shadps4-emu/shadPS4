@@ -109,8 +109,10 @@ bool HostFile::Map(VAddr addr, u64 size, u64 offset, MemoryMapFlags flags, Memor
     m_file.Flush();
     const u64 file_size = m_file.GetSize();
 #ifdef _WIN32
-    if (False(flags & MemoryMapFlags::Shared)) {
-        // Windows cannot create copy-on-write views of read-only files, so copy the contents.
+    if (False(flags & MemoryMapFlags::Shared) ||
+        m_file.GetAccessMode() != Common::FS::FileAccessMode::ReadWrite) {
+        // Windows limits what's possible with read-only files, 
+        // so copy them into memory instead of mapping them.
         address_space.Map(addr, size);
         if (offset < file_size) {
             const s64 position = m_file.Tell();
