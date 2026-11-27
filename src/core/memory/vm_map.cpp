@@ -8,6 +8,7 @@
 #include "core/memory/blockpool.h"
 #include "core/memory/dmem_map.h"
 #include "core/memory/vm_map.h"
+#include "core/tls.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
 
 namespace Core {
@@ -32,7 +33,7 @@ static VmFindSpace ComputeFindSpace(MemoryMapFlags flags, VmObject* object) {
     return static_cast<VmFindSpace>(is_2mb * 3 + (is_device ? 2 : 1));
 }
 
-static bool CanMerge(VmMap::Tree::iterator a, VmMap::Tree::iterator b) {
+static bool CanMerge(VmMap::Tree::iterator a, VmMap::Tree::iterator b, u32 sdk_version) {
     if (a->end != b->start) {
         return false;
     }
@@ -63,6 +64,9 @@ static bool CanMerge(VmMap::Tree::iterator a, VmMap::Tree::iterator b) {
         return false;
     }
     if (True(a->eflags & VmEntryFlags::NoCoalesce) && a->obj_entry_id != b->obj_entry_id) {
+        return false;
+    }
+    if (sdk_version < Common::ElfInfo::FW_550 && a->anon_addr != b->anon_addr) {
         return false;
     }
     return true;
@@ -108,6 +112,7 @@ VmMap::Tree::iterator VmMap::Insert(Tree::iterator prev, VAddr start, VAddr end,
     entry->eflags = eflags;
     entry->inheritance = VmInherit::Copy;
     entry->obj_entry_id = m_obj_entry_count++;
+    entry->anon_addr = Core::g_guest_caller_address;
 
     if (!name.empty()) {
         const auto len = std::min(name.size(), sizeof(entry->name) - 1);
@@ -754,7 +759,7 @@ void VmMap::SimplifyEntry(Tree::iterator entry) {
     }
 
     auto prev = std::prev(entry);
-    if (prev != m_tree.end() && CanMerge(prev, entry)) {
+    if (prev != m_tree.end() && CanMerge(prev, entry, m_sdk_version)) {
         m_tree.Unlink(prev);
         entry->start = prev->start;
         entry->offset = prev->offset;
@@ -764,7 +769,7 @@ void VmMap::SimplifyEntry(Tree::iterator entry) {
         delete std::addressof(*prev);
     }
     auto next = std::next(entry);
-    if (next != m_tree.end() && CanMerge(entry, next)) {
+    if (next != m_tree.end() && CanMerge(entry, next, m_sdk_version)) {
         m_tree.Unlink(next);
         entry->end = next->end;
         m_tree.ResizeFree(entry);

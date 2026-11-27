@@ -122,6 +122,7 @@ struct VmMapEntry : SplayTreeNode {
     BudgetPtype budget_ptype{BudgetPtype::BigApp};
     s32 wired_count{};
     u64 obj_entry_id{};
+    VAddr anon_addr{};
     char name[32]{};
 
     u64 Size() const {
