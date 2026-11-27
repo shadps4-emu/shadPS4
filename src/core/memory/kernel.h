@@ -125,7 +125,7 @@ public:
     s32 UnmapMemory(VAddr virtual_addr, u64 size);
 
     s32 MapDirectMemory(VAddr* out_addr, u64 size, DmemMemoryType mtype, MemoryProt prot,
-                        MemoryMapFlags flags, PAddr phys_addr, u32 alignment);
+                        MemoryMapFlags flags, PAddr phys_addr, u32 alignment_shift);
 
     s32 PoolMap(VAddr virtual_addr, u64 size, MemoryProt prot, s32 mtype);
 

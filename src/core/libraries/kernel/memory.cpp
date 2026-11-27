@@ -321,8 +321,9 @@ s32 PS4_SYSV_ABI sceKernelMapDirectMemory2(VAddr* addr, u64 len, s32 type, s32 p
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
     const auto mem_type = static_cast<Core::DmemMemoryType>(type);
-    const s32 ret =
-        g_memory->MapDirectMemory(addr, len, mem_type, mem_prot, map_flags, phys_addr, alignment);
+    const u32 alignment_shift = alignment != 0 ? std::countr_zero(alignment) : 0;
+    const s32 ret = g_memory->MapDirectMemory(addr, len, mem_type, mem_prot, map_flags, phys_addr,
+                                              alignment_shift);
     if (ret == ORBIS_OK) {
         LOG_INFO(Kernel_Vmm, "out_addr = {:#x}", *addr);
     }

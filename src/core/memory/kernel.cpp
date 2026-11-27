@@ -172,8 +172,9 @@ void MemoryManager::CopySparseMemory(VAddr virtual_addr, u8* dest, u64 size) {
 }
 
 s32 MemoryManager::MapDirectMemory(VAddr* out_addr, u64 size, DmemMemoryType mtype, MemoryProt prot,
-                                   MemoryMapFlags flags, PAddr phys_addr, u32 alignment) {
-    return dmem.MapDirectMemory(vm_map, out_addr, size, mtype, prot, flags, phys_addr, alignment);
+                                   MemoryMapFlags flags, PAddr phys_addr, u32 alignment_shift) {
+    return dmem.MapDirectMemory(vm_map, out_addr, size, mtype, prot, flags, phys_addr,
+                                alignment_shift);
 }
 
 s32 MemoryManager::PoolMap(VAddr virtual_addr, u64 size, MemoryProt prot, s32 mtype) {
