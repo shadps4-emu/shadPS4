@@ -210,23 +210,11 @@ s32 DmemManager::MapDirectMemory(VmMap& map, VAddr* out_addr, u64 length,
                 align = 1ULL << alignment_shift;
             }
 
-            VAddr found_addr = map.FindSpace(vaddr ? vaddr : map.MinOffset(), length);
-            if (!found_addr) {
+            vaddr = map.FindSpaceAligned(vaddr ? vaddr : map.MinOffset(), length, align);
+            if (!vaddr) {
                 return ORBIS_KERNEL_ERROR_ENOMEM;
             }
-
-            vaddr = Common::AlignUpPow2(found_addr, align);
             end = vaddr + length;
-
-            auto [check, found] = map.LookupEntry(vaddr);
-            if (found && check->start < end) {
-                VAddr found_addr2 = map.FindSpace(check->end, length);
-                if (!found_addr2) {
-                    return ORBIS_KERNEL_ERROR_ENOMEM;
-                }
-                vaddr = Common::AlignUpPow2(found_addr2, align);
-                end = vaddr + length;
-            }
         }
 
         if (False(flags & MemoryMapFlags::Sanitizer) && (vaddr >> 47) == 0 &&

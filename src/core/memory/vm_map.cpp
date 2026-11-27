@@ -128,6 +128,39 @@ VmMap::Tree::iterator VmMap::Insert(Tree::iterator prev, VAddr start, VAddr end,
     return it;
 }
 
+VAddr VmMap::FindSpaceAligned(VAddr start, u64 length, u64 alignment) {
+    const bool heap_limited = start - 0x200000000ULL < 0x500000001ULL;
+    for (;;) {
+        const VAddr found = m_tree.FindSpace(start, length);
+        if (!found) {
+            return 0;
+        }
+        const VAddr addr = Common::AlignUpPow2(found, alignment);
+        if (heap_limited && addr >= m_heap_end) {
+            return 0;
+        }
+        const VAddr usable = FindUsable(addr, length);
+        if (usable != addr) {
+            if (!usable) {
+                return 0;
+            }
+            start = usable;
+            continue;
+        }
+        const auto [entry, overlaps] = m_tree.LookupEntry(addr);
+        if (overlaps) {
+            start = entry->end;
+            continue;
+        }
+        if (const auto next = std::next(entry);
+            next != m_tree.end() && next->start < addr + length) {
+            start = next->end;
+            continue;
+        }
+        return addr;
+    }
+}
+
 VAddr VmMap::FindUsable(VAddr addr, u64 size) const {
     for (const auto& region : m_usable_regions) {
         if (region.upper() <= addr) {

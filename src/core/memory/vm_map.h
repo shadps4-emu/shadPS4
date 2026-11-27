@@ -6,6 +6,7 @@
 #include <shared_mutex>
 #include <string_view>
 #include <vector>
+#include <boost/icl/interval_set.hpp>
 #include "common/enum.h"
 #include "common/sx_lock.h"
 #include "common/types.h"
@@ -257,9 +258,7 @@ public:
 
     void Inherit(VAddr start, VAddr end, VmInherit inheritance);
 
-    auto FindSpace(VAddr start, u64 length) {
-        return m_tree.FindSpace(start, length);
-    }
+    VAddr FindSpaceAligned(VAddr start, u64 length, u64 alignment);
 
     auto LookupEntry(VAddr addr) {
         return m_tree.LookupEntry(addr);
