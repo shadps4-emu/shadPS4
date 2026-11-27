@@ -738,10 +738,15 @@ void DmemManager::FreeEntry(Tree::iterator entry) {
         m_rmap_mutex.unlock();
 
         {
-            auto overlaps = tree.FindOverlappingAll(start_page, end_page);
             m_mutex.unlock();
             std::scoped_lock map_lock{rmap->vmspace->lock};
-            for (auto hit = overlaps.begin(); hit != overlaps.end(); ++hit) {
+            for (;;) {
+                auto overlaps = tree.FindOverlappingAll(start_page, end_page);
+                const auto hit = overlaps.begin();
+                if (hit == overlaps.end()) {
+                    break;
+                }
+
                 const s32 entry_start = hit->p_start_idx;
                 const s32 entry_end = hit->p_end_idx;
 
@@ -751,7 +756,9 @@ void DmemManager::FreeEntry(Tree::iterator entry) {
                 const VAddr unmap_start = hit->vaddr + (overlap_start - entry_start) * PAGE_SIZE;
                 const VAddr unmap_end = hit->vaddr + (overlap_end - entry_start) * PAGE_SIZE;
 
-                rmap->vmspace->Delete(unmap_start, unmap_end);
+                if (rmap->vmspace->Delete(unmap_start, unmap_end) != ORBIS_OK) {
+                    break;
+                }
             }
             m_mutex.lock();
         }

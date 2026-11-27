@@ -176,6 +176,27 @@ enum class MemoryPermission : u32;
 
 MemoryPermission ToHostPerm(MemoryProt guest_prot);
 
+class VmMapLock : public SxLock {
+public:
+    void lock() {
+        SxLock::lock();
+        ++timestamp;
+    }
+
+    bool try_lock() {
+        if (!SxLock::try_lock()) {
+            return false;
+        }
+        ++timestamp;
+        return true;
+    }
+
+private:
+    friend class VmMap;
+
+    u32 timestamp{};
+};
+
 class VmMap {
 public:
     using Tree = SplayTree<VmMapSplayTraits>;
@@ -213,6 +234,8 @@ public:
     s32 FindAddress(VAddr* addr, u64 size, MemoryMapFlags flags, VmObject* object);
 
     s32 Delete(VAddr start, VAddr end);
+
+    bool UpgradeLock();
 
     s32 Protect(DmemManager& dmem, VAddr start, VAddr end, MemoryProt new_prot, bool set_max);
 
@@ -263,7 +286,7 @@ public:
         return m_tree;
     }
 
-    std::shared_mutex lock;
+    VmMapLock lock;
 
 private:
     void EnsureObject(VmMapEntry* entry) {

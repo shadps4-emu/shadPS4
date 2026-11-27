@@ -203,6 +203,9 @@ s32 MemoryManager::PoolUnmap(VAddr virtual_addr, u64 size) {
     }
 
     if (size) {
+        if (entry->IsGpuMapping()) {
+            rasterizer->UnmapMemory(virtual_addr, size);
+        }
         blockpool.Unmap(*entry, virtual_addr, size);
     }
 

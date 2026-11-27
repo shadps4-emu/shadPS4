@@ -361,19 +361,24 @@ s32 VmMap::Delete(VAddr start, VAddr end) {
     }
 
     while (entry != m_tree.end() && entry->start < end) {
+        if (!entry->IsBlockpool() && entry->end > end) {
+            ClipEnd(entry, end);
+        }
+        if (entry->IsGpuMapping()) {
+            lock.downgrade();
+            rasterizer->UnmapMemory(entry->start, entry->Size());
+            if (!UpgradeLock()) {
+                return Delete(start, end);
+            }
+        }
+
         if (entry->IsBlockpool()) {
             blockpool.NameSplit(entry->start, entry->end);
             blockpool.Unmap(*entry, entry->start, entry->Size());
         } else {
-            if (entry->end > end) {
-                ClipEnd(entry, end);
-            }
             if (entry->wired_count != 0) {
                 entry->wired_count = 1;
                 UnwireRange(entry, entry->end, {});
-            }
-            if (entry->IsGpuMapping()) {
-                rasterizer->UnmapMemory(entry->start, entry->Size());
             }
             if (entry->object && entry->object->IsDmem()) {
                 dmem.RmapDelete(this, entry->start, entry->end, entry->offset);
@@ -402,6 +407,19 @@ s32 VmMap::Delete(VAddr start, VAddr end) {
     }
 
     return ORBIS_OK;
+}
+
+bool VmMap::UpgradeLock() {
+    if (lock.try_upgrade()) {
+        ++lock.timestamp;
+        return true;
+    }
+    const u32 last_timestamp = lock.timestamp;
+    lock.unlock_shared();
+    lock.SxLock::lock();
+    const bool unchanged = last_timestamp == lock.timestamp;
+    ++lock.timestamp;
+    return unchanged;
 }
 
 s32 VmMap::Protect(DmemManager& dmem, VAddr start, VAddr end, MemoryProt new_prot, bool set_max) {
@@ -499,7 +517,8 @@ s32 VmMap::ProtectType(DmemManager& dmem, VAddr start, VAddr end, DmemMemoryType
         return ORBIS_KERNEL_ERROR_EACCES;
     }
 
-    std::scoped_lock lk{lock};
+    std::vector<std::pair<VAddr, u64>> gpu_unmaps;
+    std::unique_lock lk{lock};
 
     start = std::max(start, m_min_offset);
     end = std::min(end, m_max_offset);
@@ -572,7 +591,7 @@ s32 VmMap::ProtectType(DmemManager& dmem, VAddr start, VAddr end, DmemMemoryType
             if (wants_gpu) {
                 rasterizer->MapMemory(cur->start, cur->Size());
             } else {
-                rasterizer->UnmapMemory(cur->start, cur->Size());
+                gpu_unmaps.emplace_back(cur->start, cur->Size());
             }
         }
 
@@ -583,6 +602,13 @@ s32 VmMap::ProtectType(DmemManager& dmem, VAddr start, VAddr end, DmemMemoryType
 
         SimplifyEntry(cur);
         ++cur;
+    }
+
+    lk.release();
+    lock.downgrade();
+    std::shared_lock shared_lk{lock, std::adopt_lock};
+    for (const auto& [unmap_addr, unmap_size] : gpu_unmaps) {
+        rasterizer->UnmapMemory(unmap_addr, unmap_size);
     }
 
     return ORBIS_OK;

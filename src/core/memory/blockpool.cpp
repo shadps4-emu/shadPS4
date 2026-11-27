@@ -16,7 +16,6 @@ bool Blockpool::Map(VmMapEntry& entry, VAddr addr, u64 size, MemoryProt prot, s3
     const bool writeback = mtype != 3;
     const u32 block_start = ToBlocks(addr - entry.start);
     const u32 num_blocks = ToBlocks(size);
-    const u32 block_end = block_start + num_blocks;
 
     DmemBlock* vm_blocks = entry.object->blockpool.blocks.data() + block_start;
     std::array<u32, 32> dmem_blocks;
@@ -85,10 +84,6 @@ void Blockpool::Unmap(VmMapEntry& entry, VAddr addr, u64 size) {
     for (u32 chunk = 0; chunk < num_blocks; chunk += 2048) {
         const u32 count = std::min(num_blocks - chunk, 2048u);
         Decommit(vm_blocks + chunk, count);
-    }
-
-    if (entry.IsGpuMapping()) {
-        rasterizer->UnmapMemory(addr, size);
     }
 
     u64 size_to_unmap = size;
@@ -222,7 +217,11 @@ bool Blockpool::Commit(u32 count, bool onion, bool writeback, u32* out_blocks) {
 void Blockpool::Decommit(DmemBlock* blocks, u32 count) {
     std::scoped_lock lk{mutex};
 
-    while (count) {
+    for (; count; ++blocks, --count) {
+        if (!blocks->valid) {
+            continue;
+        }
+
         Bitmap* bitmap;
         if (blocks->writeback) {
             --cached.allocated_blocks;
@@ -241,8 +240,6 @@ void Blockpool::Decommit(DmemBlock* blocks, u32 count) {
         bitmap->bits_l2 |= (u64{1} << block);
 
         blocks->raw = 0u;
-        ++blocks;
-        --count;
     }
 }
 
