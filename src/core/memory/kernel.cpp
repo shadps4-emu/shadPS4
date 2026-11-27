@@ -235,6 +235,7 @@ s32 MemoryManager::MapMemory(VAddr* out_addr, u64 size, MemoryProt prot, MemoryM
 
     MemoryProt max_prot = MemoryProt::NoAccess;
     std::shared_ptr<VmObject> object = nullptr;
+    std::unique_lock<std::mutex> vnode_lock;
 
     if (True(flags & MemoryMapFlags::Void)) {
         prot = MemoryProt::NoAccess;
@@ -293,10 +294,16 @@ s32 MemoryManager::MapMemory(VAddr* out_addr, u64 size, MemoryProt prot, MemoryM
             // Files in system folders don't count towards the budget.
             const bool is_app_file =
                 file->m_guest_name.contains("app0/") || file->m_guest_name.contains("download0/");
-            object = std::make_shared<VmObject>();
-            object->type = VmObjectType::Vnode;
-            object->size = size;
-            object->budget_ptype = is_app_file ? BudgetPtype::BigApp : BudgetPtype::Invalid;
+            vnode_lock = std::unique_lock{vnode_mutex};
+            auto& vnode_object = vnode_objects[file->m_host_name.generic_string()];
+            object = vnode_object.lock();
+            if (!object) {
+                object = std::make_shared<VmObject>();
+                object->type = VmObjectType::Vnode;
+                object->budget_ptype = is_app_file ? BudgetPtype::BigApp : BudgetPtype::Invalid;
+                vnode_object = object;
+            }
+            object->ExtendSize(offset + size);
             object->vnode.file = file;
             break;
         }

@@ -5,7 +5,10 @@
 
 #include <bit>
 #include <cstring>
+#include <mutex>
+#include <string>
 #include <string_view>
+#include <unordered_map>
 
 #include "common/singleton.h"
 #include "common/types.h"
@@ -142,6 +145,8 @@ private:
     DmemManager dmem;
     VmMap vm_map;
     FlexibleMemoryPool flex_pool;
+    std::mutex vnode_mutex;
+    std::unordered_map<std::string, std::weak_ptr<VmObject>> vnode_objects;
     Vulkan::Rasterizer* rasterizer;
     u64 total_direct_size{};
     u64 total_flexible_size{};
