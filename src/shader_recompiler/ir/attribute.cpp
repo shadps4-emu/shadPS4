@@ -130,6 +130,8 @@ std::string NameOf(Attribute attribute) {
         return "LocalInvocationIndex";
     case Attribute::FragCoord:
         return "FragCoord";
+    case Attribute::PointCoord:
+        return "PointCoord";
     case Attribute::BaryCoordNoPersp:
         return "BaryCoordNoPersp";
     case Attribute::BaryCoordNoPerspCentroid:
