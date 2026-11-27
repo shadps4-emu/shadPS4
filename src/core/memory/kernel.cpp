@@ -342,6 +342,10 @@ s32 MemoryManager::MapMemory(VAddr* out_addr, u64 size, MemoryProt prot, MemoryM
         return ret;
     }
 
+    if (True(flags & MemoryMapFlags::Shared)) {
+        vm_map.Inherit(addr, addr + size, VmInherit::Share);
+    }
+
     if (vm_map.IsWireFuture() &&
         False(flags & (MemoryMapFlags::Void | MemoryMapFlags::Sanitizer))) {
         if (s32 ret =

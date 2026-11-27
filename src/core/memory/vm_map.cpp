@@ -125,9 +125,43 @@ VmMap::Tree::iterator VmMap::Insert(Tree::iterator prev, VAddr start, VAddr end,
     return it;
 }
 
+bool VmMap::CoalescePrev(Tree::iterator prev, VAddr start, VAddr end, MemoryProt prot,
+                         MemoryProt max_prot, VmEntryFlags eflags, BudgetPtype budget_ptype,
+                         std::shared_ptr<VmObject>& object, u64& offset) {
+    if (prev == m_tree.end() || prev->end != start || prev->eflags != eflags ||
+        prev->wired_count != 0 || prev->budget_ptype != budget_ptype) {
+        return false;
+    }
+
+    const u64 prev_object_end = prev->offset + prev->Size();
+    if (const auto& prev_object = prev->object) {
+        if (prev_object->type != VmObjectType::Default || !prev_object->anon.backing.empty()) {
+            return false;
+        }
+        if (prev_object.use_count() > 1 && prev_object->size != prev_object_end) {
+            return false;
+        }
+        prev_object->ExtendSize(prev_object_end + (end - start));
+    }
+
+    if (prev->inheritance != VmInherit::Copy || prev->protection != prot ||
+        prev->max_protection != max_prot || True(eflags & VmEntryFlags::NoCoalesce)) {
+        object = prev->object;
+        offset = prev_object_end;
+        return false;
+    }
+
+    m_size += end - start;
+    prev->end = end;
+    m_tree.ResizeFree(prev);
+    SimplifyEntry(prev);
+    return true;
+}
+
 VmMap::Tree::iterator VmMap::ClipStart(Tree::iterator entry, VAddr addr) {
     ASSERT(addr > entry->start && addr < entry->end);
     SimplifyEntry(entry);
+    EnsureObject(std::addressof(*entry));
 
     auto* new_entry = new VmMapEntry{};
     *new_entry = *entry;
@@ -141,6 +175,7 @@ VmMap::Tree::iterator VmMap::ClipStart(Tree::iterator entry, VAddr addr) {
 
 VmMap::Tree::iterator VmMap::ClipEnd(Tree::iterator entry, VAddr addr) {
     ASSERT(addr > entry->start && addr < entry->end);
+    EnsureObject(std::addressof(*entry));
 
     auto* new_entry = new VmMapEntry{};
     *new_entry = *entry;
@@ -226,6 +261,12 @@ s32 VmMap::MapMemory(VAddr* out_addr, u64 size, MemoryProt prot, MemoryProt max_
         }
 
         auto [prev, found] = LookupEntry(addr);
+        if (!object && False(flags & MemoryMapFlags::Stack) &&
+            CoalescePrev(prev, addr, addr + size, prot, max_prot, eflags, budget_ptype, object,
+                         offset)) {
+            *out_addr = addr;
+            return ORBIS_OK;
+        }
         entry = Insert(prev, addr, addr + size, object, offset, prot, max_prot, eflags, name);
         entry->budget_ptype = budget_ptype;
 
@@ -774,6 +815,31 @@ void VmMap::SimplifyEntry(Tree::iterator entry) {
         entry->end = next->end;
         m_tree.ResizeFree(entry);
         delete std::addressof(*next);
+    }
+}
+
+void VmMap::Inherit(VAddr start, VAddr end, VmInherit inheritance) {
+    start = std::max(start, m_min_offset);
+    end = std::min(end, m_max_offset);
+    if (end < start) {
+        start = end;
+    }
+
+    std::scoped_lock lk{lock};
+
+    auto [entry, found] = m_tree.LookupEntry(start);
+    if (!found) {
+        ++entry;
+    } else if (entry->start < start) {
+        ClipStart(entry, start);
+    }
+
+    for (; entry != m_tree.end() && entry->start < end; ++entry) {
+        if (entry->end > end) {
+            ClipEnd(entry, end);
+        }
+        entry->inheritance = inheritance;
+        SimplifyEntry(entry);
     }
 }
 

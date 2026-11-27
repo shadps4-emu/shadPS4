@@ -255,6 +255,8 @@ public:
 
     void NameRange(VAddr start, VAddr end, std::string_view name);
 
+    void Inherit(VAddr start, VAddr end, VmInherit inheritance);
+
     auto FindSpace(VAddr start, u64 length) {
         return m_tree.FindSpace(start, length);
     }
@@ -295,14 +297,18 @@ public:
 
 private:
     void EnsureObject(VmMapEntry* entry) {
-        ASSERT(entry->object);
         if (entry->object) {
             return;
         }
         entry->object = std::make_shared<VmObject>();
         entry->object->type = VmObjectType::Default;
+        entry->object->size = entry->Size();
         entry->offset = 0;
     }
+
+    bool CoalescePrev(Tree::iterator prev, VAddr start, VAddr end, MemoryProt prot,
+                      MemoryProt max_prot, VmEntryFlags eflags, BudgetPtype budget_ptype,
+                      std::shared_ptr<VmObject>& object, u64& offset);
 
     void BlockpoolNameSplit(VAddr start, VAddr end);
 
