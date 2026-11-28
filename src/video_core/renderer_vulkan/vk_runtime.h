@@ -45,14 +45,18 @@ public:
                  vk::PipelineStageFlags2 dst_stage, vk::AccessFlags2 dst_access,
                  std::optional<VideoCore::SubresourceRange> subres_range = {});
 
+    bool Transit(VideoCore::Image* image, VideoCore::Image::BackingImage* backing,
+                 vk::ImageLayout dst_layout, vk::PipelineStageFlags2 dst_stage,
+                 vk::AccessFlags2 dst_access,
+                 std::optional<VideoCore::SubresourceRange> subres_range = {});
+
     void UploadImage(VideoCore::Image* dst, const VideoCore::Buffer* src,
                      std::span<const vk::BufferImageCopy> upload_copies);
     void DownloadImage(VideoCore::Image* src, const VideoCore::Buffer* dst,
                        std::span<const vk::BufferImageCopy> download_copies);
 
     void CopyImage(VideoCore::Image* src, VideoCore::Image* dst);
-    VideoCore::ImageView& FindSubrectView(VideoCore::Image& image, const VideoCore::ImageInfo& info,
-                                          const VideoCore::ImageViewInfo& view_info);
+
     void CopyImageWithBuffer(VideoCore::Image* src, VideoCore::Image* dst,
                              const VideoCore::Buffer* buffer, u64 offset);
     void CopyMip(VideoCore::Image* src, VideoCore::Image* dst, u32 mip, u32 slice);
@@ -61,6 +65,8 @@ public:
 
     void CopyDepthStencil(VideoCore::Image* src, VideoCore::Image* dst,
                           const VideoCore::SubresourceRange& sub_range);
+
+    void RefreshSubrect(VideoCore::Image& image, const VideoCore::ImageInfo& info);
 
     void ResolveImage(VideoCore::Image* src, VideoCore::Image* dst,
                       const VideoCore::SubresourceRange& src_range,

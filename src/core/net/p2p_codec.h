@@ -4,8 +4,8 @@
 // PS4 P2P wire format. vports are big endian.
 //
 // Datagram:  [0xFF][flags|kind][src vport 2][dst vport 2][digest 4?][payload]
-// Broadcast: [0xFF][flags|0x40|kind][port 2][digest 4?][payload], datagrams only.
-//            Broadcast layout is assumed, not confirmed yet.
+// Broadcast: [0xFF][flags|0x40|kind][src vport 1][dst vport 1][digest 4?][payload],
+//            datagrams only. Broadcasts that can't be decoded are reported.
 // Stream:    [0xFF][flags|kind][digest 4?][TCP segment]
 // Signaling: plain datagram from and to vport 0xFFFF.
 //

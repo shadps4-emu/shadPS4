@@ -125,6 +125,7 @@ public:
     }
 
 private:
+    std::vector<std::string> CollectChildMountSegments(std::string_view dir);
     std::vector<MntPair> m_mnt_pairs;
     std::vector<std::filesystem::path> path_parts;
     tsl::robin_map<std::filesystem::path, std::filesystem::path> path_cache;
