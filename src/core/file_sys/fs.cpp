@@ -364,6 +364,28 @@ std::filesystem::path MntPoints::GetHostPath(std::string_view path, bool* is_rea
     return host_path;
 }
 
+std::vector<std::string> MntPoints::CollectChildMountSegments(std::string_view dir) {
+    while (dir.size() > 1 && dir.ends_with('/')) {
+        dir.remove_suffix(1);
+    }
+    const std::string prefix = (dir == "/") ? "/" : std::string(dir) + "/";
+    std::scoped_lock lock{m_mutex};
+    std::vector<std::string> result;
+    std::unordered_set<std::string> seen;
+    for (const auto& mount : m_mnt_pairs) {
+        if (!mount.mount.starts_with(prefix) || mount.mount.size() <= prefix.size()) {
+            continue;
+        }
+        const std::string_view rest = std::string_view{mount.mount}.substr(prefix.size());
+        const size_t slash = rest.find('/');
+        std::string seg{slash == std::string_view::npos ? rest : rest.substr(0, slash)};
+        if (!seg.empty() && seen.insert(seg).second) {
+            result.push_back(std::move(seg));
+        }
+    }
+    return result;
+}
+
 void MntPoints::IterateDirectory(std::string_view guest_directory,
                                  const IterateDirectoryCallback& callback) {
     const auto corrected_opt = SanitizeGuestPath(guest_directory);
@@ -371,24 +393,17 @@ void MntPoints::IterateDirectory(std::string_view guest_directory,
         return;
     }
     const auto& corrected = *corrected_opt;
-    if (corrected == "/") {
-        callback(std::filesystem::path("/."), false);
-        callback(std::filesystem::path("/.."), false);
-        std::scoped_lock lock{m_mutex};
-        std::unordered_set<std::string> seen;
-        for (const auto& mount : m_mnt_pairs) {
-            std::string name = mount.mount;
-            if (name.starts_with("/")) {
-                name = name.substr(1);
-            }
-            if (!name.empty() && seen.insert(name).second) {
-                callback(std::filesystem::path("/") / name, /*is_file=*/false);
+    const auto child_mounts = CollectChildMountSegments(corrected);
+    const auto mount = (corrected == "/") ? nullptr : GetMount(corrected);
+    if (!mount || mount->backends.empty()) {
+        if (corrected == "/" || !child_mounts.empty()) {
+            const std::filesystem::path base{corrected};
+            callback(base / ".", false);
+            callback(base / "..", false);
+            for (const auto& name : child_mounts) {
+                callback(base / name, /*is_file=*/false);
             }
         }
-        return;
-    }
-    const auto mount = GetMount(corrected);
-    if (!mount || mount->backends.empty()) {
         return;
     }
     const auto rel = std::string{RelativeToMount(corrected, *mount)};
@@ -445,15 +460,25 @@ void MntPoints::IterateDirectory(std::string_view guest_directory,
         if (!dir) {
             continue;
         }
+        std::unordered_set<std::string> layer_emitted;
         DirEntry entry;
         while (dir->Next(entry)) {
-            if (emitted.contains(emit_key(entry.name))) {
+            const auto key = emit_key(entry.name);
+            if (emitted.contains(key)) {
                 continue;
             }
             if (auto hit = resolve(entry.name)) {
-                emitted.insert(emit_key(entry.name));
+                layer_emitted.insert(key);
                 callback(hit->first, /*is_file=*/!hit->second);
             }
+        }
+        emitted.merge(layer_emitted);
+    }
+
+    for (const auto& child : child_mounts) {
+        const auto key = emit_key(child);
+        if (emitted.insert(key).second) {
+            callback(base_host / child, /*is_file=*/false);
         }
     }
 }
@@ -594,51 +619,55 @@ std::unique_ptr<IDirectory> MntPoints::OpenDir(std::string_view guest_path) {
     if (!corrected) {
         return nullptr;
     }
-    if (*corrected == "/") {
-        std::scoped_lock lock{m_mutex};
-        std::vector<DirEntry> entries;
+    const auto child_mounts = CollectChildMountSegments(*corrected);
+    const auto mount = (*corrected == "/") ? nullptr : GetMount(*corrected);
+    std::vector<DirEntry> entries;
+    bool found = (*corrected == "/") || !child_mounts.empty();
+
+    if (mount && !mount->backends.empty()) {
+        const auto rel = RelativeToMount(*corrected, *mount);
+        const std::string rel_copy{rel};
         std::unordered_set<std::string> seen;
-        for (const auto& mount : m_mnt_pairs) {
-            std::string name = mount.mount;
-            if (name.starts_with("/")) {
-                name = name.substr(1);
+        for (const auto& backend : mount->backends) {
+            if (!backend->Exists(rel) || !backend->IsDirectory(rel)) {
+                continue;
             }
-            if (!name.empty() && seen.insert(name).second) {
+            found = true;
+            auto dir = backend->OpenDir(rel_copy);
+            if (!dir) {
+                continue;
+            }
+            std::unordered_set<std::string> layer_seen;
+            DirEntry entry;
+            while (dir->Next(entry)) {
+                const auto key =
+                    NeedsCaseInsensitiveSearch ? Common::ToLower(entry.name) : entry.name;
+                if (seen.contains(key)) {
+                    continue;
+                }
+                layer_seen.insert(key);
+                entries.push_back(entry);
+            }
+            seen.merge(layer_seen);
+        }
+    }
+
+    if (!child_mounts.empty()) {
+        std::unordered_set<std::string_view> exact_names;
+        exact_names.reserve(entries.size());
+        for (const auto& entry : entries) {
+            exact_names.insert(entry.name);
+        }
+        for (const auto& child : child_mounts) {
+            if (!exact_names.contains(child)) {
                 entries.push_back(DirEntry{
-                    .name = std::move(name),
+                    .name = child,
                     .is_directory = true,
                 });
             }
         }
-        return std::make_unique<MergedDirectory>(std::move(entries));
     }
-    const auto mount = GetMount(*corrected);
-    if (!mount || mount->backends.empty()) {
-        return nullptr;
-    }
-    const auto rel = RelativeToMount(*corrected, *mount);
-    const std::string rel_copy{rel};
-    std::vector<DirEntry> entries;
-    std::unordered_set<std::string> seen;
-    bool found = false;
-    for (const auto& backend : mount->backends) {
-        if (!backend->Exists(rel) || !backend->IsDirectory(rel)) {
-            continue;
-        }
-        found = true;
-        auto dir = backend->OpenDir(rel_copy);
-        if (!dir) {
-            continue;
-        }
-        DirEntry entry;
-        while (dir->Next(entry)) {
-            const auto key = NeedsCaseInsensitiveSearch ? Common::ToLower(entry.name) : entry.name;
-            if (!seen.insert(key).second) {
-                continue;
-            }
-            entries.push_back(entry);
-        }
-    }
+
     if (!found) {
         return nullptr;
     }

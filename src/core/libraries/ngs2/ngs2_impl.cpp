@@ -16,6 +16,7 @@
 #include "core/libraries/ngs2/ngs2_impl.h"
 #include "core/libraries/ngs2/ngs2_mastering.h"
 #include "core/libraries/ngs2/ngs2_reverb.h"
+#include "core/libraries/ngs2/ngs2_runtime.h"
 #include "core/libraries/ngs2/ngs2_sampler.h"
 #include "core/libraries/ngs2/ngs2_submixer.h"
 
@@ -84,6 +85,7 @@ struct Rack {
     RackConfig config{};
     OrbisNgs2RackInfo* info{};
     Voice* voices{};
+    std::vector<VoiceRuntime> runtime;
     uintptr_t userData{};
 };
 
@@ -502,6 +504,9 @@ s32 CreateRack(const std::shared_ptr<System>& system, const RackConfig& config,
         BufferArena arena{buffer};
         rack->info = arena.Allocate<OrbisNgs2RackInfo>();
         rack->voices = arena.Allocate<Voice>(config.option.maxVoices);
+        if (config.type == RackType::Sampler || config.type == RackType::Mastering) {
+            rack->runtime.resize(config.option.maxVoices);
+        }
 
         auto& info = *rack->info;
         std::copy_n(config.option.name, sizeof(info.name), info.name);
@@ -541,6 +546,303 @@ s32 CreateRack(const std::shared_ptr<System>& system, const RackConfig& config,
         }
 
         return ORBIS_NGS2_ERROR_EMPTY_BUFFER;
+    }
+}
+
+const OrbisNgs2VoiceParamHeader* NextParam(const OrbisNgs2VoiceParamHeader* header) {
+    return header->next ? reinterpret_cast<const OrbisNgs2VoiceParamHeader*>(
+                              reinterpret_cast<const u8*>(header) + header->next)
+                        : nullptr;
+}
+
+template <typename T>
+const T& ParamAs(const OrbisNgs2VoiceParamHeader& header) {
+    return reinterpret_cast<const T&>(header);
+}
+
+void ResetVoicePorts(const Rack& rack, VoiceRuntime& runtime) {
+    runtime.ports.assign(rack.config.option.maxPorts, VoicePort{});
+    runtime.matrices.assign(rack.config.option.maxMatrices, {});
+}
+
+s32 ApplyVoiceEvent(const HandleEntry& entry, u32 eventId) {
+    if (eventId > static_cast<u32>(VoiceEvent::Resume)) {
+        return ORBIS_NGS2_ERROR_INVALID_EVENT_TYPE;
+    }
+
+    auto& rack = *entry.rack;
+    auto& runtime = rack.runtime[entry.voiceIndex];
+    auto& state = rack.voices[entry.voiceIndex].state;
+    const bool isSampler = rack.config.id == RackId::Sampler;
+    const bool isSetup = isSampler ? runtime.sampler.IsSetup() : runtime.mastering.IsSetup();
+    const auto event = static_cast<VoiceEvent>(eventId);
+
+    if (event == VoiceEvent::Play && !isSetup) {
+        return ORBIS_NGS2_ERROR_UNINIT_VOICE;
+    }
+    if (!isSetup) {
+        return ORBIS_OK;
+    }
+
+    switch (event) {
+    case VoiceEvent::Play:
+        if (isSampler) {
+            runtime.sampler.playing = true;
+            runtime.sampler.paused = false;
+        } else {
+            runtime.mastering.playing = true;
+        }
+        break;
+    case VoiceEvent::Stop:
+    case VoiceEvent::StopImmediately:
+        if (isSampler) {
+            runtime.sampler.Stop();
+        } else {
+            runtime.mastering.playing = false;
+        }
+        break;
+    case VoiceEvent::Kill:
+        if (isSampler) {
+            runtime.sampler.Reset();
+        } else {
+            runtime.mastering.Reset();
+        }
+        ResetVoicePorts(rack, runtime);
+        state = 0;
+        break;
+    case VoiceEvent::Pause:
+        if (isSampler) {
+            runtime.sampler.paused = true;
+        } else {
+            runtime.mastering.playing = false;
+        }
+        break;
+    case VoiceEvent::Resume:
+        if (isSampler) {
+            runtime.sampler.paused = false;
+        } else {
+            runtime.mastering.playing = true;
+        }
+        break;
+    }
+    return ORBIS_OK;
+}
+
+s32 ApplyVoiceParam(const HandleEntry& entry, const OrbisNgs2VoiceParamHeader& header) {
+    auto& rack = *entry.rack;
+    auto& runtime = rack.runtime[entry.voiceIndex];
+    auto& state = rack.voices[entry.voiceIndex].state;
+    const u32 maxPorts = rack.config.option.maxPorts;
+    const auto sizeIs = [&](size_t size) { return header.size == size; };
+
+    switch (static_cast<VoiceParamId>(header.id)) {
+    case VoiceParamId::MatrixLevels: {
+        if (!sizeIs(sizeof(OrbisNgs2VoiceMatrixLevelsParam))) {
+            return ORBIS_NGS2_ERROR_INVALID_VOICE_CONTROL_SIZE;
+        }
+        const auto& param = ParamAs<OrbisNgs2VoiceMatrixLevelsParam>(header);
+        if (param.matrixId >= runtime.matrices.size() || param.numLevels == 0 ||
+            param.numLevels > ORBIS_NGS2_MAX_MATRIX_LEVELS) {
+            return ORBIS_NGS2_ERROR_INVALID_NUM_MATRIX_LEVELS;
+        }
+        if (!param.aLevel) {
+            return ORBIS_NGS2_ERROR_INVALID_MATRIX_LEVEL_ADDRESS;
+        }
+        runtime.matrices[param.matrixId].assign(param.aLevel, param.aLevel + param.numLevels);
+        return ORBIS_OK;
+    }
+    case VoiceParamId::PortVolume: {
+        if (!sizeIs(sizeof(OrbisNgs2VoicePortVolumeParam))) {
+            return ORBIS_NGS2_ERROR_INVALID_VOICE_CONTROL_SIZE;
+        }
+        const auto& param = ParamAs<OrbisNgs2VoicePortVolumeParam>(header);
+        if (param.port >= runtime.ports.size()) {
+            return ORBIS_NGS2_ERROR_INVALID_PORT_INDEX;
+        }
+        runtime.ports[param.port].volume = std::clamp(param.level, -4.0f, 4.0f);
+        return ORBIS_OK;
+    }
+    case VoiceParamId::PortMatrix: {
+        if (!sizeIs(sizeof(OrbisNgs2VoicePortMatrixParam))) {
+            return ORBIS_NGS2_ERROR_INVALID_VOICE_CONTROL_SIZE;
+        }
+        const auto& param = ParamAs<OrbisNgs2VoicePortMatrixParam>(header);
+        if (param.port >= runtime.ports.size()) {
+            return ORBIS_NGS2_ERROR_INVALID_PORT_INDEX;
+        }
+        runtime.ports[param.port].matrixId = param.matrixId;
+        return ORBIS_OK;
+    }
+    case VoiceParamId::PortDelay: {
+        if (!sizeIs(sizeof(OrbisNgs2VoicePortDelayParam))) {
+            return ORBIS_NGS2_ERROR_INVALID_VOICE_CONTROL_SIZE;
+        }
+        const auto& param = ParamAs<OrbisNgs2VoicePortDelayParam>(header);
+        if (param.port >= runtime.ports.size()) {
+            return ORBIS_NGS2_ERROR_INVALID_PORT_INDEX;
+        }
+        runtime.ports[param.port].delaySamples = std::min(param.numSamples, 0xFFFFu);
+        return ORBIS_OK;
+    }
+    case VoiceParamId::Patch: {
+        if (!sizeIs(sizeof(OrbisNgs2VoicePatchParam))) {
+            return ORBIS_NGS2_ERROR_INVALID_VOICE_CONTROL_SIZE;
+        }
+        const auto& param = ParamAs<OrbisNgs2VoicePatchParam>(header);
+        if (param.port >= maxPorts || param.port >= runtime.ports.size()) {
+            return ORBIS_NGS2_ERROR_INVALID_PORT_INDEX;
+        }
+        if (param.destHandle && !FindHandle(param.destHandle, HandleType::Voice).rack) {
+            return ORBIS_NGS2_ERROR_INVALID_PATCH;
+        }
+        runtime.ports[param.port].destHandle = param.destHandle;
+        runtime.ports[param.port].destInputId = param.destInputId;
+        return ORBIS_OK;
+    }
+    case VoiceParamId::Event: {
+        if (!sizeIs(sizeof(OrbisNgs2VoiceEventParam))) {
+            return ORBIS_NGS2_ERROR_INVALID_VOICE_CONTROL_SIZE;
+        }
+        return ApplyVoiceEvent(entry, ParamAs<OrbisNgs2VoiceEventParam>(header).eventId);
+    }
+    case VoiceParamId::Callback: {
+        if (!sizeIs(sizeof(OrbisNgs2VoiceCallbackParam))) {
+            return ORBIS_NGS2_ERROR_INVALID_VOICE_CONTROL_SIZE;
+        }
+        LOG_WARNING(Lib_Ngs2, "Voice callbacks are not implemented");
+        return ORBIS_OK;
+    }
+    case VoiceParamId::SamplerSetup: {
+        if (rack.config.id != RackId::Sampler) {
+            return ORBIS_NGS2_ERROR_INVALID_VOICE_CONTROL_ID;
+        }
+        if (!sizeIs(sizeof(OrbisNgs2SamplerVoiceSetupParam))) {
+            return ORBIS_NGS2_ERROR_INVALID_VOICE_CONTROL_SIZE;
+        }
+        const auto result =
+            runtime.sampler.Setup(ParamAs<OrbisNgs2SamplerVoiceSetupParam>(header).format);
+        if (result >= 0) {
+            ResetVoicePorts(rack, runtime);
+            state |= StateFlagInUse;
+        }
+        return result;
+    }
+    case VoiceParamId::SamplerWaveformBlocks: {
+        if (rack.config.id != RackId::Sampler) {
+            return ORBIS_NGS2_ERROR_INVALID_VOICE_CONTROL_ID;
+        }
+        if (!sizeIs(sizeof(OrbisNgs2SamplerVoiceWaveformBlocksParam))) {
+            return ORBIS_NGS2_ERROR_INVALID_VOICE_CONTROL_SIZE;
+        }
+        const auto& param = ParamAs<OrbisNgs2SamplerVoiceWaveformBlocksParam>(header);
+        return runtime.sampler.AddBlocks(param.data, param.numBlocks, param.aBlock);
+    }
+    case VoiceParamId::MasteringSetup: {
+        if (rack.config.id != RackId::Mastering) {
+            return ORBIS_NGS2_ERROR_INVALID_VOICE_CONTROL_ID;
+        }
+        if (!sizeIs(sizeof(OrbisNgs2MasteringVoiceSetupParam))) {
+            return ORBIS_NGS2_ERROR_INVALID_VOICE_CONTROL_SIZE;
+        }
+        const auto result = runtime.mastering.Setup(
+            ParamAs<OrbisNgs2MasteringVoiceSetupParam>(header).numInputChannels);
+        if (result >= 0) {
+            state |= StateFlagInUse;
+        }
+        return result;
+    }
+    default: {
+        const u32 family = header.id & 0xF0000000;
+        if ((family == 0x10000000 && rack.config.id == RackId::Sampler) ||
+            (family == 0x30000000 && rack.config.id == RackId::Mastering)) {
+            LOG_WARNING(Lib_Ngs2, "Unimplemented voice param id {:#x}", header.id);
+            return ORBIS_OK;
+        }
+        return ORBIS_NGS2_ERROR_INVALID_VOICE_CONTROL_ID;
+    }
+    }
+}
+
+void RenderSystem(System& system, std::span<const OrbisNgs2RenderBufferInfo> buffers, u32 grain) {
+    std::vector<std::shared_ptr<Rack>> samplerRacks;
+    std::vector<std::shared_ptr<Rack>> masteringRacks;
+    for (const auto handle : system.racks) {
+        const auto entry = FindHandle(handle, HandleType::Rack);
+        if (!entry.rack || !entry.rack->alive) {
+            continue;
+        }
+        if (entry.rack->config.id == RackId::Sampler) {
+            samplerRacks.push_back(entry.rack);
+        } else if (entry.rack->config.id == RackId::Mastering) {
+            masteringRacks.push_back(entry.rack);
+        }
+    }
+
+    for (const auto& rack : masteringRacks) {
+        for (auto& runtime : rack->runtime) {
+            if (runtime.mastering.IsSetup()) {
+                runtime.mastering.BeginGrain(grain);
+            }
+        }
+    }
+
+    std::vector<float> voiceOutput;
+    for (const auto& rack : samplerRacks) {
+        for (auto& runtime : rack->runtime) {
+            auto& sampler = runtime.sampler;
+            if (!sampler.IsSetup() || !sampler.playing || sampler.paused) {
+                continue;
+            }
+
+            const u32 channels = sampler.NumChannels();
+            voiceOutput.resize(static_cast<size_t>(grain) * channels);
+            sampler.Render(voiceOutput, grain, system.info->sampleRate);
+
+            for (const auto& port : runtime.ports) {
+                if (!port.destHandle) {
+                    continue;
+                }
+                const auto dest = FindHandle(port.destHandle, HandleType::Voice);
+                if (!dest.rack || dest.rack->config.id != RackId::Mastering) {
+                    continue;
+                }
+                auto& mastering = dest.rack->runtime[dest.voiceIndex].mastering;
+                if (!mastering.IsSetup()) {
+                    continue;
+                }
+
+                std::span<const float> matrix;
+                if (port.matrixId >= 0 &&
+                    static_cast<size_t>(port.matrixId) < runtime.matrices.size()) {
+                    matrix = runtime.matrices[port.matrixId];
+                }
+                mastering.Mix(voiceOutput, channels, grain, port.volume, matrix);
+            }
+        }
+    }
+
+    std::vector<std::vector<float>> output(buffers.size());
+    std::vector<bool> written(buffers.size(), false);
+    for (const auto& rack : masteringRacks) {
+        for (auto& runtime : rack->runtime) {
+            auto& mastering = runtime.mastering;
+            if (!mastering.IsSetup() || !mastering.playing || buffers.empty()) {
+                continue;
+            }
+            auto& out = output[0];
+            if (out.empty()) {
+                out.assign(static_cast<size_t>(grain) * buffers[0].numChannels, 0.0f);
+            }
+            mastering.Output(out, buffers[0].numChannels, grain);
+            written[0] = true;
+        }
+    }
+
+    for (size_t i = 0; i < buffers.size(); ++i) {
+        if (written[i]) {
+            ConvertRenderOutput(output[i], buffers[i].buffer, buffers[i].waveformType,
+                                static_cast<u32>(output[i].size()));
+        }
     }
 }
 
@@ -980,6 +1282,13 @@ s32 VoiceGetState(OrbisNgs2Handle voiceHandle, OrbisNgs2VoiceState* outState, si
     if (stateSize == sizeof(*outState) || stateSize >= fullSize) {
         std::memset(outState, 0, stateSize == sizeof(*outState) ? sizeof(*outState) : fullSize);
         outState->stateFlags = voice.entry.rack->voices[voice.entry.voiceIndex].state;
+        if (id == RackId::Sampler && stateSize >= fullSize) {
+            const auto& sampler = voice.entry.rack->runtime[voice.entry.voiceIndex].sampler;
+            auto* samplerState = reinterpret_cast<OrbisNgs2SamplerVoiceState*>(outState);
+            samplerState->numDecodedSamples = sampler.NumDecodedSamples();
+            samplerState->decodedDataSize = sampler.DecodedDataSize();
+            samplerState->waveformData = sampler.WaveformData();
+        }
     }
 
     return ORBIS_OK;
@@ -1045,10 +1354,42 @@ s32 SystemRender(OrbisNgs2Handle systemHandle, const OrbisNgs2RenderBufferInfo* 
     }
 
     if (result >= 0) {
+        RenderSystem(*system.entry.system, buffers, static_cast<u32>(grain));
         ++system.entry.system->info->renderCount;
     }
 
     return result;
+}
+
+s32 VoiceControl(OrbisNgs2Handle voiceHandle, const OrbisNgs2VoiceParamHeader* paramList) {
+    if (!paramList) {
+        return ORBIS_NGS2_ERROR_INVALID_VOICE_CONTROL_ADDRESS;
+    }
+
+    auto voice = LockedHandle{voiceHandle, HandleType::Voice};
+    if (!voice) {
+        return ORBIS_NGS2_ERROR_INVALID_VOICE_HANDLE;
+    }
+
+    if (voice.entry.rack->runtime.empty()) {
+        LOG_DEBUG(Lib_Ngs2, "Voice control on unsupported rack id {:#x}",
+                  static_cast<u32>(voice.entry.rack->config.id));
+        return ORBIS_OK;
+    }
+
+    constexpr u32 MaxParams = 4096;
+    u32 count = 0;
+    for (const auto* header = paramList; header; header = NextParam(header)) {
+        if (++count > MaxParams) {
+            return ORBIS_NGS2_ERROR_DETECTED_CIRCULAR_VOICE_CONTROL;
+        }
+        const auto result = ApplyVoiceParam(voice.entry, *header);
+        if (result < 0) {
+            return result;
+        }
+    }
+
+    return ORBIS_OK;
 }
 
 } // namespace Libraries::Ngs2::Impl

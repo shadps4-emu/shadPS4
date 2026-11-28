@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
 #include <thread>
 
 #include "aio.h"
@@ -91,69 +92,65 @@ s32 PS4_SYSV_ABI sceKernelAioCancelRequests(OrbisKernelAioSubmitId id[], s32 num
     return 0;
 }
 
-s32 PS4_SYSV_ABI sceKernelAioWaitRequest(OrbisKernelAioSubmitId id, s32* state, u32* usec) {
+static s32 WaitAioRequestsImpl(const OrbisKernelAioSubmitId* id, s32 num, s32* state, u32 mode,
+                               const u32* usec) {
     if (state == nullptr) {
         return ORBIS_KERNEL_ERROR_EFAULT;
     }
-    u32 timer = 0;
-
-    s32 timeout = 0;
-
-    while (id_state[id] == ORBIS_KERNEL_AIO_STATE_PROCESSING) {
-        sceKernelUsleep(10);
-
-        timer += 10;
-        if (*usec) {
-            if (timer > *usec) {
-                timeout = 1;
-                break;
-            }
+    if (id_state == nullptr) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+    for (s32 i = 0; i < num; i++) {
+        if (id[i] < 0 || id[i] >= ORBIS_KERNEL_AIO_MAX_QUEUES) {
+            return ORBIS_KERNEL_ERROR_EINVAL;
         }
     }
 
-    *state = id_state[id];
+    const auto is_done = [mode](OrbisKernelAioSubmitId req_id) {
+        const s32 st = id_state[req_id];
+        if (mode == 2) {
+            return st == ORBIS_KERNEL_AIO_STATE_COMPLETED || st == ORBIS_KERNEL_AIO_STATE_ABORTED;
+        }
+        return st != ORBIS_KERNEL_AIO_STATE_PROCESSING;
+    };
 
-    if (timeout)
-        return ORBIS_KERNEL_ERROR_ETIMEDOUT;
-    return 0;
+    u64 timer = 0;
+    bool timed_out = false;
+    while (true) {
+        const bool done =
+            (mode == 2) ? std::any_of(id, id + num, is_done) : std::all_of(id, id + num, is_done);
+        if (done) {
+            break;
+        }
+        if (usec != nullptr && timer >= *usec) {
+            timed_out = true;
+            break;
+        }
+        sceKernelUsleep(10);
+        timer += 10;
+    }
+
+    for (s32 i = 0; i < num; i++) {
+        state[i] = id_state[id[i]];
+    }
+
+    return timed_out ? ORBIS_KERNEL_ERROR_ETIMEDOUT : 0;
+}
+
+s32 PS4_SYSV_ABI sceKernelAioWaitRequest(OrbisKernelAioSubmitId id, s32* state, u32* usec) {
+    return WaitAioRequestsImpl(&id, 1, state, 1, usec);
 }
 
 s32 PS4_SYSV_ABI sceKernelAioWaitRequests(OrbisKernelAioSubmitId id[], s32 num, s32 state[],
                                           u32 mode, u32* usec) {
-    if (state == nullptr) {
+    if (num < 1 || num > 128 || (mode != 1 && mode != 2)) {
+        return ORBIS_KERNEL_ERROR_EINVAL;
+    }
+    if (id == nullptr) {
         return ORBIS_KERNEL_ERROR_EFAULT;
     }
-    u32 timer = 0;
-    s32 timeout = 0;
-    s32 completion = 0;
 
-    for (s32 i = 0; i < num; i++) {
-        if (!completion && !timeout) {
-            while (id_state[id[i]] == ORBIS_KERNEL_AIO_STATE_PROCESSING) {
-                sceKernelUsleep(10);
-                timer += 10;
-
-                if (*usec) {
-                    if (timer > *usec) {
-                        timeout = 1;
-                        break;
-                    }
-                }
-            }
-        }
-
-        if (mode == 0x02) {
-            if (id_state[id[i]] == ORBIS_KERNEL_AIO_STATE_COMPLETED)
-                completion = 1;
-        }
-
-        state[i] = id_state[id[i]];
-    }
-
-    if (timeout)
-        return ORBIS_KERNEL_ERROR_ETIMEDOUT;
-
-    return 0;
+    return WaitAioRequestsImpl(id, num, state, mode, usec);
 }
 
 s32 PS4_SYSV_ABI sceKernelAioSubmitReadCommands(OrbisKernelAioRWRequest req[], s32 size, s32 prio,

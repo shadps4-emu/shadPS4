@@ -25,6 +25,7 @@
 #include "common/logging/log.h"
 #include "common/scope_exit.h"
 #include "common/singleton.h"
+#include "common/string_util.h"
 #include "core/file_sys/devices/console_device.h"
 #include "core/file_sys/devices/deci_tty_device.h"
 #include "core/file_sys/devices/logger.h"
@@ -899,7 +900,7 @@ s64 PS4_SYSV_ABI posix_lseek(s32 fd, s64 offset, s32 whence) {
         origin = Common::FS::SeekOrigin::End;
     } else if (whence == 3 || whence == 4) {
         // SEEK_DATA / SEEK_HOLE not supported by the backend
-        *__Error() = POSIX_EINVAL;
+        *__Error() = POSIX_ENOTTY;
         return -1;
     } else {
         // whence parameter is invalid
@@ -1160,8 +1161,13 @@ s32 PS4_SYSV_ABI posix_access(const char* path, s32 mode) {
 }
 
 s32 PS4_SYSV_ABI posix_chdir(const char* path) {
-    LOG_ERROR(Kernel_Fs, "(STUBBED) path = {}", path ? path : "null");
-    return 0;
+    if (path == nullptr) {
+        *__Error() = POSIX_EFAULT;
+        return -1;
+    }
+    LOG_DEBUG(Kernel_Fs, "path = {} denied in sandbox", path);
+    *__Error() = POSIX_EPERM;
+    return -1;
 }
 
 s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
@@ -1179,7 +1185,8 @@ s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
         return -1;
     }
     auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    const auto path_name = mnt->GetHostPath(path);
+    bool is_read_only = false;
+    const auto path_name = mnt->GetHostPath(path, &is_read_only);
     std::memset(sb, 0, sizeof(OrbisKernelStat));
 
     const bool is_dir = mnt->IsDirectory(path);
@@ -1236,7 +1243,7 @@ s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
         sb->st_blksize = 65536;
         sb->st_blocks = 128;
     } else {
-        sb->st_mode = 0000777u | 0100000u;
+        sb->st_mode = (is_read_only ? 0000555u : 0000666u) | 0100000u;
         sb->st_nlink = 1;
         Core::FileSys::FileStat fst{};
         if (!mnt->Stat(path, fst)) {
@@ -1248,7 +1255,7 @@ s32 PS4_SYSV_ABI posix_stat(const char* path, OrbisKernelStat* sb) {
             *__Error() = POSIX_EIO;
             return -1;
         }
-        sb->st_blksize = 512;
+        sb->st_blksize = is_read_only ? 65536 : 32768;
         sb->st_blocks = (sb->st_size + 511) / 512;
         // TODO incomplete
     }
@@ -1274,24 +1281,101 @@ s32 PS4_SYSV_ABI sceKernelStat(const char* path, OrbisKernelStat* sb) {
 }
 
 s32 PS4_SYSV_ABI sceKernelCheckReachability(const char* path) {
-    if (strlen(path) >= ORBIS_MAX_PATH) {
-        return ORBIS_KERNEL_ERROR_ENAMETOOLONG;
-    }
-
-    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
-    std::string_view guest_path{path};
-    if (guest_path == "/") {
-        return ORBIS_OK;
-    }
-    for (const auto& prefix : available_device | std::views::keys) {
-        if (guest_path.starts_with(prefix)) {
-            return ORBIS_OK;
-        }
-    }
-    const auto path_name = mnt->GetHostPath(guest_path);
-    if (!mnt->Exists(guest_path)) {
+    if (path == nullptr || path[0] != '/') {
         return ORBIS_KERNEL_ERROR_ENOENT;
     }
+
+    const std::string_view view{path};
+    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    auto is_virtual_device_dir = [](const std::string& dir) {
+        for (const auto& prefix : available_device | std::views::keys) {
+            if (prefix.size() > dir.size() && prefix.starts_with(dir) &&
+                prefix[dir.size()] == '/') {
+                return true;
+            }
+        }
+        return false;
+    };
+    auto resolve_component = [mnt](const std::string& parent_dir, std::string_view comp,
+                                   bool require_dir, std::string& out_name) -> bool {
+        auto dir = mnt->OpenDir(parent_dir.empty() ? "/" : parent_dir);
+        if (!dir) {
+            return false;
+        }
+        const std::string lower_comp = Common::ToLower(comp);
+        u32 ci_count = 0;
+        Core::FileSys::DirEntry ci_entry{};
+        Core::FileSys::DirEntry entry{};
+        while (dir->Next(entry)) {
+            if (entry.name == comp) {
+                if (require_dir && !entry.is_directory) {
+                    return false;
+                }
+                out_name = entry.name;
+                return true;
+            }
+            if (Common::ToLower(entry.name) == lower_comp) {
+                ++ci_count;
+                if (ci_count == 1) {
+                    ci_entry = entry;
+                }
+            }
+        }
+        if (ci_count == 1 && (!require_dir || ci_entry.is_directory)) {
+            out_name = ci_entry.name;
+            return true;
+        }
+        return false;
+    };
+
+    std::string cur;
+    cur.reserve(ORBIS_MAX_PATH);
+    size_t pos = 0;
+
+    while (pos < view.size()) {
+        while (pos < view.size() && view[pos] == '/') {
+            ++pos;
+        }
+        if (pos >= view.size()) {
+            break;
+        }
+        const size_t end = view.find('/', pos);
+        const bool has_slash = (end != std::string_view::npos);
+        const std::string_view comp = view.substr(pos, has_slash ? end - pos : view.size() - pos);
+        pos = has_slash ? end + 1 : view.size();
+
+        if (comp == ".") {
+            continue;
+        }
+        if (comp == "..") {
+            const size_t slash = cur.rfind('/');
+            cur.resize(slash == std::string::npos ? 0 : slash);
+            continue;
+        }
+        if (comp.size() > 255 || cur.size() + 1 + comp.size() >= ORBIS_MAX_PATH) {
+            return ORBIS_KERNEL_ERROR_ENOENT;
+        }
+
+        std::string resolved;
+        const std::string candidate = cur + "/" + std::string(comp);
+        if (has_slash) {
+            if (is_virtual_device_dir(candidate)) {
+                cur = candidate;
+            } else if (resolve_component(cur, comp, true, resolved)) {
+                cur.push_back('/');
+                cur.append(resolved);
+            } else {
+                return ORBIS_KERNEL_ERROR_ENOENT;
+            }
+        } else {
+            if (available_device.contains(candidate) || is_virtual_device_dir(candidate) ||
+                resolve_component(cur, comp, false, resolved)) {
+                return ORBIS_OK;
+            }
+            return ORBIS_KERNEL_ERROR_ENOENT;
+        }
+    }
+
     return ORBIS_OK;
 }
 
@@ -1319,9 +1403,10 @@ s32 PS4_SYSV_ABI fstat(s32 fd, OrbisKernelStat* sb) {
         return result;
     }
     case Core::FileSys::FileType::Regular: {
-        sb->st_mode = 0000777u | 0100000u;
+        const bool is_read_only = file->handle ? file->handle->IsReadOnly() : file->IsReadOnly();
+        sb->st_mode = (is_read_only ? 0000555u : 0000666u) | 0100000u;
         sb->st_nlink = 1;
-        sb->st_blksize = 512;
+        sb->st_blksize = is_read_only ? 65536 : 32768;
         Core::FileSys::FileStat fst{};
         if (file->handle) {
             file->handle->Stat(fst);

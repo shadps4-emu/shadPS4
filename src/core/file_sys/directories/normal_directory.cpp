@@ -154,8 +154,10 @@ void NormalDirectory::RebuildDirents() {
         });
 
     // last reclen, as before
-    *reinterpret_cast<u16*>(static_cast<u8*>(dirent_cache_bin.data()) + last_reclen_offset) +=
-        next_ceiling - dirent_offset;
+    if (!dirent_cache_bin.empty()) {
+        *reinterpret_cast<u16*>(static_cast<u8*>(dirent_cache_bin.data()) + last_reclen_offset) +=
+            next_ceiling - dirent_offset;
+    }
 
     // i have no idea if this is the case, but lseek returns size aligned to 512
     directory_size = next_ceiling;

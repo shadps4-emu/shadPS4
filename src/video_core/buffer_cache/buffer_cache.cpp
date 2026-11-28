@@ -478,6 +478,10 @@ bool BufferCache::SynchronizeMemoryFromImage(const Buffer* arena, VAddr device_a
             runtime.FillBuffer(arena, arena->Offset(device_addr), size, ZmaskUncompressed);
             return true;
         } else if (meta->type == TextureCache::MetaType::CMask) {
+            if (meta->clear_mask == -1) {
+                runtime.FillBuffer(arena, arena->Offset(device_addr), size, 0);
+                return true;
+            }
             const auto expanded_value = CmaskColorExpandedValue(meta->num_samples);
             if (!expanded_value) {
                 LOG_WARNING(Render_Vulkan,
