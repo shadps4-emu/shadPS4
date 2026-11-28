@@ -5,14 +5,38 @@
 
 #include <algorithm>
 #include <array>
+#include <memory>
+#include <optional>
+#include <string>
 #include <imgui_internal.h>
 
 #include "common/types.h"
+#include "core/libraries/ime/ime_kb_language.h"
 #include "core/libraries/ime/ime_kb_layout.h"
+#include "core/libraries/ime/ime_keyboard.h"
 #include "core/libraries/pad/pad.h"
 #include "core/libraries/system/userservice.h"
 
 namespace Libraries::Ime {
+
+bool IsImeKeyPanelHidden(OrbisImeOption option, OrbisImeExtOption extended,
+                         OrbisImeDisableDevice disabled);
+void LockImeWindowScroll();
+void DrawImePanelBorder();
+void DrawImeTopPanelBackground(ImVec2 position, ImVec2 size, ImU32 color, ImDrawFlags corners);
+bool DrawImeCloseButton(const char* label, const ImePanelMetrics& metrics,
+                        const ImeStyleConfig& style, bool native_input_active);
+
+class ImeComposition;
+class ImeDictionary;
+std::shared_ptr<const ImeDictionary> LoadImeApplicationDictionary(
+    const OrbisImeParamExtended* extended);
+int DrawImeCandidates(const ImeComposition& composition, ImVec2 position, ImVec2 size,
+                      bool pointer_enabled, const ImeStyleConfig& style);
+void CaptureImeCompositionInput(ImeComposition& composition, std::vector<ImeKeyboardText>& pending,
+                                bool native_input_active,
+                                std::optional<ImeKeyboardContext> context = {},
+                                bool capture_direct = false);
 
 struct VirtualPadSnapshot {
     u32 buttons = 0;
@@ -22,7 +46,6 @@ struct VirtualPadSnapshot {
 };
 
 constexpr double kPanelEdgeWrapHoldDelaySec = 0.5;
-constexpr double kRepeatIntentWindowSec = 0.45;
 constexpr float kSelectorFadeOutDurationSec = 0.2f;
 constexpr float kSelectorPressPulseDurationSec = 0.2f;
 constexpr float kSelectorPressPulseExpandBorderFactor = 1.0f;
@@ -30,11 +53,31 @@ constexpr float kSelectorPressPulseExpandBorderFactor = 1.0f;
 ImVec4 BrightenColor(ImU32 color, float delta);
 int Utf16CountFromUtf8Range(const char* text, const char* end = nullptr);
 int Utf8ByteIndexFromUtf16Index(const char* text, int utf16_index);
+int MoveImeCaretByLine(const char* text, int caret_utf16, int direction, int& preferred_column);
+bool IsImeCharacterAllowed(unsigned int character, OrbisImeType type,
+                           OrbisImeLanguage input_languages);
+std::string BoundImeInsertion(
+    const char* text, int max_utf16, bool multiline, bool numeric,
+    OrbisImeType type = OrbisImeType::Default, bool allow_tab = false,
+    OrbisImeLanguage input_languages = static_cast<OrbisImeLanguage>(kValidOrbisImeLanguageMask));
+struct ImeKbTextEdit {
+    int start;
+    int end;
+    std::string text;
+};
+std::optional<ImeKbTextEdit> GetImeJapaneseKeyEdit(const char* text, int start, int end,
+                                                   ImeKbKeyAction action);
+bool DrawImeInputText(const char* label, const char* hint, char* buffer, int capacity,
+                      const ImVec2& size, ImGuiInputTextFlags flags,
+                      ImGuiInputTextCallback callback, void* userdata, bool password,
+                      bool disable_clipboard);
+bool FilterImeText(OrbisImeTextFilter filter, std::u16string& text, u32 max_length, u32& caret);
+void InsertImeInputNewline(ImGuiInputTextCallbackData* data, int max_utf16);
 bool RejectInputCharByUtf16Limit(const ImGuiInputTextCallbackData* data, int max_utf16);
 bool ClampInputBufferToUtf16Limit(ImGuiInputTextCallbackData* data, int max_utf16);
-void DrawInactiveCaretOverlay(const ImRect& frame_rect, const char* text, int caret_byte,
-                              int selection_start_byte, int selection_end_byte,
-                              bool multiline = false);
+void DrawInactiveCaretOverlay(ImGuiID input_id, const ImRect& frame_rect, const char* text,
+                              int caret_byte, int selection_start_byte, int selection_end_byte,
+                              bool multiline = false, bool password = false);
 
 struct SelectorFadeState {
     ImVec2 current_min{};
@@ -50,6 +93,9 @@ struct SelectorFadeState {
     double press_pulse_started_at = -1.0;
 };
 
+void DrawImePanelSelector(SelectorFadeState& state, ImVec2 position, ImVec2 size,
+                          float corner_radius, bool selected, bool pulse_triggered,
+                          ImDrawFlags corners);
 void TriggerSelectorPressPulse(SelectorFadeState& state, double now);
 float ComputePressPulseExpand(double pulse_started_at, double now, float pulse_duration_sec,
                               float max_expand_px);
@@ -57,10 +103,28 @@ void UpdateSelectorFadeState(SelectorFadeState& state, ImVec2 pos, ImVec2 size, 
                              float corner_radius, bool selected, double now);
 void DrawSelectorFadeState(const SelectorFadeState& state, ImDrawList* draw_list,
                            ImU32 overlay_color, ImU32 border_color, float border_thickness,
-                           float fade_duration_sec, double now, float current_expand_px = 0.0f);
+                           float fade_duration_sec, double now, float current_expand_px = 0.0f,
+                           ImDrawFlags corners = ImDrawFlags_RoundCornersAll);
 
 ImeKbLayoutSelection ResolveInitialKbLayoutSelection(OrbisImeExtOption ext_option,
-                                                     OrbisImePanelPriority panel_priority);
+                                                     OrbisImePanelPriority panel_priority,
+                                                     OrbisImeLanguage supported_languages,
+                                                     OrbisImeType type = OrbisImeType::Default);
+void NotifyImeKeyboardLayoutFallback(OrbisImeLanguage supported_languages, OrbisImeType type);
+bool IsImeKeyboardLayoutImplemented(OrbisImeLanguage supported_languages, OrbisImeType type);
+bool IsImeDirectInputEnabled(OrbisImeLanguage supported_languages, OrbisImeType type,
+                             OrbisImeDisableDevice disable_device,
+                             bool requires_direct_input = false);
+void InitializeImeKeyboardLanguages(ImeKeyboardLanguagePicker& picker,
+                                    ImeKbLayoutSelection& selection, OrbisImeLanguage languages,
+                                    OrbisImeOption options, s32 user_id);
+void InitializeImeKeyboardCase(ImeKbLayoutSelection& selection, bool empty, OrbisImeOption options);
+bool DrawImeKeyboardLanguagePicker(ImeKeyboardLanguagePicker& picker,
+                                   ImeKbLayoutSelection& selection, const ImePanelMetrics& metrics,
+                                   const ImeKbGridLayout& keyboard_layout,
+                                   const ImeKbDrawParams& keyboard_params, bool left, bool right,
+                                   bool cross_down, bool activate, bool& cancel, bool opened,
+                                   bool pointer_enabled);
 void InitializeDefaultOskSelectionAnchor(const ImeKbLayoutSelection& layout_selection,
                                          OrbisImeExtOption ext_option, int& pending_row,
                                          int& pending_col, int& last_row, int& last_col);
@@ -153,6 +217,7 @@ struct OskShortcutRepeatState {
 };
 
 struct OskShortcutActionResult {
+    bool repeat = false;
     ImeKbKeyAction action = ImeKbKeyAction::None;
     bool clear_all = false;
 };
@@ -162,7 +227,7 @@ OskShortcutActionResult EvaluateOskShortcutAction(bool allow_osk_shortcuts, bool
                                                   const OskPadInputFrame& panel_input,
                                                   const OskVirtualPadInputView& virtual_pad_input,
                                                   u32 prev_virtual_buttons,
-                                                  ImeKbLayoutFamily layout_family,
+                                                  const ImeKbLayoutSelection& selection,
                                                   OskShortcutRepeatState& repeat_state);
 
 void CycleKeyboardCaseState(ImeKbLayoutSelection& selection);
@@ -170,7 +235,7 @@ void ToggleKeyboardFamilyMode(ImeKbLayoutSelection& selection, ImeKbLayoutFamily
                               ImeKbLayoutFamily target_family);
 bool FocusKeyboardActionKeySelection(const ImeKbLayoutSelection& selection, ImeKbKeyAction action,
                                      int& out_row, int& out_col);
-void FlipKeyboardModePage(ImeKbLayoutSelection& selection, int direction);
+void CycleKeyboardSymbolPage(ImeKbLayoutSelection& selection);
 
 template <typename KeyboardDrawParams>
 inline void ApplyOskPanelNavToKeyboardParams(KeyboardDrawParams& kb_params,
@@ -245,19 +310,18 @@ inline bool DrawAndHandleOskEditMenuPopup(
     bool pointer_navigation_active, bool nav_up, bool nav_down, bool cross_down,
     bool panel_activate_pressed, bool opened_menu_this_frame, bool& menu_activate_armed,
     bool clipboard_ready, int id_base, const char* item_button_id, bool close_on_outside_click,
-    ApplyActionFn&& apply_action) {
+    OrbisImeLanguage language, ApplyActionFn&& apply_action) {
     if (popup == EditMenuPopupT::None || draw == nullptr) {
         return false;
     }
 
-    constexpr std::array<const char*, 3> kMainMenuItems = {"Select", "Select All", "Paste"};
-    constexpr std::array<const char*, 2> kActionMenuItems = {"Copy", "Paste"};
+    const auto& labels = GetImeKeyboardLanguageProfile(language).GetLabels();
     const bool is_main_menu = (popup == EditMenuPopupT::Main);
-    const int item_count = is_main_menu ? static_cast<int>(kMainMenuItems.size())
-                                        : static_cast<int>(kActionMenuItems.size());
+    const int item_count = is_main_menu ? static_cast<int>(labels.main_menu_items.size())
+                                        : static_cast<int>(labels.action_menu_items.size());
     const auto item_label = [&](int index) -> const char* {
-        return is_main_menu ? kMainMenuItems[static_cast<std::size_t>(index)]
-                            : kActionMenuItems[static_cast<std::size_t>(index)];
+        return is_main_menu ? labels.main_menu_items[static_cast<std::size_t>(index)]
+                            : labels.action_menu_items[static_cast<std::size_t>(index)];
     };
     const auto item_enabled = [&](int index) {
         if ((is_main_menu && index == 2) || (!is_main_menu && index == 1)) {

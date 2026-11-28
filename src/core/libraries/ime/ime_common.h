@@ -10,6 +10,10 @@
 #include "core/libraries/rtc/rtc.h"
 
 constexpr u32 ORBIS_IME_MAX_TEXT_LENGTH = 2048;
+constexpr u32 ORBIS_IME_MAX_PREEDIT_LENGTH = 30;
+constexpr u32 ORBIS_IME_MAX_EXPANDED_PREEDIT_LENGTH = 120;
+constexpr u32 ORBIS_IME_MAX_CANDIDATE_WORD_LENGTH = 55;
+constexpr u32 ORBIS_IME_MAX_CANDIDATE_LIST_SIZE = 100;
 constexpr u32 ORBIS_IME_DIALOG_MAX_TEXT_LENGTH = 2048;
 
 template <typename E>
@@ -100,6 +104,13 @@ struct magic_enum::customize::enum_range<OrbisImeOption> {
 };
 const u32 kValidImeOptionMask = generate_full_mask<OrbisImeOption>();
 
+namespace Libraries::Ime::InternalOption {
+constexpr u32 EnableTab = 0x00000400;
+constexpr u32 DisableAlphabet = 0x00200000;
+constexpr u32 DisableSymbols = 0x00400000;
+constexpr u32 DisableSpace = 0x02000000;
+} // namespace Libraries::Ime::InternalOption
+
 enum class OrbisImeExtOption : u32 {
     DEFAULT = 0x00000000,
     SET_COLOR = 0x00000001,
@@ -114,9 +125,9 @@ enum class OrbisImeExtOption : u32 {
     HIDE_KEYPANEL_IF_EXT_KEYBOARD = 0x00000400,
     INIT_EXT_KEYBOARD_MODE = 0x00000800,
 
-    ENABLE_ACCESSIBILITY = 0x00001000,                // ImeDialog unly
-    ACCESSIBILITY_PANEL_FORCED = 0x00002000,          // ImeDialog only
-    ADDITIONAL_DICTIONARY_PRIORITY_MODE = 0x00004000, // ImeDialog only
+    ENABLE_ACCESSIBILITY = 0x00001000,       // ImeDialog unly
+    ACCESSIBILITY_PANEL_FORCED = 0x00002000, // ImeDialog only
+    ADDITIONAL_DICTIONARY_PRIORITY_MODE = 0x00004000,
 };
 DECLARE_ENUM_FLAG_OPERATORS(OrbisImeExtOption);
 
@@ -165,6 +176,7 @@ enum class OrbisImeLanguage : u64 {
     VIETNAMESE = 0x0000000040000000,
     ROMANIAN = 0x0000000080000000,
     HUNGARIAN = 0x0000000100000000,
+    UKRAINIAN = 0x0000000200000000,
 };
 DECLARE_ENUM_FLAG_OPERATORS(OrbisImeLanguage);
 
@@ -202,7 +214,7 @@ struct magic_enum::customize::enum_range<OrbisImeInputMethodState> {
 const u32 kValidOrbisImeInputMethodStateMask = generate_full_mask<OrbisImeInputMethodState>();
 
 enum class OrbisImeInitExtKeyboardMode : u32 {
-    ISABLE_ARABIC_INDIC_NUMERALS = 0x00000001,
+    DISABLE_ARABIC_INDIC_NUMERALS = 0x00000001,
     ENABLE_FORMAT_CHARACTERS = 0x00000002,
     INPUT_METHOD_STATE_NATIVE = 0x04000000,
     INPUT_METHOD_STATE_NATIVE2 = 0x08000000,
@@ -280,6 +292,8 @@ enum class OrbisImeType : u32 {
     Url = 2,
     Mail = 3,
     Number = 4,
+    SocialName = 0x100,
+    FacebookPassword = 0x101,
 };
 
 enum class OrbisImeHorizontalAlignment : u32 {
@@ -374,6 +388,7 @@ enum class OrbisImeKeyboardType : u32 {
     VIETNAMESE = 35,
     ROMANIAN = 36,
     HUNGARIAN = 37,
+    UKRAINIAN = 38,
 };
 
 enum class OrbisImeKeyboardDeviceType : u32 {

@@ -8,6 +8,7 @@
 #include <imgui.h>
 
 #include "core/libraries/ime/ime_common.h"
+#include "core/libraries/ime/ime_kb_language.h"
 
 namespace Libraries::Ime {
 
@@ -36,32 +37,15 @@ struct ImeKbGridLayout {
     float corner_radius = 0.0f;
 };
 
-// Standardized OSK selection indexing:
-// - Keyboard grid uses zero-based row/column indexing.
-// - Top panel row placement is driven by ImeTopPanelLayoutConfig::row/row_span.
-// - Keyboard rows follow active ImeKbLayoutModel::rows.
-// - Function row count is driven by ImeKbLayoutModel::function_rows.
 struct ImeSelectionGridIndex {
     static constexpr int DefaultKeyboardRows = 6;
-    static constexpr int DefaultKeyboardCols = 10;
     static constexpr int DefaultTopPanelRow = 0;
     static constexpr int DefaultTopPanelRows = 1;
     static constexpr int DefaultFunctionRows = 2;
 
     static constexpr int PanelMinRow = 0;
-    static constexpr int PanelMaxRow = 6; // Legacy default for 6-row keyboard layouts.
-    static constexpr int PanelTopRow = 0;
-    static constexpr int PanelKeyboardMinRow = 1;
-    static constexpr int PanelKeyboardMaxRow = 6; // Legacy default for 6-row keyboard layouts.
 
     static constexpr int KeyboardMinRow = 0;
-    static constexpr int KeyboardMaxRow = 5; // Legacy default for 6-row keyboard layouts.
-    static constexpr int KeyboardMinCol = 0;
-    static constexpr int KeyboardMaxCol = 9; // Legacy default for 10-column keyboard layouts.
-
-    static constexpr int TopRowMinCol = 0;
-    static constexpr int TopRowPredictionMaxCol = 8;
-    static constexpr int TopRowCloseCol = 9;
 
     static constexpr int PanelTopRowFromConfig(int top_panel_row = DefaultTopPanelRow) {
         return std::max(PanelMinRow, top_panel_row);
@@ -75,10 +59,6 @@ struct ImeSelectionGridIndex {
         return std::max(0, keyboard_rows - 1);
     }
 
-    static constexpr int KeyboardMaxColForCols(int keyboard_cols) {
-        return std::max(0, keyboard_cols - 1);
-    }
-
     static constexpr int PanelKeyboardMinRowForTopPanel(int top_panel_row = DefaultTopPanelRow,
                                                         int top_panel_rows = DefaultTopPanelRows) {
         return PanelTopRowFromConfig(top_panel_row) + PanelTopRowsFromConfig(top_panel_rows);
@@ -89,12 +69,6 @@ struct ImeSelectionGridIndex {
         int top_panel_rows = DefaultTopPanelRows) {
         return PanelKeyboardMinRowForTopPanel(top_panel_row, top_panel_rows) +
                KeyboardMaxRowForRows(std::max(1, keyboard_rows));
-    }
-
-    static constexpr int PanelMaxRowForKeyboardRows(int keyboard_rows,
-                                                    int top_panel_row = DefaultTopPanelRow,
-                                                    int top_panel_rows = DefaultTopPanelRows) {
-        return PanelKeyboardMaxRowForKeyboardRows(keyboard_rows, top_panel_row, top_panel_rows);
     }
 
     static constexpr int ResolveFunctionRows(int keyboard_rows,
@@ -110,49 +84,8 @@ struct ImeSelectionGridIndex {
         return std::max(1, rows - ResolveFunctionRows(rows, configured_function_rows));
     }
 
-    static constexpr int KeyboardFunctionMinRow(
-        int keyboard_rows, int configured_function_rows = DefaultFunctionRows) {
-        const int rows = std::max(1, keyboard_rows);
-        const int function_rows = ResolveFunctionRows(rows, configured_function_rows);
-        return function_rows > 0 ? (rows - function_rows) : rows;
-    }
-
-    static constexpr bool IsKeyboardFunctionRow(
-        int keyboard_row, int keyboard_rows, int configured_function_rows = DefaultFunctionRows) {
-        const int rows = std::max(1, keyboard_rows);
-        return keyboard_row >= KeyboardFunctionMinRow(rows, configured_function_rows) &&
-               keyboard_row <= KeyboardMaxRowForRows(rows);
-    }
-
-    static constexpr int ClampPanelRow(int row, int keyboard_rows = DefaultKeyboardRows,
-                                       int top_panel_row = DefaultTopPanelRow,
-                                       int top_panel_rows = DefaultTopPanelRows) {
-        return std::clamp(row, PanelMinRow,
-                          PanelMaxRowForKeyboardRows(keyboard_rows, top_panel_row, top_panel_rows));
-    }
-
     static constexpr int ClampKeyboardRow(int row, int keyboard_rows = DefaultKeyboardRows) {
         return std::clamp(row, KeyboardMinRow, KeyboardMaxRowForRows(keyboard_rows));
-    }
-
-    static constexpr int ClampKeyboardCol(int col, int keyboard_cols = DefaultKeyboardCols) {
-        return std::clamp(col, KeyboardMinCol, KeyboardMaxColForCols(keyboard_cols));
-    }
-
-    static constexpr int ClampTopRowCol(int col) {
-        return std::clamp(col, TopRowMinCol, TopRowCloseCol);
-    }
-
-    static constexpr int ClampTopPredictionCol(int col) {
-        return std::clamp(col, TopRowMinCol, TopRowPredictionMaxCol);
-    }
-
-    static constexpr int TopToKeyboardCol(int top_col, int keyboard_cols = DefaultKeyboardCols) {
-        return ClampKeyboardCol(top_col, keyboard_cols);
-    }
-
-    static constexpr int KeyboardToTopCol(int keyboard_col) {
-        return ClampTopRowCol(keyboard_col);
     }
 
     static constexpr int PanelToKeyboardRow(int panel_row, int keyboard_rows = DefaultKeyboardRows,
@@ -161,15 +94,6 @@ struct ImeSelectionGridIndex {
         return ClampKeyboardRow(panel_row -
                                     PanelKeyboardMinRowForTopPanel(top_panel_row, top_panel_rows),
                                 keyboard_rows);
-    }
-
-    static constexpr int KeyboardToPanelRow(int keyboard_row,
-                                            int keyboard_rows = DefaultKeyboardRows,
-                                            int top_panel_row = DefaultTopPanelRow,
-                                            int top_panel_rows = DefaultTopPanelRows) {
-        return ClampPanelRow(keyboard_row +
-                                 PanelKeyboardMinRowForTopPanel(top_panel_row, top_panel_rows),
-                             keyboard_rows, top_panel_row, top_panel_rows);
     }
 
     static int GridColumnFromX(float x, float left, float width, int min_col, int max_col) {
@@ -184,9 +108,10 @@ struct ImeSelectionGridIndex {
 };
 
 enum class ImeKbLayoutFamily : u8 {
-    Latin = 0,
+    Alphabet = 0,
     Symbols = 1,
-    Specials = 2,
+    Alternate = 2,
+    Numeric = 3,
 };
 
 enum class ImeKbCaseState : u8 {
@@ -195,20 +120,20 @@ enum class ImeKbCaseState : u8 {
     CapsLock = 2,
 };
 
-enum class ImeKbLayoutId : u8 {
-    LatinLower = 0,
-    LatinUpper = 1,
-    LatinCapsLock = 2,
-    SymbolsPage1 = 3,
-    SymbolsPage2 = 4,
-    SpecialsPage1 = 5,
-    SpecialsPage2 = 6,
-};
-
 struct ImeKbLayoutSelection {
-    ImeKbLayoutFamily family = ImeKbLayoutFamily::Latin;
+    ImeKbLayoutFamily family = ImeKbLayoutFamily::Alphabet;
     ImeKbCaseState case_state = ImeKbCaseState::Lower;
     u8 page = 0;
+    OrbisImeLanguage language = OrbisImeLanguage::ENGLISH_US;
+    bool multiline = false;
+    ImeKbVariant variant = ImeKbVariant::Automatic;
+    OrbisImeType input_type = OrbisImeType::Default;
+    u32 options = 0;
+    OrbisImeExtOption ext_options = OrbisImeExtOption::DEFAULT;
+    OrbisImePanelPriority panel_priority = OrbisImePanelPriority::Default;
+    bool multiple_languages = false;
+    bool full_width = false;
+    bool accessibility = false;
 };
 
 enum class ImeKbKeyAction : u8 {
@@ -217,7 +142,7 @@ enum class ImeKbKeyAction : u8 {
     Character = 1,
     Shift = 2,
     SymbolsMode = 3,
-    SpecialsMode = 4,
+    AlternateMode = 4,
     Space = 5,
     Backspace = 6,
     ArrowLeft = 7,
@@ -229,8 +154,12 @@ enum class ImeKbKeyAction : u8 {
     Settings = 13,
     NewLine = 14,
     Done = 15,
-    PagePrev = 16,
     PageNext = 17,
+    Tab,
+    FullWidth,
+    JapaneseVoicing,
+    JapaneseSmall,
+    JapanesePunctuation,
 };
 
 enum class ImeKbKeyGlyph : u8 {
@@ -243,6 +172,11 @@ enum class ImeKbKeyGlyph : u8 {
     ShiftOutline = 6,
     ShiftFilled = 7,
     CapsLockFilled = 8,
+    Enter = 9,
+    Keyboard = 10,
+    Options = 11,
+    Gyro = 12,
+    Tab = 13,
 };
 
 struct ImeKbKeySpec {
@@ -260,6 +194,7 @@ struct ImeKbKeySpec {
     const char* hotkey_label = nullptr;
     ImeKbKeyAction action = ImeKbKeyAction::None;
     ImeKbKeyGlyph glyph = ImeKbKeyGlyph::None;
+    const char* text = nullptr;
 };
 
 struct ImeKbLayoutModel {
@@ -303,12 +238,7 @@ struct ImeStyleConfig {
     OrbisImeColor color_special{30, 90, 170, 255};
 };
 
-// Shared edge-wrap hold state for controller navigation.
-// It tracks last successful move direction/time and active wrap hold window.
 struct ImeEdgeWrapNavState {
-    int last_step_row = 0;
-    int last_step_col = 0;
-    double last_step_time = -1.0;
     int hold_step_row = 0;
     int hold_step_col = 0;
     double hold_release_time = 0.0;
@@ -316,23 +246,12 @@ struct ImeEdgeWrapNavState {
 };
 
 inline void ResetImeEdgeWrapHold(ImeEdgeWrapNavState& state) {
-    state.hold_step_row = 0;
-    state.hold_step_col = 0;
-    state.hold_release_time = 0.0;
-    state.hold_active = false;
-}
-
-inline void ResetImeEdgeWrapNav(ImeEdgeWrapNavState& state) {
-    state.last_step_row = 0;
-    state.last_step_col = 0;
-    state.last_step_time = -1.0;
-    ResetImeEdgeWrapHold(state);
+    state = {};
 }
 
 inline bool ShouldDelayImeEdgeWrap(ImeEdgeWrapNavState& state, int step_row, int step_col,
-                                   bool repeat_hint, bool wraps, double now, double hold_delay_sec,
-                                   double repeat_window_sec) {
-    (void)repeat_window_sec;
+                                   bool repeat_hint, bool wraps, double now,
+                                   double hold_delay_sec) {
     if (step_row == 0 && step_col == 0) {
         return false;
     }
@@ -344,11 +263,13 @@ inline bool ShouldDelayImeEdgeWrap(ImeEdgeWrapNavState& state, int step_row, int
         return false;
     }
 
-    const bool same_wrap_direction =
-        state.hold_active && state.hold_step_row == step_row && state.hold_step_col == step_col;
-    if (!(repeat_hint || same_wrap_direction)) {
+    if (!repeat_hint) {
+        ResetImeEdgeWrapHold(state);
         return false;
     }
+
+    const bool same_wrap_direction =
+        state.hold_active && state.hold_step_row == step_row && state.hold_step_col == step_col;
 
     if (!same_wrap_direction) {
         state.hold_step_row = step_row;
@@ -357,14 +278,6 @@ inline bool ShouldDelayImeEdgeWrap(ImeEdgeWrapNavState& state, int step_row, int
         state.hold_active = true;
     }
     return now < state.hold_release_time;
-}
-
-inline void CommitImeEdgeWrapStep(ImeEdgeWrapNavState& state, int step_row, int step_col,
-                                  double now) {
-    state.last_step_row = step_row;
-    state.last_step_col = step_col;
-    state.last_step_time = now;
-    ResetImeEdgeWrapHold(state);
 }
 
 inline const ImeKbKeySpec* ResolveImeKeyboardKeyAt(const ImeKbLayoutModel& layout, int row,
@@ -460,12 +373,12 @@ inline bool DoesImeKeyboardNavigationWrap(const ImeKbLayoutModel& layout, int fr
 struct ImeKbDrawParams {
     ImeKbLayoutSelection selection{};
     const ImeKbLayoutModel* layout_model = nullptr;
-    OrbisImeLanguage supported_languages = static_cast<OrbisImeLanguage>(0);
     OrbisImeEnterLabel enter_label = OrbisImeEnterLabel::Default;
     bool show_selection_highlight = true;
     bool allow_nav_input = true;
     bool use_imgui_lstick_nav = true;
     bool allow_activate_input = true;
+    bool allow_pointer_input = true;
     bool external_nav_left = false;
     bool external_nav_right = false;
     bool external_nav_up = false;
@@ -490,10 +403,9 @@ struct ImeKbDrawParams {
 
 struct ImeKbDrawState {
     bool done_pressed = false;
+    bool pressed_repeat = false;
     ImeKbKeyAction pressed_action = ImeKbKeyAction::None;
-    const char* pressed_label = nullptr;
-    u16 pressed_keycode = 0;
-    char16_t pressed_character = u'\0';
+    const char* pressed_text = nullptr;
     // Logical grid cursor. If the cursor cell is disabled, selected_center points to the
     // visible nearest enabled fallback key used for drawing and activation.
     int selected_row = -1;
@@ -508,6 +420,11 @@ struct ImePanelMetricsConfig {
     float panel_h = 0.0f;
     bool multiline = false;
     bool show_title = true;
+    bool show_input = true;
+    bool raw_panel = false;
+    bool numeric = false;
+    bool accessibility = false;
+    bool hide_keyboard = false;
     float base_font_size = 0.0f;
     ImVec2 window_pos{};
 };
@@ -541,19 +458,18 @@ struct ImePanelMetrics {
 };
 
 ImeViewportMetrics ComputeImeViewportMetrics(bool use_over2k);
+ImVec2 ReprojectImePanelPosition(const ImVec2& position, const ImeViewportMetrics& previous,
+                                 const ImeViewportMetrics& current);
+float ComputeImeRawPanelHeight(float requested_height, bool numeric, bool multiline,
+                               bool direct_input, bool hide_keyboard = false);
 ImePanelMetrics ComputeImePanelMetrics(const ImePanelMetricsConfig& config);
-ImeKbLayoutId ResolveImeKeyboardLayoutId(const ImeKbLayoutSelection& selection);
-const ImeKbLayoutModel& GetImeKeyboardLayout(ImeKbLayoutId id);
 const ImeKbLayoutModel& GetImeKeyboardLayout(const ImeKbLayoutSelection& selection);
-const ImeTopPanelLayoutConfig& GetImeTopPanelLayoutConfig();
-const ImeTopPanelLayoutConfig& GetImeTopPanelLayoutConfig(ImeKbLayoutId id);
 const ImeTopPanelLayoutConfig& GetImeTopPanelLayoutConfig(const ImeKbLayoutSelection& selection);
 ImeStyleConfig GetDefaultImeStyleConfig();
 ImeStyleConfig ResolveImeStyleConfig(const OrbisImeParamExtended* extended);
 ImU32 ImeColorToImU32(const OrbisImeColor& color);
 ImVec4 ImeColorToImVec4(const OrbisImeColor& color);
 void ApplyImeStyleToKeyboardDrawParams(const ImeStyleConfig& style, ImeKbDrawParams& params);
-void AddImeKeyboardGlyphsToFontRanges(ImFontGlyphRangesBuilder& builder);
 
 void DrawImeKeyboardGrid(const ImeKbGridLayout& layout, const ImeKbDrawParams& params,
                          ImeKbDrawState& state);

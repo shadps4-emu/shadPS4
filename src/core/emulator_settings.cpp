@@ -209,6 +209,17 @@ void EmulatorSettingsImpl::SetFontsDir(const std::filesystem::path& dir) {
     m_general.font_dir.value = dir;
 }
 
+std::filesystem::path EmulatorSettingsImpl::GetImeDictionaryDir() {
+    if (m_general.ime_dictionary_dir.value.empty()) {
+        return Common::FS::GetUserPath(Common::FS::PathType::ImeDictionaryDir);
+    }
+    return m_general.ime_dictionary_dir.value;
+}
+
+void EmulatorSettingsImpl::SetImeDictionaryDir(const std::filesystem::path& dir) {
+    m_general.ime_dictionary_dir.value = dir;
+}
+
 std::filesystem::path EmulatorSettingsImpl::GetAddonInstallDir() {
     if (m_general.addon_install_dir.value.empty()) {
         return Common::FS::GetUserPath(Common::FS::PathType::UserDir) / "addcont";
@@ -591,6 +602,7 @@ bool EmulatorSettingsImpl::TransferSettings() {
         setFromToml(s.background_controller_input, input, "backgroundControllerInput");
         setFromToml(s.ime_accessibility_enabled, input, "imeAccessibilityEnabled");
         setFromToml(s.ime_url_mail_short_panel, input, "imeUrlMailShortPanel");
+        setFromToml(s.ime_keyboard_layout, input, "imeKeyboardLayout");
         setFromToml(s.usb_device_backend, input, "usbDeviceBackend");
     }
 

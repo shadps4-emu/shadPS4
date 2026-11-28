@@ -549,10 +549,22 @@ set(IME_LIB src/core/libraries/ime/error_dialog.cpp
             src/core/libraries/ime/ime_common.h
             src/core/libraries/ime/ime_kb_layout.cpp
             src/core/libraries/ime/ime_kb_layout.h
+            src/core/libraries/ime/ime_kb_language.cpp
+            src/core/libraries/ime/ime_kb_language.h
+            src/core/libraries/ime/ime_kb_data.cpp
+            src/core/libraries/ime/ime_kb_data.h
+            src/core/libraries/ime/ime_japanese_charset.h
+            src/core/libraries/ime/ime_kb_data_layout.cpp
+            src/core/libraries/ime/ime_dictionary.cpp
+            src/core/libraries/ime/ime_dictionary.h
+            src/core/libraries/ime/ime_composition.cpp
+            src/core/libraries/ime/ime_composition.h
             src/core/libraries/ime/ime_dialog_ui.cpp
             src/core/libraries/ime/ime_dialog_ui.h
             src/core/libraries/ime/ime_dialog.cpp
             src/core/libraries/ime/ime_dialog.h
+            src/core/libraries/ime/ime_keyboard.cpp
+            src/core/libraries/ime/ime_keyboard.h
             src/core/libraries/ime/ime_ui.cpp
             src/core/libraries/ime/ime_ui.h
             src/core/libraries/ime/ime_ui_shared.cpp

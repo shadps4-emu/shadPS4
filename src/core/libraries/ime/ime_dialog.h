@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <mutex>
 #include "common/enum.h"
 #include "common/types.h"
 #include "ime_common.h"
@@ -12,6 +13,10 @@ class SymbolsResolver;
 }
 
 namespace Libraries::ImeDialog {
+
+std::recursive_mutex& GetDialogMutex();
+Error GetImeDialogPanelSize(const OrbisImeDialogParam* param, const OrbisImeParamExtended* extended,
+                            u32* width, u32* height);
 
 enum class OrbisImeDialogStatus : u32 {
     None = 0,

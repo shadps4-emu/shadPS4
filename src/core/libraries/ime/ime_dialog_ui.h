@@ -8,8 +8,10 @@
 #include <imgui.h>
 #include "common/cstring.h"
 #include "common/types.h"
+#include "core/libraries/ime/ime_composition.h"
 #include "core/libraries/ime/ime_dialog.h"
 #include "core/libraries/ime/ime_kb_layout.h"
+#include "core/libraries/ime/ime_keyboard.h"
 #include "imgui/imgui_layer.h"
 
 namespace Libraries::ImeDialog {
@@ -27,14 +29,20 @@ class ImeDialogState final {
     friend ImeDialogUi;
 
     bool input_changed = false;
+    u64 generation = 0;
+    OrbisImeOption option = OrbisImeOption::DEFAULT;
     int caret_index = 0;
     int caret_byte_index = 0;
     bool caret_dirty = false;
     bool use_over2k = false;
     OrbisImePositionAndForm panel_layout{};
     bool panel_layout_valid = false;
+    OrbisImePositionAndForm displayed_layout{};
+    bool displayed_layout_valid = false;
     u32 panel_req_width = 0;
     u32 panel_req_height = 0;
+    u32 panel_full_height = 0;
+    u32 ext_keyboard_mode = 0;
     OrbisImeExtOption ext_option = OrbisImeExtOption::DEFAULT;
     OrbisImeDisableDevice disable_device = OrbisImeDisableDevice::DEFAULT;
     OrbisImePanelPriority panel_priority = OrbisImePanelPriority::Default;
@@ -46,6 +54,9 @@ class ImeDialogState final {
     bool fixed_position{};
     OrbisImeType type{};
     OrbisImeLanguage supported_languages{};
+    OrbisImeLanguage input_languages{};
+    Libraries::Ime::ImeComposition composition;
+    std::shared_ptr<const Libraries::Ime::ImeDictionary> application_dictionary;
     OrbisImeEnterLabel enter_label{};
     OrbisImeTextFilter text_filter{};
     OrbisImeExtKeyboardFilter keyboard_filter{};
@@ -56,19 +67,14 @@ class ImeDialogState final {
     std::vector<char> placeholder;
 
     // A character can hold up to 4 bytes in UTF-8
-    Common::CString<ORBIS_IME_DIALOG_MAX_TEXT_LENGTH * 4 + 1> current_text;
+    Common::CString<(ORBIS_IME_DIALOG_MAX_TEXT_LENGTH + ORBIS_IME_MAX_EXPANDED_PREEDIT_LENGTH) * 4 +
+                    1>
+        current_text;
 
 public:
-    /*
-     * Use default constructor ImeDialogState() to initialize default values instead of
-     * ImeDialogState(const OrbisImeDialogParam* param = nullptr,const OrbisImeParamExtended*
-     * extended = nullptr) to avoid validation errors in log
-     */
     ImeDialogState();
-    ImeDialogState(const OrbisImeDialogParam* param /*= nullptr*/,
-                   const OrbisImeParamExtended* extended /*= nullptr*/);
+    ImeDialogState(const OrbisImeDialogParam* param, const OrbisImeParamExtended* extended);
     ImeDialogState(const ImeDialogState& other) = delete;
-    ImeDialogState(ImeDialogState&& other) noexcept;
     ImeDialogState& operator=(ImeDialogState&& other);
 
     bool CopyTextToOrbisBuffer(bool use_original);
@@ -77,8 +83,6 @@ public:
     bool ClampCurrentTextToMaxLen();
 
 private:
-    bool CallKeyboardFilter(const OrbisImeKeycode* src_keycode, u16* out_keycode, u32* out_status);
-
     bool ConvertOrbisToUTF8(const char16_t* orbis_text, std::size_t orbis_text_len, char* utf8_text,
                             std::size_t native_text_len);
     bool ConvertUTF8ToOrbis(const char* native_text, std::size_t utf8_text_len,
@@ -103,9 +107,16 @@ class ImeDialogUi final : public ImGui::Layer {
     OrbisImeDialogStatus* status{};
     OrbisImeDialogResult* result{};
 
+    bool keypanel_hidden = false;
     bool first_render = true;
     bool accept_armed = false;
     bool native_input_active = false;
+    bool direct_input_enabled = false;
+    bool native_accept_pressed = false;
+    bool native_newline_pressed = false;
+    std::vector<Libraries::Ime::ImeKeyboardText> composition_input;
+    std::optional<Libraries::Ime::ImeKeyboardContext> input_context;
+    int preferred_caret_column = -1;
     bool pointer_navigation_active = true;
     EditMenuPopup edit_menu_popup = EditMenuPopup::None;
     bool menu_activate_armed = true;
@@ -144,6 +155,7 @@ class ImeDialogUi final : public ImGui::Layer {
     bool panel_drag_active = false;
     bool gamepad_input_capture_active = false;
     ImVec2 panel_position{};
+    Libraries::Ime::ImeViewportMetrics panel_viewport{};
     ImVec2 panel_layout_anchor{};
     ImVec2 panel_drag_press_offset{};
     int input_cursor_utf16 = 0;
@@ -160,24 +172,28 @@ class ImeDialogUi final : public ImGui::Layer {
     int last_keyboard_selected_col = 0;
     int edit_menu_index = 0;
     Libraries::Ime::ImeKbLayoutSelection kb_layout_selection{};
+    Libraries::Ime::ImeKeyboardLanguagePicker language_picker;
     Libraries::Ime::ImeKbLayoutSelection last_nav_layout_selection{};
     bool nav_layout_selection_initialized = false;
-    Libraries::Ime::ImeKbLayoutFamily kb_alpha_family = Libraries::Ime::ImeKbLayoutFamily::Latin;
-    std::mutex draw_mutex;
+    Libraries::Ime::ImeKbLayoutFamily kb_alpha_family = Libraries::Ime::ImeKbLayoutFamily::Alphabet;
+    std::recursive_mutex draw_mutex;
 
 public:
     explicit ImeDialogUi(ImeDialogState* state = nullptr, OrbisImeDialogStatus* status = nullptr,
                          OrbisImeDialogResult* result = nullptr);
     ~ImeDialogUi() override;
     ImeDialogUi(const ImeDialogUi& other) = delete;
-    ImeDialogUi(ImeDialogUi&& other) noexcept;
     ImeDialogUi& operator=(ImeDialogUi&& other);
 
     void Draw() override;
+    bool GetPanelPosition(OrbisImePositionAndForm* position);
 
 private:
     void FinishDialog(OrbisImeDialogEndStatus endstatus, bool restore_original, const char* reason);
     void Free();
+    void UpdateComposition();
+    void ConfirmComposition(int index = -1);
+    void CancelComposition();
 
     bool DrawInputText(const Libraries::Ime::ImePanelMetrics& metrics,
                        bool pointer_selection_enabled);
