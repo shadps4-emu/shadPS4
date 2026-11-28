@@ -41,6 +41,19 @@ inline Value ApplyForceDegamma(IREmitter& ir, const Value& value) {
     return ir.CompositeConstruct(x, y, z, w);
 }
 
+inline F32 ApplyUnormToUbnorm(IREmitter& ir, const F32& value, u32 max) {
+    const float half = float(max / 2 + 1);
+    const F32 stored = ir.FPMul(value, ir.Imm32(float(max)));
+    const F32 biased = ir.FPDiv(ir.FPSub(stored, ir.Imm32(half)), ir.Imm32(half - 1.f));
+    return ir.FPMax(biased, ir.Imm32(-1.f));
+}
+
+inline F32 ApplyUbnormToUnorm(IREmitter& ir, const F32& value, u32 max) {
+    const float half = float(max / 2 + 1);
+    const F32 stored = ir.FPAdd(ir.FPMul(value, ir.Imm32(half - 1.f)), ir.Imm32(half));
+    return ir.FPDiv(stored, ir.Imm32(float(max)));
+}
+
 /// Applies a number conversion in the read direction.
 inline F32 ApplyReadNumberConversion(IREmitter& ir, const F32& value,
                                      const AmdGpu::NumberConversion& conversion) {
@@ -51,7 +64,7 @@ inline F32 ApplyReadNumberConversion(IREmitter& ir, const F32& value,
         return ir.ConvertUToF(32, 32, ir.BitCast<U32>(value));
     case AmdGpu::NumberConversion::SintToSscaled:
         return ir.ConvertSToF(32, 32, ir.BitCast<U32>(value));
-    case AmdGpu::NumberConversion::UnormToUbnorm:
+    case AmdGpu::NumberConversion::UnormToUbnormNz:
         // Convert 0...1 to -1...1
         return ir.FPSub(ir.FPMul(value, ir.Imm32(2.f)), ir.Imm32(1.f));
     case AmdGpu::NumberConversion::Sint8ToSnormNz: {
@@ -73,6 +86,10 @@ inline F32 ApplyReadNumberConversion(IREmitter& ir, const F32& value,
     case AmdGpu::NumberConversion::SrgbToNorm: {
         return ApplyGammaToLinear(ir, value);
     }
+    case AmdGpu::NumberConversion::Unorm8ToUbnorm:
+        return ApplyUnormToUbnorm(ir, value, std::numeric_limits<u8>::max());
+    case AmdGpu::NumberConversion::Unorm16ToUbnorm:
+        return ApplyUnormToUbnorm(ir, value, std::numeric_limits<u16>::max());
     default:
         UNREACHABLE();
     }
@@ -102,7 +119,7 @@ inline F32 ApplyWriteNumberConversion(IREmitter& ir, const F32& value,
     case AmdGpu::NumberConversion::SintToSscaled:
         // Need to return float type to maintain IR semantics.
         return ir.BitCast<F32>(U32{ir.ConvertFToS(32, value)});
-    case AmdGpu::NumberConversion::UnormToUbnorm:
+    case AmdGpu::NumberConversion::UnormToUbnormNz:
         // Convert -1...1 to 0...1
         return ir.FPDiv(ir.FPAdd(value, ir.Imm32(1.f)), ir.Imm32(2.f));
     case AmdGpu::NumberConversion::Sint8ToSnormNz: {
@@ -125,6 +142,10 @@ inline F32 ApplyWriteNumberConversion(IREmitter& ir, const F32& value,
             ir.FPMul(clamped, ir.Imm32(static_cast<float>(std::numeric_limits<u32>::max())));
         return ir.BitCast<F32>(U32{ir.ConvertFToU(32, unnormalized)});
     }
+    case AmdGpu::NumberConversion::Unorm8ToUbnorm:
+        return ApplyUbnormToUnorm(ir, value, std::numeric_limits<u8>::max());
+    case AmdGpu::NumberConversion::Unorm16ToUbnorm:
+        return ApplyUbnormToUnorm(ir, value, std::numeric_limits<u16>::max());
     default:
         UNREACHABLE();
     }
