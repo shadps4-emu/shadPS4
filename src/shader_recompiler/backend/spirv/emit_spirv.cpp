@@ -388,6 +388,11 @@ void SetupCapabilities(const Info& info, const Profile& profile, const RuntimeIn
         }
         ctx.AddCapability(spv::Capability::Int64Atomics);
     }
+    if (std::ranges::any_of(ctx.images, [](const auto& image) { return image.is_atomic64; })) {
+        ctx.AddExtension("SPV_EXT_shader_image_int64");
+        ctx.AddCapability(spv::Capability::Int64ImageEXT);
+        ctx.AddCapability(spv::Capability::Int64Atomics);
+    }
 }
 
 void DefineEntryPoint(const Info& info, const RuntimeInfo& runtime_info, EmitContext& ctx,

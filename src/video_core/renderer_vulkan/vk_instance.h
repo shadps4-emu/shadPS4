@@ -545,6 +545,7 @@ private:
     bool amd_mixed_attachment_samples{};
     bool shader_atomic_float{};
     bool shader_atomic_float2{};
+    bool shader_image_atomic_int64{};
     bool workgroup_memory_explicit_layout{};
     bool maintenance_5{};
     bool maintenance_6{};

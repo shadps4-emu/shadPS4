@@ -123,6 +123,20 @@ Id FixImageAtomicCoords(EmitContext& ctx, Id coords, AmdGpu::ImageType image_typ
 
 Id ImageAtomicB32(EmitContext& ctx, IR::Inst* inst, u32 handle, Id coords, Id value,
                   AtomicFunc atomic_func, bool is_float = false) {
+    const auto& texture = ctx.images[handle & 0xFFFF];
+    if (texture.is_atomic64) {
+        // 32_32 viewed as R64ui: exact for and/or/xor; add carries, min/max/swap use .y.
+        const Id pointer{
+            ctx.OpImageTexelPointer(ctx.image_u64, texture.id, coords, ctx.ConstU32(0U))};
+        const auto [scope, semantics]{BufferAtomicArgs(ctx)};
+        Id value64{ctx.OpUConvert(ctx.U64, value)};
+        if (atomic_func == &Sirit::Module::OpAtomicAnd) {
+            const Id keep_y{ctx.Constant(ctx.U64, u64{0xFFFFFFFF00000000ULL})};
+            value64 = ctx.OpBitwiseOr(ctx.U64, value64, keep_y);
+        }
+        const Id result{(ctx.*atomic_func)(ctx.U64, pointer, scope, semantics, value64)};
+        return ctx.OpUConvert(ctx.U32[1], result);
+    }
     const Id pointer{GetImageAtomicPointer(ctx, handle, coords, is_float)};
     const auto [scope, semantics]{BufferAtomicArgs(ctx)};
     return (ctx.*atomic_func)(ctx.U32[1], pointer, scope, semantics, value);

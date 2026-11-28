@@ -271,6 +271,7 @@ public:
     Id subgroup_lt_mask{};
     Id image_u32{};
     Id image_f32{};
+    Id image_u64{};
 
     Id bary_coord{};
     Id bary_coord_smooth{};
@@ -288,6 +289,7 @@ public:
         AmdGpu::ImageType view_type;
         bool is_integer = false;
         bool is_storage = false;
+        bool is_atomic64 = false;
         MipStorageFallbackMode mip_fallback_mode{};
     };
 
