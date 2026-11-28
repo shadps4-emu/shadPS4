@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright 2024-2026 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <algorithm>
 #include <condition_variable>
 #include <list>
 #include <mutex>
@@ -46,6 +47,10 @@ public:
         bool timed_out = false;
 
         int priority = 0;
+
+        bool IsDone() const {
+            return ready || canceled || deleted || timed_out;
+        }
     };
 
     EventFlagInternal(const std::string& name, ThreadMode thread_mode, QueueMode queue_mode,
@@ -57,6 +62,9 @@ public:
         m_deleted = true;
 
         for (auto* w : m_waiters) {
+            if (w->IsDone()) {
+                continue;
+            }
             w->deleted = true;
             w->cv.notify_one();
         }
@@ -90,8 +98,9 @@ public:
             return;
         }
 
+        // Find the first waiter with lower priority (greater number) and insert before it.
         auto it = m_waiters.begin();
-        while (it != m_waiters.end() && (*it)->priority >= waiter.priority) {
+        while (it != m_waiters.end() && (*it)->priority <= waiter.priority) {
             ++it;
         }
         m_waiters.insert(it, &waiter);
@@ -111,7 +120,8 @@ public:
             return ORBIS_KERNEL_ERROR_EACCES;
         }
 
-        if (m_thread_mode == ThreadMode::Single && !m_waiters.empty()) {
+        if (m_thread_mode == ThreadMode::Single &&
+            std::ranges::any_of(m_waiters, [](const Waiter* w) { return !w->IsDone(); })) {
             return ORBIS_KERNEL_ERROR_EPERM;
         }
 
@@ -189,10 +199,8 @@ public:
 
         m_bits |= bits;
 
-        for (auto it : m_waiters) {
-            Waiter* waiter = it;
-
-            if (!ConditionMet(*waiter)) {
+        for (Waiter* waiter : m_waiters) {
+            if (waiter->IsDone() || !ConditionMet(*waiter)) {
                 continue;
             }
 
@@ -212,15 +220,21 @@ public:
     void Cancel(u64 pattern, int* num_waiters) {
         std::scoped_lock lock(m_mutex);
 
-        if (num_waiters)
-            *num_waiters = static_cast<int>(m_waiters.size());
-
+        int canceled_waiters = 0;
         m_bits = pattern;
 
         for (Waiter* waiter : m_waiters) {
+            if (waiter->IsDone()) {
+                continue;
+            }
             waiter->result = pattern;
             waiter->canceled = true;
             waiter->cv.notify_one();
+            ++canceled_waiters;
+        }
+
+        if (num_waiters) {
+            *num_waiters = canceled_waiters;
         }
     }
 
