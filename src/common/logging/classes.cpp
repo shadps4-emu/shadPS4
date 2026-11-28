@@ -137,6 +137,8 @@ std::string_view NameOf(Class log_class) {
         return "Lib.Usbd";
     case Class::Lib_Ajm:
         return "Lib.Ajm";
+    case Class::Lib_Audiodec:
+        return "Lib.Audiodec";
     case Class::Lib_ErrorDialog:
         return "Lib.ErrorDialog";
     case Class::Lib_ImeDialog:
