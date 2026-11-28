@@ -199,8 +199,6 @@ private:
     FMaskResourceList& fmask_resources;
 };
 
-} // Anonymous namespace
-
 void PatchBufferSharp(IR::Block& block, IR::Inst& inst, Info& info, Descriptors& descriptors,
                       const Profile& profile) {
     u32 buffer_binding = descriptors.Add(BufferResource{.used_types = IR::Type::U32,
@@ -306,6 +304,8 @@ void PatchBufferArgs(IR::Block& block, IR::Inst& inst, Info& info) {
     inst.SetArg(IR::LoadBufferArgs::Address,
                 CalculateBufferAddress(ir, inst, info, buffer, buffer.stride));
 }
+
+} // Anonymous namespace
 
 void ResourceTrackingPassStub(IR::Program& program, const Profile& profile) {
     // Iterate resource instructions and patch them after finding the sharp.

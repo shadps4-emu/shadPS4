@@ -72,8 +72,11 @@ set(NGS2_TEST_SOURCES
     # Tests
     test_ngs2.cpp
 )
+list(TRANSFORM SHADER_RECOMPILER PREPEND ${CMAKE_SOURCE_DIR}/ OUTPUT_VARIABLE SHADER_RECOMPILER_SOURCES)
+
 set(GCN_TEST_SOURCES
     # Under test
+    ${SHADER_RECOMPILER_SOURCES}
     ${CMAKE_SOURCE_DIR}/src/core/emulator_settings.cpp
     ${CMAKE_SOURCE_DIR}/src/core/emulator_state.cpp
     ${CMAKE_SOURCE_DIR}/src/shader_recompiler/backend/spirv/emit_spirv.cpp
@@ -150,6 +153,8 @@ set(GCN_TEST_SOURCES
     ${CMAKE_SOURCE_DIR}/src/common/logging/classes.cpp
     ${CMAKE_SOURCE_DIR}/src/common/logging/log.cpp
     ${CMAKE_SOURCE_DIR}/src/common/ntapi.cpp
+    ${CMAKE_SOURCE_DIR}/src/common/decoder.cpp
+    ${CMAKE_SOURCE_DIR}/src/common/signal_context.cpp
 
     # Stubs that replace dependencies
     stubs/common_stub.cpp
@@ -167,6 +172,7 @@ set(GCN_TEST_SOURCES
 
     # Tests
     gcn/test_gcn_instructions.cpp
+    gcn/test_image_address_liveness.cpp
 )
 
 add_executable(shadps4_settings_test ${SETTINGS_TEST_SOURCES})
@@ -210,6 +216,8 @@ target_link_libraries(shadps4_gcn_test PRIVATE
     SDL3::SDL3
     spdlog::spdlog
     half::half
+    xbyak::xbyak
+    Zydis::Zydis
 )
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR
