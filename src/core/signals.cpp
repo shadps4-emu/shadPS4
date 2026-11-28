@@ -300,8 +300,8 @@ void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
     }
     case SIGSLEEP: {
         if (thread) {
-            thread->suspended_context = context.uc_mcontext;
-            thread->is_suspended_in_signal = true;
+            thread->SuspendedContext() = context.uc_mcontext;
+            thread->IsSuspendedInSignal() = true;
         }
         // Sleep thread until signal is received again
         sigset_t sigset;
@@ -309,7 +309,7 @@ void SignalHandler(int sig, siginfo_t* info, void* raw_context) {
         sigaddset(&sigset, SIGSLEEP);
         sigwait(&sigset, &sig);
         if (thread) {
-            thread->is_suspended_in_signal = false;
+            thread->IsSuspendedInSignal() = false;
         }
         break;
     }
