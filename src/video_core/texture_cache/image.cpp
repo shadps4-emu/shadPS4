@@ -18,6 +18,7 @@ namespace VideoCore {
 using namespace Vulkan;
 
 Common::IncrementalIdProvider<u64> Image::global_image_uid{};
+Common::IncrementalIdProvider<u64> Image::global_gpu_write_order{};
 
 static vk::ImageUsageFlags ImageUsageFlags(const Vulkan::Instance& instance,
                                            const ImageInfo& info) {

@@ -3,6 +3,7 @@
 
 #pragma once
 
+#include <algorithm>
 #include <mutex>
 #include <optional>
 
@@ -113,6 +114,18 @@ struct Image : public Common::LRUNode<> {
         return True(flags & ImageFlagBits::GpuModified) && False(flags & ImageFlagBits::Dirty);
     }
 
+    void MarkGpuModified() {
+        flags |= ImageFlagBits::GpuModified;
+        gpu_write_order = global_gpu_write_order.Next();
+    }
+
+    void InheritGpuModified(const Image& src) {
+        if (True(src.flags & ImageFlagBits::GpuModified)) {
+            flags |= ImageFlagBits::GpuModified;
+            gpu_write_order = std::max(gpu_write_order, src.gpu_write_order);
+        }
+    }
+
     bool CanBeDownloaded() {
         return HasGpuValidData() && info.num_samples == 1 && !info.props.has_stencil &&
                IsVulkanFormatCompatible(info.pixel_format, backing->image.image_ci.format);
@@ -186,6 +199,7 @@ public:
     u64 image_uid{};
     u64 lru_id{};
     u64 tick_accessed_last{};
+    u64 gpu_write_order{};
     u64 cpu_hash{};
     u64 gpu_hash{};
     u64 head_hash{};
@@ -208,6 +222,7 @@ public:
 
 private:
     static Common::IncrementalIdProvider<u64> global_image_uid;
+    static Common::IncrementalIdProvider<u64> global_gpu_write_order;
 };
 
 } // namespace VideoCore
