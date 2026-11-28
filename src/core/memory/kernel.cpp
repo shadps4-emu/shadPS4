@@ -375,7 +375,8 @@ s32 MemoryManager::UnmapMemory(VAddr addr, u64 size) {
     return vm_map.Delete(addr, addr + size);
 }
 
-s32 MemoryManager::QueryProtection(VAddr addr, VAddr* out_start, VAddr* out_end, u32* out_prot) {
+s32 MemoryManager::QueryProtection(VAddr addr, VAddr* out_start, VAddr* out_end, u32* out_prot,
+                                   VmEntryFlags* out_eflags) {
     addr = Common::AlignDownPow2(addr, PAGE_SIZE);
     if (addr > vm_map.MaxOffset()) {
         return ORBIS_KERNEL_ERROR_EINVAL;
@@ -412,6 +413,9 @@ s32 MemoryManager::QueryProtection(VAddr addr, VAddr* out_start, VAddr* out_end,
     }
     if (out_prot) {
         *out_prot = prot;
+    }
+    if (out_eflags) {
+        *out_eflags = entry->eflags;
     }
 
     return ORBIS_OK;

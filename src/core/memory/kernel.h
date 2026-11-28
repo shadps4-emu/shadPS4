@@ -126,7 +126,8 @@ public:
 
     s32 PoolUnmap(VAddr virtual_addr, u64 size);
 
-    s32 QueryProtection(VAddr addr, VAddr* start, VAddr* end, u32* prot);
+    s32 QueryProtection(VAddr addr, VAddr* start, VAddr* end, u32* prot,
+                        VmEntryFlags* eflags = nullptr);
 
     s32 Protect(VAddr start, u64 size, MemoryProt new_prot);
 

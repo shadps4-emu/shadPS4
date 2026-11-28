@@ -475,13 +475,13 @@ s32 PS4_SYSV_ABI sceKernelIsStack(VAddr addr, VAddr* out_start, VAddr* out_end) 
     LOG_DEBUG(Kernel_Vmm, "called, addr = {:#x}", addr);
 
     VAddr start, end;
-    u32 prot_raw;
-    if (s32 ret = g_memory->QueryProtection(addr, &start, &end, &prot_raw); ret != ORBIS_OK) {
+    Core::VmEntryFlags eflags;
+    if (s32 ret = g_memory->QueryProtection(addr, &start, &end, nullptr, &eflags);
+        ret != ORBIS_OK) {
         return ret;
     }
 
-    auto prot = static_cast<MemoryProt>(prot_raw);
-    if (False(prot & MemoryProt::GpuReadWrite)) {
+    if (False(eflags & (Core::VmEntryFlags::GrowsDown | Core::VmEntryFlags::GrowsUp))) {
         if (out_start) {
             *out_start = 0;
         }
