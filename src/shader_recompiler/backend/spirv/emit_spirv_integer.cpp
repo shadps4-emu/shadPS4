@@ -188,7 +188,18 @@ Id EmitBitFieldInsert32(EmitContext& ctx, Id base, Id insert, Id offset, Id coun
 }
 
 Id EmitBitFieldInsert64(EmitContext& ctx, Id base, Id insert, Id offset, Id count) {
-    return ctx.OpBitFieldInsert(ctx.U64, base, insert, offset, count);
+    // Vulkan only allows OpBitFieldInsert on 64-bit integers with maintenance9
+    // (VUID-RuntimeSpirv-None-10824), so build the field mask with 64-bit shifts instead.
+    // count is in [0, 64]; a shift by 64 is undefined, so count == 0 is handled separately.
+    const Id ones{ctx.Constant(ctx.U64, ~0ULL)};
+    const Id field{ctx.OpSelect(
+        ctx.U64, ctx.OpIEqual(ctx.U1[1], count, ctx.u32_zero_value), ctx.u64_zero_value,
+        ctx.OpShiftRightLogical(ctx.U64, ones, ctx.OpISub(ctx.U32[1], ctx.ConstU32(64U), count)))};
+    const Id mask{ctx.OpShiftLeftLogical(ctx.U64, field, offset)};
+    const Id kept{ctx.OpBitwiseAnd(ctx.U64, base, ctx.OpNot(ctx.U64, mask))};
+    const Id inserted{
+        ctx.OpBitwiseAnd(ctx.U64, ctx.OpShiftLeftLogical(ctx.U64, insert, offset), mask)};
+    return ctx.OpBitwiseOr(ctx.U64, kept, inserted);
 }
 
 Id EmitBitFieldSExtract(EmitContext& ctx, IR::Inst* inst, Id base, Id offset, Id count) {
