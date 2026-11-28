@@ -8,6 +8,7 @@
 #include "core/libraries/kernel/orbis_error.h"
 #include "core/memory/address_space.h"
 #include "core/memory/dmem_map.h"
+#include "core/memory/kernel.h"
 #include "core/memory/vm_map.h"
 #include "video_core/renderer_vulkan/vk_rasterizer.h"
 
@@ -219,7 +220,7 @@ s32 DmemManager::MapDirectMemory(VmMap& map, VAddr* out_addr, u64 length,
                 align = 1ULL << alignment_shift;
             }
 
-            vaddr = map.FindSpaceAligned(vaddr ? vaddr : map.MinOffset(), length, align);
+            vaddr = map.FindSpaceAligned(vaddr ? vaddr : DEFAULT_MAPPING_BASE, length, align);
             if (!vaddr) {
                 return ORBIS_KERNEL_ERROR_ENOMEM;
             }
