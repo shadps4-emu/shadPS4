@@ -15,6 +15,11 @@
 #include "common/io_file.h"
 #include "common/types.h"
 
+namespace Core {
+enum class MemoryMapFlags : u32;
+enum class MemoryProt : u8;
+} // namespace Core
+
 namespace Core::FileSys {
 
 // Policy declared by an IFile backend for host mmap.
@@ -54,20 +59,6 @@ struct FileStat {
     bool is_directory{false};
 };
 
-struct FileMapContext {
-    // Map the host file (identified by mapping_handle) natively at
-    // addr with the given raw guest protection bits.
-    std::function<void(u8* addr, u64 size, u64 offset, u32 prot, uintptr_t mapping_handle)>
-        map_native;
-    // Reserve size bytes of anonymous, writable memory at addr so
-    // the backend can populate it from Read().
-    std::function<void(u8* addr, u64 size)> map_anonymous;
-    // Apply final protection to a populated region.
-    std::function<void(u8* addr, u64 size, u32 prot)> protect;
-    // Native mapping handle for the host file (0 for non-host backends).
-    uintptr_t mapping_handle{0};
-};
-
 class IFile {
 public:
     virtual ~IFile() = default;
@@ -101,8 +92,7 @@ public:
         return MmapPolicy::Unsupported;
     }
 
-    virtual bool Map(u8* addr, u64 size, u64 offset, u32 raw_prot, const FileMapContext& ctx) {
-        ctx.map_native(addr, size, offset, raw_prot, ctx.mapping_handle);
+    virtual bool Map(VAddr addr, u64 size, u64 offset, MemoryMapFlags flags, MemoryProt raw_prot) {
         return true;
     }
 

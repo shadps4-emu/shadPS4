@@ -6,7 +6,7 @@
 #include <imgui.h>
 #include "core/debug_state.h"
 #include "core/emulator_settings.h"
-#include "core/memory.h"
+#include "core/memory/kernel.h"
 #include "imgui_impl_sdl3.h"
 #include "input/controller.h"
 #include "input/input_handler.h"

@@ -9,8 +9,8 @@
 #include "common/elf_info.h"
 #include "common/logging/log.h"
 #include "core/libraries/fiber/fiber_error.h"
+#include "core/libraries/kernel/threads.h"
 #include "core/libraries/kernel/threads/pthread.h"
-#include "core/libraries/kernel/threads/thread_state.h"
 #include "core/libraries/libs.h"
 #include "core/tls.h"
 
@@ -40,17 +40,11 @@ static std::mutex fiber_stacks_mutex;
 static std::map<VAddr, FiberStack> fiber_stacks;
 
 static void* AllocateStack(u64 size) {
-    Kernel::PthreadAttr attr{.stacksize_attr = size};
-    const int ret = Kernel::ThrState::Instance()->CreateStack(&attr);
-    ASSERT_MSG(ret == 0, "Unable to allocate a fiber stack with size = 0x{:x}", size);
-    return attr.stackaddr_attr;
+    return Kernel::AllocateSystemStack(size);
 }
 
 static void FreeStack(void* stack, u64 size) {
-    auto* thread_state = Kernel::ThrState::Instance();
-    Kernel::PthreadAttr attr{.stackaddr_attr = stack, .stacksize_attr = size};
-    std::scoped_lock lk{thread_state->thread_list_lock};
-    thread_state->FreeStack(&attr);
+    Kernel::FreeSystemStack(stack, size);
 }
 #endif
 

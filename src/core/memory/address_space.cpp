@@ -10,17 +10,17 @@
 #include "common/assert.h"
 #include "common/elf_info.h"
 #include "common/error.h"
-#include "core/address_space.h"
 #include "core/emulator_settings.h"
 #include "core/libraries/kernel/memory.h"
-#include "core/memory.h"
-#include "libraries/error_codes.h"
+#include "core/memory/address_space.h"
+#include "core/memory/vm_map.h"
 
 #ifdef _WIN32
 #include <windows.h>
 #else
 #include <fcntl.h>
 #include <sys/mman.h>
+#include <unistd.h>
 #endif
 
 #if defined(__APPLE__) && defined(ARCH_X86_64)
@@ -103,6 +103,7 @@ struct MemoryRegion {
     u64 size;
     u32 prot;
     s32 fd;
+    u64 file_size;
     bool is_mapped;
 };
 
@@ -169,7 +170,7 @@ struct AddressSpace::Impl {
             if (info.State == MEM_FREE && info.RegionSize > 0x1000000) {
                 VAddr addr = Common::AlignUp(reinterpret_cast<VAddr>(info.BaseAddress), alignment);
                 regions.emplace(addr,
-                                MemoryRegion{addr, PAddr(-1), size, PAGE_NOACCESS, -1, false});
+                                MemoryRegion{addr, PAddr(-1), size, PAGE_NOACCESS, -1, 0, false});
             }
         }
 
@@ -245,48 +246,41 @@ struct AddressSpace::Impl {
         void* ptr = nullptr;
         if (phys_addr != -1) {
             HANDLE backing = fd != -1 ? reinterpret_cast<HANDLE>(fd) : backing_handle;
-            if (fd != -1 && prot == PAGE_READONLY) {
-                // Allocate the memory for the mapping
-                DWORD resultvar;
-                ptr = VirtualAlloc2(process, reinterpret_cast<PVOID>(virtual_addr), size,
-                                    MEM_RESERVE | MEM_COMMIT | MEM_REPLACE_PLACEHOLDER,
-                                    PAGE_READWRITE, nullptr, 0);
-
-                // Use ReadFile to read file contents into the memory area.
-                // Create an OVERLAPPED with the file offset, then supply that to ReadFile
-                OVERLAPPED param{};
-                // Offset is the least-significant 32 bits, OffsetHigh is the most-significant.
-                param.Offset = phys_addr & 0xffffffffull;
-                param.OffsetHigh = (phys_addr & 0xffffffff00000000ull) >> 32;
-                bool ret = ReadFile(backing, ptr, size, &resultvar, &param);
-                ASSERT_MSG(ret, "ReadFile failed. {}", Common::GetLastErrorMsg());
-
-                // ReadFile moves the file pointer, restore it with SetFilePointer
-                s64 size_to_move = -size;
-                LONG size_low = size_to_move & 0xffffffffull;
-                LONG size_high = (size_to_move & 0xffffffff00000000ull) >> 32;
-                ret = SetFilePointer(backing, size_low, &size_high, FILE_CURRENT);
-
-                // Protect the memory area appropriately
-                ret = VirtualProtect(ptr, size, prot, &resultvar);
-                ASSERT_MSG(ret, "VirtualProtect failed. {}", Common::GetLastErrorMsg());
-            } else {
-                if (prot == PAGE_NOACCESS) {
+            if (fd == -1) {
+                // Map backing memory with full access so later protection changes are allowed.
+                ptr = MapViewOfFile3(backing, process, reinterpret_cast<PVOID>(virtual_addr),
+                                     phys_addr, size, MEM_REPLACE_PLACEHOLDER,
+                                     PAGE_EXECUTE_READWRITE, nullptr, 0);
+                ASSERT_MSG(ptr, "MapViewOfFile3 failed. {}", Common::GetLastErrorMsg());
+                if (prot != PAGE_EXECUTE_READWRITE) {
                     DWORD resultvar;
-                    ptr = MapViewOfFile3(backing, process, reinterpret_cast<PVOID>(virtual_addr),
-                                         phys_addr, size, MEM_REPLACE_PLACEHOLDER, PAGE_READWRITE,
-                                         nullptr, 0);
-                    ASSERT_MSG(ptr, "MapViewOfFile3 failed. {}", Common::GetLastErrorMsg());
-                    bool ret = VirtualProtect(ptr, size, prot, &resultvar);
+                    const bool ret = VirtualProtect(ptr, size, prot, &resultvar);
                     ASSERT_MSG(ret, "VirtualProtect failed. {}", Common::GetLastErrorMsg());
-                } else {
-                    ptr =
-                        MapViewOfFile3(backing, process, reinterpret_cast<PVOID>(virtual_addr),
-                                       phys_addr, size, MEM_REPLACE_PLACEHOLDER, prot, nullptr, 0);
-                    ASSERT_MSG(ptr, "MapViewOfFile3 failed. {}", Common::GetLastErrorMsg());
+                }
+            } else {
+                // File views cannot extend past the end of the file section.
+                const u64 view_size = std::min(size, region->file_size - phys_addr);
+                // Map backing memory with full access so later protection changes are allowed.
+                ptr = MapViewOfFile3(backing, process, reinterpret_cast<PVOID>(virtual_addr),
+                                     phys_addr, view_size, MEM_REPLACE_PLACEHOLDER,
+                                     PAGE_EXECUTE_READWRITE, nullptr, 0);
+                ULONG view_prot = PAGE_EXECUTE_READWRITE;
+                if (!ptr) {
+                    // Fall back on read-write if full access is not allowed for the file.
+                    ptr = MapViewOfFile3(backing, process, reinterpret_cast<PVOID>(virtual_addr),
+                                         phys_addr, view_size, MEM_REPLACE_PLACEHOLDER,
+                                         PAGE_READWRITE, nullptr, 0);
+                    view_prot = PAGE_READWRITE;
+                }
+                ASSERT_MSG(ptr, "MapViewOfFile3 failed. {}", Common::GetLastErrorMsg());
+                if (prot != view_prot) {
+                    DWORD resultvar;
+                    const bool ret = VirtualProtect(ptr, size, prot, &resultvar);
+                    ASSERT_MSG(ret, "VirtualProtect failed. {}", Common::GetLastErrorMsg());
                 }
             }
         } else {
+            // No backing involved, allocate with VirtualAlloc2
             ptr =
                 VirtualAlloc2(process, reinterpret_cast<PVOID>(virtual_addr), size,
                               MEM_RESERVE | MEM_COMMIT | MEM_REPLACE_PLACEHOLDER, prot, nullptr, 0);
@@ -332,11 +326,10 @@ struct AddressSpace::Impl {
         VAddr virtual_addr = region->base;
         PAddr phys_base = region->phys_base;
         u64 size = region->size;
-        ULONG prot = region->prot;
         s32 fd = region->fd;
 
         bool ret = false;
-        if ((fd != -1 && prot != PAGE_READONLY) || (fd == -1 && phys_base != -1)) {
+        if (fd != -1 || phys_base != -1) {
             ret = UnmapViewOfFile2(process, reinterpret_cast<PVOID>(virtual_addr),
                                    MEM_PRESERVE_PLACEHOLDER);
         } else {
@@ -393,7 +386,7 @@ struct AddressSpace::Impl {
             it = regions.emplace_hint(std::next(it), virtual_addr,
                                       MemoryRegion(virtual_addr, next_region_phys_base,
                                                    next_region_size, region.prot, region.fd,
-                                                   region.is_mapped));
+                                                   region.file_size, region.is_mapped));
         }
 
         // At this point, the region's base will match virtual_addr.
@@ -415,7 +408,7 @@ struct AddressSpace::Impl {
             regions.emplace_hint(std::next(it), next_region_addr,
                                  MemoryRegion(next_region_addr, next_region_phys_base,
                                               next_region_size, region.prot, region.fd,
-                                              region.is_mapped));
+                                              region.file_size, region.is_mapped));
 
             // Use VirtualFreeEx to create the split.
             if (!VirtualFreeEx(process, LPVOID(region.base), region.size,
@@ -435,7 +428,8 @@ struct AddressSpace::Impl {
         }
     }
 
-    void* Map(VAddr virtual_addr, PAddr phys_addr, u64 size, ULONG prot, s32 fd = -1) {
+    void* Map(VAddr virtual_addr, PAddr phys_addr, u64 size, ULONG prot, s32 fd = -1,
+              u64 file_size = 0) {
         std::scoped_lock lk{mutex};
         // Get a pointer to the region containing virtual_addr
         auto it = std::prev(regions.upper_bound(virtual_addr));
@@ -455,6 +449,7 @@ struct AddressSpace::Impl {
         region.phys_base = phys_addr;
         region.prot = prot;
         region.fd = fd;
+        region.file_size = file_size;
         return MapRegion(&region);
     }
 
@@ -586,13 +581,15 @@ struct AddressSpace::Impl {
         }
 
         const VAddr virtual_end = virtual_addr + size;
-        auto it = --regions.upper_bound(virtual_addr);
-        ASSERT_MSG(it != regions.end(), "addr {:#x} out of bounds", virtual_addr);
-        for (; it->first < virtual_end; it++) {
-            if (!it->second.is_mapped) {
+        auto it = regions.upper_bound(virtual_addr);
+        if (it != regions.begin()) {
+            --it;
+        }
+        for (; it != regions.end() && it->first < virtual_end; it++) {
+            const auto& region = it->second;
+            if (!region.is_mapped || region.base + region.size <= virtual_addr) {
                 continue;
             }
-            const auto& region = it->second;
             const u64 range_addr = std::max(region.base, virtual_addr);
             const u64 range_size = std::min(region.base + region.size, virtual_end) - range_addr;
             DWORD old_flags{};
@@ -667,6 +664,23 @@ enum PosixPageProtection {
             return PAGE_NOACCESS;
         }
     }
+}
+
+[[nodiscard]] constexpr int ToPosixFlags(MemoryMapFlags flags) {
+    int posix_flags{};
+    if (False(flags & (MemoryMapFlags::Shared | MemoryMapFlags::Private))) {
+        posix_flags = MAP_PRIVATE;
+    }
+    if (True(flags & MemoryMapFlags::Private)) {
+        posix_flags |= MAP_PRIVATE;
+    }
+    if (True(flags & MemoryMapFlags::Anon)) {
+        posix_flags |= MAP_ANONYMOUS;
+    }
+    if (True(flags & MemoryMapFlags::Shared)) {
+        posix_flags |= MAP_SHARED;
+    }
+    return posix_flags;
 }
 
 struct AddressSpace::Impl {
@@ -772,7 +786,7 @@ struct AddressSpace::Impl {
         }
     }
 
-    void* Map(VAddr virtual_addr, PAddr phys_addr, u64 size, PosixPageProtection prot,
+    void* Map(VAddr virtual_addr, PAddr phys_addr, u64 size, PosixPageProtection prot, int flag,
               int fd = -1) {
 #ifdef __APPLE__
         if ((prot & PROT_EXEC) != 0) {
@@ -780,9 +794,8 @@ struct AddressSpace::Impl {
             phys_addr = -1;
         }
 #endif
-        const int handle = phys_addr != -1 ? (fd == -1 ? backing_fd : fd) : -1;
+        const int handle = fd != -1 ? fd : (phys_addr != -1 ? backing_fd : -1);
         const off_t host_offset = phys_addr != -1 ? phys_addr : 0;
-        const int flag = phys_addr != -1 ? MAP_SHARED : (MAP_ANONYMOUS | MAP_PRIVATE);
         void* ret = mmap(reinterpret_cast<void*>(virtual_addr), size, prot, MAP_FIXED | flag,
                          handle, host_offset);
         ASSERT_MSG(ret != MAP_FAILED, "mmap failed: {}", strerror(errno));
@@ -858,16 +871,45 @@ void* AddressSpace::Map(VAddr virtual_addr, u64 size, PAddr phys_addr, bool is_e
     // canonical copy of the memory and rely on the JIT to map translated code as executable.
     constexpr auto prot = PAGE_READWRITE;
 #endif
+#ifdef _WIN32
     return impl->Map(virtual_addr, phys_addr, size, prot);
+#else
+    const int flag = phys_addr != -1 ? MAP_SHARED : (MAP_ANONYMOUS | MAP_PRIVATE);
+    return impl->Map(virtual_addr, phys_addr, size, prot, flag);
+#endif
 }
 
-void* AddressSpace::MapFile(VAddr virtual_addr, u64 size, u64 offset, u32 prot, uintptr_t fd) {
+void* AddressSpace::MapFile(VAddr virtual_addr, u64 size, u64 offset, MemoryMapFlags flags,
+                            u32 prot, uintptr_t fd, u64 file_size) {
 #ifdef _WIN32
-    return impl->Map(virtual_addr, offset, size,
-                     ToWindowsProt(std::bit_cast<Core::MemoryProt>(prot)), fd);
+    // Windows blocks attempts to map a file view larger than the actual file.
+    // In these cases, map a file view of the file size, then map the rest as virtual memory.
+    const ULONG win_prot = ToWindowsProt(Core::MemoryProt(prot));
+    const u64 file_map_size =
+        offset < file_size ? std::min(size, Common::AlignUp(file_size - offset, 4_KB)) : 0;
+    if (file_map_size < size) {
+        impl->Map(virtual_addr + file_map_size, -1, size - file_map_size, win_prot);
+    }
+    if (file_map_size == 0) {
+        return reinterpret_cast<void*>(virtual_addr);
+    }
+    return impl->Map(virtual_addr, offset, file_map_size, win_prot, fd, file_size);
 #else
-    return impl->Map(virtual_addr, offset, size, ToPosixProt(std::bit_cast<Core::MemoryProt>(prot)),
-                     fd);
+    // POSIX platforms allow file mmaps larger than the file size,
+    // however attempts to read past the file's length cause a SIGBUS exception.
+    static const u64 host_page_size = sysconf(_SC_PAGESIZE);
+    const auto posix_prot = ToPosixProt(Core::MemoryProt(prot));
+    const u64 file_map_size =
+        offset < file_size ? std::min(size, Common::AlignUp(file_size - offset, host_page_size))
+                           : 0;
+    if (file_map_size < size) {
+        impl->Map(virtual_addr + file_map_size, -1, size - file_map_size, posix_prot,
+                  MAP_ANONYMOUS | MAP_PRIVATE);
+    }
+    if (file_map_size == 0) {
+        return reinterpret_cast<void*>(virtual_addr);
+    }
+    return impl->Map(virtual_addr, offset, file_map_size, posix_prot, ToPosixFlags(flags), fd);
 #endif
 }
 

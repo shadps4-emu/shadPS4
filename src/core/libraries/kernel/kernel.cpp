@@ -10,7 +10,6 @@
 #include "common/logging/log.h"
 #include "common/polyfill_thread.h"
 #include "common/thread.h"
-#include "common/va_ctx.h"
 #include "core/cpu_patches.h"
 #include "core/file_sys/fs.h"
 #include "core/libraries/error_codes.h"
@@ -81,7 +80,7 @@ static void KernelServiceThread(std::stop_token stoken) {
 }
 
 static PS4_SYSV_ABI void stack_chk_fail() {
-    void* caller = __builtin_return_address(0);
+    void* caller = reinterpret_cast<void*>(Core::g_guest_caller_address);
     auto* linker = Common::Singleton<Core::Linker>::Instance();
     auto* mod = linker ? linker->FindByAddress(reinterpret_cast<VAddr>(caller)) : nullptr;
     if (mod) {
@@ -192,7 +191,7 @@ s32 PS4_SYSV_ABI sceKernelUuidCreate(OrbisKernelUuid* orbisUuid) {
     return ORBIS_OK;
 }
 
-s32 PS4_SYSV_ABI kernel_ioctl(s32 fd, u64 cmd, VA_ARGS) {
+s32 PS4_SYSV_ABI kernel_ioctl(s32 fd, u32 cmd, void* arg) {
     auto* h = Common::Singleton<Core::FileSys::HandleTable>::Instance();
     auto* file = h->GetFile(fd);
     if (file == nullptr) {
@@ -205,8 +204,7 @@ s32 PS4_SYSV_ABI kernel_ioctl(s32 fd, u64 cmd, VA_ARGS) {
         g_posix_errno = ENOTTY;
         return -1;
     }
-    VA_CTX(ctx);
-    s32 result = file->device->ioctl(cmd, &ctx);
+    s32 result = file->device->ioctl(cmd, arg);
     LOG_TRACE(Lib_Kernel, "ioctl: fd = {:X} cmd = {:X} result = {}", fd, cmd, result);
     if (result < 0) {
         ErrSceToPosix(result);

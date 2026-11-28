@@ -10,7 +10,7 @@ std::shared_ptr<BaseDevice> ConsoleDevice::Create(u32 handle, const char*, s32, 
     return std::static_pointer_cast<BaseDevice>(std::make_shared<ConsoleDevice>(handle));
 }
 
-s32 ConsoleDevice::ioctl(u64 cmd, Common::VaCtx* args) {
+s32 ConsoleDevice::ioctl(u32 cmd, void* args) {
     LOG_ERROR(Kernel_Fs, "(STUBBED) called, cmd = {:#x}", cmd);
     return 0;
 }

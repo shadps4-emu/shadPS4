@@ -16,7 +16,7 @@ public:
 
     ~RngDevice() override = default;
 
-    s32 ioctl(u64 cmd, Common::VaCtx* args) override;
+    s32 ioctl(u32 cmd, void* args) override;
     s64 write(const void* buf, u64 nbytes) override;
     s64 readv(const Libraries::Kernel::OrbisKernelIovec* iov, s32 iovcnt) override;
     s64 writev(const Libraries::Kernel::OrbisKernelIovec* iov, s32 iovcnt) override;

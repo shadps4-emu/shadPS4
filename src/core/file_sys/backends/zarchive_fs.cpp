@@ -14,6 +14,7 @@
 #include "common/logging/log.h"
 #include "common/thread.h"
 #include "core/file_sys/backends/zarchive_fs.h"
+#include "core/memory/kernel.h"
 
 namespace Core::FileSys {
 
@@ -260,13 +261,18 @@ void ZArchiveFile::Stat(FileStat& out) {
     }
 }
 
-bool ZArchiveFile::Map(u8* addr, u64 size, u64 offset, u32 raw_prot, const FileMapContext& ctx) {
+bool ZArchiveFile::Map(VAddr addr, u64 size, u64 offset, MemoryMapFlags flags,
+                       MemoryProt raw_prot) {
     if (!IsOpen()) {
         return false;
     }
+    const auto& memory = Core::Memory::Instance();
+    auto& vm_map = memory->GetVmMap();
+    auto& address_space = memory->GetAddressSpace();
+
     // Reserve writable anonymous pages, populate them from the archive at
     // the requested offset, then drop to the requested protection.
-    ctx.map_anonymous(addr, size);
+    address_space.Map(addr, size);
 
     // Read straight into the mapped region.
     struct MapJob {
@@ -275,7 +281,7 @@ bool ZArchiveFile::Map(u8* addr, u64 size, u64 offset, u32 raw_prot, const FileM
         u8* dst;
         u64 remaining;
         u64 pos;
-    } job{m_reader->reader, m_node, addr, size, offset};
+    } job{m_reader->reader, m_node, std::bit_cast<u8*>(addr), size, offset};
 
     {
         std::scoped_lock lk{m_reader->mutex};
@@ -296,7 +302,17 @@ bool ZArchiveFile::Map(u8* addr, u64 size, u64 offset, u32 raw_prot, const FileM
             &job);
     }
 
-    ctx.protect(addr, size, raw_prot);
+    Core::MemoryPermission perms{};
+    if (True(raw_prot & MemoryProt::CpuRead)) {
+        perms |= Core::MemoryPermission::Read;
+    }
+    if (True(raw_prot & MemoryProt::CpuWrite)) {
+        perms |= Core::MemoryPermission::Write;
+    }
+    if (True(raw_prot & MemoryProt::CpuExec)) {
+        perms |= Core::MemoryPermission::Execute;
+    }
+    address_space.Protect(reinterpret_cast<VAddr>(addr), size, perms);
     return true;
 }
 

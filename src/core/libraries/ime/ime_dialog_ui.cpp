@@ -23,7 +23,7 @@
 #include "core/libraries/ime/ime_kb_layout.h"
 #include "core/libraries/ime/ime_ui_shared.h"
 #include "core/libraries/pad/pad.h"
-#include "core/memory.h"
+#include "core/memory/kernel.h"
 #include "core/tls.h"
 #include "imgui/imgui_std.h"
 #include "imgui/renderer/imgui_core.h"

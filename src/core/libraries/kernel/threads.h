@@ -24,6 +24,12 @@ int PS4_SYSV_ABI posix_pthread_attr_getaffinity_np(const PthreadAttrT* pattr, si
 int PS4_SYSV_ABI posix_pthread_attr_setaffinity_np(PthreadAttrT* pattr, size_t cpusetsize,
                                                    const Cpuset* cpusetp);
 
+int PS4_SYSV_ABI posix_pthread_attr_setstack(PthreadAttrT* attr, void* stackaddr, size_t stacksize);
+
+void* AllocateSystemStack(size_t size);
+
+void FreeSystemStack(void* addr, size_t size);
+
 int PS4_SYSV_ABI posix_pthread_create(PthreadT* thread, const PthreadAttrT* attr,
                                       PthreadEntryFunc start_routine, void* arg);
 
@@ -64,7 +70,8 @@ void RegisterThreads(Core::Loader::SymbolsResolver* sym);
 
 class Thread {
 public:
-    explicit Thread() = default;
+    explicit Thread(size_t stack_size = 1_MB, bool system_stack = false)
+        : stack_size{stack_size}, system_stack{system_stack} {}
     ~Thread() {
         Stop();
     }
@@ -73,6 +80,12 @@ public:
         this->func = std::move(func);
         PthreadAttrT attr{};
         posix_pthread_attr_init(&attr);
+        if (system_stack) {
+            stack_addr = AllocateSystemStack(stack_size);
+            posix_pthread_attr_setstack(&attr, stack_addr, stack_size);
+        } else {
+            posix_pthread_attr_setstacksize(&attr, stack_size);
+        }
         posix_pthread_create(&thread, &attr, HOST_CALL(RunWrapper), this);
         posix_pthread_attr_destroy(&attr);
     }
@@ -81,6 +94,10 @@ public:
         if (thread) {
             posix_pthread_join(thread, nullptr);
             thread = nullptr;
+        }
+        if (stack_addr) {
+            FreeSystemStack(stack_addr, stack_size);
+            stack_addr = nullptr;
         }
     }
 
@@ -108,6 +125,9 @@ private:
     PthreadT thread{};
     std::function<void(std::stop_token)> func;
     std::stop_source stop;
+    size_t stack_size;
+    bool system_stack;
+    void* stack_addr{};
 };
 
 } // namespace Libraries::Kernel

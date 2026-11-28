@@ -7,7 +7,7 @@
 
 #include "common/alignment.h"
 #include "core/debug_state.h"
-#include "core/memory.h"
+#include "core/memory/kernel.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/buffer_cache/buffer.h"
 #include "video_core/buffer_cache/buffer_cache.h"

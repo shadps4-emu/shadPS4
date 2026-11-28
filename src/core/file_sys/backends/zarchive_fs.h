@@ -69,7 +69,7 @@ public:
         return MmapPolicy::Copy;
     }
 
-    bool Map(u8* addr, u64 size, u64 offset, u32 raw_prot, const FileMapContext& ctx) override;
+    bool Map(VAddr addr, u64 size, u64 offset, MemoryMapFlags flags, MemoryProt raw_prot) override;
 
     bool IsReadOnly() const override {
         return true;

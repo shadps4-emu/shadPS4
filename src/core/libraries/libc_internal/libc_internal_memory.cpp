@@ -180,13 +180,13 @@ void* PS4_SYSV_ABI sceLibcMspaceCreate(const char* name, void* base, size_t size
         mspace->owns_memory = false;
     } else {
         const u64 map_size = Common::AlignUp(size, MspaceMapGranularity);
-        void* addr = nullptr;
+        VAddr addr = 0;
         if (map_size == 0 || Libraries::Kernel::sceKernelMapNamedFlexibleMemory(
                                  &addr, map_size, MspaceProt, 0, name) != ORBIS_OK) {
             LOG_ERROR(Lib_LibcInternal, "failed to map {:#x} bytes", map_size);
             return nullptr;
         }
-        mspace->base = static_cast<u8*>(addr);
+        mspace->base = reinterpret_cast<u8*>(addr);
         mspace->size = map_size;
         mspace->owns_memory = true;
     }
@@ -216,7 +216,7 @@ s32 PS4_SYSV_ABI sceLibcMspaceDestroy(void* handle) {
         g_mspaces.erase(it);
     }
     if (mspace->owns_memory) {
-        Libraries::Kernel::sceKernelMunmap(mspace->base, mspace->size);
+        Libraries::Kernel::sceKernelMunmap(reinterpret_cast<VAddr>(mspace->base), mspace->size);
     }
     return 0;
 }

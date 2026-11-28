@@ -4,7 +4,7 @@
 #include "common/debug.h"
 #include "core/debug_state.h"
 #include "core/emulator_settings.h"
-#include "core/memory.h"
+#include "core/memory/kernel.h"
 #include "shader_recompiler/resource.h"
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/amdgpu/liverpool.h"
@@ -466,6 +466,7 @@ bool Rasterizer::BindResources(const Pipeline* pipeline) {
 }
 
 void Rasterizer::BindVertexBuffers(const GraphicsPipeline* pipeline) {
+    Common::RecursiveSharedLock lock{mapped_ranges_mutex};
     const auto& regs = liverpool->regs;
     VertexInputs<vk::VertexInputAttributeDescription2EXT> attributes;
     VertexInputs<vk::VertexInputBindingDescription2EXT> bindings;
@@ -499,8 +500,10 @@ void Rasterizer::BindVertexBuffers(const GraphicsPipeline* pipeline) {
     // Build list of ranges covering the requested buffers
     VertexInputs<BufferRange> ranges{};
     for (const auto& buffer : guest_buffers) {
-        if (buffer.base_address != 0 && buffer.GetSize() > 0) {
-            ranges.emplace_back(buffer.base_address, buffer.base_address + buffer.GetSize());
+        const u64 mapped_size =
+            buffer.base_address != 0 ? MappedSize(buffer.base_address, buffer.GetSize()) : 0;
+        if (mapped_size != 0) {
+            ranges.emplace_back(buffer.base_address, buffer.base_address + mapped_size);
         }
     }
 
@@ -523,7 +526,7 @@ void Rasterizer::BindVertexBuffers(const GraphicsPipeline* pipeline) {
 
     // Map buffers for merged ranges
     for (auto& range : ranges_merged) {
-        const u64 size = memory->ClampRangeSize(range.base_address, range.GetSize());
+        const u64 size = range.GetSize();
         std::tie(range.buffer, range.offset) = buffer_cache.ObtainBuffer(range.base_address, size);
         needs_barrier |= runtime.IsBufferAccessed(range.buffer, range.offset, size);
         bound_buffers.emplace_back(range.buffer, range.offset, size,
@@ -536,13 +539,14 @@ void Rasterizer::BindVertexBuffers(const GraphicsPipeline* pipeline) {
     VertexInputs<vk::DeviceSize> host_sizes;
     VertexInputs<vk::DeviceSize> host_strides;
     for (const auto& buffer : guest_buffers) {
-        if (buffer.base_address != 0 && buffer.GetSize() > 0) {
-            const auto host_buffer_info =
-                std::ranges::find_if(ranges_merged, [&](const BufferRange& range) {
-                    return buffer.base_address >= range.base_address &&
-                           buffer.base_address < range.end_address;
-                });
-            ASSERT(host_buffer_info != ranges_merged.cend());
+        const auto host_buffer_info =
+            std::ranges::find_if(ranges_merged, [&](const BufferRange& range) {
+                return buffer.base_address >= range.base_address &&
+                       buffer.base_address < range.end_address;
+            });
+        const u64 mapped_size =
+            buffer.base_address != 0 ? MappedSize(buffer.base_address, buffer.GetSize()) : 0;
+        if (mapped_size != 0 && host_buffer_info != ranges_merged.cend()) {
             host_buffers.emplace_back(host_buffer_info->buffer->Handle());
             host_offsets.push_back(host_buffer_info->offset + buffer.base_address -
                                    host_buffer_info->base_address);
@@ -550,7 +554,7 @@ void Rasterizer::BindVertexBuffers(const GraphicsPipeline* pipeline) {
             host_buffers.emplace_back(VK_NULL_HANDLE);
             host_offsets.push_back(0);
         }
-        host_sizes.push_back(buffer.GetSize());
+        host_sizes.push_back(mapped_size);
         host_strides.push_back(buffer.GetStride());
     }
 
@@ -578,8 +582,7 @@ void Rasterizer::BindIndexBuffer(u32 index_offset, bool is_indirect) {
     const u32 num_indices =
         is_indirect ? regs.max_index_size : std::min(regs.num_indices, regs.max_index_size);
     const u64 requested_size = u64(num_indices) * index_size;
-    const u64 mapped_size =
-        base_address != 0 ? memory->ClampRangeSize(index_address, requested_size) : 0;
+    const u64 mapped_size = base_address != 0 ? MappedSize(index_address, requested_size) : 0;
     u32 index_buffer_size = static_cast<u32>(Common::AlignDown(mapped_size, index_size));
     vk::Buffer index_buffer{};
     u64 buffer_offset{};
@@ -784,6 +787,7 @@ bool Rasterizer::IsComputeImageClear(const Pipeline* pipeline) {
 
 void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Bindings& binding,
                              Shader::PushData& push_data) {
+    Common::RecursiveSharedLock lock{mapped_ranges_mutex};
     const u64 alignment = instance.StorageMinAlignment();
     for (const auto& desc : stage.buffers) {
         const auto src_access =
@@ -840,10 +844,11 @@ void Rasterizer::BindBuffers(const Shader::Info& stage, Shader::Backend::Binding
             }
         } else {
             const auto vsharp = desc.GetSharp(stage);
-            if (vsharp.base_address == 0 || vsharp.GetSize() == 0) {
+            const u64 size =
+                vsharp.base_address != 0 ? MappedSize(vsharp.base_address, vsharp.GetSize()) : 0;
+            if (size == 0) {
                 buffer_infos.emplace_back(VK_NULL_HANDLE, 0, VK_WHOLE_SIZE);
             } else {
-                const u64 size = memory->ClampRangeSize(vsharp.base_address, vsharp.GetSize());
                 if (size != vsharp.GetSize()) {
                     LOG_DEBUG(Render, "Clamped size from {} to {} for stage {:#x}",
                               vsharp.GetSize(), size, stage.pgm_hash);
@@ -1382,6 +1387,15 @@ bool Rasterizer::IsMapped(VAddr addr, u64 size) {
     return boost::icl::contains(mapped_ranges, range);
 }
 
+u64 Rasterizer::MappedSize(VAddr addr, u64 size) {
+    Common::RecursiveSharedLock lock{mapped_ranges_mutex};
+    const auto it = mapped_ranges.find(addr);
+    if (it == mapped_ranges.end()) {
+        return 0;
+    }
+    return std::min<u64>(size, it->upper() - addr);
+}
+
 void Rasterizer::MapMemory(VAddr addr, u64 size) {
     {
         std::scoped_lock lock{mapped_ranges_mutex};
@@ -1395,7 +1409,7 @@ void Rasterizer::RegisterMemory(VAddr addr, u64 size) {
 
 void Rasterizer::UnmapMemory(VAddr addr, u64 size) {
     buffer_cache.InvalidateMemory(addr, size);
-    texture_cache.UnmapMemory(addr, size);
+    liverpool->SendCommand<true>([this, addr, size] { texture_cache.UnmapMemory(addr, size); });
     {
         std::scoped_lock lock{mapped_ranges_mutex};
         mapped_ranges -= decltype(mapped_ranges)::interval_type::right_open(addr, addr + size);

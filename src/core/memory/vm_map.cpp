@@ -1,0 +1,973 @@
+// SPDX-FileCopyrightText: Copyright 2026 shadPS4 Emulator Project
+// SPDX-License-Identifier: GPL-2.0-or-later
+
+#include "common/assert.h"
+#include "common/elf_info.h"
+#include "core/libraries/kernel/orbis_error.h"
+#include "core/memory/address_space.h"
+#include "core/memory/blockpool.h"
+#include "core/memory/dmem_map.h"
+#include "core/memory/vm_map.h"
+#include "core/tls.h"
+#include "video_core/renderer_vulkan/vk_rasterizer.h"
+
+namespace Core {
+
+enum class VmFindSpace : u32 {
+    None = 0,
+    Any = 1,
+    Super = 2,
+    TlbAligned = 3,
+    Optimal = 4,
+    OptimalSuper = 5,
+    // Values >= 14 encode alignment as 1 << find_space
+};
+
+static VmFindSpace ComputeFindSpace(MemoryMapFlags flags, VmObject* object) {
+    const u32 align_log2 = GetMapAlignment(flags);
+    if (align_log2 >= 14) {
+        return static_cast<VmFindSpace>(align_log2);
+    }
+    const bool is_2mb = True(flags & MemoryMapFlags::Align2MB);
+    const bool is_device = object && object->type == VmObjectType::Device;
+    return static_cast<VmFindSpace>(is_2mb * 3 + (is_device ? 2 : 1));
+}
+
+static bool CanMerge(VmMap::Tree::iterator a, VmMap::Tree::iterator b, u32 sdk_version) {
+    if (a->end != b->start) {
+        return false;
+    }
+    if (a->object != b->object) {
+        return false;
+    }
+    if (a->object && a->offset + a->Size() != b->offset) {
+        return false;
+    }
+    constexpr auto mask =
+        ~(VmEntryFlags::InTransition | VmEntryFlags::InTransition2 | VmEntryFlags::NeedsWakeup);
+    if ((a->eflags & mask) != (b->eflags & mask)) {
+        return false;
+    }
+    if (a->protection != b->protection || a->max_protection != b->max_protection) {
+        return false;
+    }
+    if (a->inheritance != b->inheritance) {
+        return false;
+    }
+    if (a->wired_count != b->wired_count) {
+        return false;
+    }
+    if (a->ext_flags != b->ext_flags) {
+        return false;
+    }
+    if (std::strncmp(a->name, b->name, sizeof(a->name)) != 0) {
+        return false;
+    }
+    if (True(a->eflags & VmEntryFlags::NoCoalesce) && a->obj_entry_id != b->obj_entry_id) {
+        return false;
+    }
+    if (sdk_version < Common::ElfInfo::FW_550 && a->anon_addr != b->anon_addr) {
+        return false;
+    }
+    return true;
+}
+
+MemoryPermission ToHostPerm(MemoryProt guest_prot) {
+    MemoryPermission perms{};
+    if (True(guest_prot & (MemoryProt::CpuRead | MemoryProt::GpuRead))) {
+        perms |= MemoryPermission::Read;
+    }
+    if (True(guest_prot & (MemoryProt::CpuWrite | MemoryProt::GpuWrite))) {
+        perms |= MemoryPermission::Write;
+    }
+    if (True(guest_prot & MemoryProt::CpuExec)) {
+        perms |= MemoryPermission::Execute;
+    }
+    return perms;
+}
+
+void VmMap::Init(const boost::icl::interval_set<VAddr>& usable_regions, u32 sdk_version) {
+    const VAddr min_offset = usable_regions.begin()->lower();
+    const VAddr max_offset = usable_regions.rbegin()->upper();
+    m_usable_regions = usable_regions;
+    m_min_offset = min_offset;
+    m_max_offset = max_offset;
+    m_sdk_version = sdk_version;
+    m_wire_future = true;
+    m_heap_end = 0x6ff000000ULL; // real kernel applies an ASLR offset to this.
+    m_header.start = min_offset;
+    m_header.end = max_offset;
+    m_tree.Init(&m_header, min_offset, max_offset);
+}
+
+VmMap::Tree::iterator VmMap::Insert(Tree::iterator prev, VAddr start, VAddr end,
+                                    std::shared_ptr<VmObject> object, u64 offset, MemoryProt prot,
+                                    MemoryProt max_prot, VmEntryFlags eflags,
+                                    std::string_view name) {
+    ASSERT(Common::Is16KBAligned(start) && Common::Is16KBAligned(end));
+    auto* entry = new VmMapEntry{};
+    entry->start = start;
+    entry->end = end;
+    entry->object = object;
+    entry->offset = offset;
+    entry->protection = prot;
+    entry->max_protection = max_prot;
+    entry->eflags = eflags;
+    entry->inheritance = VmInherit::Copy;
+    entry->obj_entry_id = m_obj_entry_count++;
+    entry->anon_addr = Core::g_guest_caller_address;
+
+    if (!name.empty()) {
+        const auto len = std::min(name.size(), sizeof(entry->name) - 1);
+        std::memcpy(entry->name, name.data(), len);
+        entry->name[len] = '\0';
+    }
+
+    m_size += entry->Size();
+    auto it = m_tree.Link(prev, entry);
+    return it;
+}
+
+VAddr VmMap::FindSpaceAligned(VAddr start, u64 length, u64 alignment) {
+    const bool heap_limited = start - 0x200000000ULL < 0x500000001ULL;
+    for (;;) {
+        const VAddr found = m_tree.FindSpace(start, length);
+        if (!found) {
+            return 0;
+        }
+        const VAddr addr = Common::AlignUpPow2(found, alignment);
+        if (heap_limited && addr >= m_heap_end) {
+            return 0;
+        }
+        const VAddr usable = FindUsable(addr, length);
+        if (usable != addr) {
+            if (!usable) {
+                return 0;
+            }
+            start = usable;
+            continue;
+        }
+        const auto [entry, overlaps] = m_tree.LookupEntry(addr);
+        if (overlaps) {
+            start = entry->end;
+            continue;
+        }
+        if (const auto next = std::next(entry);
+            next != m_tree.end() && next->start < addr + length) {
+            start = next->end;
+            continue;
+        }
+        return addr;
+    }
+}
+
+VAddr VmMap::FindUsable(VAddr addr, u64 size) const {
+    for (const auto& region : m_usable_regions) {
+        if (region.upper() <= addr) {
+            continue;
+        }
+        const VAddr start = std::max(addr, region.lower());
+        if (start + size <= region.upper()) {
+            return start;
+        }
+    }
+    return 0;
+}
+
+bool VmMap::CoalescePrev(Tree::iterator prev, VAddr start, VAddr end, MemoryProt prot,
+                         MemoryProt max_prot, VmEntryFlags eflags, BudgetPtype budget_ptype,
+                         std::shared_ptr<VmObject>& object, u64& offset) {
+    if (prev == m_tree.end() || prev->end != start || prev->eflags != eflags ||
+        prev->wired_count != 0 || prev->budget_ptype != budget_ptype) {
+        return false;
+    }
+
+    const u64 prev_object_end = prev->offset + prev->Size();
+    if (const auto& prev_object = prev->object) {
+        if (prev_object->type != VmObjectType::Default) {
+            return false;
+        }
+        if (prev_object.use_count() > 1 && prev_object->size != prev_object_end) {
+            return false;
+        }
+        if (object ? !prev_object->AppendBacking(prev_object_end, object->anon.backing)
+                   : !prev_object->anon.backing.empty()) {
+            return false;
+        }
+        prev_object->size = prev_object_end + (end - start);
+    } else if (object) {
+        return false;
+    }
+
+    if (object || prev->inheritance != VmInherit::Copy || prev->protection != prot ||
+        prev->max_protection != max_prot || True(eflags & VmEntryFlags::NoCoalesce)) {
+        object = prev->object;
+        offset = prev_object_end;
+        return false;
+    }
+
+    m_size += end - start;
+    prev->end = end;
+    m_tree.ResizeFree(prev);
+    SimplifyEntry(prev);
+    return true;
+}
+
+VmMap::Tree::iterator VmMap::ClipStart(Tree::iterator entry, VAddr addr) {
+    ASSERT(addr > entry->start && addr < entry->end);
+    SimplifyEntry(entry);
+    EnsureObject(std::addressof(*entry));
+
+    auto* new_entry = new VmMapEntry{};
+    *new_entry = *entry;
+    static_cast<SplayTreeNode&>(*new_entry) = SplayTreeNode{};
+    new_entry->end = addr;
+    entry->offset += (addr - entry->start);
+    entry->start = addr;
+
+    return m_tree.Link(std::prev(entry), new_entry);
+}
+
+VmMap::Tree::iterator VmMap::ClipEnd(Tree::iterator entry, VAddr addr) {
+    ASSERT(addr > entry->start && addr < entry->end);
+    EnsureObject(std::addressof(*entry));
+
+    auto* new_entry = new VmMapEntry{};
+    *new_entry = *entry;
+    static_cast<SplayTreeNode&>(*new_entry) = SplayTreeNode{};
+
+    new_entry->start = addr;
+    new_entry->offset = entry->offset + (addr - entry->start);
+    entry->end = addr;
+    m_tree.ResizeFree(entry);
+    return m_tree.Link(entry, new_entry);
+}
+
+s32 VmMap::MapMemory(VAddr* out_addr, u64 size, MemoryProt prot, MemoryProt max_prot,
+                     MemoryMapFlags flags, std::shared_ptr<VmObject> object, u64 offset,
+                     std::string_view name) {
+    VAddr addr = *out_addr;
+
+    VmEntryFlags eflags = VmEntryFlags::None;
+    if (False(flags & (MemoryMapFlags::Shared | MemoryMapFlags::Anon)) && object) {
+        eflags |= VmEntryFlags::CopyOnWrite | VmEntryFlags::NeedsCopy;
+    }
+    if (True(flags & MemoryMapFlags::NoSync)) {
+        eflags |= VmEntryFlags::NoSync;
+    }
+    if (True(flags & MemoryMapFlags::NoCore)) {
+        eflags |= VmEntryFlags::NoCoredump;
+    }
+    if (True(flags & MemoryMapFlags::NoCoalesce)) {
+        eflags |= VmEntryFlags::NoCoalesce;
+    }
+    if (True(flags & MemoryMapFlags::Void)) {
+        eflags |= VmEntryFlags::NoFault;
+    }
+
+    bool is_system_map{};
+    const bool cow_system = True(flags & (MemoryMapFlags::System | MemoryMapFlags::Sanitizer));
+    BudgetPtype budget_ptype{BudgetPtype::Invalid};
+    if (!is_system_map) {
+        if (object) {
+            budget_ptype = object->budget_ptype;
+        } else {
+            budget_ptype = cow_system ? BudgetPtype::System : m_process_budget;
+        }
+    }
+
+    VmMap::Tree::iterator entry;
+    {
+        std::scoped_lock lk{lock};
+
+        if (True(flags & MemoryMapFlags::Stack)) {
+            if ((addr >> 47) == 0 && (addr >= 0xfc00000001ULL || addr - size >= 0xfc00000001ULL) &&
+                m_sdk_version >= Common::ElfInfo::FW_300) {
+                return ORBIS_KERNEL_ERROR_ENOMEM;
+            }
+            const auto [existing, found] = LookupEntry(addr);
+            if (found) {
+                return ORBIS_KERNEL_ERROR_ENOMEM;
+            }
+            eflags |= VmEntryFlags::GrowsDown;
+        } else if (True(flags & MemoryMapFlags::Fixed)) {
+            if ((addr >> 47) == 0 && False(flags & MemoryMapFlags::Sanitizer) &&
+                ((addr >> 34) >= 63 || addr + size > 0xfc00000000ULL) &&
+                m_sdk_version >= Common::ElfInfo::FW_300) {
+                return ORBIS_KERNEL_ERROR_EINVAL;
+            }
+            if (FindUsable(addr, size) != addr) {
+                return ORBIS_KERNEL_ERROR_ENOMEM;
+            }
+            if (False(flags & MemoryMapFlags::NoOverwrite)) {
+                Delete(addr, addr + size);
+            } else {
+                const auto [existing, found] = LookupEntry(addr);
+                if (found) {
+                    return ORBIS_KERNEL_ERROR_ENOMEM;
+                }
+                if (auto next = std::next(existing);
+                    next != m_tree.end() && (addr + size) > next->start) {
+                    return ORBIS_KERNEL_ERROR_ENOMEM;
+                }
+            }
+        } else {
+            const s32 ret = FindAddress(&addr, size, flags, object.get());
+            if (ret != 0) {
+                return ret;
+            }
+        }
+
+        auto [prev, found] = LookupEntry(addr);
+        const bool fresh_anon = !object || (True(flags & MemoryMapFlags::Anon) &&
+                                            object->type == VmObjectType::Default);
+        if (fresh_anon && False(flags & MemoryMapFlags::Stack) &&
+            CoalescePrev(prev, addr, addr + size, prot, max_prot, eflags, budget_ptype, object,
+                         offset)) {
+            *out_addr = addr;
+            return ORBIS_OK;
+        }
+        entry = Insert(prev, addr, addr + size, object, offset, prot, max_prot, eflags, name);
+        entry->budget_ptype = budget_ptype;
+
+        if (object && False(eflags & VmEntryFlags::NoFault)) {
+            switch (object->type) {
+            case VmObjectType::Device:
+                impl.Map(addr, size, offset, True(prot & MemoryProt::CpuExec));
+                break;
+            case VmObjectType::Vnode:
+                object->vnode.file->handle->Map(addr, size, offset, flags, prot);
+                break;
+            case VmObjectType::Default: {
+                object->ForEachBacking(entry->offset, size,
+                                       [&](u64 phys_addr, u64 size, u64 map_offset) {
+                                           impl.Map(addr + map_offset, size, phys_addr,
+                                                    True(prot & MemoryProt::CpuExec));
+                                       });
+                std::memset(reinterpret_cast<void*>(addr), 0, size);
+                break;
+            }
+            case VmObjectType::Blockpool:
+                break;
+            case VmObjectType::Self:
+                impl.Map(addr, size, -1, True(prot & MemoryProt::CpuExec));
+                break;
+            default:
+                UNREACHABLE_MSG("Unknown vm object type {}", u32(object->type));
+            }
+
+            // Read-only file mappings cannot be registered with userfaultfd in writeprotect mode.
+            const bool read_only_file =
+                object->type == VmObjectType::Vnode && prot == MemoryProt::CpuRead;
+            if (rasterizer && object->type != VmObjectType::Blockpool && !read_only_file) {
+                rasterizer->RegisterMemory(addr, size);
+            }
+
+            if (object->IsDmem()) {
+                dmem.RmapInsert(this, addr, addr + size, offset);
+            }
+        }
+
+        if (False(eflags & VmEntryFlags::NoCoalesce) && False(flags & MemoryMapFlags::Stack)) {
+            SimplifyEntry(entry);
+        }
+    }
+
+    if (entry->IsGpuMapping()) {
+        rasterizer->MapMemory(addr, size);
+    }
+
+    *out_addr = addr;
+    return ORBIS_OK;
+}
+
+s32 VmMap::FindAddress(VAddr* addr, u64 size, MemoryMapFlags flags, VmObject* object) {
+    const bool is_2mb = True(flags & MemoryMapFlags::Align2MB);
+    const VmFindSpace find_space = ComputeFindSpace(flags, object);
+
+    VAddr initial_addr = *addr;
+    if (is_2mb && find_space == VmFindSpace::Any) {
+        initial_addr = Common::AlignUpPow2(initial_addr, 2_MB);
+    }
+
+    const u64 alignment = 1ULL << static_cast<u32>(find_space);
+
+    while (true) {
+        VAddr loop_start = initial_addr;
+        if (find_space != VmFindSpace::None) {
+            while (true) {
+                *addr = m_tree.FindSpace(loop_start, size);
+                if (!*addr) {
+                    return ORBIS_KERNEL_ERROR_ENOMEM;
+                }
+                if (!is_2mb || find_space != VmFindSpace::Any) {
+                    break;
+                }
+                if (*addr < 0x80000000ULL || *addr + size >= 0x200000000ULL) {
+                    return ORBIS_KERNEL_ERROR_ENOMEM;
+                }
+                if (Common::Is2MBAligned(*addr)) {
+                    break;
+                }
+                loop_start = Common::AlignUpPow2(*addr, 2_MB);
+            }
+        }
+
+        if (loop_start - 0x200000000ULL < 0x500000001ULL) {
+            if (*addr >= m_heap_end) {
+                return ORBIS_KERNEL_ERROR_ENOMEM;
+            }
+        }
+
+        if (False(flags & MemoryMapFlags::Sanitizer) &&
+            ((loop_start >> 34) >= 63 || (loop_start + size) >= 0xfc00000001ULL) &&
+            m_sdk_version >= Common::ElfInfo::FW_300) {
+            return ORBIS_KERNEL_ERROR_ENOMEM;
+        }
+
+        if (find_space == VmFindSpace::Super || find_space == VmFindSpace::OptimalSuper) {
+            *addr = Common::AlignUpPow2(*addr, 2_MB);
+        } else if (static_cast<u32>(find_space) > 13) {
+            *addr = Common::AlignUpPow2(*addr, alignment);
+        }
+
+        if (const VAddr usable = FindUsable(*addr, size); usable != *addr) {
+            if (!usable) {
+                return ORBIS_KERNEL_ERROR_ENOMEM;
+            }
+            initial_addr = usable;
+            continue;
+        }
+
+        initial_addr = *addr;
+
+        auto [entry, found] = m_tree.LookupEntry(initial_addr);
+        if (alignment > 16_KB || find_space == VmFindSpace::Super) {
+            if (found) {
+                continue;
+            }
+            if (auto next = std::next(entry);
+                next != m_tree.end() && next->start < (initial_addr + size)) {
+                continue;
+            }
+        }
+
+        return ORBIS_OK;
+    }
+}
+
+s32 VmMap::Delete(VAddr start, VAddr end) {
+    auto [entry, found] = m_tree.LookupEntry(start);
+    if (!found) {
+        entry++;
+    } else if (entry->start < start) {
+        if (entry->IsBlockpool()) {
+            return ORBIS_KERNEL_ERROR_EINTR;
+        }
+        ClipStart(entry, start);
+    }
+
+    // Perform early GPU unmaps, these need to run before host unmaps
+    std::vector<std::pair<VAddr, u64>> gpu_unmaps;
+    for (auto temp = entry; temp != m_tree.end() && temp->start < end; ++temp) {
+        // Also check for partial blockpool entries, these cannot be unmapped.
+        if (end < temp->end && temp->IsBlockpool()) {
+            return ORBIS_KERNEL_ERROR_EINTR;
+        }
+        if (rasterizer && temp->IsGpuMapping()) {
+            gpu_unmaps.emplace_back(temp->start, std::min(temp->end, end) - temp->start);
+        }
+    }
+    if (!UnmapFromGpu(gpu_unmaps)) {
+        return Delete(start, end);
+    }
+
+    // Unmap each area in range
+    while (entry != m_tree.end() && entry->start < end) {
+        if (!entry->IsBlockpool() && entry->end > end) {
+            ClipEnd(entry, end);
+        }
+
+        if (entry->IsBlockpool()) {
+            blockpool.NameSplit(entry->start, entry->end);
+            blockpool.Unmap(*entry, entry->start, entry->Size());
+        } else {
+            if (entry->wired_count != 0) {
+                entry->wired_count = 1;
+                UnwireRange(entry, entry->end, {});
+            }
+            if (entry->object && entry->object->IsDmem()) {
+                dmem.RmapDelete(this, entry->start, entry->end, entry->offset);
+            }
+            u64 size_to_unmap = entry->Size();
+            const VAddr unmapped_addr = impl.Unmap(entry->start, &size_to_unmap);
+            if (rasterizer) {
+                rasterizer->RegisterMemory(unmapped_addr, size_to_unmap);
+            }
+            if (entry->object && entry->object->type == VmObjectType::Default) {
+                std::vector<PhysRange> freed;
+                entry->object->ForEachBacking(
+                    entry->offset, entry->Size(),
+                    [&](u64 phys_addr, u64 size, u64) { freed.push_back({phys_addr, size}); });
+                flex_pool.Free(freed);
+            }
+        }
+
+        m_size -= entry->Size();
+        ASSERT_MSG(entry->prev != nullptr, "unlinking entry with null prev");
+        ASSERT_MSG(entry->next != nullptr, "unlinking entry with null next");
+        auto next = m_tree.Unlink(entry);
+        delete std::addressof(*entry);
+
+        entry = next;
+    }
+
+    return ORBIS_OK;
+}
+
+bool VmMap::UpgradeLock() {
+    if (lock.try_upgrade()) {
+        ++lock.timestamp;
+        return true;
+    }
+    const u32 last_timestamp = lock.timestamp;
+    lock.unlock_shared();
+    lock.SxLock::lock();
+    const bool unchanged = last_timestamp == lock.timestamp;
+    ++lock.timestamp;
+    return unchanged;
+}
+
+bool VmMap::UnmapFromGpu(const std::vector<std::pair<VAddr, u64>>& ranges) {
+    if (ranges.empty()) {
+        return true;
+    }
+    lock.downgrade();
+    for (const auto& [addr, size] : ranges) {
+        rasterizer->UnmapMemory(addr, size);
+    }
+    return UpgradeLock();
+}
+
+s32 VmMap::Protect(DmemManager& dmem, VAddr start, VAddr end, MemoryProt new_prot, bool set_max) {
+    start = std::max(start, m_min_offset);
+    end = std::min(end, m_max_offset);
+
+    if (True(new_prot & MemoryProt::CpuWrite)) {
+        new_prot |= MemoryProt::CpuRead;
+    }
+
+    const auto resulting_prot = [&](const VmMapEntry& cur) {
+        return set_max ? static_cast<MemoryProt>(static_cast<u32>(cur.protection) &
+                                                 static_cast<u32>(new_prot))
+                       : new_prot;
+    };
+
+    std::scoped_lock lk{lock};
+
+    for (;;) {
+        auto [entry, found] = m_tree.LookupEntry(start);
+        if (!found) {
+            entry++;
+        } else if (!entry->IsBlockpool() && entry->start < start) {
+            ClipStart(entry, start);
+        }
+
+        // Validate each area in range
+        for (auto cur = entry; cur != m_tree.end() && cur->start < end; ++cur) {
+            if (set_max && cur->IsBlockpool()) {
+                return ORBIS_KERNEL_ERROR_EINTR;
+            }
+            MemoryProt eff = cur->max_protection;
+            if (True(cur->ext_flags & VmExtFlags::GpuOnly)) {
+                eff &= MemoryProt::GpuReadWrite;
+            }
+            if (True(cur->ext_flags & VmExtFlags::Hide)) {
+                eff = MemoryProt::NoAccess;
+            }
+            if (cur->IsDmem()) {
+                if (True(new_prot & (MemoryProt::GpuWrite | MemoryProt::CpuWrite))) {
+                    const PAddr entry_start = std::max(start, cur->start);
+                    const PAddr entry_end = std::min(end, cur->end);
+                    if (entry_start <= entry_end && entry_end - entry_start != 0) {
+                        if (dmem.IncludesWbGarlicMemory(entry_start - cur->start + cur->offset,
+                                                        entry_end - entry_start)) {
+                            return ORBIS_KERNEL_ERROR_EACCES;
+                        }
+                    }
+                }
+                VmMap& map = *this;
+                if (True(new_prot & MemoryProt::GpuReadWrite) &&
+                    dmem.CheckGpuWriteAlias(map, *cur, end)) {
+                    return ORBIS_KERNEL_ERROR_EACCES;
+                }
+            }
+        }
+
+        // Apply GPU unmaps based on protections, these need to run before host protections
+        std::vector<std::pair<VAddr, u64>> gpu_unmaps;
+        for (auto cur = entry; rasterizer && cur != m_tree.end() && cur->start < end; ++cur) {
+            if (!cur->IsBlockpool() && cur->IsGpuMapping() &&
+                False(resulting_prot(*cur) & MemoryProt::GpuReadWrite)) {
+                gpu_unmaps.emplace_back(cur->start, std::min(cur->end, end) - cur->start);
+            }
+        }
+        if (!UnmapFromGpu(gpu_unmaps)) {
+            continue;
+        }
+
+        // Apply protection changes
+        while (entry != m_tree.end() && entry->start < end) {
+            if (entry->IsBlockpool()) {
+                PAddr entry_start = std::max(start, entry->start);
+                entry_start = Common::AlignUpPow2(entry_start, Blockpool::BLOCK_SIZE);
+                PAddr entry_end = std::min(end, entry->end);
+                entry_end = Common::AlignDownPow2(entry_end, Blockpool::BLOCK_SIZE);
+                if (entry_start < entry_end) {
+                    const VAddr vm_start = entry->start - entry->offset;
+                    if (const s32 ret = blockpool.Protect(
+                            *entry, Blockpool::ToBlocks(entry_start - vm_start),
+                            Blockpool::ToBlocks(entry_end - vm_start), new_prot)) {
+                        return ret;
+                    }
+                }
+                ++entry;
+                continue;
+            }
+            if (entry->end > end) {
+                ClipEnd(entry, end);
+            }
+            MemoryProt old = entry->protection;
+            const bool had_gpu = entry->IsGpuMapping();
+            entry->protection = resulting_prot(*entry);
+            if (set_max) {
+                entry->max_protection = new_prot;
+            }
+
+            constexpr auto WriteProt = MemoryProt::CpuWrite | MemoryProt::GpuWrite;
+            if (False(old & WriteProt) && True(entry->protection & WriteProt) &&
+                True(entry->eflags & VmEntryFlags::CopyOnWrite) && entry->wired_count != 0 &&
+                entry->object->IsPageable()) {
+                ReplaceObject(std::addressof(*entry));
+                entry->eflags &= ~(VmEntryFlags::CopyOnWrite | VmEntryFlags::NeedsCopy);
+            }
+
+            if (auto prot = entry->protection; prot != old) {
+                impl.Protect(entry->start, entry->Size(), ToHostPerm(prot));
+            }
+            if (rasterizer && !had_gpu && entry->IsGpuMapping()) {
+                rasterizer->MapMemory(entry->start, entry->Size());
+            }
+
+            SimplifyEntry(entry);
+            ++entry;
+        }
+        return 0;
+    }
+}
+
+s32 VmMap::ProtectType(DmemManager& dmem, VAddr start, VAddr end, DmemMemoryType new_mtype,
+                       MemoryProt new_prot) {
+    if (new_mtype == DmemMemoryType::WbGarlic &&
+        True(new_prot & ~(MemoryProt::GpuRead | MemoryProt::CpuRead))) {
+        return ORBIS_KERNEL_ERROR_EACCES;
+    }
+
+    std::scoped_lock lk{lock};
+
+    start = std::max(start, m_min_offset);
+    end = std::min(end, m_max_offset);
+
+    for (;;) {
+        auto [entry, found] = m_tree.LookupEntry(start);
+        if (!found) {
+            ++entry;
+        }
+
+        if (entry != m_tree.end() && entry->IsBlockpool()) {
+            if (!Common::Is64KBAligned(start) || !Common::Is64KBAligned(end) || end > entry->end) {
+                return ORBIS_KERNEL_ERROR_EINVAL;
+            }
+            if (start < end) {
+                const VAddr vm_start = entry->start - entry->offset;
+                blockpool.TypeProtect(*entry, Blockpool::ToBlocks(start - vm_start),
+                                      Blockpool::ToBlocks(end - vm_start), new_mtype, new_prot);
+            }
+            return ORBIS_OK;
+        }
+
+        // Validate each area in range
+        auto last_entry = m_tree.end();
+        for (auto cur = entry; cur != m_tree.end() && cur->start < end; ++cur) {
+            if (True(cur->eflags & VmEntryFlags::IsSubMap)) {
+                return ORBIS_KERNEL_ERROR_EINVAL;
+            }
+            if (True(cur->ext_flags & (VmExtFlags::GpuOnly | VmExtFlags::Hide))) {
+                return ORBIS_KERNEL_ERROR_EACCES;
+            }
+            if ((static_cast<u32>(new_prot) & ~static_cast<u32>(cur->max_protection)) != 0) {
+                return ORBIS_KERNEL_ERROR_EACCES;
+            }
+            if (!cur->object || !cur->IsDmem()) {
+                return ORBIS_KERNEL_ERROR_ENOTSUP;
+            }
+
+            // Rmap alias check.
+            const VAddr vs = std::max(start, cur->start);
+            const VAddr ve = std::min(end, cur->end);
+            const PAddr ps = cur->offset + (vs - cur->start);
+            const PAddr pe = cur->offset + (ve - cur->start);
+            if (dmem.CheckRmapAlias(ps, pe, vs, ve)) {
+                return ORBIS_KERNEL_ERROR_EBUSY;
+            }
+
+            last_entry = cur;
+        }
+
+        if (entry == m_tree.end()) {
+            return ORBIS_OK;
+        }
+
+        if (entry->start < start) {
+            ClipStart(entry, start);
+        }
+        if (last_entry != m_tree.end() && last_entry->end > end) {
+            ClipEnd(last_entry, end);
+        }
+
+        // Apply GPU unmaps based on protections, these need to run before host protections
+        std::vector<std::pair<VAddr, u64>> gpu_unmaps;
+        if (rasterizer && False(new_prot & MemoryProt::GpuReadWrite)) {
+            for (auto cur = entry; cur != m_tree.end() && cur->start < end; ++cur) {
+                if (cur->IsGpuMapping()) {
+                    gpu_unmaps.emplace_back(cur->start, cur->Size());
+                }
+            }
+        }
+        if (!UnmapFromGpu(gpu_unmaps)) {
+            continue;
+        }
+
+        // Apply protection changes
+        for (auto cur = entry; cur != m_tree.end() && cur->start < end;) {
+            const MemoryProt old_prot = cur->protection;
+            const bool had_gpu = cur->IsGpuMapping();
+            cur->protection = new_prot;
+
+            if (old_prot != new_prot) {
+                impl.Protect(cur->start, cur->Size(), ToHostPerm(new_prot));
+            }
+            if (rasterizer && !had_gpu && cur->IsGpuMapping()) {
+                rasterizer->MapMemory(cur->start, cur->Size());
+            }
+            dmem.UpdateMtype(cur->offset, cur->offset + cur->Size(), new_mtype);
+
+            SimplifyEntry(cur);
+            ++cur;
+        }
+
+        return ORBIS_OK;
+    }
+}
+
+s32 VmMap::Wire(VAddr start, VAddr end, VmMapWireFlags flags) {
+    start = std::max(start, m_min_offset);
+    end = std::min(end, m_max_offset);
+    if (end <= start) {
+        return ORBIS_OK;
+    }
+
+    std::scoped_lock lk{lock};
+
+    const auto prot =
+        True(flags & VmMapWireFlags::Write) ? MemoryProt::CpuWrite : MemoryProt::NoAccess;
+    auto [entry, found] = m_tree.LookupEntry(start);
+    if (!found) {
+        if (False(flags & VmMapWireFlags::HolesOk)) {
+            return ORBIS_KERNEL_ERROR_EINVAL;
+        }
+        ++entry;
+    }
+
+    auto first_entry = entry;
+
+    while (entry != m_tree.end() && entry->start < end) {
+        if (entry->start < start) {
+            ClipStart(entry, start);
+        }
+        if (entry->end > end) {
+            ClipEnd(entry, end);
+        }
+
+        if (entry->protection == MemoryProt::NoAccess || (entry->protection & prot) != prot) {
+            if (False(flags & VmMapWireFlags::HolesOk)) {
+                auto next = std::next(entry);
+                if (next != m_tree.end() && next->start < end && next->start > entry->end) {
+                    return ORBIS_KERNEL_ERROR_EINVAL;
+                }
+            }
+            ++entry;
+            continue;
+        }
+
+        if (entry->wired_count == 0) {
+            const bool needs_budget =
+                !entry->object || (False(entry->object->flags & VmObjectFlags::WireBudget) &&
+                                   entry->object->IsPageable());
+            if (needs_budget && entry->budget_ptype > BudgetPtype::Invalid &&
+                entry->max_protection != MemoryProt::NoAccess) {
+                if (budget.ReserveWire(entry->budget_ptype, entry->Size())) {
+                    entry->wired_count = -1;
+                    UnwireRange(first_entry, entry->end, flags);
+                    return ORBIS_KERNEL_ERROR_EINVAL;
+                }
+                entry->eflags |= VmEntryFlags::InBudget;
+            }
+            entry->wired_count = 1;
+        } else {
+            entry->wired_count++;
+        }
+
+        if (!entry->object ||
+            (entry->object->IsPageable() && True(entry->eflags & VmEntryFlags::NeedsCopy) &&
+             True(entry->protection & MemoryProt::CpuWrite))) {
+            ReplaceObject(std::addressof(*entry));
+            entry->eflags &= ~VmEntryFlags::NeedsCopy;
+        }
+
+        if (False(flags & VmMapWireFlags::HolesOk)) {
+            auto next = std::next(entry);
+            if (next != m_tree.end() && entry->end < end && next->start > entry->end) {
+                UnwireRange(first_entry, entry->end, flags);
+                return ORBIS_KERNEL_ERROR_EINVAL;
+            }
+        }
+
+        ++entry;
+    }
+
+    for (auto it = first_entry; it != m_tree.end() && it->start < end;) {
+        SimplifyEntry(it);
+        ++it;
+    }
+
+    return ORBIS_OK;
+}
+
+void VmMap::UnwireRange(Tree::iterator first_entry, VAddr upto_addr, VmMapWireFlags flags) {
+    for (auto it = first_entry; it != m_tree.end() && it->start < upto_addr; ++it) {
+        if (it->wired_count == -1) {
+            it->wired_count = 0;
+        } else if (it->wired_count == 1) {
+            it->wired_count = 0;
+            if (True(it->eflags & VmEntryFlags::InBudget)) {
+                budget.ReleaseWire(it->budget_ptype, it->Size());
+                it->eflags &= ~VmEntryFlags::InBudget;
+            }
+        } else if (it->wired_count > 1) {
+            it->wired_count--;
+        }
+    }
+}
+
+void VmMap::SimplifyEntry(Tree::iterator entry) {
+    if (entry->object && entry->object->IsDmem() && m_sdk_version < Common::ElfInfo::FW_200) {
+        return;
+    }
+    if (True(entry->eflags &
+             (VmEntryFlags::InTransition | VmEntryFlags::InTransition2 | VmEntryFlags::IsSubMap))) {
+        return;
+    }
+    if (entry->IsBlockpool()) {
+        return;
+    }
+
+    auto prev = std::prev(entry);
+    if (prev != m_tree.end() && CanMerge(prev, entry, m_sdk_version)) {
+        m_tree.Unlink(prev);
+        entry->start = prev->start;
+        entry->offset = prev->offset;
+        if (auto new_prev = std::prev(entry); new_prev != m_tree.end()) {
+            m_tree.ResizeFree(new_prev);
+        }
+        delete std::addressof(*prev);
+    }
+    auto next = std::next(entry);
+    if (next != m_tree.end() && CanMerge(entry, next, m_sdk_version)) {
+        m_tree.Unlink(next);
+        entry->end = next->end;
+        m_tree.ResizeFree(entry);
+        delete std::addressof(*next);
+    }
+}
+
+void VmMap::Inherit(VAddr start, VAddr end, VmInherit inheritance) {
+    start = std::max(start, m_min_offset);
+    end = std::min(end, m_max_offset);
+    if (end < start) {
+        start = end;
+    }
+
+    std::scoped_lock lk{lock};
+
+    auto [entry, found] = m_tree.LookupEntry(start);
+    if (!found) {
+        ++entry;
+    } else if (entry->start < start) {
+        ClipStart(entry, start);
+    }
+
+    for (; entry != m_tree.end() && entry->start < end; ++entry) {
+        if (entry->end > end) {
+            ClipEnd(entry, end);
+        }
+        entry->inheritance = inheritance;
+        SimplifyEntry(entry);
+    }
+}
+
+void VmMap::NameRange(VAddr start, VAddr end, std::string_view name) {
+    start = std::max(start, m_min_offset);
+    end = std::min(end, m_max_offset);
+
+    if (end < start) {
+        start = end;
+    }
+
+    std::scoped_lock lk{lock};
+
+    auto [entry, found] = m_tree.LookupEntry(start);
+    auto origin = entry;
+    if (!found) {
+        ++entry;
+        origin = entry;
+    } else if (!entry->IsBlockpool() && entry->start < start) {
+        ClipStart(entry, start);
+    }
+
+    while (entry != m_tree.end() && entry->start < end) {
+        if (entry->IsBlockpool()) {
+            blockpool.SetName(std::max(entry->start, start), std::min(entry->end, end),
+                              name.data());
+        } else {
+            if (entry->end > end) {
+                ClipEnd(entry, end);
+            }
+            if (name.empty()) {
+                entry->name[0] = '\0';
+                return;
+            }
+            auto len = std::min(name.size(), sizeof(entry->name) - 1);
+            std::memcpy(entry->name, name.data(), len);
+            entry->name[len] = '\0';
+            const VAddr next_start = entry->end;
+            SimplifyEntry(m_sdk_version >= Common::ElfInfo::FW_700 ? entry : origin);
+            const auto [next, next_found] = m_tree.LookupEntry(next_start);
+            entry = next_found && next->start == next_start ? next : std::next(next);
+            continue;
+        }
+        ++entry;
+    }
+}
+
+} // namespace Core

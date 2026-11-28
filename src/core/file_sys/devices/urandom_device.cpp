@@ -14,7 +14,7 @@ std::shared_ptr<BaseDevice> URandomDevice::Create(u32 handle, const char*, s32, 
     return std::static_pointer_cast<BaseDevice>(std::make_shared<URandomDevice>(handle));
 }
 
-s32 URandomDevice::ioctl(u64 cmd, Common::VaCtx* args) {
+s32 URandomDevice::ioctl(u32 cmd, void* args) {
     LOG_ERROR(Kernel_Fs, "(STUBBED) called, cmd = {:#x}", cmd);
     return 0;
 }

@@ -10,7 +10,7 @@
 #include "core/libraries/avplayer/avplayer_handle_streamer.h"
 #include "core/libraries/avplayer/avplayer_source.h"
 #include "core/libraries/videodec/video_utils.h"
-#include "core/memory.h"
+#include "core/memory/kernel.h"
 
 #include <magic_enum/magic_enum.hpp>
 

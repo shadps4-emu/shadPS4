@@ -28,6 +28,7 @@
 #include "common/string_util.h"
 #include "core/file_sys/devices/console_device.h"
 #include "core/file_sys/devices/deci_tty_device.h"
+#include "core/file_sys/devices/dmem_device.h"
 #include "core/file_sys/devices/logger.h"
 #include "core/file_sys/devices/nop_device.h"
 #include "core/file_sys/devices/random_device.h"
@@ -43,7 +44,7 @@
 #include "core/libraries/kernel/posix_error.h"
 #include "core/libraries/libs.h"
 #include "core/libraries/net/net_kernel.h"
-#include "core/memory.h"
+#include "core/memory/kernel.h"
 #include "kernel.h"
 
 #ifdef _WIN32
@@ -88,6 +89,7 @@ static std::map<std::string, FactoryDevice> available_device = {
     {"/dev/deci_tty7",&D::DeciTtyDevice::Create },
     {"/dev/rng",      &D::RngDevice::Create },
     {"/dev/zero",  &D::ZeroDevice::Create },
+    {"/dev/dmem1", &D::DmemDevice::Create },
     // clang-format on
 };
 
@@ -1394,6 +1396,7 @@ s32 PS4_SYSV_ABI fstat(s32 fd, OrbisKernelStat* sb) {
     std::memset(sb, 0, sizeof(OrbisKernelStat));
 
     switch (file->type) {
+    case Core::FileSys::FileType::Blockpool:
     case Core::FileSys::FileType::Device: {
         s32 result = file->device->fstat(sb);
         if (result < 0) {

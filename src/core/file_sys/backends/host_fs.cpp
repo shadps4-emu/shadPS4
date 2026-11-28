@@ -7,6 +7,7 @@
 #include "common/string_util.h"
 #include "core/file_sys/backends/host_fs.h"
 #include "core/file_sys/fs.h"
+#include "core/memory/kernel.h"
 
 namespace Core::FileSys {
 
@@ -96,6 +97,36 @@ void HostFile::Stat(FileStat& out) {
     m_file.Flush();
     const auto info = m_file.GetInfo();
     out = info ? MakeFileStat(*info, m_inode) : FileStat{};
+}
+
+bool HostFile::Map(VAddr addr, u64 size, u64 offset, MemoryMapFlags flags, MemoryProt raw_prot) {
+    if (!IsOpen()) {
+        return false;
+    }
+    const auto& memory = Core::Memory::Instance();
+    auto& vm_map = memory->GetVmMap();
+    auto& address_space = memory->GetAddressSpace();
+    m_file.Flush();
+    const u64 file_size = m_file.GetSize();
+#ifdef _WIN32
+    if (False(flags & MemoryMapFlags::Shared) ||
+        m_file.GetAccessMode() != Common::FS::FileAccessMode::ReadWrite) {
+        // Windows limits what's possible with read-only files,
+        // so copy them into memory instead of mapping them.
+        address_space.Map(addr, size);
+        if (offset < file_size) {
+            const s64 position = m_file.Tell();
+            m_file.Seek(offset);
+            m_file.ReadRaw<u8>(reinterpret_cast<void*>(addr), std::min(size, file_size - offset));
+            m_file.Seek(position);
+        }
+        address_space.Protect(addr, size, Core::ToHostPerm(raw_prot));
+        return true;
+    }
+#endif
+    address_space.MapFile(addr, size, offset, flags, static_cast<u32>(raw_prot),
+                          m_file.GetFileMapping(), file_size);
+    return true;
 }
 
 HostDirectory::HostDirectory(const std::filesystem::path& root) : m_root(root) {

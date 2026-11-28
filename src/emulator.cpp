@@ -45,7 +45,7 @@
 #include "core/libraries/save_data/save_backup.h"
 #include "core/libraries/usbd/usbstorage.h"
 #include "core/linker.h"
-#include "core/memory.h"
+#include "core/memory/kernel.h"
 #include "core/user_settings.h"
 #include "emulator.h"
 #include "video_core/cache_storage.h"

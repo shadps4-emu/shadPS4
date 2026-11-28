@@ -12,7 +12,7 @@
 #include "core/emulator_settings.h"
 #include "core/libraries/kernel/process.h"
 #include "core/libraries/videoout/driver.h"
-#include "core/memory.h"
+#include "core/memory/kernel.h"
 #include "core/platform.h"
 #include "video_core/amdgpu/liverpool.h"
 #include "video_core/amdgpu/pm4_cmds.h"
