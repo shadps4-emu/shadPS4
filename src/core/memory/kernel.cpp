@@ -441,7 +441,7 @@ u64 MemoryManager::ClampRangeSize(VAddr addr, u64 size) {
         cursor = entry->end;
         ++entry;
     }
-    return std::min(cursor - addr, size);
+    return std::min<u64>(cursor - addr, size);
 }
 
 s32 MemoryManager::Protect(VAddr start, u64 size, MemoryProt new_prot) {
