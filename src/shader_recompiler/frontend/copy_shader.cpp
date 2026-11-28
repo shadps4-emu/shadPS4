@@ -1,13 +1,20 @@
 // SPDX-FileCopyrightText: Copyright 2024 shadPS4 Emulator Project
 // SPDX-License-Identifier: GPL-2.0-or-later
 
+#include <vector>
+
+#include "core/memory.h"
 #include "shader_recompiler/frontend/copy_shader.h"
 #include "shader_recompiler/frontend/decode.h"
 #include "shader_recompiler/ir/attribute.h"
 
 namespace Shader {
 
-CopyShaderData ParseCopyShader(std::span<const u32> code) {
+CopyShaderData ParseCopyShader(std::span<const u32> guest_code) {
+    std::vector<u32> code(guest_code.size());
+    Core::Memory::Instance()->CopySparseMemory(std::bit_cast<VAddr>(guest_code.data()),
+                                               reinterpret_cast<u8*>(code.data()),
+                                               guest_code.size_bytes());
     Gcn::GcnCodeSlice code_slice{code.data(), code.data() + code.size()};
     Gcn::GcnDecodeContext decoder;
 
