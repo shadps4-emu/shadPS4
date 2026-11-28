@@ -421,6 +421,29 @@ s32 MemoryManager::QueryProtection(VAddr addr, VAddr* out_start, VAddr* out_end,
     return ORBIS_OK;
 }
 
+u64 MemoryManager::ClampRangeSize(VAddr addr, u64 size) {
+    static constexpr u64 MinSizeToClamp = 1_GB;
+    if (size < MinSizeToClamp) {
+        return size;
+    }
+
+    std::shared_lock lk{vm_map.lock};
+    auto [entry, found] = vm_map.LookupEntryReadOnly(addr);
+    const auto end = vm_map.GetTree().end();
+    if (!found) {
+        ++entry;
+    }
+    VAddr cursor = found ? entry->end : (entry != end ? entry->start : addr + size);
+    if (found) {
+        ++entry;
+    }
+    while (entry != end && entry->start == cursor && !entry->IsFree() && cursor - addr < size) {
+        cursor = entry->end;
+        ++entry;
+    }
+    return std::min(cursor - addr, size);
+}
+
 s32 MemoryManager::Protect(VAddr start, u64 size, MemoryProt new_prot) {
     size = Common::AlignUpPow2((start & (PAGE_SIZE - 1)) + size, PAGE_SIZE);
     start = Common::AlignDownPow2(start, PAGE_SIZE);
