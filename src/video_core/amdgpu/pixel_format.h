@@ -90,16 +90,18 @@ enum class NumberClass : u8 {
     Uint = 2,
 };
 
-enum class CompSwizzle : u8 {
+enum class CompSwizzle : u16 {
     Zero = 0,
     One = 1,
+    RawOne = 2,
+    Reserved3 = 3,
     Red = 4,
     Green = 5,
     Blue = 6,
     Alpha = 7,
 };
 
-enum class NumberConversion : u32 {
+enum class NumberConversion : u8 {
     None = 0,
     UintToUscaled = 1,
     SintToSscaled = 2,
@@ -111,16 +113,25 @@ enum class NumberConversion : u32 {
 };
 
 union CompMapping {
+    u16 raw;
     struct {
-        CompSwizzle r;
-        CompSwizzle g;
-        CompSwizzle b;
-        CompSwizzle a;
+        CompSwizzle r : 4;
+        CompSwizzle g : 4;
+        CompSwizzle b : 4;
+        CompSwizzle a : 4;
     };
-    std::array<CompSwizzle, 4> array;
 
     bool operator==(const CompMapping& other) const {
-        return array == other.array;
+        return raw == other.raw;
+    }
+
+    CompSwizzle Get(u32 i) const {
+        return CompSwizzle((raw >> (i * 4)) & 0xf);
+    }
+
+    void Set(u32 i, CompSwizzle swizzle) {
+        raw &= ~(0xf << (i * 4));
+        raw |= u16(swizzle) << (i * 4);
     }
 
     template <typename T>
@@ -136,22 +147,13 @@ union CompMapping {
     [[nodiscard]] u32 ApplyMask(u32 mask) const {
         u32 swizzled_mask{};
         for (u32 i = 0; i < 4; ++i) {
-            swizzled_mask |= ((mask >> i) & 1) << Map(i);
+            swizzled_mask |= ((mask >> Map(i)) & 1) << i;
         }
         return swizzled_mask;
     }
 
-    [[nodiscard]] CompMapping Inverse() const {
-        CompMapping result{};
-        InverseSingle(result.r, CompSwizzle::Red);
-        InverseSingle(result.g, CompSwizzle::Green);
-        InverseSingle(result.b, CompSwizzle::Blue);
-        InverseSingle(result.a, CompSwizzle::Alpha);
-        return result;
-    }
-
     [[nodiscard]] u32 Map(u32 comp) const {
-        const u32 swizzled_comp = u32(array[comp]);
+        const u32 swizzled_comp = u32(raw >> (comp * 4)) & 0xf;
         constexpr u32 min_comp = u32(AmdGpu::CompSwizzle::Red);
         return swizzled_comp >= min_comp ? swizzled_comp - min_comp : comp;
     }
@@ -174,20 +176,6 @@ private:
             return data[3];
         default:
             UNREACHABLE();
-        }
-    }
-
-    void InverseSingle(CompSwizzle& dst, const CompSwizzle target) const {
-        if (r == target) {
-            dst = CompSwizzle::Red;
-        } else if (g == target) {
-            dst = CompSwizzle::Green;
-        } else if (b == target) {
-            dst = CompSwizzle::Blue;
-        } else if (a == target) {
-            dst = CompSwizzle::Alpha;
-        } else {
-            dst = CompSwizzle::Zero;
         }
     }
 };
@@ -231,7 +219,7 @@ constexpr NumberFormat RemapNumberFormat(const NumberFormat format, const DataFo
         case DataFormat::FormatBc5:
         case DataFormat::FormatBc6:
             // BC4/BC5 store non-color data (single/two-channel, used for normal maps),
-            // and BC6 is HDR float — none have sRGB Vulkan equivalents.
+            // and BC6 is HDR float, none have sRGB Vulkan equivalents.
             return NumberFormat::Unorm;
         default:
             return format;
@@ -253,66 +241,6 @@ constexpr NumberFormat RemapNumberFormat(const NumberFormat format, const DataFo
         [[fallthrough]];
     default:
         return format;
-    }
-}
-
-constexpr CompMapping RemapSwizzle(const DataFormat format, const CompMapping swizzle) {
-    switch (format) {
-    case DataFormat::Format1_5_5_5:
-    case DataFormat::Format11_11_10: {
-        CompMapping result;
-        result.r = swizzle.b;
-        result.g = swizzle.g;
-        result.b = swizzle.r;
-        result.a = swizzle.a;
-        return result;
-    }
-    case DataFormat::Format10_10_10_2: {
-        CompMapping result;
-        result.r = swizzle.a;
-        result.g = swizzle.b;
-        result.b = swizzle.g;
-        result.a = swizzle.r;
-        return result;
-    }
-    case DataFormat::Format4_4_4_4: {
-        // Remap to a more supported component order.
-        CompMapping result;
-        result.r = swizzle.g;
-        result.g = swizzle.b;
-        result.b = swizzle.a;
-        result.a = swizzle.r;
-        return result;
-    }
-    case DataFormat::Format5_6_5: {
-        // Remap to a more supported component order.
-        CompMapping result;
-        result.r = swizzle.b;
-        result.g = swizzle.g;
-        result.b = swizzle.r;
-        result.a = swizzle.a;
-        return result;
-    }
-    case DataFormat::Format8:
-    case DataFormat::Format16:
-    case DataFormat::Format32: {
-        // PS4 single-channel formats expose the texel as either R or A depending on dst_sel,
-        // but Vulkan single-channel formats expose it only via R. Redirect any selector
-        // that points at Alpha to Red so the texel is read correctly.
-        CompMapping result = swizzle;
-        const auto remap_alpha_to_red = [](CompSwizzle& c) {
-            if (c == CompSwizzle::Alpha) {
-                c = CompSwizzle::Red;
-            }
-        };
-        remap_alpha_to_red(result.r);
-        remap_alpha_to_red(result.g);
-        remap_alpha_to_red(result.b);
-        remap_alpha_to_red(result.a);
-        return result;
-    }
-    default:
-        return swizzle;
     }
 }
 

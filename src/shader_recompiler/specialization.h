@@ -10,13 +10,15 @@
 #include "shader_recompiler/frontend/fetch_shader.h"
 #include "shader_recompiler/info.h"
 #include "shader_recompiler/profile.h"
+#include "video_core/amdgpu/pixel_format.h"
 
 namespace Shader {
 
 struct VsAttribSpecialization {
     u32 divisor{};
     AmdGpu::NumberClass num_class{};
-    AmdGpu::CompMapping dst_select{};
+    AmdGpu::DataFormat data_format{};
+    AmdGpu::CompMapping dst_sel{};
 
     bool operator==(const VsAttribSpecialization&) const = default;
 };
@@ -29,7 +31,7 @@ struct BufferSpecialization {
     u32 num_format : 4;
     u32 index_stride : 2;
     u32 element_size : 2;
-    AmdGpu::CompMapping dst_select{};
+    AmdGpu::CompMapping dst_sel{};
     AmdGpu::NumberConversion num_conversion{};
 
     bool operator==(const BufferSpecialization& other) const {
@@ -37,7 +39,7 @@ struct BufferSpecialization {
                swizzle_enable == other.swizzle_enable &&
                (!is_formatted ||
                 (data_format == other.data_format && num_format == other.num_format &&
-                 dst_select == other.dst_select && num_conversion == other.num_conversion)) &&
+                 dst_sel == other.dst_sel && num_conversion == other.num_conversion)) &&
                (!swizzle_enable ||
                 (index_stride == other.index_stride && element_size == other.element_size));
     }
@@ -48,7 +50,8 @@ struct ImageSpecialization {
     bool is_integer = false;
     bool is_storage = false;
     bool is_srgb = false;
-    AmdGpu::CompMapping dst_select{};
+    AmdGpu::DataFormat data_format{};
+    AmdGpu::CompMapping dst_sel{};
     AmdGpu::NumberConversion num_conversion{};
     // FIXME any pipeline cache changes needed?
     u32 num_bindings = 0;
@@ -108,7 +111,8 @@ struct StageSpecialization {
                                                            : 1);
                              }
                              spec.num_class = AmdGpu::GetNumberClass(sharp.GetNumberFmt());
-                             spec.dst_select = sharp.DstSelect();
+                             spec.data_format = AmdGpu::DataFormat(sharp.data_format);
+                             spec.dst_sel = sharp.DstSelect();
                          });
         }
         u32 binding{};
@@ -118,9 +122,9 @@ struct StageSpecialization {
                          spec.is_formatted = desc.is_formatted;
                          spec.swizzle_enable = sharp.swizzle_enable;
                          if (spec.is_formatted) {
-                             spec.data_format = static_cast<u32>(sharp.GetDataFmt());
+                             spec.data_format = sharp.data_format;
                              spec.num_format = static_cast<u32>(sharp.GetNumberFmt());
-                             spec.dst_select = sharp.DstSelect();
+                             spec.dst_sel = sharp.DstSelect();
                              spec.num_conversion = sharp.GetNumberConversion();
                          }
                          if (spec.swizzle_enable) {
@@ -134,7 +138,8 @@ struct StageSpecialization {
                          spec.is_integer = AmdGpu::IsInteger(sharp.GetNumberFmt());
                          spec.is_storage = desc.is_written;
                          if (spec.is_storage) {
-                             spec.dst_select = sharp.DstSelect();
+                             spec.data_format = AmdGpu::DataFormat(sharp.data_format);
+                             spec.dst_sel = sharp.DstSelect();
                          } else {
                              spec.is_srgb = sharp.GetNumberFmt() == AmdGpu::NumberFormat::Srgb;
                          }

@@ -8,6 +8,7 @@
 #include "common/assert.h"
 #include "shader_recompiler/backend/spirv/emit_spirv_discard_frag.h"
 #include "shader_recompiler/backend/spirv/emit_spirv_quad_rect.h"
+#include "video_core/amdgpu/pixel_format.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 #include "video_core/renderer_vulkan/vk_graphics_pipeline.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
@@ -259,7 +260,8 @@ GraphicsPipeline::GraphicsPipeline(
     std::array<vk::Format, Shader::IR::NumRenderTargets> color_formats;
     for (s32 i = 0; i < key.num_color_attachments; ++i) {
         const auto& col_buf = key.color_buffers[i];
-        const auto format = LiverpoolToVK::SurfaceFormat(col_buf.data_format, col_buf.num_format);
+        const auto format = LiverpoolToVK::SurfaceFormat(AmdGpu::DataFormat(col_buf.data_format),
+                                                         AmdGpu::NumberFormat(col_buf.num_format));
         const auto color_format =
             instance.GetSupportedFormat(format, vk::FormatFeatureFlagBits2::eColorAttachment);
         if (!instance.IsFormatSupported(color_format,
@@ -360,13 +362,13 @@ GraphicsPipeline::GraphicsPipeline(
                                                      : vk::BlendFactor::eZero; // 1-A
         }
 
+        const auto num_format = AmdGpu::NumberFormat(key.color_buffers[i].num_format);
+
         auto& attachment = attachments[i];
         LiverpoolToVK::NormalizeMinMaxBlend(attachment.colorBlendOp, attachment.srcColorBlendFactor,
-                                            attachment.dstColorBlendFactor,
-                                            key.color_buffers[i].num_format);
+                                            attachment.dstColorBlendFactor, num_format);
         LiverpoolToVK::NormalizeMinMaxBlend(attachment.alphaBlendOp, attachment.srcAlphaBlendFactor,
-                                            attachment.dstAlphaBlendFactor,
-                                            key.color_buffers[i].num_format);
+                                            attachment.dstAlphaBlendFactor, num_format);
 
         const auto color_scaled_min_max =
             (attachment.colorBlendOp == vk::BlendOp::eMin ||

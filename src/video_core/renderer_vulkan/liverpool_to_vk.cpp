@@ -4,6 +4,7 @@
 #include "common/assert.h"
 #include "common/number_utils.h"
 #include "video_core/amdgpu/pixel_format.h"
+#include "video_core/amdgpu/swizzle.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
 
 #include <magic_enum/magic_enum.hpp>
@@ -718,11 +719,15 @@ static constexpr std::array formats{
     // 1_5_5_5
     CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format1_5_5_5, AmdGpu::NumberFormat::Unorm,
                             vk::Format::eA1R5G5B5UnormPack16),
+    CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format1_5_5_5, AmdGpu::NumberFormat::Uint,
+                            vk::Format::eA1R5G5B5UnormPack16),
     // 5_5_5_1
     CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format5_5_5_1, AmdGpu::NumberFormat::Unorm,
                             vk::Format::eR5G5B5A1UnormPack16),
     // 4_4_4_4
     CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format4_4_4_4, AmdGpu::NumberFormat::Unorm,
+                            vk::Format::eB4G4R4A4UnormPack16),
+    CreateSurfaceFormatInfo(AmdGpu::DataFormat::Format4_4_4_4, AmdGpu::NumberFormat::Uint,
                             vk::Format::eB4G4R4A4UnormPack16),
     // 8_24
     // 24_8
@@ -828,8 +833,9 @@ vk::Format DepthFormat(DepthBuffer::ZFormat z_format, DepthBuffer::StencilFormat
 }
 
 vk::ClearValue ColorBufferClearValue(const AmdGpu::ColorBuffer& color_buffer) {
-    const auto comp_swizzle = color_buffer.Swizzle();
     const auto format = AmdGpu::DataFormat(color_buffer.info.format);
+    // The clear words are in memory layout, so only the host channel order applies.
+    const auto comp_swizzle = AmdGpu::RemapStoreSwizzle(format, AmdGpu::IdentityMapping);
     const auto number_type = color_buffer.GetFixedNumberFormat();
 
     const auto& c0 = color_buffer.clear_word0;

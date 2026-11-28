@@ -131,7 +131,7 @@ std::vector<u32> TranslateFragmentFrontFaceToSpirv(bool front_face_all_bits) {
     runtime_info.hw.fs.en_flags.front_face_ena = 1;
     runtime_info.hw.fs.addr_flags.front_face_ena = 1;
     runtime_info.hw.fs.front_face_all_bits = front_face_all_bits;
-    runtime_info.hw.fs.color_buffers[0].num_format = AmdGpu::NumberFormat::Float;
+    runtime_info.hw.fs.color_buffers[0].num_class = u16(AmdGpu::NumberClass::Float);
 
     Gcn::Translator translator(program.info, runtime_info, profile);
     translator.EmitPrologue(block);
@@ -173,7 +173,7 @@ std::vector<u32> TranslateFragmentPullModelToSpirv(bool use_amd_barycentrics) {
     RuntimeInfo runtime_info{};
     runtime_info.Initialize(HwStage::Fragment, SwStage::Fragment);
     runtime_info.hw.fs.addr_flags.persp_pull_model_ena = 1;
-    runtime_info.hw.fs.color_buffers[0].num_format = AmdGpu::NumberFormat::Float;
+    runtime_info.hw.fs.color_buffers[0].num_class = u16(AmdGpu::NumberClass::Float);
 
     IR::IREmitter ir{*block};
     ir.Prologue();

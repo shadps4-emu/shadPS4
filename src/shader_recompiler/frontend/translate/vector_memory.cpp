@@ -297,6 +297,7 @@ void Translator::BUFFER_STORE(u32 num_dwords, bool is_inst_typed, bool is_buffer
     buffer_info.globally_coherent.Assign(mubuf.glc);
     buffer_info.system_coherent.Assign(mubuf.slc);
     buffer_info.typed.Assign(is_inst_typed || is_buffer_typed);
+    buffer_info.format_x_op.Assign(is_buffer_typed && num_dwords == 1);
     if (is_inst_typed) {
         const auto& mtbuf = inst.control.mtbuf;
         buffer_info.inst_data_fmt.Assign(static_cast<AmdGpu::DataFormat>(mtbuf.dfmt));

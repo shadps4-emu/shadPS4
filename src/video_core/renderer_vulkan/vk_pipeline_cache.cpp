@@ -14,8 +14,10 @@
 #include "shader_recompiler/recompiler.h"
 #include "shader_recompiler/runtime_info.h"
 #include "video_core/amdgpu/liverpool.h"
+#include "video_core/amdgpu/pixel_format.h"
 #include "video_core/cache_storage.h"
 #include "video_core/renderer_vulkan/liverpool_to_vk.h"
+#include "video_core/renderer_vulkan/vk_graphics_pipeline.h"
 #include "video_core/renderer_vulkan/vk_instance.h"
 #include "video_core/renderer_vulkan/vk_pipeline_serialization.h"
 #include "video_core/renderer_vulkan/vk_scheduler.h"
@@ -242,7 +244,27 @@ const Shader::RuntimeInfo& PipelineCache::BuildRuntimeInfo(HwStage stage, SwStag
             };
         }
         for (u32 i = 0; i < Shader::MaxColorBuffers; i++) {
-            info.hw.fs.color_buffers[i] = graphics_key.color_buffers[i];
+            const auto& col_buf = regs.color_buffers[i];
+            const auto data_format = col_buf.GetDataFmt();
+            const auto num_format = col_buf.GetNumberFmt();
+            // Metal seems to have an issue where 8-bit unorm/snorm/sRGB outputs to render target
+            // need a bias applied to round correctly; detect and set the flag for that here.
+            const auto needs_unorm_fixup = profile.needs_unorm_fixup &&
+                                           (num_format == AmdGpu::NumberFormat::Unorm ||
+                                            num_format == AmdGpu::NumberFormat::Snorm ||
+                                            num_format == AmdGpu::NumberFormat::Srgb) &&
+                                           (data_format == AmdGpu::DataFormat::Format8 ||
+                                            data_format == AmdGpu::DataFormat::Format8_8 ||
+                                            data_format == AmdGpu::DataFormat::Format8_8_8_8);
+            info.hw.fs.color_buffers[i] = Shader::PsColorBuffer{
+                .swizzle = col_buf.Swizzle().raw,
+                .num_class = u16(AmdGpu::GetNumberClass(num_format)),
+                .num_conversion = u16(col_buf.GetNumberConversion()),
+                .export_format = u16(regs.color_export_format.GetFormat(i)),
+                .blend_self_scale =
+                    !col_buf.info.blend_bypass && regs.blend_control[i].NeedsSelfScale(),
+                .needs_unorm_fixup = needs_unorm_fixup,
+            };
         }
         // Lowered user clip planes ride the same emulation path as guest-exported distances, so
         // the fragment side arms whenever the hardware vertex stage lowers them, keeping its input
@@ -475,20 +497,12 @@ bool PipelineCache::RefreshGraphicsKey() {
         }
 
         // Fill color target information
-        auto& color_buffer = key.color_buffers[cb];
-        color_buffer.data_format = col_buf.GetDataFmt();
-        color_buffer.num_format = col_buf.GetNumberFmt();
-        color_buffer.num_conversion = col_buf.GetNumberConversion();
-        color_buffer.export_format = regs.color_export_format.GetFormat(cb);
-        color_buffer.swizzle = col_buf.Swizzle();
-
-        const auto& bc = regs.blend_control[cb];
-        color_buffer.blend_self_scale =
-            bc.enable && !col_buf.info.blend_bypass &&
-            (bc.color_func == AmdGpu::BlendControl::BlendFunc::Min ||
-             bc.color_func == AmdGpu::BlendControl::BlendFunc::Max) &&
-            bc.color_src_factor == AmdGpu::BlendControl::BlendFactor::SrcColor &&
-            bc.color_dst_factor == AmdGpu::BlendControl::BlendFactor::DstColor;
+        key.color_buffers[cb] = ColorBuffer{
+            .data_format = u16(col_buf.GetDataFmt()),
+            .num_format = u16(col_buf.GetNumberFmt()),
+            .blend_self_scale =
+                !col_buf.info.blend_bypass && regs.blend_control[cb].NeedsSelfScale(),
+        };
     }
 
     // Compile and bind shader stages
@@ -517,8 +531,7 @@ bool PipelineCache::RefreshGraphicsKey() {
         }
 
         // Apply swizzle to target mask
-        key.write_masks[cb] =
-            vk::ColorComponentFlags{key.color_buffers[cb].swizzle.ApplyMask(target_mask)};
+        key.write_masks[cb] = vk::ColorComponentFlags{col_buf.Swizzle().ApplyMask(target_mask)};
 
         // Fill color samples
         const u8 prev_color_samples = std::exchange(color_samples, col_buf.NumSamples());
