@@ -201,7 +201,9 @@ struct ComputeProgram {
         u32 num_user_regs : 5;
         u32 : 1;
         u32 tgid_enable : 3;
-        u32 : 5;
+        u32 tg_size_enable : 1;
+        u32 tigid_comp_count : 2;
+        u32 : 2;
         u32 lds_dwords : 9;
     } settings;
     u32 pad2;

@@ -13,6 +13,7 @@ static bool IsSharedAccess(const IR::Inst& inst) {
     case IR::Opcode::LoadSharedU16:
     case IR::Opcode::LoadSharedU32:
     case IR::Opcode::LoadSharedU64:
+    case IR::Opcode::PredicatedWriteSharedU32:
     case IR::Opcode::WriteSharedU16:
     case IR::Opcode::WriteSharedU32:
     case IR::Opcode::WriteSharedU64:
