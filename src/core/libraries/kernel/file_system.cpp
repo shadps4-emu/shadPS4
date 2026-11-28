@@ -38,6 +38,7 @@
 #include "core/file_sys/directories/normal_directory.h"
 #include "core/file_sys/directories/pfs_directory.h"
 #include "core/file_sys/fs.h"
+#include "core/libraries/kernel/equeue.h"
 #include "core/libraries/kernel/file_system.h"
 #include "core/libraries/kernel/orbis_error.h"
 #include "core/libraries/kernel/posix_error.h"
@@ -475,6 +476,8 @@ s32 PS4_SYSV_ABI close(s32 fd) {
         ReleaseFlockState(to_delete);
         if (to_delete->type == Core::FileSys::FileType::Regular) {
             to_delete->handle.reset();
+        } else if (to_delete->type == Core::FileSys::FileType::Equeue) {
+            CloseEqueue(fd);
         }
         to_delete->is_opened = false;
         delete to_delete;
@@ -1440,8 +1443,12 @@ s32 PS4_SYSV_ABI fstat(s32 fd, OrbisKernelStat* sb) {
         return Libraries::Net::KernelFstat(fd, sb);
     }
     case Core::FileSys::FileType::Equeue: {
-        LOG_ERROR(Kernel_Fs, "(STUBBED) file type {}", magic_enum::enum_name(file->type.load()));
-        break;
+        const s32 result = FstatEqueue(fd, sb);
+        if (result < 0) {
+            ErrSceToPosix(result);
+            return -1;
+        }
+        return result;
     }
     default:
         UNREACHABLE_MSG("{}", u32(file->type.load()));
