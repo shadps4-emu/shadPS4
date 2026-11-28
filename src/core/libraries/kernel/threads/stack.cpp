@@ -16,11 +16,13 @@ static constexpr size_t RoundUp(size_t size) {
 }
 
 int ThreadState::CreateStack(PthreadAttr* attr) {
+#ifndef _WIN32
     if ((attr->stackaddr_attr) != nullptr) {
         attr->guardsize_attr = 0;
         attr->flags |= PthreadAttrFlags::StackUser;
         return 0;
     }
+#endif
 
     /*
      * Round up stack size to nearest multiple of _thr_page_size so
