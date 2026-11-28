@@ -10,6 +10,7 @@
 #include "common/assert.h"
 #include "common/logging/log.h"
 #include "core/libraries/kernel/orbis_error.h"
+#include "core/libraries/kernel/sync/mutex.h"
 #include "core/libraries/kernel/sync/semaphore.h"
 #include "core/libraries/libs.h"
 #include "pthread.h"
@@ -254,10 +255,14 @@ public:
     }
 
 private:
-    std::mutex m_mutex;
+    // Alertable lock: a guest signal handler can interrupt a thread that is blocked acquiring it.
+    // With a plain std::mutex, a thread blocked here could never run its signal handler while
+    // another thread is parked inside its own handler holding this lock, which deadlocks
+    // stop-the-world garbage collectors.
+    TimedMutex m_mutex;
 
     std::list<Waiter*> m_waiters;
-    std::condition_variable m_destroy_cv;
+    std::condition_variable_any m_destroy_cv;
 
     std::string m_name;
 
