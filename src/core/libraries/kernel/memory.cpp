@@ -870,30 +870,19 @@ s32 PS4_SYSV_ABI posix_msync(void* addr, u64 len, s32 flags) {
 
 static constexpr s32 MAX_PRT_APERTURES = 3;
 static constexpr VAddr PRT_AREA_START_ADDR = 0x1000000000;
-static constexpr u64 PRT_AREA_SIZE = 0xec00000000;
+static constexpr VAddr PRT_AREA_END_ADDR = 0xfc00000000;
 static std::array<std::pair<VAddr, u64>, MAX_PRT_APERTURES> PrtApertures{};
 
 s32 PS4_SYSV_ABI sceKernelSetPrtAperture(s32 id, VAddr address, u64 size) {
-    if (id < 0 || id >= MAX_PRT_APERTURES) {
+    LOG_WARNING(Kernel_Vmm, "id = {}, address = {:#x}, size = {:#x}", id, address, size);
+    if (id < 0 || id >= MAX_PRT_APERTURES || !Common::Is16KBAligned(address) ||
+        !Common::Is16KBAligned(size) || address < PRT_AREA_START_ADDR ||
+        address >= PRT_AREA_END_ADDR || size > PRT_AREA_END_ADDR - address) {
         return ORBIS_KERNEL_ERROR_EINVAL;
     }
-
-    if (address < PRT_AREA_START_ADDR || address + size > PRT_AREA_START_ADDR + PRT_AREA_SIZE) {
-        return ORBIS_KERNEL_ERROR_EINVAL;
-    }
-
-    if (address % 4096 != 0) {
-        return ORBIS_KERNEL_ERROR_EINVAL;
-    }
-
-    LOG_WARNING(Kernel_Vmm,
-                "PRT aperture id = {}, address = {:#x}, size = {:#x} is set but not used", id,
-                address, size);
-
-    auto* memory = Core::Memory::Instance();
-    memory->SetPrtArea(id, address, size);
 
     PrtApertures[id] = {address, size};
+    g_memory->SetPrtArea(id, address, size);
     return ORBIS_OK;
 }
 
