@@ -33,8 +33,8 @@ struct KindDisplay {
 };
 KindDisplay DisplayOf(Kind kind);
 
-// Queue a shadNet notification: shows a transient toast AND appends to history.
-void Push(Kind kind, std::string text);
+// Queue a shadNet notification: appends to history and optionally shows a transient toast.
+void Push(Kind kind, std::string text, bool show_toast = true);
 
 // History access for UI (newest entries last)
 std::vector<HistoryEntry> GetHistory();

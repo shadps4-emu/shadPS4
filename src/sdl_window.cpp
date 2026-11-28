@@ -206,8 +206,10 @@ void WindowSDL::WaitEvent() {
     SDL_Event event;
 
     if (!SDL_WaitEvent(&event)) {
+        controllers.FlushPendingNotifications();
         return;
     }
+    controllers.FlushPendingNotifications();
 
     if (Libraries::Mouse::PushSDLEvent(event) || Libraries::Keyboard::PushSDLEvent(event)) {
         return;
@@ -241,6 +243,9 @@ void WindowSDL::WaitEvent() {
     case SDL_EVENT_GAMEPAD_ADDED:
     case SDL_EVENT_GAMEPAD_REMOVED:
         controllers.TryOpenSDLControllers();
+        break;
+    case SDL_EVENT_JOYSTICK_BATTERY_UPDATED:
+        controllers.OnGamepadBatteryEvent(event.jbattery.which);
         break;
     case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
     case SDL_EVENT_GAMEPAD_BUTTON_UP:

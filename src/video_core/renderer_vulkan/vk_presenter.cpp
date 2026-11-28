@@ -9,10 +9,10 @@
 #include "core/debug_state.h"
 #include "core/devtools/layer.h"
 #include "core/emulator_settings.h"
+#include "core/libraries/kernel/kernel.h"
 #include "core/libraries/system/systemservice.h"
 #include "imgui/friends_layer.h"
 #include "imgui/invitation_prompt_layer.h"
-#include "imgui/notifications_layer.h"
 #include "imgui/renderer/imgui_core.h"
 #include "imgui/renderer/imgui_impl_vulkan.h"
 #include "imgui/shadnet_notifications_layer.h"
@@ -428,14 +428,12 @@ static void SavePendingScreenshot(const ScreenshotReadback& readback) {
 
     LOG_INFO(Render_Vulkan, "Saved screenshot: {}", primary_path.string());
 
-    std::ifstream file(primary_path, std::ios::binary);
-    std::vector<u8> imgdata;
-    if (file) {
-        imgdata =
-            std::vector<u8>(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
+    {
+        Libraries::Kernel::OrbisNotificationRequest req{};
+        req.type = 1;
+        req.msg_id = 0x062;
+        Libraries::Kernel::sceKernelSendNotificationRequest(0, &req, sizeof(req), 0);
     }
-    shadNotifications::QueueNotification("Saved screenshot:\n" + primary_path.string(), 3.0f,
-                                         shadNotifications::position::BottomRight, imgdata);
 
     for (size_t i = 1; i < readback.paths.size(); ++i) {
         const auto& path = readback.paths[i];
@@ -451,14 +449,10 @@ static void SavePendingScreenshot(const ScreenshotReadback& readback) {
         }
 
         LOG_INFO(Render_Vulkan, "Saved screenshot: {}", path.string());
-        std::ifstream file(path, std::ios::binary);
-        std::vector<u8> imgdata;
-        if (file) {
-            imgdata = std::vector<u8>(std::istreambuf_iterator<char>(file),
-                                      std::istreambuf_iterator<char>());
-        }
-        shadNotifications::QueueNotification("Saved screenshot:\n" + path.string(), 3.0f,
-                                             shadNotifications::position::BottomRight, imgdata);
+        Libraries::Kernel::OrbisNotificationRequest req{};
+        req.type = 1;
+        req.msg_id = 0x062;
+        Libraries::Kernel::sceKernelSendNotificationRequest(0, &req, sizeof(req), 0);
     }
 }
 

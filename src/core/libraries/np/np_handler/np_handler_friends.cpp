@@ -3,7 +3,10 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 
 #include <algorithm>
+#include <cstdio>
 #include "common/logging/log.h"
+#include "core/emulator_settings.h"
+#include "core/libraries/kernel/kernel.h"
 #include "core/libraries/np/np_error.h"
 #include "core/libraries/np/np_handler/np_handler.h"
 #include "imgui/shadnet_notifications_layer.h"
@@ -71,7 +74,15 @@ void NpHandler::OnFriendStatus(s32 user_id, const ShadNet::NotifyFriendStatus& n
     LOG_DEBUG(NpHandler, "user_id={} FriendStatus '{}' is {}", user_id, n.npid,
               n.online ? "online" : "offline");
     if (n.online) {
-        ImGui::ShadNetNotify::Push(ImGui::ShadNetNotify::Kind::Online, n.npid + " is online");
+        ImGui::ShadNetNotify::Push(ImGui::ShadNetNotify::Kind::Online, n.npid + " is online",
+                                   EmulatorSettings.IsTrophyPopupDisabled());
+        Libraries::Kernel::OrbisNotificationRequest req{};
+        req.type = 12;
+        req.msg_id = 0x133;
+        req.target_id = -1;
+        req.user_id = user_id;
+        std::snprintf(req.message, 0xb4, "%s", n.npid.c_str());
+        Libraries::Kernel::sceKernelSendNotificationRequest(0, &req, sizeof(req), 0);
     }
     std::lock_guard lock(m_mutex_friend_state);
     auto& st = m_friend_state[user_id];

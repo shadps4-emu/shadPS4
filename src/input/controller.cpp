@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
 #include <cstring>
 #include <mutex>
 #include <unordered_set>
@@ -12,7 +13,9 @@
 
 #include "common/logging/log.h"
 #include "core/emulator_settings.h"
+#include "core/libraries/kernel/kernel.h"
 #include "core/libraries/kernel/time.h"
+#include "core/libraries/system/notification_ui.h"
 #include "core/libraries/system/userservice.h"
 #include "core/user_settings.h"
 #include "input/controller.h"
@@ -269,6 +272,42 @@ bool GameController::SetVibration(u8 smallMotor, u8 largeMotor) {
 
 static bool is_first_check = true;
 
+static std::optional<Libraries::SystemNotification::BatteryStatus> MapSdlBatteryStatus(
+    SDL_Gamepad* pad) {
+    using BatteryStatus = Libraries::SystemNotification::BatteryStatus;
+    if (!pad) {
+        return BatteryStatus::NoCharge;
+    }
+    int percent = -1;
+    const SDL_PowerState power = SDL_GetGamepadPowerInfo(pad, &percent);
+    switch (power) {
+    case SDL_POWERSTATE_CHARGING:
+        return BatteryStatus::Charging;
+    case SDL_POWERSTATE_CHARGED:
+        return BatteryStatus::Level3;
+    case SDL_POWERSTATE_ON_BATTERY:
+        if (percent < 0) {
+            return BatteryStatus::NoCharge;
+        }
+        if (percent <= 15) {
+            return BatteryStatus::LowBlinking;
+        }
+        if (percent <= 40) {
+            return BatteryStatus::Level1;
+        }
+        if (percent <= 75) {
+            return BatteryStatus::Level2;
+        }
+        return BatteryStatus::Level3;
+    case SDL_POWERSTATE_NO_BATTERY:
+        return BatteryStatus::NoCharge;
+    case SDL_POWERSTATE_UNKNOWN:
+    case SDL_POWERSTATE_ERROR:
+    default:
+        return std::nullopt;
+    }
+}
+
 void GameControllers::TryOpenSDLControllers() {
     using namespace Libraries::UserService;
     int controller_count;
@@ -292,10 +331,24 @@ void GameControllers::TryOpenSDLControllers() {
                 }
             }
             if (!still_connected) {
+                const s32 disc_uid = controllers[i]->user_id;
+                const std::string dev_name =
+                    controllers[i]->m_pad_name.empty() ? "DUALSHOCK 4" : controllers[i]->m_pad_name;
+                controllers[i]->m_pad_name.clear();
+                controllers[i]->m_low_battery_notified = false;
+                controllers[i]->m_pending_handover_notif = false;
                 SDL_CloseGamepad(pad);
                 controllers[i]->DisconnectController();
                 controllers[i]->user_id = -1;
                 slot_taken[i] = false;
+                if (!is_first_check) {
+                    Libraries::Kernel::OrbisNotificationRequest req{};
+                    req.type = 3;
+                    req.msg_id = 0x005;
+                    req.user_id = disc_uid;
+                    std::snprintf(req.message, sizeof(req.message), "%s", dev_name.c_str());
+                    Libraries::Kernel::sceKernelSendNotificationRequest(0, &req, sizeof(req), 0);
+                }
             }
         }
     }
@@ -325,6 +378,18 @@ void GameControllers::TryOpenSDLControllers() {
                 c->user_id = u->user_id;
                 UserManagement.LoginUser(u, i + 1);
                 c->ConnectController(pad);
+                const char* raw_name = SDL_GetGamepadName(pad);
+                c->m_pad_name = raw_name ? raw_name : "DUALSHOCK 4";
+                if (const auto bat = MapSdlBatteryStatus(pad)) {
+                    c->m_pending_handover_notif = false;
+                    c->m_low_battery_notified =
+                        (*bat == Libraries::SystemNotification::BatteryStatus::LowBlinking);
+                    Libraries::SystemNotification::AddDeviceHandoverNotification(
+                        u->user_id, u->user_name, *bat);
+                } else {
+                    c->m_pending_handover_notif = true;
+                    c->m_connect_time = std::chrono::steady_clock::now();
+                }
                 if (EmulatorSettings.IsMotionControlsEnabled()) {
                     if (SDL_SetGamepadSensorEnabled(c->m_sdl_gamepad, SDL_SENSOR_GYRO, true)) {
                         const float poll_rate =
@@ -357,6 +422,74 @@ void GameControllers::TryOpenSDLControllers() {
         }
     }
     SDL_free(new_joysticks);
+}
+
+void GameControllers::OnGamepadBatteryEvent(SDL_JoystickID id) {
+    SDL_Gamepad* pad = SDL_GetGamepadFromID(id);
+    if (!pad) {
+        return;
+    }
+    for (int i = 0; i < 4; ++i) {
+        auto* c = controllers[i];
+        if (c->m_sdl_gamepad != pad) {
+            continue;
+        }
+        const auto bat = MapSdlBatteryStatus(pad);
+        if (!bat.has_value()) {
+            break;
+        }
+        if (c->m_pending_handover_notif) {
+            c->m_pending_handover_notif = false;
+            c->m_low_battery_notified =
+                (*bat == Libraries::SystemNotification::BatteryStatus::LowBlinking);
+            auto* u = UserManagement.GetUserByID(c->user_id);
+            Libraries::SystemNotification::AddDeviceHandoverNotification(
+                c->user_id, u ? u->user_name : "", *bat);
+            break;
+        }
+        Libraries::SystemNotification::UpdateDeviceBatteryStatus(c->user_id, *bat);
+        if (*bat == Libraries::SystemNotification::BatteryStatus::LowBlinking) {
+            if (!c->m_low_battery_notified) {
+                c->m_low_battery_notified = true;
+                Libraries::Kernel::OrbisNotificationRequest req{};
+                req.type = 3;
+                req.msg_id = 0x004;
+                req.user_id = c->user_id;
+                const std::string dev_name = c->m_pad_name.empty() ? "DUALSHOCK 4" : c->m_pad_name;
+                std::snprintf(req.message, sizeof(req.message), "%s", dev_name.c_str());
+                Libraries::Kernel::sceKernelSendNotificationRequest(0, &req, sizeof(req), 0);
+            }
+        } else if (*bat == Libraries::SystemNotification::BatteryStatus::Charging ||
+                   *bat == Libraries::SystemNotification::BatteryStatus::Level2 ||
+                   *bat == Libraries::SystemNotification::BatteryStatus::Level3) {
+            c->m_low_battery_notified = false;
+        }
+        break;
+    }
+}
+
+void GameControllers::FlushPendingNotifications() {
+    const auto now = std::chrono::steady_clock::now();
+    for (int i = 0; i < 4; ++i) {
+        auto* c = controllers[i];
+        if (!c->m_pending_handover_notif || !c->m_sdl_gamepad) {
+            continue;
+        }
+        if (const auto bat = MapSdlBatteryStatus(c->m_sdl_gamepad)) {
+            c->m_pending_handover_notif = false;
+            c->m_low_battery_notified =
+                (*bat == Libraries::SystemNotification::BatteryStatus::LowBlinking);
+            auto* u = UserManagement.GetUserByID(c->user_id);
+            Libraries::SystemNotification::AddDeviceHandoverNotification(
+                c->user_id, u ? u->user_name : "", *bat);
+        } else if (now - c->m_connect_time >= std::chrono::milliseconds(300)) {
+            c->m_pending_handover_notif = false;
+            auto* u = UserManagement.GetUserByID(c->user_id);
+            Libraries::SystemNotification::AddDeviceHandoverNotification(
+                c->user_id, u ? u->user_name : "",
+                Libraries::SystemNotification::BatteryStatus::NoCharge);
+        }
+    }
 }
 u8 GameControllers::GetGamepadIndexFromJoystickId(SDL_JoystickID id) {
     auto g = SDL_GetGamepadFromID(id);

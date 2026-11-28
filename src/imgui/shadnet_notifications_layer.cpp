@@ -78,11 +78,13 @@ KindDisplay DisplayOf(Kind kind) {
     }
 }
 
-void Push(Kind kind, std::string text) {
+void Push(Kind kind, std::string text, bool show_toast) {
     std::lock_guard lock(g_mutex);
-    g_toasts.push_back({kind, text, 0.0f});
-    while (g_toasts.size() > kMaxToasts) {
-        g_toasts.pop_front();
+    if (show_toast) {
+        g_toasts.push_back({kind, text, 0.0f});
+        while (g_toasts.size() > kMaxToasts) {
+            g_toasts.pop_front();
+        }
     }
     g_history.push_back({kind, std::move(text), NowHMS()});
     while (g_history.size() > max_history) {
