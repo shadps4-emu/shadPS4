@@ -108,7 +108,6 @@ public:
 
     bool TryWriteBacking(void* address, const void* data, u64 size);
 
-    void SetPrtArea(u32 id, VAddr address, u64 size);
 
     void CopySparseMemory(VAddr source, u8* dest, u64 size);
 
@@ -128,8 +127,6 @@ public:
 
     s32 QueryProtection(VAddr addr, VAddr* start, VAddr* end, u32* prot,
                         VmEntryFlags* eflags = nullptr);
-
-    u64 ClampRangeSize(VAddr addr, u64 size);
 
     s32 Protect(VAddr start, u64 size, MemoryProt new_prot);
 
@@ -154,18 +151,6 @@ private:
     u64 total_direct_size{};
     u64 total_flexible_size{};
     s32 sdk_version{};
-
-    struct PrtArea {
-        VAddr start;
-        VAddr end;
-        bool mapped;
-
-        bool Overlaps(VAddr test_address, u64 test_size) const {
-            const VAddr overlap_end = test_address + test_size;
-            return start < overlap_end && test_address < end;
-        }
-    };
-    std::array<PrtArea, 3> prt_areas{};
 
     friend class ::Core::Devtools::Widget::MemoryMapViewer;
 };

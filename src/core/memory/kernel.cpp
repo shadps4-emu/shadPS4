@@ -75,21 +75,6 @@ void MemoryManager::SetupMemoryRegions(u64 flexible_size, bool use_extended_mem1
              total_flexible_size, total_direct_size);
 }
 
-void MemoryManager::SetPrtArea(u32 id, VAddr address, u64 size) {
-    PrtArea& area = prt_areas[id];
-    if (area.mapped) {
-        rasterizer->UnmapMemory(area.start, area.end - area.start);
-    }
-
-    area.start = address;
-    area.end = address + size;
-    area.mapped = true;
-
-    // Pretend the entire PRT area is mapped to avoid GPU tracking errors.
-    // The caches will use CopySparseMemory to fetch data which avoids unmapped areas.
-    rasterizer->MapMemory(address, size);
-}
-
 void MemoryManager::CopySparseMemory(VAddr virtual_addr, u8* dest, u64 size) {
     const auto& backing_pages = impl.BackingPages();
     while (size) {
@@ -419,29 +404,6 @@ s32 MemoryManager::QueryProtection(VAddr addr, VAddr* out_start, VAddr* out_end,
     }
 
     return ORBIS_OK;
-}
-
-u64 MemoryManager::ClampRangeSize(VAddr addr, u64 size) {
-    static constexpr u64 MinSizeToClamp = 1_GB;
-    if (size < MinSizeToClamp) {
-        return size;
-    }
-
-    std::shared_lock lk{vm_map.lock};
-    auto [entry, found] = vm_map.LookupEntryReadOnly(addr);
-    const auto end = vm_map.GetTree().end();
-    if (!found) {
-        ++entry;
-    }
-    VAddr cursor = found ? entry->end : (entry != end ? entry->start : addr + size);
-    if (found) {
-        ++entry;
-    }
-    while (entry != end && entry->start == cursor && !entry->IsFree() && cursor - addr < size) {
-        cursor = entry->end;
-        ++entry;
-    }
-    return std::min<u64>(cursor - addr, size);
 }
 
 s32 MemoryManager::Protect(VAddr start, u64 size, MemoryProt new_prot) {

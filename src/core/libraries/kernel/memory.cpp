@@ -877,7 +877,6 @@ s32 PS4_SYSV_ABI sceKernelSetPrtAperture(s32 id, VAddr address, u64 size) {
     }
 
     PrtApertures[id] = {address, size};
-    g_memory->SetPrtArea(id, address, size);
     return ORBIS_OK;
 }
 

@@ -1356,8 +1356,7 @@ u64 Rasterizer::MappedSize(VAddr addr, u64 size) {
     if (it == mapped_ranges.end()) {
         return 0;
     }
-    const u64 mapped_size = std::min<u64>(size, it->upper() - addr);
-    return mapped_size ? memory->ClampRangeSize(addr, mapped_size) : 0;
+    return std::min<u64>(size, it->upper() - addr);
 }
 
 void Rasterizer::MapMemory(VAddr addr, u64 size) {
