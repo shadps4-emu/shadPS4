@@ -411,6 +411,10 @@ s32 DmemManager::QueryAvailable(PAddr search_start, PAddr search_end, u64 alignm
     }
 
     DmemEntry* left_root = m_tree.Left(entry);
+    if (!left_root && astart < entry->start) {
+        DmemEntry* prev = m_tree.Prev(entry);
+        update_best(prev ? prev->end : 0, entry->start);
+    }
     if (left_root) {
         left_root = m_tree.SubtreeSplay(left_root, astart);
         Tree::SetLeft(entry, left_root);
