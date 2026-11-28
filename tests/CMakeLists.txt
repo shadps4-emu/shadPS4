@@ -49,6 +49,8 @@ set(SETTINGS_TEST_SOURCES
 set(NGS2_TEST_SOURCES
     # Under test
     ${CMAKE_SOURCE_DIR}/src/core/libraries/ngs2/ngs2_impl.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/libraries/ngs2/ngs2_mastering.cpp
+    ${CMAKE_SOURCE_DIR}/src/core/libraries/ngs2/ngs2_sampler.cpp
 
     # Minimal common and kernel support
     ${CMAKE_SOURCE_DIR}/src/core/emulator_settings.cpp

@@ -4343,7 +4343,7 @@ s32 PS4_SYSV_ABI sceFontOpenFontSet(OrbisFontLib library, u32 fontSetType, u32 o
             {
                 const u32 tag = (fontSetType >> 8) & 0xFFu;
                 const u32 variant = (fontSetType >> 20) & 0x0Fu;
-                u32 style_suffix = fontSetType & 0xFFu;
+                u32 style_suffix = Internal::GetSystemFontStyleSuffix(fontSetType);
 
                 switch (style_suffix) {
                 case 0xC3:
@@ -4423,7 +4423,7 @@ s32 PS4_SYSV_ABI sceFontOpenFontSet(OrbisFontLib library, u32 fontSetType, u32 o
             }
 
             {
-                const u32 style_suffix = fontSetType & 0xFFu;
+                const u32 style_suffix = Internal::GetSystemFontStyleSuffix(fontSetType);
                 const char* arabic_file = nullptr;
                 switch (style_suffix) {
                 case 0xC3:
@@ -4466,7 +4466,7 @@ s32 PS4_SYSV_ABI sceFontOpenFontSet(OrbisFontLib library, u32 fontSetType, u32 o
 
             {
                 const u32 tag = (fontSetType >> 8) & 0xFFu;
-                const u32 style_suffix = fontSetType & 0xFFu;
+                const u32 style_suffix = Internal::GetSystemFontStyleSuffix(fontSetType);
 
                 auto add_named_fallback = [&](std::string_view filename) {
                     if (filename.empty()) {
@@ -4483,9 +4483,11 @@ s32 PS4_SYSV_ABI sceFontOpenFontSet(OrbisFontLib library, u32 fontSetType, u32 o
                 const bool is_bold_like = (style_suffix == 0x47u) || (style_suffix == 0x57u) ||
                                           (style_suffix == 0xC7u) || (style_suffix == 0xD7u);
 
-                const bool needs_jppro = (tag == 0x04u) || (tag == 0x24u) || (tag == 0x34u) ||
-                                         (tag == 0x84u) || (tag == 0xA4u) || (tag == 0xACu) ||
-                                         (tag == 0xB4u) || (tag == 0xBCu);
+                const bool is_jpgothic1 = (fontSetType >> 24) == 0x19u;
+                const bool needs_jppro =
+                    !is_jpgothic1 &&
+                    ((tag == 0x04u) || (tag == 0x24u) || (tag == 0x34u) || (tag == 0x84u) ||
+                     (tag == 0xA4u) || (tag == 0xACu) || (tag == 0xB4u) || (tag == 0xBCu));
                 const bool needs_cngb = (tag == 0x80u) || (tag == 0x84u) || (tag == 0x90u) ||
                                         (tag == 0xA0u) || (tag == 0xA4u) || (tag == 0xACu) ||
                                         (tag == 0xB0u) || (tag == 0xB4u) || (tag == 0xBCu);

@@ -35,6 +35,7 @@ s32 SystemQueryBufferSize(const OrbisNgs2SystemOption* option,
 s32 SystemSetGrainSamples(OrbisNgs2Handle systemHandle, u32 numSamples);
 s32 SystemSetSampleRate(OrbisNgs2Handle systemHandle, u32 sampleRate);
 s32 SystemSetUserData(OrbisNgs2Handle systemHandle, uintptr_t userData);
+s32 VoiceControl(OrbisNgs2Handle voiceHandle, const OrbisNgs2VoiceParamHeader* paramList);
 s32 VoiceGetOwner(OrbisNgs2Handle voiceHandle, OrbisNgs2Handle* outRackHandle, u32* outVoiceId);
 s32 VoiceGetState(OrbisNgs2Handle voiceHandle, OrbisNgs2VoiceState* outState, size_t stateSize);
 s32 VoiceGetStateFlags(OrbisNgs2Handle voiceHandle, u32* outStateFlags);
