@@ -961,9 +961,24 @@ void Pthread::WakeForSignal() {
     USER_APC_OPTION option;
     option.UserApcFlags = QueueUserApcFlagsSpecialUserApc;
 
-    u64 res = NtQueueApcThreadEx(reinterpret_cast<HANDLE>(native_thr->GetHandle()), option,
-                                 ExceptionHandler, nullptr, nullptr, nullptr);
+    HANDLE handle = reinterpret_cast<HANDLE>(native_thr->GetHandle());
+    u64 res = NtQueueApcThreadEx(handle, option, ExceptionHandler, nullptr, nullptr, nullptr);
     ASSERT(res == 0);
+
+    // A special user APC does not interrupt a non-alertable wait: it only runs after the wait
+    // finishes (see the QueueUserAPC2 documentation). A guest thread blocked in a host
+    // std::condition_variable / std::mutex wait (e.g. sceKernelWaitEventFlag) would therefore never
+    // run the guest signal handler, which hangs stop-the-world garbage collectors (Unity).
+    // These waits are built on NtWaitForAlertByThreadId, so alerting the thread ends the wait and
+    // lets the pending APC run on the way back to user mode; the wait then continues as usual.
+    using NtAlertThreadByThreadId_t = LONG(NTAPI*)(HANDLE);
+    static const auto pNtAlertThreadByThreadId = reinterpret_cast<NtAlertThreadByThreadId_t>(
+        reinterpret_cast<void*>(
+            GetProcAddress(GetModuleHandleW(L"ntdll.dll"), "NtAlertThreadByThreadId")));
+    if (pNtAlertThreadByThreadId) {
+        pNtAlertThreadByThreadId(
+            reinterpret_cast<HANDLE>(static_cast<ULONG_PTR>(GetThreadId(handle))));
+    }
 #else
     pthread_kill(reinterpret_cast<pthread_t>(native_thr->GetHandle()), SIGUSR1);
 #endif
