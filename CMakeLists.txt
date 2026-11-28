@@ -471,6 +471,7 @@ set(SYSTEM_LIBS src/core/libraries/system/commondialog.cpp
                 src/core/libraries/ngs2/ngs2_eq.h
                 src/core/libraries/ngs2/ngs2_mastering.cpp
                 src/core/libraries/ngs2/ngs2_mastering.h
+                src/core/libraries/ngs2/ngs2_runtime.h
                 src/core/libraries/ngs2/ngs2_sampler.cpp
                 src/core/libraries/ngs2/ngs2_sampler.h
                 src/core/libraries/ngs2/ngs2_submixer.cpp
@@ -1474,10 +1475,13 @@ if (WIN32)
     else()
         target_link_options(shadps4 PRIVATE -Wl,--image-base=0x700000000000)
     endif()
-endif()
 
-if (WIN32)
+    # Set resources
     target_sources(shadps4 PRIVATE src/dist/shadps4.rc)
+    if (MSVC)
+        # The resources provide a manifest, so exclude what the linker provides
+        target_link_options(shadps4 PRIVATE /MANIFEST:NO)
+    endif()
 endif()
 
 if (NOT MSVC)

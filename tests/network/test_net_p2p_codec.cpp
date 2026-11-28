@@ -109,7 +109,7 @@ TEST_F(NetP2PCodec, DecodeRejectsMalformed) {
     EXPECT_TRUE(invalid({0xFF, 0x80 | 0x20 | 7, 'N', 'P'})); // truncated communication ID
 }
 
-TEST_F(NetP2PCodec, BroadcastPacketsAreDecodedAndReported) {
+TEST_F(NetP2PCodec, BroadcastPacketsAreDecoded) {
     int reported = 0;
     std::vector<u8> seen;
     FramingCodec observed{keys, [&](std::span<const u8> packet, const Endpoint& from) {
@@ -117,33 +117,54 @@ TEST_F(NetP2PCodec, BroadcastPacketsAreDecodedAndReported) {
                               seen.assign(packet.begin(), packet.end());
                               EXPECT_EQ(from, kPeer);
                           }};
-    // [FF][valid|broadcast|digest|UDP_SIMPLE][port 0x0E4A][digest][payload]
+    // [FF][valid|broadcast|digest|UDP_SIMPLE][src vport 0x0E][dst vport 0x4A][digest][payload]
     const std::vector<u8> broadcast{
         0xFF, 0x80 | 0x40 | 0x20 | 3, 0x0E, 0x4A, 'N', 'P', 'W', 'R', 'x', 'y'};
-    for (int i = 0; i < FramingCodec::MaxReportedBroadcasts + 5; ++i) {
-        const auto d = observed.Decode(broadcast, kPeer);
-        ASSERT_EQ(d.kind, Codec::Kind::Datagram);
-        EXPECT_EQ(d.dst_vport, 0x0E4A);
-        EXPECT_EQ(d.src_vport, 0x0E4A); // no source vport on the wire: the same port
-        EXPECT_EQ(d.payload, Bytes("xy"));
-    }
-    EXPECT_EQ(reported, FramingCodec::MaxReportedBroadcasts); // only the first few
-    EXPECT_EQ(seen, broadcast);                                // the whole packet
+    const auto d = observed.Decode(broadcast, kPeer);
+    ASSERT_EQ(d.kind, Codec::Kind::Datagram);
+    EXPECT_EQ(d.src_vport, 0x0E); // one byte each, unlike ordinary datagrams
+    EXPECT_EQ(d.dst_vport, 0x4A);
+    EXPECT_EQ(d.payload, Bytes("xy"));
 
-    // Without a digest the payload follows the port.
-    const auto small = observed.Decode(std::vector<u8>{0xFF, 0x80 | 0x40 | 3, 0, 3, 'z'}, kPeer);
+    // Without a digest the payload follows the vports.
+    const auto small = observed.Decode(std::vector<u8>{0xFF, 0x80 | 0x40 | 3, 2, 3, 'z'}, kPeer);
     EXPECT_EQ(small.kind, Codec::Kind::Datagram);
+    EXPECT_EQ(small.src_vport, 2);
     EXPECT_EQ(small.dst_vport, 3);
     EXPECT_EQ(small.payload, Bytes("z"));
 
-    // The digest filters broadcasts like everything else; no broadcast TCP; truncated.
+    // The digest filters broadcasts like everything else.
     keys->SetCommunicationId(CommunicationId{'O', 'T', 'H', 'R'});
     EXPECT_EQ(observed.Decode(broadcast, kPeer).kind, Codec::Kind::Invalid);
     keys->SetCommunicationId(std::nullopt);
-    EXPECT_EQ(observed.Decode(std::vector<u8>{0xFF, 0x80 | 0x40 | 7, 0, 3}, kPeer).kind,
-              Codec::Kind::Invalid);
-    EXPECT_EQ(observed.Decode(std::vector<u8>{0xFF, 0x80 | 0x40 | 3, 0}, kPeer).kind,
-              Codec::Kind::Invalid);
+
+    // Broadcasts that decode are not reported.
+    EXPECT_EQ(reported, 0);
+}
+
+TEST_F(NetP2PCodec, UndecodableBroadcastsAreReported) {
+    int reported = 0;
+    std::vector<u8> seen;
+    FramingCodec observed{keys, [&](std::span<const u8> packet, const Endpoint& from) {
+                              ++reported;
+                              seen.assign(packet.begin(), packet.end());
+                              EXPECT_EQ(from, kPeer);
+                          }};
+    // No broadcast TCP: invalid, and reported (only the first few).
+    const std::vector<u8> tcp{0xFF, 0x80 | 0x40 | 7, 0, 3};
+    for (int i = 0; i < FramingCodec::MaxReportedBroadcasts + 5; ++i) {
+        EXPECT_EQ(observed.Decode(tcp, kPeer).kind, Codec::Kind::Invalid);
+    }
+    EXPECT_EQ(reported, FramingCodec::MaxReportedBroadcasts);
+    EXPECT_EQ(seen, tcp); // the whole packet
+
+    // Truncated before the vports: invalid too.
+    FramingCodec fresh{keys, [&](std::span<const u8> packet, const Endpoint&) {
+                           seen.assign(packet.begin(), packet.end());
+                       }};
+    const std::vector<u8> truncated{0xFF, 0x80 | 0x40 | 3, 0};
+    EXPECT_EQ(fresh.Decode(truncated, kPeer).kind, Codec::Kind::Invalid);
+    EXPECT_EQ(seen, truncated);
 
     // Ordinary packets are not reported.
     const int before = reported;

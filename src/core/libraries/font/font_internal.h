@@ -903,6 +903,7 @@ s32 RenderCodepointToSurfaceWithScale(FontState& st, Libraries::Font::OrbisFontH
 const GlyphEntry* GetGlyphEntry(FontState& st, Libraries::Font::OrbisFontHandle handle, u32 code,
                                 FT_Face& face_out, float& scale_out);
 const SystemFontDefinition* FindSystemFontDefinition(u32 font_set_type);
+u32 GetSystemFontStyleSuffix(u32 font_set_type);
 BuiltinSystemFontSelection BuildBuiltinSystemFontSelection(u32 font_set_type);
 bool IsBuiltinFontPath(const std::filesystem::path& path);
 std::shared_ptr<std::vector<unsigned char>> LoadBuiltinFontBytesShared(

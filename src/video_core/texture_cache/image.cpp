@@ -198,18 +198,13 @@ Image::Image(const Vulkan::Instance& instance, Vulkan::Runtime& runtime_,
     };
 
     backing = &AddBacking(image_ci, info.num_samples);
-
-    Vulkan::SetObjectName(instance.GetDevice(), GetImage(),
-                          "Image {}x{}x{} {} {} {:#x}:{:#x} L:{} M:{} S:{}", info.size.width,
-                          info.size.height, info.size.depth, AmdGpu::NameOf(info.tile_mode),
-                          vk::to_string(info.pixel_format), info.guest_address, info.guest_size,
-                          info.resources.layers, info.resources.levels, info.num_samples);
 }
 
 Image::~Image() = default;
 
 Image::BackingImage& Image::AddBacking(const vk::ImageCreateInfo& create_info, u32 num_samples) {
     const auto previous_size = memory_usage_counter ? Common::AlignUp(SizeBytes(), 1024) : 0;
+    const bool is_extra_backing = !backing_images.empty();
     const size_t backing_index = backing ? backing - backing_images.data() : 0;
     auto& added_backing = backing_images.emplace_back();
     backing = &backing_images[backing_index];
@@ -218,6 +213,13 @@ Image::BackingImage& Image::AddBacking(const vk::ImageCreateInfo& create_info, u
     added_backing.num_samples = num_samples;
     added_backing.image = UniqueImage{instance.GetDevice(), instance.GetAllocator()};
     added_backing.image.Create(create_info);
+    Vulkan::SetObjectName(instance.GetDevice(), added_backing.image.image,
+                          "Image {}x{}x{} {} {} {:#x}:{:#x} L:{} M:{} S:{}{}",
+                          create_info.extent.width, create_info.extent.height,
+                          create_info.extent.depth, AmdGpu::NameOf(info.tile_mode),
+                          vk::to_string(info.pixel_format), info.guest_address, info.guest_size,
+                          info.resources.layers, info.resources.levels, num_samples,
+                          is_extra_backing ? " (backing)" : "");
     if (memory_usage_counter) {
         *memory_usage_counter += Common::AlignUp(SizeBytes(), 1024) - previous_size;
     }
@@ -229,6 +231,19 @@ ImageView& Image::FindView(const ImageViewInfo& view_info, bool ensure_guest_sam
         runtime->SetBackingSamples(this, info.num_samples);
     }
     return FindView(view_info, *backing);
+}
+
+Image::BackingImage& Image::FindBacking(vk::Extent3D extent, u32 num_samples) {
+    const auto it = std::ranges::find_if(backing_images, [&](const BackingImage& candidate) {
+        return candidate.image.image_ci.extent == extent && candidate.num_samples == num_samples;
+    });
+    if (it != backing_images.end()) {
+        return *it;
+    }
+    auto create_info = backing->image.image_ci;
+    create_info.extent = extent;
+    create_info.samples = LiverpoolToVK::NumSamples(num_samples, supported_samples);
+    return AddBacking(create_info, num_samples);
 }
 
 ImageView& Image::FindView(const ImageViewInfo& view_info, BackingImage& view_backing) {
