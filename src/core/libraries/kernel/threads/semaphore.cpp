@@ -7,6 +7,7 @@
 #include <mutex>
 #include <semaphore>
 
+#include "core/libraries/kernel/sync/mutex.h"
 #include "core/libraries/kernel/sync/semaphore.h"
 
 #include "common/logging/log.h"
@@ -261,7 +262,7 @@ public:
             return ORBIS_KERNEL_ERROR_ETIMEDOUT;
         }
 
-        s32 Wait(std::unique_lock<std::mutex>& lk, u32* timeout) {
+        s32 Wait(std::unique_lock<TimedMutex>& lk, u32* timeout) {
             lk.unlock();
             if (!timeout) {
                 // Wait indefinitely until we are woken up.
@@ -304,7 +305,8 @@ public:
     WaitList wait_list;
     std::string name;
     std::atomic<s32> token_count;
-    std::mutex mutex;
+    // Alertable lock, see EventFlagInternal::m_mutex.
+    TimedMutex mutex;
     s32 max_count;
     s32 init_count;
     bool is_fifo;
