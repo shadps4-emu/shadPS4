@@ -199,22 +199,22 @@ public:
 
     int CreateHandle();
     void DeleteHandle(int d);
-    File* UnrefHandle(int d);
+    std::shared_ptr<File> UnrefHandle(int d);
     int DuplicateHandleFrom(int old_fd, int min_fd = 0, bool cloexec = false);
     int DuplicateHandleTo(int old_fd, int target_fd, bool cloexec = false);
     s32 GetFdFlags(int d);
     void SetFdFlags(int d, s32 flags);
-    File* GetFile(int d);
-    File* GetSocket(int d);
+    std::shared_ptr<File> GetFile(int d);
+    std::shared_ptr<File> GetSocket(int d);
     std::vector<int> GetSocketHandles();
-    File* GetFile(const std::filesystem::path& host_name);
-    int GetFileDescriptor(File* file);
+    std::shared_ptr<File> GetFile(const std::filesystem::path& host_name);
+    int GetFileDescriptor(const std::shared_ptr<File>& file);
 
     void CreateStdHandles();
     void FlushAll();
 
 private:
-    std::vector<File*> m_files;
+    std::vector<std::shared_ptr<File>> m_files;
     std::vector<s32> m_fd_flags;
     std::mutex m_mutex;
 };
