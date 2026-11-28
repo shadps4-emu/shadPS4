@@ -133,8 +133,26 @@ public:
             }
         }
 #elif defined(__APPLE__)
-        const auto rel_time_ns = std::chrono::ceil<std::chrono::nanoseconds>(rel_time);
-        const auto timeout = dispatch_time(DISPATCH_TIME_NOW, rel_time_ns.count());
+        if (rel_time <= std::chrono::duration<Rep, Period>::zero()) {
+            return try_acquire_pending();
+        }
+        // Limit to ~95 years (3e18 ns) to prevent signed 64-bit overflow in dispatch_time
+        constexpr int64_t max_sec = 3'000'000'000LL;
+        constexpr int64_t max_ns = max_sec * 1'000'000'000LL;
+
+        int64_t ns = max_ns;
+        if constexpr (std::ratio_greater_equal_v<Period, std::ratio<1>>) {
+            constexpr int64_t max_count = max_sec * Period::den / Period::num;
+            if (rel_time.count() < max_count) {
+                ns = std::chrono::ceil<std::chrono::nanoseconds>(rel_time).count();
+            }
+        } else {
+            if (std::chrono::duration_cast<std::chrono::seconds>(rel_time).count() < max_sec) {
+                ns = std::chrono::ceil<std::chrono::nanoseconds>(rel_time).count();
+            }
+        }
+
+        const auto timeout = dispatch_time(DISPATCH_TIME_NOW, ns);
         return dispatch_semaphore_wait(sem, timeout) == 0;
 #else
         return sem.try_acquire_for(rel_time);
