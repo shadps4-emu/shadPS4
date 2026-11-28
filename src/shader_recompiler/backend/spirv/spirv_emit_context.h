@@ -430,6 +430,7 @@ public:
 
     Id read_const{};
     Id read_const_dynamic{};
+    Id read_const_buffer_dma{};
 
 private:
     void DefineArithmeticTypes();
@@ -455,6 +456,7 @@ private:
     Id DefineGetBdaPointer();
 
     Id DefineReadConst(bool dynamic);
+    Id DefineReadConstBufferDma();
 
     Id GetBufferSize(u32 sharp_idx);
 };

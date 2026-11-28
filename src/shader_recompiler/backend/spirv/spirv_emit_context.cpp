@@ -1305,6 +1305,53 @@ Id EmitContext::DefineReadConst(bool dynamic) {
     return func;
 }
 
+Id EmitContext::DefineReadConstBufferDma() {
+    const auto func_type{TypeFunction(U32[1], U32[4], U32[1])};
+    const auto func{OpFunction(U32[1], spv::FunctionControlMask::MaskNone, func_type)};
+    const auto vsharp{OpFunctionParameter(U32[4])};
+    const auto index{OpFunctionParameter(U32[1])};
+    Name(func, "read_const_buffer_dma");
+    const auto entry_label{AddLabel()};
+
+    // Use the range the bound buffer would have had (AmdGpu::Buffer::GetSize): num_records bytes,
+    // or num_records elements of stride bytes. Dwords past it read 0. 64-bit math, so a V# with
+    // num_records = 0xffffffff doesn't wrap.
+    const auto dword1{OpCompositeExtract(U32[1], vsharp, 1)};
+    const auto num_records{OpUConvert(U64, OpCompositeExtract(U32[1], vsharp, 2))};
+    const auto stride{
+        OpUConvert(U64, OpBitFieldUExtract(U32[1], dword1, ConstU32(16U), ConstU32(14U)))};
+    const auto size{OpSelect(U64, OpIEqual(U1[1], stride, u64_zero_value), num_records,
+                             OpIMul(U64, stride, num_records))};
+    const auto offset{OpShiftLeftLogical(U64, OpUConvert(U64, index), ConstU32(2U))};
+    const auto in_range{OpULessThan(U1[1], offset, size)};
+
+    // Check the range before touching memory: a DMA read of a page the GPU doesn't have yet is
+    // reported as a fault, and the buffer cache would then create a buffer at that address.
+    const auto read_label{OpLabel()};
+    const auto read_end_label{OpLabel()};
+    const auto merge_label{OpLabel()};
+    OpSelectionMerge(merge_label, spv::SelectionControlMask::MaskNone);
+    OpBranchConditional(in_range, read_label, merge_label);
+
+    // The base address is 40 bits. Its two low bits are ignored so the read stays dword aligned.
+    AddLabel(read_label);
+    const auto base_lo{OpBitwiseAnd(U32[1], OpCompositeExtract(U32[1], vsharp, 0), ConstU32(~3U))};
+    const auto base_hi{OpBitwiseAnd(U32[1], dword1, ConstU32(0xffU))};
+    const auto base{OpBitwiseOr(U64, OpUConvert(U64, base_lo),
+                                OpShiftLeftLogical(U64, OpUConvert(U64, base_hi), ConstU32(32U)))};
+    const auto value{
+        EmitDwordMemoryRead(OpIAdd(U64, base, offset), [&] { return u32_zero_value; })};
+    OpBranch(read_end_label);
+    AddLabel(read_end_label);
+    OpBranch(merge_label);
+
+    AddLabel(merge_label);
+    const auto result{OpPhi(U32[1], value, read_end_label, u32_zero_value, entry_label)};
+    OpReturnValue(result);
+    OpFunctionEnd();
+    return func;
+}
+
 void EmitContext::DefineFunctions() {
     if (info.uses_pack_10_11_11) {
         f32_to_uf11 = DefineFloat32ToUfloatM5(6, "f32_to_uf11");
@@ -1325,6 +1372,9 @@ void EmitContext::DefineFunctions() {
     if (True(info.readconst_types & Info::ReadConstType::Dynamic)) {
         LOG_DEBUG(Render_Recompiler, "Shader {:#x} uses dynamic ReadConst", info.pgm_hash);
         read_const_dynamic = DefineReadConst(true);
+    }
+    if (True(info.readconst_types & Info::ReadConstType::DynamicBuffer)) {
+        read_const_buffer_dma = DefineReadConstBufferDma();
     }
 }
 

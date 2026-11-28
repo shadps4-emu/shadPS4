@@ -70,6 +70,10 @@ Id EmitReadConstBuffer(EmitContext& ctx, u32 handle, Id index) {
     return result;
 }
 
+Id EmitReadConstBufferDma(EmitContext& ctx, Id vsharp, Id index) {
+    return ctx.OpFunctionCall(ctx.U32[1], ctx.read_const_buffer_dma, vsharp, index);
+}
+
 Id EmitGetAttribute(EmitContext& ctx, IR::Attribute attr, u32 comp, u32 index) {
     if (IR::IsParam(attr)) {
         const u32 param_index{u32(attr) - u32(IR::Attribute::Param0)};

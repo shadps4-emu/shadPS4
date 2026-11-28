@@ -233,6 +233,10 @@ void Visit(Info& info, const IR::Inst& inst, Profile const& profile) {
             info.uses_dma = true;
         }
         break;
+    case IR::Opcode::ReadConstBufferDma:
+        info.readconst_types |= Info::ReadConstType::DynamicBuffer;
+        info.uses_dma = true;
+        break;
     case IR::Opcode::PackUfloat10_11_11:
         info.uses_pack_10_11_11 = true;
         break;
