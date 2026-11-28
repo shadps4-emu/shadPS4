@@ -105,7 +105,7 @@ For more information on how to test, debug and report issues with the emulator o
 
 | Button | Function |
 |-------------|-------------|
-F10 | FPS Counter
+F10 (F1 on macOS) | FPS Counter
 Ctrl+F10 | Video Debug Info
 F11 | Fullscreen
 F12 | Trigger RenderDoc Capture (or game-only screenshot if RenderDoc is unavailable)

@@ -170,7 +170,11 @@ std::filesystem::path GetInputConfigFile(const std::string& game_id) {
             {"hotkey_capture_frame", "f12"},
             {"hotkey_screenshot_with_overlays", "lalt, f12"},
             {"hotkey_fullscreen", "f11"},
+#ifdef __APPLE__
+            {"hotkey_show_fps", "f1"},
+#else
             {"hotkey_show_fps", "f10"},
+#endif
             {"hotkey_pause", "f9"},
             {"hotkey_reload_inputs", "f8"},
             {"hotkey_toggle_mouse_to_joystick", "f7"},
