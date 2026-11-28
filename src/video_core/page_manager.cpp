@@ -43,8 +43,8 @@ struct PageManager::Impl {
         u8 num_read_watchers;
 
         Core::MemoryPermission WritePerm() const noexcept {
-            return num_write_watchers == 0 ? Core::MemoryPermission::Write
-                                           : Core::MemoryPermission::None;
+            return num_write_watchers == 0 && num_read_watchers == 0 ? Core::MemoryPermission::Write
+                                                                     : Core::MemoryPermission::None;
         }
 
         Core::MemoryPermission ReadPerm() const noexcept {
