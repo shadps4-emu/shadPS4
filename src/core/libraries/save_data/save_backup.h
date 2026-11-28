@@ -53,6 +53,8 @@ bool Restore(const std::filesystem::path& save_path);
 
 std::unique_lock<std::mutex> LockForWrite();
 
+void MoveLegacyBackup(const std::filesystem::path& save_path);
+
 WorkerStatus GetWorkerStatus();
 
 bool IsBackupExecutingFor(const std::filesystem::path& save_path);
