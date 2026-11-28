@@ -77,6 +77,7 @@ enum class Class {
     Lib_Random,               ///< The LibSceRandom implementation.
     Lib_Usbd,                 ///< The LibSceUsbd implementation.
     Lib_Ajm,                  ///< The LibSceAjm implementation.
+    Lib_Audiodec,             ///< The LibSceAudiodec implementation.
     Lib_ErrorDialog,          ///< The LibSceErrorDialog implementation.
     Lib_ImeDialog,            ///< The LibSceImeDialog implementation.
     Lib_InvitationDialog,     ///< The LibSceInvitationDialog implementation.

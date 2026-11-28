@@ -6,6 +6,7 @@
 #include "common/logging/log.h"
 #include "core/emulator_settings.h"
 #include "core/file_sys/fs.h"
+#include "core/libraries/audiodec/audiodec.h"
 #include "core/libraries/avplayer/avplayer.h"
 #include "core/libraries/disc_map/disc_map.h"
 #include "core/libraries/font/font.h"
@@ -228,7 +229,7 @@ s32 loadModuleInternal(s32 index, s32 argc, const void* argv, s32* res_out) {
              {"libSceJson2.sprx", nullptr},
              {"libSceCesCs.sprx", nullptr},
              {"libSceAt9Enc.sprx", nullptr},
-             {"libSceAudiodec.sprx", nullptr},
+             {"libSceAudiodec.sprx", &Libraries::Audiodec::RegisterLib},
              {"libSceAudiodecCpu.sprx", nullptr},
              {"libSceAudiodecCpuDdp.sprx", nullptr},
              {"libSceAudiodecCpuM4aac.sprx", nullptr},
