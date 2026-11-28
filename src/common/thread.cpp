@@ -160,7 +160,13 @@ bool AccurateSleep(const std::chrono::nanoseconds duration, std::chrono::nanosec
         .QuadPart = -1 * std::max<s64>(duration.count() / 100, 1),
     };
     HANDLE timer = thread_timer.Get();
-    SetWaitableTimer(timer, &interval, 0, NULL, NULL, 0);
+    if (!timer || !SetWaitableTimer(timer, &interval, 0, nullptr, nullptr, FALSE)) {
+        thread_timer.Reset();
+        if (remaining) {
+            *remaining = duration;
+        }
+        return false;
+    }
     const auto ret = WaitForSingleObjectEx(timer, INFINITE, interruptible);
 
     // After interrupted wait, timer is still armed, if fired later ends next sleep early.
