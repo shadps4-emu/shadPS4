@@ -25,8 +25,19 @@ using Hook =
     boost::intrusive::set_base_hook<boost::intrusive::link_mode<boost::intrusive::normal_link>>;
 
 enum class EndClass {
-    Branch, ///< Block ends with a (un)conditional branch.
-    Exit,   ///< Block ends with an exit instruction.
+    Branch,         ///< Block ends with a (un)conditional branch.
+    Exit,           ///< Block ends with an exit instruction.
+    IndirectBranch, ///< Block ends with an S_SETPC_B64 through a jump table.
+};
+
+struct Block;
+
+/// S_SETPC_B64 through a jump table, resolved statically from the table in shader memory.
+struct JumpTable {
+    u32 index_reg;  ///< SGPR holding the table byte offset at the end of the block.
+    u32 load_index; ///< Instruction index of the S_LOAD_DWORDX2 reading the table entry.
+    /// Branch target taken when index_reg holds the given value.
+    boost::container::small_vector<std::pair<u32, Block*>, 16> targets;
 };
 
 /// A block represents a linear range of instructions.
@@ -49,6 +60,7 @@ struct Block : Hook {
     Block* branch_false{};
     IR::Block* ir_block{};
     bool is_dummy{};
+    JumpTable jump_table{}; ///< Only valid when end_class is IndirectBranch.
 };
 
 class CFG {
@@ -57,7 +69,8 @@ class CFG {
     using iterator = BlockList::iterator;
 
 public:
-    explicit CFG(Common::ObjectPool<Block>& block_pool, std::span<const GcnInst> inst_list);
+    explicit CFG(Common::ObjectPool<Block>& block_pool, std::span<const GcnInst> inst_list,
+                 const u32* code);
 
     [[nodiscard]] iterator begin() {
         return blocks.begin();
@@ -94,6 +107,7 @@ private:
 public:
     Common::ObjectPool<Block>& block_pool;
     std::span<const GcnInst> inst_list;
+    const u32* code; ///< Shader code in guest memory, used to read jump tables.
     std::vector<u32> index_to_pc;
     boost::container::small_vector<Label, 16> labels;
     BlockList blocks;
