@@ -69,8 +69,7 @@ u64 PS4_SYSV_ABI sceKernelGetDirectMemorySize() {
 
 s32 PS4_SYSV_ABI sceKernelEnableDmemAliasing() {
     LOG_DEBUG(Kernel_Vmm, "called");
-    auto* memory = Core::Memory::Instance();
-    memory->GetDmemManager().SetAliasing(Core::DmemAliasingMode::AllowGpuReadAliases);
+    g_memory->GetDmemManager().SetAliasing(Core::DmemAliasingMode::AllowGpuReadAliases);
     return ORBIS_OK;
 }
 
@@ -144,8 +143,7 @@ s32 PS4_SYSV_ABI sceKernelAvailableDirectMemorySize(u64 search_start, u64 search
 
 s32 PS4_SYSV_ABI sceKernelVirtualQuery(const void* addr, s32 flags, OrbisVirtualQueryInfo* info,
                                        u64 infoSize) {
-    auto* memory = Core::Memory::Instance();
-    const s32 ret = memory->VirtualQuery(std::bit_cast<VAddr>(addr), flags, info);
+    const s32 ret = g_memory->VirtualQuery(std::bit_cast<VAddr>(addr), flags, info);
     LOG_INFO(Kernel_Vmm, "called addr = {}, flags = {:#x}, ret = {:#x}", fmt::ptr(addr), flags,
              ret);
     return ret;
@@ -405,8 +403,7 @@ s32 PS4_SYSV_ABI sceKernelMapFlexibleMemory(VAddr* addr, u64 len, s32 prot, s32 
 
 s32 PS4_SYSV_ABI sceKernelQueryMemoryProtection(void* addr, VAddr* start, VAddr* end, u32* prot) {
     LOG_INFO(Kernel_Vmm, "called, addr = {:#x}", VAddr(addr));
-    auto* memory = Core::Memory::Instance();
-    return memory->QueryProtection(std::bit_cast<VAddr>(addr), start, end, prot);
+    return g_memory->QueryProtection(std::bit_cast<VAddr>(addr), start, end, prot);
 }
 
 s32 PS4_SYSV_ABI sceKernelMprotect(VAddr addr, u64 size, s32 prot) {
@@ -445,8 +442,7 @@ s32 PS4_SYSV_ABI sceKernelDirectMemoryQuery(PAddr addr, s32 flags, OrbisQueryInf
 }
 
 s32 PS4_SYSV_ABI sceKernelAvailableFlexibleMemorySize(u64* out_size) {
-    auto* memory = Core::Memory::Instance();
-    *out_size = memory->GetAvailableFlexibleSize();
+    *out_size = g_memory->GetAvailableFlexibleSize();
     LOG_INFO(Kernel_Vmm, "called size = {:#x}", *out_size);
     return ORBIS_OK;
 }
@@ -624,10 +620,9 @@ s32 PS4_SYSV_ABI sceKernelMemoryPoolReserve(VAddr addr_in, u64 size, u64 alignme
         map_flags |= Core::MapAlignment(std::bit_width(alignment) - 1);
     }
 
-    auto* memory = Core::Memory::Instance();
     const auto ret =
-        memory->MapMemory(&addr_in, size, MemoryProt::CpuReadWrite | MemoryProt::GpuReadWrite,
-                          map_flags, g_blockpool_fd, 0, "anon");
+        g_memory->MapMemory(&addr_in, size, MemoryProt::CpuReadWrite | MemoryProt::GpuReadWrite,
+                            map_flags, g_blockpool_fd, 0, "anon");
     if (ret == ORBIS_OK) {
         *addr_out = addr_in;
     }
