@@ -4,6 +4,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 #include <string_view>
 #include <vector>
 #include "common/types.h"
@@ -26,6 +27,8 @@ public:
     virtual s64 getdents(void* buf, u64 nbytes, s64* basep) override;
 
 private:
+    std::string guest_directory;
+
 #pragma pack(push, 1)
     struct PfsDirectoryDirent {
         u32 d_fileno;
