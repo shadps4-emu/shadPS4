@@ -14,7 +14,7 @@ std::shared_ptr<BaseDirectory> PfsDirectory::Create(std::string_view guest_direc
     return std::static_pointer_cast<BaseDirectory>(std::make_shared<PfsDirectory>(guest_directory));
 }
 
-PfsDirectory::PfsDirectory(std::string_view guest_directory) {
+PfsDirectory::PfsDirectory(std::string_view guest_directory) : guest_directory(guest_directory) {
     constexpr u32 dirent_meta_size =
         sizeof(PfsDirectoryDirent::d_fileno) + sizeof(PfsDirectoryDirent::d_type) +
         sizeof(PfsDirectoryDirent::d_namlen) + sizeof(PfsDirectoryDirent::d_reclen);
@@ -42,22 +42,25 @@ PfsDirectory::PfsDirectory(std::string_view guest_directory) {
 }
 
 s64 PfsDirectory::read(void* buf, u64 nbytes) {
-    s64 bytes_available = this->dirent_cache_bin.size() - file_offset;
-    if (bytes_available <= 0)
+    if (file_offset < 0 || static_cast<u64>(file_offset) >= directory_size || nbytes == 0) {
         return 0;
-
-    bytes_available = std::min<s64>(bytes_available, static_cast<s64>(nbytes));
-    memcpy(buf, this->dirent_cache_bin.data() + file_offset, bytes_available);
-
-    s64 to_fill =
-        (std::min<s64>(directory_size, static_cast<s64>(nbytes))) - bytes_available - file_offset;
-    if (to_fill < 0) {
-        LOG_ERROR(Kernel_Fs, "Dirent may have leaked {} bytes", -to_fill);
-        return -to_fill + bytes_available;
     }
-    memset(static_cast<u8*>(buf) + bytes_available, 0, to_fill);
-    file_offset += to_fill + bytes_available;
-    return to_fill + bytes_available;
+
+    const s64 total_to_read =
+        std::min<s64>(static_cast<s64>(directory_size) - file_offset, static_cast<s64>(nbytes));
+    const s64 cache_remaining =
+        std::max<s64>(0, static_cast<s64>(dirent_cache_bin.size()) - file_offset);
+    const s64 bytes_available = std::min(cache_remaining, total_to_read);
+    if (bytes_available > 0) {
+        memcpy(buf, this->dirent_cache_bin.data() + file_offset, bytes_available);
+    }
+
+    const s64 to_fill = total_to_read - bytes_available;
+    if (to_fill > 0) {
+        memset(static_cast<u8*>(buf) + bytes_available, 0, to_fill);
+    }
+    file_offset += total_to_read;
+    return total_to_read;
 }
 
 s64 PfsDirectory::readv(const Libraries::Kernel::OrbisKernelIovec* iov, s32 iovcnt) {
@@ -85,6 +88,12 @@ s32 PfsDirectory::fstat(Libraries::Kernel::OrbisKernelStat* stat) {
     stat->st_size = directory_size;
     stat->st_blksize = 0x10000;
     stat->st_blocks = 0x80;
+
+    auto* mnt = Common::Singleton<Core::FileSys::MntPoints>::Instance();
+    Core::FileSys::FileStat fst{};
+    if (mnt->Stat(guest_directory, fst) && fst.inode != 0) {
+        stat->st_ino = fst.inode;
+    }
     return ORBIS_OK;
 }
 
@@ -93,7 +102,7 @@ s64 PfsDirectory::getdents(void* buf, u64 nbytes, s64* basep) {
         *basep = file_offset;
 
     // same as others, we just don't need a variable
-    if (file_offset >= directory_size)
+    if (file_offset < 0 || static_cast<u64>(file_offset) >= directory_size)
         return 0;
 
     u64 bytes_written = 0;
@@ -140,7 +149,7 @@ s64 PfsDirectory::getdents(void* buf, u64 nbytes, s64* basep) {
 
     file_offset = (buffer_position >= this->dirent_cache_bin.size())
                       ? directory_size
-                      : (file_offset + bytes_written);
+                      : (starting_offset + bytes_written);
     return bytes_written;
 }
 } // namespace Core::Directories
