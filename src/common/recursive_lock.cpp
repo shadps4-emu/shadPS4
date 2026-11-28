@@ -28,7 +28,7 @@ bool DecrementRecursiveLock(void* mutex, RecursiveLockType type) {
     auto& state = g_recursive_locks[mutex];
     ASSERT(state.type == type && state.count > 0);
     if (--state.count == 0) {
-        g_recursive_locks.erase(mutex);
+        state.type = RecursiveLockType::None;
         return true;
     }
     return false;
